@@ -1,11 +1,21 @@
+using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
 using SistemaIntegralDeportivo.Api.Data;
+using SistemaIntegralDeportivo.Api.Repositories;
+using SistemaIntegralDeportivo.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+// Enums como texto en el JSON ("Cuarta", "Activo") en vez de números,
+// coherente con cómo se guardan en la base y legible para el front.
+builder.Services.AddControllers().AddJsonOptions(options =>
+    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
+// DI del módulo Alumnos: las capas se consumen por interfaz (ADR-0002)
+builder.Services.AddScoped<IAlumnoRepository, AlumnoRepository>();
+builder.Services.AddScoped<IAlumnoService, AlumnoService>();
 
 // Base de datos: EF Core sobre SQLite (la connection string vive en appsettings.json)
 builder.Services.AddDbContext<AppDbContext>(options =>
