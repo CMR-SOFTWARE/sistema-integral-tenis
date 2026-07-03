@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import AppLayout from './components/layout/AppLayout';
 import Placeholder from './components/Placeholder';
+import AlumnosPage from './features/alumnos/AlumnosPage';
 
 export default function App() {
   return (
@@ -9,7 +10,7 @@ export default function App() {
         <Route element={<AppLayout />}>
           <Route index element={<Navigate to="/alumnos" replace />} />
           <Route path="/dashboard" element={<Placeholder titulo="Dashboard" />} />
-          <Route path="/alumnos" element={<Placeholder titulo="Alumnos" />} />
+          <Route path="/alumnos" element={<AlumnosPage />} />
           <Route path="/calendario" element={<Placeholder titulo="Calendario" />} />
           <Route path="/grupos" element={<Placeholder titulo="Grupos" />} />
           <Route path="/horarios" element={<Placeholder titulo="Horarios" />} />

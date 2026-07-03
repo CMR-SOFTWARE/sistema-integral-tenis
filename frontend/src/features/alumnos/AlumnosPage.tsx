@@ -1,0 +1,173 @@
+import { useState } from 'react';
+import { useAlumnos } from './useAlumnos';
+import NuevoAlumnoModal from './NuevoAlumnoModal';
+import DetalleAlumnoModal from './DetalleAlumnoModal';
+import { CATEGORIAS, CAT_COLOR, CAT_LABEL, ESTADO_UI, avatarColor, formatoPlata, iniciales } from './types';
+import type { Alumno, Categoria } from './types';
+import s from './AlumnosPage.module.css';
+
+export default function AlumnosPage() {
+  const [filtro, setFiltro] = useState<Categoria | 'todas'>('todas');
+  const { alumnos, cargando, error, crear, cambiarEstado, darDeBaja } = useAlumnos(filtro);
+  const [modalNuevo, setModalNuevo] = useState(false);
+  const [detalle, setDetalle] = useState<Alumno | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const avisar = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 2600);
+  };
+
+  const pausarOReactivar = async (a: Alumno) => {
+    const nuevo = a.estado === 'Activo' ? 'Suspendido' : 'Activo';
+    await cambiarEstado(a.id, nuevo);
+    avisar(nuevo === 'Suspendido' ? `${a.nombre} pausado` : `${a.nombre} reactivado`);
+  };
+
+  const baja = async (a: Alumno) => {
+    if (!window.confirm(`¿Dar de baja a ${a.nombre} ${a.apellido}? El historial se conserva.`)) return;
+    await darDeBaja(a.id);
+    avisar(`${a.nombre} dado de baja`);
+  };
+
+  return (
+    <div>
+      <div className={s.toolbar}>
+        <div className={s.filtros}>
+          <button
+            className={filtro === 'todas' ? s.filtroActivo : s.filtro}
+            onClick={() => setFiltro('todas')}
+          >
+            Todas
+          </button>
+          {CATEGORIAS.map((c) => (
+            <button
+              key={c}
+              className={filtro === c ? s.filtroActivo : s.filtro}
+              onClick={() => setFiltro(c)}
+            >
+              {CAT_LABEL[c]}
+            </button>
+          ))}
+        </div>
+        <div className={s.spacer} />
+        <div className={s.contador}>{alumnos.length} alumnos</div>
+        <button className={s.btnNuevo} onClick={() => setModalNuevo(true)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Nuevo alumno
+        </button>
+      </div>
+
+      <div className={s.tarjeta}>
+        {error && <div className={s.error}>{error} — ¿está corriendo la API? (dotnet run)</div>}
+        {cargando && !error && <div className={s.vacio}>Cargando…</div>}
+        {!cargando && !error && (
+          <table className={s.tabla}>
+            <thead>
+              <tr>
+                <th>Alumno</th>
+                <th>Categoría</th>
+                <th>Teléfono</th>
+                <th>Cuota</th>
+                <th>Estado</th>
+                <th className={s.thAcciones}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {alumnos.map((a) => {
+                const av = avatarColor(a.nombre + a.apellido);
+                const cat = CAT_COLOR[a.categoria];
+                const estado = ESTADO_UI[a.estado];
+                return (
+                  <tr key={a.id}>
+                    <td>
+                      <div className={s.celdaAlumno}>
+                        <div className={s.avatar} style={{ background: `${av}1a`, color: av }}>
+                          {iniciales(a.nombre, a.apellido)}
+                        </div>
+                        <div>
+                          <div className={s.nombre}>{a.nombre} {a.apellido}</div>
+                          <div className={s.dni}>DNI {a.dni}{a.esMenor ? ' · menor' : ''}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>
+                      <span className={s.chip} style={{ background: `${cat}1a`, color: cat }}>
+                        {CAT_LABEL[a.categoria]}
+                      </span>
+                    </td>
+                    <td className={s.tel}>{a.telefono}</td>
+                    <td className={s.cuota}>{formatoPlata(a.arancel)}</td>
+                    <td>
+                      <span className={s.chip} style={{ background: estado.bg, color: estado.fg }}>
+                        {estado.label}
+                      </span>
+                    </td>
+                    <td>
+                      <div className={s.acciones}>
+                        <button className={s.accion} title="Ver ficha" onClick={() => setDetalle(a)}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z" /><circle cx="12" cy="12" r="3" />
+                          </svg>
+                        </button>
+                        <button
+                          className={`${s.accion} ${s.accionPausa}`}
+                          title={a.estado === 'Activo' ? 'Pausar' : 'Reactivar'}
+                          onClick={() => void pausarOReactivar(a)}
+                        >
+                          {a.estado === 'Activo' ? (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                              <path d="M10 4H6v16h4zM18 4h-4v16h4z" />
+                            </svg>
+                          ) : (
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
+                              <path d="M6 4l14 8-14 8z" />
+                            </svg>
+                          )}
+                        </button>
+                        <button className={`${s.accion} ${s.accionBaja}`} title="Dar de baja" onClick={() => void baja(a)}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+        {!cargando && !error && alumnos.length === 0 && (
+          <div className={s.vacio}>
+            {filtro === 'todas'
+              ? 'Todavía no hay alumnos. Creá el primero con "Nuevo alumno".'
+              : 'No se encontraron alumnos con ese filtro.'}
+          </div>
+        )}
+      </div>
+
+      {modalNuevo && (
+        <NuevoAlumnoModal
+          onClose={() => setModalNuevo(false)}
+          onCrear={async (dto) => {
+            await crear(dto);
+            avisar(`${dto.nombre} ${dto.apellido} creado`);
+          }}
+        />
+      )}
+      {detalle && <DetalleAlumnoModal alumno={detalle} onClose={() => setDetalle(null)} />}
+
+      {toast && (
+        <div className={s.toast}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7bed9f" strokeWidth="2.5" strokeLinecap="round">
+            <path d="M20 6L9 17l-5-5" />
+          </svg>
+          {toast}
+        </div>
+      )}
+    </div>
+  );
+}
