@@ -1,1 +1,24 @@
-node_modules
+# ── Node / frontend ──
+node_modules/
+dist/
+
+# ── .NET / backend ──
+bin/
+obj/
+*.user
+
+# ── Base de datos local (SQLite): datos, no código. Se regenera con
+#    'dotnet ef database update'. JAMÁS al repo. ──
+*.db
+*.db-shm
+*.db-wal
+
+# ── Secretos y entorno ──
+.env
+.env.*
+!.env.example
+
+# ── IDE / SO ──
+.vs/
+.vscode/
+Thumbs.db
