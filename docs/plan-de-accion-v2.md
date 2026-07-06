@@ -116,6 +116,12 @@ Una feature está terminada cuando: compila sin warnings de lint + tiene tests d
 
 ## 6. Fases (mismas que v1, reordenadas al nuevo contexto)
 
+> **Diseño de identidad y registro (05/07/2026)**: cómo se registran y
+> conviven profesores, clubes, alumnos y socios (usuario global gratis +
+> membresías por tenant, ranking/marketplace a nivel plataforma) está
+> definido en `docs/modelo-identidad-roles.md` (ADR-0007). Las fases de
+> abajo lo implementan gradualmente.
+
 | Fase | Alcance | Módulos |
 |---|---|---|
 | **0 — Fundación** | Setup repo, CI, auth básica, multi-tenancy funcionando | tenants, auth, common |

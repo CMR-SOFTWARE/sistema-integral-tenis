@@ -6,6 +6,20 @@
 
 ---
 
+## 2026-07-05 — Diseño: identidad global y membresías
+
+- **Persona ≠ relación**: el error clásico es que un usuario "SEA alumno O
+  socio". Se modela una identidad global (Usuario, gratis) + membresías por
+  tenant (Alumno hoy; Socio/ProfesorEnClub/Staff futuros). Analogía: Slack —
+  una cuenta, N workspaces, rol distinto en cada uno.
+- El `UserId` nullable que definimos en el modelo de alumnos resultó ser la
+  pieza clave del producto entero: el patrón "reclamar ficha" (el negocio te
+  precarga, vos reclamás al registrarte) generalizado a todas las membresías.
+- Ranking y marketplace son de PLATAFORMA (cross-tenant): los puntos son de
+  la persona, no de su ficha en un club. Por eso necesitan identidad global.
+- Los negocios pagan suscripción; los jugadores entran gratis (son la red
+  que da valor). Ver `docs/modelo-identidad-roles.md` y ADR-0007.
+
 ## 2026-07-03 — Fundación .NET completa + cimientos del frontend
 
 **EF Core / migraciones**

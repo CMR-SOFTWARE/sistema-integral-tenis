@@ -222,6 +222,8 @@ Se calcula desde `fechaNacimiento`. Un boolean guardado se vence solo (el alumno
 ### 3.4 `userId` nullable desde hoy
 Hoy es `null` siempre. Cuando en una fase futura los alumnos tengan login, el flujo será: alumno se registra → se busca su `Alumno` por DNI/teléfono dentro del tenant → se vincula. **Cero migración de schema.** Esto es diseñar para el futuro sin construir el futuro.
 
+> **Generalizado (05/07/2026)**: este patrón de "reclamar ficha" quedó elevado a principio del producto para TODAS las membresías (alumnos, socios de clubes, staff) en `modelo-identidad-roles.md` (ADR-0007).
+
 ### 3.5 Grupos ad-hoc NO se modelan acá
 Tentación clásica: meter todo. Los grupos que se arman clase por clase son una propiedad del **turno** (qué alumnos participan de ese booking), no del alumno. Cuando hagamos el módulo de turnos, el booking tendrá sus participantes. Si lo modeláramos acá duplicaríamos el concepto.
 
