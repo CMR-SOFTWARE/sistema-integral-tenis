@@ -1,0 +1,247 @@
+/* Login — calcado del mockup CourtSet (líneas 33-86) */
+
+.pantalla {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+}
+
+/* ── Panel izquierdo ── */
+.panelMarca {
+  position: relative;
+  background: radial-gradient(circle at 78% 18%, #1ea35a 0%, #137a43 46%, #0d5e34 100%);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 54px 56px;
+  color: #fff;
+}
+
+.grilla {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.07) 2px, transparent 2px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 2px, transparent 2px);
+  background-size: 64px 64px;
+  opacity: 0.5;
+}
+
+.pelota {
+  position: absolute;
+  right: -90px;
+  top: -70px;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #d8fb5b, #b6e83a);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
+}
+
+.aro {
+  position: absolute;
+  right: 36px;
+  top: 96px;
+  width: 178px;
+  height: 178px;
+  border-radius: 50%;
+  border: 3px solid rgba(13, 94, 52, 0.55);
+}
+
+.marca {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.marcaLogo {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #137a43;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 24px;
+}
+
+.marcaNombre {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 19px;
+  letter-spacing: -0.02em;
+}
+
+.heroTexto {
+  position: relative;
+}
+
+.eyebrow {
+  font: 700 13px/1 var(--font-display);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #cdf57f;
+  margin-bottom: 18px;
+}
+
+.titulo {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 50px;
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+  margin: 0 0 18px;
+}
+
+.bajada {
+  max-width: 380px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.86);
+  margin: 0;
+}
+
+.stats {
+  position: relative;
+  display: flex;
+  gap: 26px;
+  font-family: var(--font-display);
+}
+
+.statNum {
+  font-weight: 900;
+  font-size: 26px;
+}
+
+.statLabel {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.statSep {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* ── Panel derecho ── */
+.panelLogin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: var(--color-surface);
+}
+
+.caja {
+  width: 100%;
+  max-width: 380px;
+  animation: slidein 0.5s ease;
+}
+
+.cajaTitulo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 27px;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+}
+
+.cajaBajada {
+  color: var(--color-text-muted);
+  font-size: 15px;
+  margin: 0 0 30px;
+}
+
+.tarjetaRol {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  text-align: left;
+  padding: 18px;
+  margin-bottom: 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tarjetaRol:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  box-shadow: var(--shadow-card-hover);
+  transform: translateY(-1px);
+}
+
+.tarjetaDeshabilitada {
+  cursor: default;
+  opacity: 0.75;
+}
+
+.rolIcono {
+  width: 48px;
+  height: 48px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+}
+
+.rolIconoProf {
+  background: var(--color-primary-dark);
+}
+
+.rolIconoAlumno {
+  background: #eef6f0;
+}
+
+.rolTexto {
+  flex: 1;
+}
+
+.rolTitulo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.rolDetalle {
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.proximamente {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  background: var(--color-surface-hover);
+  color: var(--color-text-muted);
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+
+.pie {
+  margin-top: 30px;
+  padding-top: 22px;
+  border-top: 1px solid var(--color-border-subtle);
+  font-size: 13px;
+  color: var(--color-text-faint);
+  text-align: center;
+}
+
+/* En pantallas chicas, solo el panel de login */
+@media (max-width: 900px) {
+  .pantalla {
+    grid-template-columns: 1fr;
+  }
+  .panelMarca {
+    display: none;
+  }
+}
