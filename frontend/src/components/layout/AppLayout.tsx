@@ -1,4 +1,4 @@
-import { NavLink, Outlet, useLocation } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { profNav, pageTitles } from './nav';
 import s from './AppLayout.module.css';
 
@@ -20,7 +20,13 @@ function fechaDeHoy(): string {
  */
 export default function AppLayout() {
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const title = pageTitles[pathname] ?? 'CourtSet';
+
+  const salir = () => {
+    sessionStorage.removeItem('demoRol');
+    navigate('/login');
+  };
 
   return (
     <div className={s.shell}>
@@ -55,6 +61,11 @@ export default function AppLayout() {
               <div className={s.userName}>Club Demo</div>
               <div className={s.userRole}>Profesor</div>
             </div>
+            <button className={s.logout} title="Salir" onClick={salir}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                <path d="M9 21H5V3h4M16 17l5-5-5-5M21 12H9" />
+              </svg>
+            </button>
           </div>
         </div>
       </aside>
