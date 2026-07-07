@@ -1,0 +1,101 @@
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.span2 {
+  grid-column: span 2;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.campo > span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-soft);
+}
+
+.campo input,
+.campo select,
+.campo textarea {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  background: var(--color-surface);
+  resize: vertical;
+}
+
+.check {
+  display: flex;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-soft);
+  cursor: pointer;
+}
+
+.check input {
+  width: auto;
+  accent-color: var(--color-primary);
+}
+
+.bloqueTutor {
+  background: #fef6e7;
+  border: 1px solid #f3dfb6;
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+
+.bloqueTitulo {
+  font-size: 13px;
+  font-weight: 700;
+  color: #b7791f;
+  margin-bottom: 12px;
+}
+
+.error {
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: 11px 14px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.btnPrimario {
+  padding: 11px 20px;
+  border: none;
+  background: var(--color-primary-dark);
+  color: #fff;
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  font-family: var(--font-display);
+}
+
+.btnPrimario:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.btnSecundario {
+  padding: 11px 18px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--color-text-soft);
+}

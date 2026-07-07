@@ -1,0 +1,53 @@
+/* ─────────────────────────────────────────────
+   Tokens de diseño — extraídos del mockup CourtSet
+   (Turnos Tenis.dc.html). Toda pantalla nueva usa
+   estas variables, nunca colores hardcodeados.
+   ───────────────────────────────────────────── */
+:root {
+  /* Tipografías */
+  --font-display: 'Archivo', sans-serif; /* títulos, botones, números */
+  --font-body: 'Hanken Grotesk', sans-serif; /* todo lo demás */
+
+  /* Fondos y superficies */
+  --color-bg: #eef2f0; /* fondo general de la app */
+  --color-surface: #ffffff; /* tarjetas, sidebar, modales */
+  --color-surface-subtle: #f7faf8; /* thead, inputs, bloques suaves */
+  --color-surface-hover: #f3f6f4; /* hover de filas y chips neutros */
+
+  /* Bordes */
+  --color-border: #e6ebe8;
+  --color-border-subtle: #eef2f0;
+
+  /* Texto */
+  --color-text: #16241c;
+  --color-text-soft: #4a5751;
+  --color-text-muted: #6b7770;
+  --color-text-faint: #9aa7a0;
+
+  /* Marca (verde) */
+  --color-primary: #178a4c; /* acciones, links, focus */
+  --color-primary-dark: #0e6b3c; /* botones principales */
+  --color-primary-darker: #0b5730; /* hover de botón principal */
+  --color-primary-deep: #137a43; /* gradientes del login */
+
+  /* Acento lima */
+  --color-lime: #d8fb5b;
+  --color-lime-soft: #cdf57f;
+
+  /* Semánticos */
+  --color-danger: #dc2626;
+  --color-danger-soft: #fef2f2;
+  --color-danger-border: #f0c8c8;
+  --color-warning: #d9920a;
+
+  /* Radios (el diseño usa esquinas bien redondeadas) */
+  --radius-sm: 9px;
+  --radius-md: 11px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  /* Sombras y focus */
+  --shadow-modal: 0 30px 70px rgba(0, 0, 0, 0.3);
+  --shadow-card-hover: 0 8px 24px rgba(23, 138, 76, 0.13);
+  --focus-ring: 0 0 0 3px rgba(23, 138, 76, 0.15);
+}
