@@ -16,6 +16,7 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 // DI del módulo Alumnos: las capas se consumen por interfaz (ADR-0002)
 builder.Services.AddScoped<IAlumnoRepository, AlumnoRepository>();
 builder.Services.AddScoped<IAlumnoService, AlumnoService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 // Base de datos: EF Core sobre SQLite (la connection string vive en appsettings.json)
 builder.Services.AddDbContext<AppDbContext>(options =>

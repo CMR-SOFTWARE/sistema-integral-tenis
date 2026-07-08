@@ -3,6 +3,7 @@ import AppLayout from './components/layout/AppLayout';
 import Placeholder from './components/Placeholder';
 import AlumnosPage from './features/alumnos/AlumnosPage';
 import LoginPage from './features/auth/LoginPage';
+import DashboardPage from './features/dashboard/DashboardPage';
 
 /**
  * Guardián del shell: sin "sesión" demo elegida, va al login. Cuando haya
@@ -22,8 +23,8 @@ export default function App() {
 
         <Route element={<RequiereRol />}>
           <Route element={<AppLayout />}>
-            <Route index element={<Navigate to="/alumnos" replace />} />
-            <Route path="/dashboard" element={<Placeholder titulo="Dashboard" />} />
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/alumnos" element={<AlumnosPage />} />
             <Route path="/calendario" element={<Placeholder titulo="Calendario" />} />
             <Route path="/grupos" element={<Placeholder titulo="Grupos" />} />
