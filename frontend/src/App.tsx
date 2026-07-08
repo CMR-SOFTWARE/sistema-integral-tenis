@@ -4,6 +4,7 @@ import Placeholder from './components/Placeholder';
 import AlumnosPage from './features/alumnos/AlumnosPage';
 import LoginPage from './features/auth/LoginPage';
 import DashboardPage from './features/dashboard/DashboardPage';
+import GruposPage from './features/grupos/GruposPage';
 
 /**
  * Guardián del shell: sin "sesión" demo elegida, va al login. Cuando haya
@@ -27,7 +28,7 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/alumnos" element={<AlumnosPage />} />
             <Route path="/calendario" element={<Placeholder titulo="Calendario" />} />
-            <Route path="/grupos" element={<Placeholder titulo="Grupos" />} />
+            <Route path="/grupos" element={<GruposPage />} />
             <Route path="/horarios" element={<Placeholder titulo="Horarios" />} />
             <Route path="/cuotas" element={<Placeholder titulo="Cuotas" />} />
             <Route path="/bloqueos" element={<Placeholder titulo="Bloqueos" />} />
