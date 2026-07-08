@@ -23,4 +23,18 @@ public interface IAlumnoRepository
 
     /// <summary>Confirma en la base los cambios hechos a entidades trackeadas.</summary>
     Task GuardarCambiosAsync(CancellationToken ct = default);
+
+    // ── Agregados para el dashboard (queries de solo lectura) ──
+
+    /// <summary>Cantidad de alumnos del tenant en un estado dado.</summary>
+    Task<int> ContarPorEstadoAsync(EstadoAlumno estado, CancellationToken ct = default);
+
+    /// <summary>Alumnos creados desde una fecha (altas del período).</summary>
+    Task<int> ContarNuevosDesdeAsync(DateTime desde, CancellationToken ct = default);
+
+    /// <summary>Suma de aranceles de los alumnos activos (ingreso estimado).</summary>
+    Task<decimal> SumarArancelActivosAsync(CancellationToken ct = default);
+
+    /// <summary>Conteo por categoría, excluyendo dados de baja (Inactivo).</summary>
+    Task<Dictionary<CategoriaAlumno, int>> ContarPorCategoriaAsync(CancellationToken ct = default);
 }

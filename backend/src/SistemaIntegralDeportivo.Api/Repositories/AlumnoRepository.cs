@@ -65,4 +65,22 @@ public class AlumnoRepository : IAlumnoRepository
 
     public Task GuardarCambiosAsync(CancellationToken ct = default) =>
         _db.SaveChangesAsync(ct);
+
+    public Task<int> ContarPorEstadoAsync(EstadoAlumno estado, CancellationToken ct = default) =>
+        _db.Alumnos.CountAsync(a => a.TenantId == TenantId && a.Estado == estado, ct);
+
+    public Task<int> ContarNuevosDesdeAsync(DateTime desde, CancellationToken ct = default) =>
+        _db.Alumnos.CountAsync(a => a.TenantId == TenantId && a.CreadoEl >= desde, ct);
+
+    public async Task<decimal> SumarArancelActivosAsync(CancellationToken ct = default) =>
+        await _db.Alumnos
+            .Where(a => a.TenantId == TenantId && a.Estado == EstadoAlumno.Activo)
+            .SumAsync(a => a.Arancel ?? 0, ct);
+
+    public async Task<Dictionary<CategoriaAlumno, int>> ContarPorCategoriaAsync(CancellationToken ct = default) =>
+        await _db.Alumnos
+            .Where(a => a.TenantId == TenantId && a.Estado != EstadoAlumno.Inactivo)
+            .GroupBy(a => a.Categoria)
+            .Select(g => new { Categoria = g.Key, Cantidad = g.Count() })
+            .ToDictionaryAsync(x => x.Categoria, x => x.Cantidad, ct);
 }

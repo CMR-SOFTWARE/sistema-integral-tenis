@@ -12,7 +12,7 @@ export default function LoginPage() {
 
   const entrarComoProfesor = () => {
     sessionStorage.setItem('demoRol', 'profesor');
-    navigate('/alumnos');
+    navigate('/dashboard');
   };
 
   return (
