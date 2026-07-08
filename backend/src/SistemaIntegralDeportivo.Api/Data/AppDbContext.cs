@@ -23,6 +23,11 @@ public class AppDbContext : DbContext
     public DbSet<Tutor> Tutores => Set<Tutor>();
     public DbSet<Grupo> Grupos => Set<Grupo>();
     public DbSet<AlumnoGrupo> AlumnoGrupos => Set<AlumnoGrupo>();
+    public DbSet<Sede> Sedes => Set<Sede>();
+    public DbSet<Cancha> Canchas => Set<Cancha>();
+    public DbSet<Horario> Horarios => Set<Horario>();
+    public DbSet<Turno> Turnos => Set<Turno>();
+    public DbSet<TurnoParticipante> TurnoParticipantes => Set<TurnoParticipante>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -76,6 +81,41 @@ public class AppDbContext : DbContext
         // ── AlumnoGrupo: clave primaria COMPUESTA (alumno + grupo) ──
         modelBuilder.Entity<AlumnoGrupo>()
             .HasKey(ag => new { ag.AlumnoId, ag.GrupoId });
+
+        // ── Agenda: sedes, canchas, horarios y turnos ──
+
+        modelBuilder.Entity<Sede>()
+            .HasIndex(s => new { s.TenantId, s.Nombre })
+            .IsUnique(); // sin dos sedes con el mismo nombre en el tenant
+
+        modelBuilder.Entity<Cancha>()
+            .HasIndex(c => new { c.SedeId, c.Nombre })
+            .IsUnique();
+
+        modelBuilder.Entity<Horario>().Property(h => h.Dia).HasConversion<string>();
+        modelBuilder.Entity<Horario>()
+            .HasIndex(h => new { h.TenantId, h.Activo }); // "horarios activos del profe"
+        modelBuilder.Entity<Horario>()
+            .HasIndex(h => new { h.CanchaId, h.Dia });    // chequeo de solapamiento
+
+        // Alumno.SedeId es informativo: borrar la sede no borra alumnos
+        modelBuilder.Entity<Alumno>()
+            .HasOne(a => a.Sede)
+            .WithMany()
+            .HasForeignKey(a => a.SedeId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Turno>().Property(t => t.Estado).HasConversion<string>();
+        // Idempotencia de la generación: UN turno por horario y fecha
+        modelBuilder.Entity<Turno>()
+            .HasIndex(t => new { t.HorarioId, t.Fecha })
+            .IsUnique();
+        modelBuilder.Entity<Turno>()
+            .HasIndex(t => new { t.TenantId, t.Fecha }); // "turnos de la semana"
+
+        // Roster: PK compuesta (un alumno una vez por turno)
+        modelBuilder.Entity<TurnoParticipante>()
+            .HasKey(tp => new { tp.TurnoId, tp.AlumnoId });
 
         // ── Datos semilla: el tenant demo (valores fijos, sin Guid.NewGuid()
         //    ni DateTime.Now, porque HasData exige datos determinísticos) ──

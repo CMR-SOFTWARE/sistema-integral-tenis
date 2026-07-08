@@ -43,6 +43,10 @@ public class Alumno
     public Guid? TutorId { get; set; }
     public Tutor? Tutor { get; set; }
 
+    // ── Sede a la que pertenece (informativo, para filtrar; opcional) ──
+    public Guid? SedeId { get; set; }
+    public Sede? Sede { get; set; }
+
     // ── Futuro login (no se usa todavía) ──
     public Guid? UserId { get; set; }
 
