@@ -28,6 +28,7 @@ public class AppDbContext : DbContext
     public DbSet<Horario> Horarios => Set<Horario>();
     public DbSet<Turno> Turnos => Set<Turno>();
     public DbSet<TurnoParticipante> TurnoParticipantes => Set<TurnoParticipante>();
+    public DbSet<Cargo> Cargos => Set<Cargo>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -116,6 +117,34 @@ public class AppDbContext : DbContext
         // Roster: PK compuesta (un alumno una vez por turno)
         modelBuilder.Entity<TurnoParticipante>()
             .HasKey(tp => new { tp.TurnoId, tp.AlumnoId });
+
+        // ── Cuenta corriente: cargos (ADR-0009) ──
+
+        modelBuilder.Entity<Alumno>().Property(a => a.Modalidad).HasConversion<string>();
+
+        modelBuilder.Entity<Tenant>().Property(t => t.ValorHoraGrupal).HasPrecision(12, 2);
+        modelBuilder.Entity<Tenant>().Property(t => t.ValorClaseIndividual).HasPrecision(12, 2);
+
+        modelBuilder.Entity<Cargo>().Property(c => c.Tipo).HasConversion<string>();
+        modelBuilder.Entity<Cargo>().Property(c => c.MedioPago).HasConversion<string>();
+        modelBuilder.Entity<Cargo>().Property(c => c.Monto).HasPrecision(12, 2);
+
+        // Idempotencia del cargo de clase: UNO por (turno, alumno).
+        // Los cargos manuales tienen TurnoId null (los NULL no chocan entre sí).
+        modelBuilder.Entity<Cargo>()
+            .HasIndex(c => new { c.TurnoId, c.AlumnoId })
+            .IsUnique();
+
+        // El query de la liquidación: cargos de un alumno en un período
+        modelBuilder.Entity<Cargo>()
+            .HasIndex(c => new { c.TenantId, c.AlumnoId, c.Fecha });
+
+        // Si se borrara un turno, el cargo (plata, historia) NO se borra
+        modelBuilder.Entity<Cargo>()
+            .HasOne(c => c.Turno)
+            .WithMany()
+            .HasForeignKey(c => c.TurnoId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // ── Datos semilla: el tenant demo (valores fijos, sin Guid.NewGuid()
         //    ni DateTime.Now, porque HasData exige datos determinísticos) ──

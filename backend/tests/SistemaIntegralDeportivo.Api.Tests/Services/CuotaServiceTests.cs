@@ -1,0 +1,257 @@
+using Moq;
+using SistemaIntegralDeportivo.Api.Common;
+using SistemaIntegralDeportivo.Api.Dtos;
+using SistemaIntegralDeportivo.Api.Models;
+using SistemaIntegralDeportivo.Api.Repositories;
+using SistemaIntegralDeportivo.Api.Services;
+
+namespace SistemaIntegralDeportivo.Api.Tests.Services;
+
+/// <summary>
+/// Las reglas de la PLATA (modelo-precios.md + ADR-0009), fijadas por TDD:
+/// grupal ÷ asignados (el ausente paga igual), individual entera, cancelado
+/// sin cargo, idempotencia, pagos por mes y por cargo, estado calculado.
+/// </summary>
+public class CuotaServiceTests
+{
+    private const decimal ValorBase = 16_000m; // el precio real del profe
+
+    private static readonly Guid Juan = Guid.NewGuid();
+    private static readonly Guid Sofia = Guid.NewGuid();
+    private static readonly Guid Mateo = Guid.NewGuid();
+    private static readonly Guid Vale = Guid.NewGuid();
+
+    private readonly Mock<ICargoRepository> _cargos;
+    private readonly Mock<ITurnoRepository> _turnos;
+    private readonly Mock<ITenantRepository> _tenant;
+    private readonly CuotaService _service;
+    private readonly List<Cargo> _agregados = [];
+
+    public CuotaServiceTests()
+    {
+        _cargos = new Mock<ICargoRepository>();
+        _turnos = new Mock<ITurnoRepository>();
+        _tenant = new Mock<ITenantRepository>();
+        _service = new CuotaService(_cargos.Object, _turnos.Object, _tenant.Object);
+
+        // Tenant con los precios configurados (base real: $16.000)
+        _tenant.Setup(t => t.ObtenerActualAsync(It.IsAny<CancellationToken>()))
+               .ReturnsAsync(new Tenant
+               {
+                   Subdominio = "demo",
+                   Nombre = "Club Demo",
+                   ValorHoraGrupal = ValorBase,
+                   ValorClaseIndividual = ValorBase,
+               });
+
+        // Por defecto: sin turnos ni cargos previos; AgregarAsync captura
+        _turnos.Setup(t => t.ListarEntreAsync(It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([]);
+        _cargos.Setup(c => c.ListarDelMesAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync(() => [.. _agregados]);
+        _cargos.Setup(c => c.AgregarAsync(It.IsAny<Cargo>(), It.IsAny<CancellationToken>()))
+               .Callback((Cargo c, CancellationToken _) => _agregados.Add(c))
+               .Returns(Task.CompletedTask);
+    }
+
+    // ── Helpers para armar turnos ──
+
+    private static Turno TurnoGrupal(params (Guid alumnoId, bool presente)[] roster)
+    {
+        var turno = new Turno
+        {
+            HorarioId = Guid.NewGuid(),
+            CanchaId = Guid.NewGuid(),
+            Fecha = new DateOnly(2026, 7, 14),
+            HoraInicio = new TimeOnly(18, 0),
+            DuracionMinutos = 60,
+            Horario = new Horario
+            {
+                CanchaId = Guid.NewGuid(),
+                GrupoId = Guid.NewGuid(),
+                Grupo = new Grupo { Nombre = "Intermedios" },
+                Dia = DayOfWeek.Tuesday,
+                HoraInicio = new TimeOnly(18, 0),
+                DuracionMinutos = 60,
+            },
+        };
+        foreach (var (alumnoId, presente) in roster)
+            turno.Participantes.Add(new TurnoParticipante { Turno = turno, AlumnoId = alumnoId, Presente = presente });
+        return turno;
+    }
+
+    private static Turno TurnoIndividual(Guid alumnoId)
+    {
+        var turno = new Turno
+        {
+            HorarioId = Guid.NewGuid(),
+            CanchaId = Guid.NewGuid(),
+            Fecha = new DateOnly(2026, 7, 16),
+            HoraInicio = new TimeOnly(10, 0),
+            DuracionMinutos = 60,
+            Horario = new Horario
+            {
+                CanchaId = Guid.NewGuid(),
+                AlumnoId = alumnoId,
+                Dia = DayOfWeek.Thursday,
+                HoraInicio = new TimeOnly(10, 0),
+                DuracionMinutos = 60,
+            },
+        };
+        turno.Participantes.Add(new TurnoParticipante { Turno = turno, AlumnoId = alumnoId });
+        return turno;
+    }
+
+    // ─────────────────────────────────────────────
+    // Generación de cargos de clase
+    // ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task Mes_ClaseGrupal_DivideEntreAsignados_YElAusentePagaIgual()
+    {
+        // Grupo de 4 asignados, Mateo FALTÓ: igual son 4 cargos de $4.000
+        _turnos.Setup(t => t.ListarEntreAsync(It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([TurnoGrupal((Juan, true), (Sofia, true), (Mateo, false), (Vale, true))]);
+
+        await _service.ObtenerMesAsync(2026, 7);
+
+        Assert.Equal(4, _agregados.Count);
+        Assert.All(_agregados, c => Assert.Equal(4_000m, c.Monto)); // 16.000 ÷ 4
+        Assert.Contains(_agregados, c => c.AlumnoId == Mateo);      // el ausente TAMBIÉN debe
+        Assert.All(_agregados, c => Assert.Equal(TipoCargo.Clase, c.Tipo));
+    }
+
+    [Fact]
+    public async Task Mes_ClaseIndividual_CargaElValorEntero()
+    {
+        _turnos.Setup(t => t.ListarEntreAsync(It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([TurnoIndividual(Juan)]);
+
+        await _service.ObtenerMesAsync(2026, 7);
+
+        var cargo = Assert.Single(_agregados);
+        Assert.Equal(ValorBase, cargo.Monto); // $16.000 enteros
+        Assert.Equal(Juan, cargo.AlumnoId);
+    }
+
+    [Fact]
+    public async Task Mes_TurnoCancelado_NoGeneraCargo()
+    {
+        var cancelado = TurnoGrupal((Juan, true), (Sofia, true));
+        cancelado.Estado = EstadoTurno.Cancelado;
+        _turnos.Setup(t => t.ListarEntreAsync(It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([cancelado]);
+
+        await _service.ObtenerMesAsync(2026, 7);
+
+        Assert.Empty(_agregados); // la clase no ocurrió → nadie paga
+    }
+
+    [Fact]
+    public async Task Mes_EsIdempotente_NoDuplicaCargosExistentes()
+    {
+        var turno = TurnoGrupal((Juan, true), (Sofia, true));
+        _turnos.Setup(t => t.ListarEntreAsync(It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([turno]);
+        // El cargo de Juan por ese turno YA existe
+        _agregados.Add(new Cargo
+        {
+            AlumnoId = Juan,
+            TurnoId = turno.Id,
+            Tipo = TipoCargo.Clase,
+            Concepto = "Clase grupal",
+            Monto = 8_000m,
+            Fecha = turno.Fecha,
+        });
+
+        await _service.ObtenerMesAsync(2026, 7);
+
+        // Solo se agregó el de Sofía (el de Juan no se duplica)
+        Assert.Equal(2, _agregados.Count);
+        Assert.Single(_agregados, c => c.AlumnoId == Juan);
+    }
+
+    [Fact]
+    public async Task Mes_SinPreciosConfigurados_Lanza()
+    {
+        _tenant.Setup(t => t.ObtenerActualAsync(It.IsAny<CancellationToken>()))
+               .ReturnsAsync(new Tenant { Subdominio = "demo", Nombre = "Club Demo" }); // sin precios
+        _turnos.Setup(t => t.ListarEntreAsync(It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([TurnoGrupal((Juan, true))]);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.ObtenerMesAsync(2026, 7));
+    }
+
+    // ─────────────────────────────────────────────
+    // Pagos
+    // ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task PagarMes_SaldaTodosLosImpagosDelAlumno_YSoloEsos()
+    {
+        var pagadoViejo = new Cargo { AlumnoId = Juan, Tipo = TipoCargo.Clase, Concepto = "x", Monto = 4_000m, Fecha = new DateOnly(2026, 7, 7), PagadoEl = DateTime.UtcNow.AddDays(-5), MedioPago = MedioPago.Efectivo };
+        var impago1 = new Cargo { AlumnoId = Juan, Tipo = TipoCargo.Clase, Concepto = "x", Monto = 4_000m, Fecha = new DateOnly(2026, 7, 14) };
+        var impago2 = new Cargo { AlumnoId = Juan, Tipo = TipoCargo.Producto, Concepto = "Encordado", Monto = 12_000m, Fecha = new DateOnly(2026, 7, 15) };
+        var deOtroAlumno = new Cargo { AlumnoId = Sofia, Tipo = TipoCargo.Clase, Concepto = "x", Monto = 4_000m, Fecha = new DateOnly(2026, 7, 14) };
+        _agregados.AddRange([pagadoViejo, impago1, impago2, deOtroAlumno]);
+
+        await _service.PagarMesAsync(Juan, 2026, 7, MedioPago.Transferencia);
+
+        Assert.NotNull(impago1.PagadoEl);
+        Assert.NotNull(impago2.PagadoEl);
+        Assert.Equal(MedioPago.Transferencia, impago1.MedioPago);
+        Assert.Null(deOtroAlumno.PagadoEl);                       // Sofía no paga lo de Juan
+        Assert.Equal(MedioPago.Efectivo, pagadoViejo.MedioPago);  // lo ya pagado no se toca
+        _cargos.Verify(c => c.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task PagarMes_SinImpagos_Lanza()
+    {
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.PagarMesAsync(Juan, 2026, 7, MedioPago.Efectivo));
+    }
+
+    [Fact]
+    public async Task PagarCargo_MarcaFechaDelServerYMedio()
+    {
+        var cargo = new Cargo { AlumnoId = Juan, Tipo = TipoCargo.Clase, Concepto = "x", Monto = 16_000m, Fecha = new DateOnly(2026, 7, 16) };
+        _cargos.Setup(c => c.ObtenerAsync(cargo.Id, It.IsAny<CancellationToken>())).ReturnsAsync(cargo);
+
+        await _service.PagarCargoAsync(cargo.Id, MedioPago.Efectivo);
+
+        Assert.NotNull(cargo.PagadoEl);
+        Assert.Equal(MedioPago.Efectivo, cargo.MedioPago);
+        _cargos.Verify(c => c.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task PagarCargo_YaPagado_Lanza()
+    {
+        var cargo = new Cargo { AlumnoId = Juan, Tipo = TipoCargo.Clase, Concepto = "x", Monto = 16_000m, Fecha = new DateOnly(2026, 7, 16), PagadoEl = DateTime.UtcNow };
+        _cargos.Setup(c => c.ObtenerAsync(cargo.Id, It.IsAny<CancellationToken>())).ReturnsAsync(cargo);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.PagarCargoAsync(cargo.Id, MedioPago.Efectivo));
+    }
+
+    // ─────────────────────────────────────────────
+    // Estado calculado (contra el día 10 — nunca almacenado)
+    // ─────────────────────────────────────────────
+
+    [Theory]
+    [InlineData(0, "2026-07-05", "Pagada")]    // sin saldo → Pagada
+    [InlineData(4000, "2026-07-05", "Pendiente")] // debe, y está entre el 1 y el 10
+    [InlineData(4000, "2026-07-10", "Pendiente")] // el 10 todavía no venció
+    [InlineData(4000, "2026-07-11", "Vencida")]   // el 11 sí
+    [InlineData(4000, "2026-08-01", "Vencida")]   // mes siguiente, sigue debiendo julio
+    [InlineData(4000, "2026-06-20", "Pendiente")] // mes futuro visto desde junio: aún no vence
+    public void CalcularEstado_RespetaElDia10(decimal saldo, string hoyIso, string esperado)
+    {
+        var hoy = DateOnly.Parse(hoyIso);
+
+        var estado = CuotaService.CalcularEstado(2026, 7, saldo, hoy);
+
+        Assert.Equal(esperado, estado);
+    }
+}

@@ -32,6 +32,9 @@ public class Alumno
     public EstadoAlumno Estado { get; set; } = EstadoAlumno.Activo;
     public string? Notas { get; set; } // observaciones del profe ("lesión de hombro", etc.)
 
+    // ── Cómo liquida (ADR-0009): el mes entero (vence el 10) o cargo por cargo ──
+    public ModalidadPago Modalidad { get; set; } = ModalidadPago.Mensual;
+
     // ── Consentimientos (Ley 25.326): no alcanza un bool, hay que poder
     //    demostrar CUÁNDO se consintió ──
     public bool ConsentimientoWhatsapp { get; set; }
