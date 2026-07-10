@@ -1,7 +1,64 @@
-import { useState } from 'react';
-import { ApiError } from '../../lib/api';
+import { useEffect, useState } from 'react';
+import { api, ApiError } from '../../lib/api';
 import { useSedes } from './hooks';
+import type { Precios } from '../cuotas/types';
 import s from './ConfiguracionPage.module.css';
+
+/** Card de precios del profe (la base de la fórmula de cuotas). */
+function PreciosCard() {
+  const [grupal, setGrupal] = useState('');
+  const [individual, setIndividual] = useState('');
+  const [guardado, setGuardado] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void api.get<Precios>('/configuracion/precios').then((p) => {
+      setGrupal(p.valorHoraGrupal?.toString() ?? '');
+      setIndividual(p.valorClaseIndividual?.toString() ?? '');
+    });
+  }, []);
+
+  const guardar = async () => {
+    setError(null);
+    setGuardado(false);
+    try {
+      await api.put<Precios>('/configuracion/precios', {
+        valorHoraGrupal: grupal === '' ? null : Number(grupal),
+        valorClaseIndividual: individual === '' ? null : Number(individual),
+      });
+      setGuardado(true);
+      setTimeout(() => setGuardado(false), 2500);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'No se pudieron guardar los precios.');
+    }
+  };
+
+  return (
+    <div className={s.tarjeta}>
+      <h3 className={s.titulo}>Precios</h3>
+      <p className={s.bajada}>
+        La base de la liquidación: ambos valores son <b>por hora</b> y se prorratean
+        por la duración del turno (30' = la mitad). La <b>grupal</b> además se divide
+        entre los asignados del turno. Los cargos ya generados no cambian si
+        actualizás estos valores.
+      </p>
+      {error && <div className={s.error}>{error}</div>}
+      <div className={s.precios}>
+        <label className={s.precio}>
+          <span>Valor hora grupal</span>
+          <input type="number" min={0} value={grupal} onChange={(e) => setGrupal(e.target.value)} placeholder="16000" />
+        </label>
+        <label className={s.precio}>
+          <span>Valor hora individual</span>
+          <input type="number" min={0} value={individual} onChange={(e) => setIndividual(e.target.value)} placeholder="16000" />
+        </label>
+        <button className={s.btnPrimario} onClick={() => void guardar()}>
+          {guardado ? '✓ Guardado' : 'Guardar precios'}
+        </button>
+      </div>
+    </div>
+  );
+}
 
 /** Configuración del tenant. Por ahora: sedes y canchas (donde trabaja el profe). */
 export default function ConfiguracionPage() {
@@ -36,6 +93,7 @@ export default function ConfiguracionPage() {
 
   return (
     <div className={s.contenedor}>
+      <PreciosCard />
       <div className={s.tarjeta}>
         <h3 className={s.titulo}>Sedes y canchas</h3>
         <p className={s.bajada}>
