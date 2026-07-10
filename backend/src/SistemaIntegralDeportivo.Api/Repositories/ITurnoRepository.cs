@@ -15,7 +15,14 @@ public interface ITurnoRepository
 
     Task<Turno?> ObtenerAsync(Guid id, CancellationToken ct = default);
 
+    /// <summary>Turnos de un horario desde una fecha (para limpiar al desactivar).</summary>
+    Task<IReadOnlyList<Turno>> ListarPorHorarioDesdeAsync(
+        Guid horarioId, DateOnly desde, CancellationToken ct = default);
+
     Task AgregarAsync(Turno turno, CancellationToken ct = default);
+
+    /// <summary>Marca el turno para borrar (se persiste con GuardarCambiosAsync).</summary>
+    void Eliminar(Turno turno);
 
     Task GuardarCambiosAsync(CancellationToken ct = default);
 }

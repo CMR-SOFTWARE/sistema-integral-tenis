@@ -25,6 +25,8 @@ export interface Alumno {
   notas: string | null;
   tutorId: string | null;
   creadoEl: string;
+  /** Cuota vencida (pasó el día 10 sin pagar): bloquea asignaciones nuevas. */
+  deudaVencida: boolean;
 }
 
 /** Espejo de CreateAlumnoDto. */

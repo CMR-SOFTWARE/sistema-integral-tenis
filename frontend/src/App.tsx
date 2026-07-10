@@ -8,6 +8,7 @@ import GruposPage from './features/grupos/GruposPage';
 import CalendarioPage from './features/agenda/CalendarioPage';
 import HorariosPage from './features/agenda/HorariosPage';
 import ConfiguracionPage from './features/agenda/ConfiguracionPage';
+import CuotasPage from './features/cuotas/CuotasPage';
 
 /**
  * Guardián del shell: sin "sesión" demo elegida, va al login. Cuando haya
@@ -33,7 +34,7 @@ export default function App() {
             <Route path="/calendario" element={<CalendarioPage />} />
             <Route path="/grupos" element={<GruposPage />} />
             <Route path="/horarios" element={<HorariosPage />} />
-            <Route path="/cuotas" element={<Placeholder titulo="Cuotas" />} />
+            <Route path="/cuotas" element={<CuotasPage />} />
             <Route path="/bloqueos" element={<Placeholder titulo="Bloqueos" />} />
             <Route path="/cancelaciones" element={<Placeholder titulo="Cancelaciones" />} />
             <Route path="/reportes" element={<Placeholder titulo="Reportes" />} />

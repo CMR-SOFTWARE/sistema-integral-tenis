@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAlumnos } from './useAlumnos';
 import NuevoAlumnoModal from './NuevoAlumnoModal';
 import DetalleAlumnoModal from './DetalleAlumnoModal';
-import { CATEGORIAS, CAT_COLOR, CAT_LABEL, ESTADO_UI, avatarColor, formatoPlata, iniciales } from './types';
+import { CATEGORIAS, CAT_COLOR, CAT_LABEL, ESTADO_UI, avatarColor, iniciales } from './types';
 import type { Alumno, Categoria } from './types';
 import s from './AlumnosPage.module.css';
 
@@ -99,7 +99,17 @@ export default function AlumnosPage() {
                       </span>
                     </td>
                     <td className={s.tel}>{a.telefono}</td>
-                    <td className={s.cuota}>{formatoPlata(a.arancel)}</td>
+                    <td>
+                      {a.deudaVencida ? (
+                        <span className={s.chip} style={{ background: '#fdeaea', color: '#b91c1c' }}>
+                          Vencida
+                        </span>
+                      ) : (
+                        <span className={s.chip} style={{ background: '#e7f6ec', color: '#0e6b3c' }}>
+                          Al día
+                        </span>
+                      )}
+                    </td>
                     <td>
                       <span className={s.chip} style={{ background: estado.bg, color: estado.fg }}>
                         {estado.label}

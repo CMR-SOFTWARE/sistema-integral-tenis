@@ -47,3 +47,26 @@ public enum EstadoTurno
     Programado,
     Cancelado
 }
+
+/// <summary>Tipo de línea en la cuenta corriente del alumno (ADR-0009).</summary>
+public enum TipoCargo
+{
+    Clase,    // auto, desde un turno (grupal ÷ asignados o individual entera)
+    Producto, // manual: encordado, tubo de pelotas, etc.
+    Ajuste    // manual, monto + o - con motivo (hermanos, beca, redondeo)
+}
+
+/// <summary>Cómo se registró un pago.</summary>
+public enum MedioPago
+{
+    Efectivo,
+    Transferencia,
+    Otro
+}
+
+/// <summary>Cómo liquida el alumno: el mes entero (vence el 10) o cargo por cargo.</summary>
+public enum ModalidadPago
+{
+    Mensual,
+    PorClase
+}

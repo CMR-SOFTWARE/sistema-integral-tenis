@@ -14,11 +14,13 @@ namespace SistemaIntegralDeportivo.Api.Tests.Services;
 public class AlumnoServiceTests
 {
     private readonly Mock<IAlumnoRepository> _repo;
+    private readonly Mock<ICargoRepository> _cargos;
     private readonly AlumnoService _service;
 
     public AlumnoServiceTests()
     {
         _repo = new Mock<IAlumnoRepository>();
+        _cargos = new Mock<ICargoRepository>();
 
         // Por defecto: el DNI no existe y AgregarAsync devuelve lo que recibe
         _repo.Setup(r => r.ExisteDniAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -26,7 +28,11 @@ public class AlumnoServiceTests
         _repo.Setup(r => r.AgregarAsync(It.IsAny<Alumno>(), It.IsAny<CancellationToken>()))
              .ReturnsAsync((Alumno a, CancellationToken _) => a);
 
-        _service = new AlumnoService(_repo.Object);
+        // Por defecto: nadie debe nada
+        _cargos.Setup(c => c.ListarImpagosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([]);
+
+        _service = new AlumnoService(_repo.Object, _cargos.Object);
     }
 
     /// <summary>DTO válido de un alumno MAYOR de edad (base de los tests).</summary>

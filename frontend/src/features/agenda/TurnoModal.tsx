@@ -82,7 +82,10 @@ export default function TurnoModal({ turno, onClose, onAsistencia, onCancelar }:
         {turno.participantes.map((p) => (
           <div key={p.alumnoId} className={s.fila}>
             <span className={`${s.estadoDot} ${p.presente ? s.dotPresente : s.dotAusente}`} />
-            <span className={s.nombre}>{p.nombre} {p.apellido}</span>
+            <span className={s.nombre}>
+              {p.nombre} {p.apellido}
+              {p.deudaVencida && <span className={s.deudaBadge}>cuota vencida</span>}
+            </span>
             {!cancelado && (
               <button
                 className={p.presente ? s.btnFalto : s.btnVino}

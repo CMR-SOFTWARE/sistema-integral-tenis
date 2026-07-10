@@ -12,6 +12,13 @@ public interface ITurnoService
     /// </summary>
     Task<IReadOnlyList<TurnoResponseDto>> ObtenerSemanaAsync(DateOnly lunes, CancellationToken ct = default);
 
+    /// <summary>
+    /// Materializa los turnos que falten de TODO el mes (misma generación
+    /// perezosa e idempotente que la semanal). La usa la liquidación de
+    /// cuotas para no depender de que se haya visitado el Calendario.
+    /// </summary>
+    Task GenerarTurnosDelMesAsync(int anio, int mes, CancellationToken ct = default);
+
     /// <summary>Marca presente/ausente a un participante (no afecta cargos).</summary>
     /// <exception cref="Common.ReglaDeNegocioException">Si no participa del turno.</exception>
     Task MarcarAsistenciaAsync(Guid turnoId, Guid alumnoId, bool presente, CancellationToken ct = default);

@@ -15,6 +15,12 @@ public class Tenant
     public bool Activo { get; set; } = true;
     public DateTime CreadoEl { get; set; } = DateTime.UtcNow;
 
+    // ── Precios (config del profe; null = todavía no configurado) ──
+    // La fórmula (modelo-precios.md): grupal se divide entre los ASIGNADOS
+    // del turno; individual la paga entera el alumno.
+    public decimal? ValorHoraGrupal { get; set; }
+    public decimal? ValorClaseIndividual { get; set; }
+
     // ── Navegación (las FK apuntan hacia acá) ──
     public ICollection<Alumno> Alumnos { get; set; } = new List<Alumno>();
     public ICollection<Tutor> Tutores { get; set; } = new List<Tutor>();

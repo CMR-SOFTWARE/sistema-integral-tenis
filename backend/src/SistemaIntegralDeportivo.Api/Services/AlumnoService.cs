@@ -8,10 +8,12 @@ namespace SistemaIntegralDeportivo.Api.Services;
 public class AlumnoService : IAlumnoService
 {
     private readonly IAlumnoRepository _repo;
+    private readonly ICargoRepository _cargos;
 
-    public AlumnoService(IAlumnoRepository repo)
+    public AlumnoService(IAlumnoRepository repo, ICargoRepository cargos)
     {
         _repo = repo;
+        _cargos = cargos;
     }
 
     public async Task<AlumnoResponseDto> CrearAsync(CreateAlumnoDto dto, CancellationToken ct = default)
@@ -69,13 +71,17 @@ public class AlumnoService : IAlumnoService
         CategoriaAlumno? categoria, EstadoAlumno? estado, CancellationToken ct = default)
     {
         var alumnos = await _repo.ListarAsync(categoria, estado, ct);
-        return alumnos.Select(Mapear).ToList();
+        var deudores = await DeudoresDeAsync(alumnos.Select(a => a.Id).ToList(), ct);
+        return alumnos.Select(a => Mapear(a, deudores.Contains(a.Id))).ToList();
     }
 
     public async Task<AlumnoResponseDto?> ObtenerAsync(Guid id, CancellationToken ct = default)
     {
         var alumno = await _repo.ObtenerAsync(id, ct);
-        return alumno is null ? null : Mapear(alumno);
+        if (alumno is null) return null;
+
+        var deudores = await DeudoresDeAsync([id], ct);
+        return Mapear(alumno, deudores.Contains(id));
     }
 
     public async Task<AlumnoResponseDto?> CambiarEstadoAsync(
@@ -102,6 +108,20 @@ public class AlumnoService : IAlumnoService
         return true;
     }
 
+    /// <summary>Alumnos con cuota vencida (señal en la ficha; la regla vive en CuotaService).</summary>
+    private async Task<HashSet<Guid>> DeudoresDeAsync(IReadOnlyCollection<Guid> alumnoIds, CancellationToken ct)
+    {
+        if (alumnoIds.Count == 0) return [];
+
+        var impagos = await _cargos.ListarImpagosAsync(alumnoIds, ct);
+        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+        return impagos
+            .GroupBy(c => c.AlumnoId)
+            .Where(g => CuotaService.TieneDeudaVencida(g, hoy))
+            .Select(g => g.Key)
+            .ToHashSet();
+    }
+
     /// <summary>Edad en años cumplidos a hoy (esMenor nunca se guarda: se calcula).</summary>
     private static int CalcularEdad(DateTime nacimiento)
     {
@@ -111,7 +131,7 @@ public class AlumnoService : IAlumnoService
         return edad;
     }
 
-    private static AlumnoResponseDto Mapear(Alumno a) => new()
+    private static AlumnoResponseDto Mapear(Alumno a, bool deudaVencida = false) => new()
     {
         Id = a.Id,
         Nombre = a.Nombre,
@@ -127,5 +147,6 @@ public class AlumnoService : IAlumnoService
         Notas = a.Notas,
         TutorId = a.TutorId ?? a.Tutor?.Id,
         CreadoEl = a.CreadoEl,
+        DeudaVencida = deudaVencida,
     };
 }

@@ -50,15 +50,32 @@ posible. Por eso el orden de construcción es:
 | Confirmar pago | Registra **fecha** (server) + **medio**: Efectivo / Transferencia / Otro. Pago total, sin parciales (se evalúa después) |
 | Monto | **Snapshot** al generarse el cargo (si el valor hora cambia, los cargos ya generados no se tocan) |
 
-## 4. Pendientes a definir cuando llegue la vertical Cuotas
+## 4. Decisiones de la vertical Cuotas (resueltas con Lucas)
 
-- [ ] ¿El valor hora es único por profe o varía por tipo de clase/categoría?
-- [ ] ¿Descuento por hermanos u otros ajustes manuales?
-- [ ] Pagos parciales (hoy: no)
-- [ ] **Recuperación y el divisor del turno destino**: si Juan recupera
-      metiéndose en un grupo de 3, ¿los otros pasan a pagar ¼? Hipótesis:
-      NO — la recuperación no genera cargo ni cambia el divisor del turno
-      destino (Juan ya pagó su clase original). Confirmar con la realidad.
+**RESUELTO (10/07/2026):**
 
-~~Alumno que falta: ¿paga igual?~~ → **RESUELTO (08/07/2026)**: paga igual,
-siempre. El divisor son los asignados, no los presentes (ver §2).
+- **Valor hora DUAL** (config del profe): valor hora **grupal** (se divide
+  entre los asignados del turno) y valor de clase **individual** (lo paga
+  entero el alumno). La individual suele valer distinto por hora.
+- **Modalidad de pago por alumno**: `Mensual` (default — liquida el mes,
+  vence el 10) o `PorClase` (minoría irregular: paga cargo por cargo; y
+  futuros profes podrían cobrar solo así).
+- **La cuenta del mes es una CUENTA CORRIENTE de CARGOS**, no solo clases:
+  - Cargo **Clase** (auto desde turnos): grupal ÷ asignados o individual entera.
+  - Cargo **Producto/Servicio** (manual): encordados, tubos de pelotas, etc.
+    Lo carga el profe; a futuro el alumno lo pedirá desde su perfil (portal).
+  - Cargo **Ajuste** (manual, monto +/- con motivo): hermanos, beca, redondeo.
+- **Turno CANCELADO no genera cargo** (la clase no ocurrió).
+- **Idempotencia**: un cargo de clase por (turno, alumno) — nunca duplicado.
+- **Monto snapshot**: si el profe cambia los precios, los cargos ya
+  generados no se tocan.
+- ~~Alumno que falta: ¿paga igual?~~ → paga igual, siempre. El divisor son
+  los asignados, no los presentes (ver §2).
+
+**Pendientes (siguen abiertos):**
+
+- [ ] Pagos parciales de una liquidación mensual (hoy: no).
+- [ ] **Recuperación y el divisor del turno destino**: hipótesis NO cambia
+      el divisor ni genera cargo (Juan ya pagó su clase original).
+      Confirmar con la realidad.
+- [ ] Pedido de productos desde el perfil del alumno (llega con el portal).

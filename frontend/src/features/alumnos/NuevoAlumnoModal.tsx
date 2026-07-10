@@ -19,7 +19,7 @@ export default function NuevoAlumnoModal({ onClose, onCrear }: Props) {
   const [form, setForm] = useState({
     nombre: '', apellido: '', dni: '', telefono: '', email: '',
     fechaNacimiento: '', categoria: 'SinCategoria' as Categoria,
-    arancel: '', notas: '',
+    notas: '',
     consentimientoWhatsapp: false, consentimientoDatos: false,
     tutorNombre: '', tutorApellido: '', tutorDni: '', tutorTelefono: '',
     tutorRelacion: 'Madre' as RelacionTutor,
@@ -44,7 +44,7 @@ export default function NuevoAlumnoModal({ onClose, onCrear }: Props) {
         email: form.email.trim() || undefined,
         fechaNacimiento: form.fechaNacimiento,
         categoria: form.categoria,
-        arancel: form.arancel ? Number(form.arancel) : undefined,
+        // Arancel ya no se carga acá: el monto real sale de los cargos (ADR-0009)
         notas: form.notas.trim() || undefined,
         consentimientoWhatsapp: form.consentimientoWhatsapp,
         consentimientoDatos: form.consentimientoDatos,
@@ -113,10 +113,6 @@ export default function NuevoAlumnoModal({ onClose, onCrear }: Props) {
               <option key={c} value={c}>{c === 'SinCategoria' ? 'Sin categoría' : CAT_LABEL[c]}</option>
             ))}
           </select>
-        </label>
-        <label className={s.campo}>
-          <span>Valor cuota mensual</span>
-          <input type="number" value={form.arancel} onChange={(e) => set('arancel', e.target.value)} placeholder="28000" />
         </label>
         <label className={s.campo}>
           <span>&nbsp;</span>

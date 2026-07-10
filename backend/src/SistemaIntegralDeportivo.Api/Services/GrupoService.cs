@@ -9,11 +9,13 @@ public class GrupoService : IGrupoService
 {
     private readonly IGrupoRepository _grupos;
     private readonly IAlumnoRepository _alumnos;
+    private readonly ICargoRepository _cargos;
 
-    public GrupoService(IGrupoRepository grupos, IAlumnoRepository alumnos)
+    public GrupoService(IGrupoRepository grupos, IAlumnoRepository alumnos, ICargoRepository cargos)
     {
         _grupos = grupos;
         _alumnos = alumnos;
+        _cargos = cargos;
     }
 
     public async Task<GrupoResponseDto> CrearAsync(CreateGrupoDto dto, CancellationToken ct = default)
@@ -54,6 +56,12 @@ public class GrupoService : IGrupoService
         if (alumno.Estado != EstadoAlumno.Activo)
             throw new ReglaDeNegocioException(
                 $"{alumno.Nombre} {alumno.Apellido} no está activo y no puede asignarse a un grupo.");
+
+        // Regla: nadie toma clases NUEVAS con la cuota vencida (las ya asignadas siguen)
+        var impagos = await _cargos.ListarImpagosAsync([alumnoId], ct);
+        if (CuotaService.TieneDeudaVencida(impagos, DateOnly.FromDateTime(DateTime.UtcNow)))
+            throw new ReglaDeNegocioException(
+                $"{alumno.Nombre} {alumno.Apellido} tiene la cuota vencida: registrá el pago en Cuotas antes de sumarlo a un grupo.");
 
         // Regla: no duplicar miembro activo; si tuvo baja previa, se reactiva
         var membresia = await _grupos.ObtenerMembresiaAsync(grupoId, alumnoId, ct);

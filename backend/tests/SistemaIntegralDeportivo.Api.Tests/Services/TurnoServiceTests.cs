@@ -22,6 +22,7 @@ public class TurnoServiceTests
     private readonly Mock<ITurnoRepository> _turnos;
     private readonly Mock<IHorarioRepository> _horarios;
     private readonly Mock<IGrupoRepository> _grupos;
+    private readonly Mock<ICargoRepository> _cargos;
     private readonly TurnoService _service;
 
     public TurnoServiceTests()
@@ -29,7 +30,12 @@ public class TurnoServiceTests
         _turnos = new Mock<ITurnoRepository>();
         _horarios = new Mock<IHorarioRepository>();
         _grupos = new Mock<IGrupoRepository>();
-        _service = new TurnoService(_turnos.Object, _horarios.Object, _grupos.Object);
+        _cargos = new Mock<ICargoRepository>();
+        _service = new TurnoService(_turnos.Object, _horarios.Object, _grupos.Object, _cargos.Object);
+
+        // Por defecto: nadie debe nada
+        _cargos.Setup(c => c.ListarImpagosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([]);
 
         // Horario grupal: martes 18:00, 60'
         _horarios.Setup(h => h.ListarActivosAsync(It.IsAny<CancellationToken>()))
@@ -122,6 +128,74 @@ public class TurnoServiceTests
         Assert.NotNull(generado);
         Assert.Single(generado!.Participantes);
         Assert.Equal(AlumnoJuan, generado.Participantes.First().AlumnoId);
+    }
+
+    [Fact]
+    public async Task Semana_MarcaALosDeudoresEnElRoster()
+    {
+        // Turno con Juan y Sofía; Juan debe una clase de hace 2 meses (vencida)
+        var turno = new Turno
+        {
+            HorarioId = HorarioId,
+            Fecha = Lunes.AddDays(1),
+            HoraInicio = new TimeOnly(18, 0),
+            DuracionMinutos = 60,
+        };
+        turno.Participantes.Add(new TurnoParticipante { Turno = turno, AlumnoId = AlumnoJuan });
+        turno.Participantes.Add(new TurnoParticipante { Turno = turno, AlumnoId = AlumnaSofia });
+        _turnos.Setup(t => t.ListarEntreAsync(It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([turno]);
+        _cargos.Setup(c => c.ListarImpagosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([new Cargo
+               {
+                   AlumnoId = AlumnoJuan, Tipo = TipoCargo.Clase, Concepto = "x", Monto = 4_000m,
+                   Fecha = DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(-2),
+               }]);
+
+        var semana = await _service.ObtenerSemanaAsync(Lunes);
+
+        var dto = Assert.Single(semana, t => t.Participantes.Count == 2);
+        Assert.True(dto.Participantes.Single(p => p.AlumnoId == AlumnoJuan).DeudaVencida);
+        Assert.False(dto.Participantes.Single(p => p.AlumnoId == AlumnaSofia).DeudaVencida);
+    }
+
+    // ─────────────────────────────────────────────
+    // Generación por MES (la usa Cuotas para no depender del Calendario)
+    // ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task Mes_GeneraTodosLosTurnosDelMes_YSoloDelMes()
+    {
+        var generados = new List<Turno>();
+        _turnos.Setup(t => t.AgregarAsync(It.IsAny<Turno>(), It.IsAny<CancellationToken>()))
+               .Callback((Turno t, CancellationToken _) => generados.Add(t))
+               .Returns(Task.CompletedTask);
+
+        await _service.GenerarTurnosDelMesAsync(2026, 7);
+
+        // Martes de julio 2026: 7, 14, 21 y 28 — nada de junio ni agosto
+        Assert.Equal(4, generados.Count);
+        Assert.All(generados, t => Assert.Equal(7, t.Fecha.Month));
+        Assert.All(generados, t => Assert.Equal(DayOfWeek.Tuesday, t.Fecha.DayOfWeek));
+        Assert.All(generados, t => Assert.Equal(2, t.Participantes.Count)); // roster congelado
+        _turnos.Verify(t => t.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Mes_EsIdempotente_SoloGeneraLasFechasQueFaltan()
+    {
+        // El martes 14 ya tiene turno generado (lo materializó el Calendario)
+        _turnos.Setup(t => t.FechasGeneradasAsync(HorarioId, It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([new DateOnly(2026, 7, 14)]);
+        var generados = new List<Turno>();
+        _turnos.Setup(t => t.AgregarAsync(It.IsAny<Turno>(), It.IsAny<CancellationToken>()))
+               .Callback((Turno t, CancellationToken _) => generados.Add(t))
+               .Returns(Task.CompletedTask);
+
+        await _service.GenerarTurnosDelMesAsync(2026, 7);
+
+        Assert.Equal(3, generados.Count); // 7, 21 y 28: el 14 no se duplica
+        Assert.DoesNotContain(generados, t => t.Fecha == new DateOnly(2026, 7, 14));
     }
 
     // ─────────────────────────────────────────────

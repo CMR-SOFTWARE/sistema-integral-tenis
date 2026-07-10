@@ -14,6 +14,10 @@ public interface IHorarioService
 
     Task<IReadOnlyList<HorarioResponseDto>> ListarAsync(CancellationToken ct = default);
 
-    /// <summary>Desactiva la plantilla (los turnos ya generados no se tocan).</summary>
+    /// <summary>
+    /// Desactiva la plantilla y limpia el futuro: los turnos con fecha ≥ hoy
+    /// se borran junto con sus cargos impagos; los que tienen algún cargo
+    /// pagado se conservan (plata cobrada). Lo pasado es historia y no se toca.
+    /// </summary>
     Task DesactivarAsync(Guid id, CancellationToken ct = default);
 }
