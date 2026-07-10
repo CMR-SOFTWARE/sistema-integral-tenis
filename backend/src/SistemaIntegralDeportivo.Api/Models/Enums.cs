@@ -40,3 +40,10 @@ public enum RelacionTutor
     TutorLegal,
     Otro
 }
+
+/// <summary>Estado del turno concreto. Cancelado conserva motivo y fecha; nunca se borra.</summary>
+public enum EstadoTurno
+{
+    Programado,
+    Cancelado
+}

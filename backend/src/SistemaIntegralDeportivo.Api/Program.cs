@@ -19,6 +19,12 @@ builder.Services.AddScoped<IAlumnoService, AlumnoService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
 builder.Services.AddScoped<IGrupoRepository, GrupoRepository>();
 builder.Services.AddScoped<IGrupoService, GrupoService>();
+builder.Services.AddScoped<ISedeRepository, SedeRepository>();
+builder.Services.AddScoped<ISedeService, SedeService>();
+builder.Services.AddScoped<IHorarioRepository, HorarioRepository>();
+builder.Services.AddScoped<IHorarioService, HorarioService>();
+builder.Services.AddScoped<ITurnoRepository, TurnoRepository>();
+builder.Services.AddScoped<ITurnoService, TurnoService>();
 
 // Base de datos: EF Core sobre SQLite (la connection string vive en appsettings.json)
 builder.Services.AddDbContext<AppDbContext>(options =>

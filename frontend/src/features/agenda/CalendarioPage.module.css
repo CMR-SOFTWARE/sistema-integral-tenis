@@ -1,0 +1,150 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.nav {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 10px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--color-text-soft);
+  cursor: pointer;
+}
+
+.nav:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.rango {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hoy {
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+}
+
+.columna {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 13px;
+  padding: 10px;
+  min-height: 140px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.columnaHoy {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.columnaTitulo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+  text-align: center;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.libre {
+  text-align: center;
+  color: var(--color-border);
+  padding: 12px 0;
+}
+
+.turno {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 10px;
+  padding: 8px 9px;
+  font-size: 12px;
+  text-align: left;
+  background: var(--color-surface);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.turno:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(23, 138, 76, 0.12);
+}
+
+.turnoCancelado {
+  opacity: 0.55;
+  background: var(--color-surface-subtle);
+}
+
+.turnoCancelado .turnoTitulo {
+  text-decoration: line-through;
+}
+
+.turnoHora {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.turnoTitulo {
+  font-weight: 700;
+  margin: 3px 0;
+}
+
+.turnoDetalle {
+  color: var(--color-text-faint);
+  font-size: 11px;
+}
+
+.vacio,
+.vacioCard {
+  padding: 32px;
+  text-align: center;
+  color: var(--color-text-faint);
+  font-size: 14px;
+}
+
+.vacioCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  margin-top: 16px;
+  line-height: 1.6;
+}
+
+.error {
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}

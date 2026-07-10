@@ -5,6 +5,9 @@ import AlumnosPage from './features/alumnos/AlumnosPage';
 import LoginPage from './features/auth/LoginPage';
 import DashboardPage from './features/dashboard/DashboardPage';
 import GruposPage from './features/grupos/GruposPage';
+import CalendarioPage from './features/agenda/CalendarioPage';
+import HorariosPage from './features/agenda/HorariosPage';
+import ConfiguracionPage from './features/agenda/ConfiguracionPage';
 
 /**
  * Guardián del shell: sin "sesión" demo elegida, va al login. Cuando haya
@@ -27,14 +30,14 @@ export default function App() {
             <Route index element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/alumnos" element={<AlumnosPage />} />
-            <Route path="/calendario" element={<Placeholder titulo="Calendario" />} />
+            <Route path="/calendario" element={<CalendarioPage />} />
             <Route path="/grupos" element={<GruposPage />} />
-            <Route path="/horarios" element={<Placeholder titulo="Horarios" />} />
+            <Route path="/horarios" element={<HorariosPage />} />
             <Route path="/cuotas" element={<Placeholder titulo="Cuotas" />} />
             <Route path="/bloqueos" element={<Placeholder titulo="Bloqueos" />} />
             <Route path="/cancelaciones" element={<Placeholder titulo="Cancelaciones" />} />
             <Route path="/reportes" element={<Placeholder titulo="Reportes" />} />
-            <Route path="/configuracion" element={<Placeholder titulo="Configuración" />} />
+            <Route path="/configuracion" element={<ConfiguracionPage />} />
           </Route>
         </Route>
 
