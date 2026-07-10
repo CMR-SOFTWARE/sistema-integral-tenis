@@ -45,6 +45,8 @@ export interface ParticipanteTurno {
   nombre: string;
   apellido: string;
   presente: boolean;
+  /** Cuota vencida (pasó el día 10 sin pagar): señal para el profe. */
+  deudaVencida: boolean;
 }
 
 export interface Turno {

@@ -21,4 +21,6 @@ public class AlumnoResponseDto
     public string? Notas { get; set; }
     public Guid? TutorId { get; set; }
     public DateTime CreadoEl { get; set; }
+    /// <summary>Señal de morosidad (cuota vencida = pasó el día 10 sin pagar).</summary>
+    public bool DeudaVencida { get; set; }
 }

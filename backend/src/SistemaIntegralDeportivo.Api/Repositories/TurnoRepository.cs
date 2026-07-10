@@ -38,12 +38,22 @@ public class TurnoRepository : ITurnoRepository
             .Include(t => t.Participantes)
             .FirstOrDefaultAsync(t => t.TenantId == TenantId && t.Id == id, ct);
 
+    public async Task<IReadOnlyList<Turno>> ListarPorHorarioDesdeAsync(
+        Guid horarioId, DateOnly desde, CancellationToken ct = default) =>
+        await _db.Turnos
+            .Include(t => t.Participantes)
+            .Where(t => t.TenantId == TenantId && t.HorarioId == horarioId && t.Fecha >= desde)
+            .ToListAsync(ct);
+
     public Task AgregarAsync(Turno turno, CancellationToken ct = default)
     {
         turno.TenantId = TenantId;
         _db.Turnos.Add(turno);
         return Task.CompletedTask; // se persiste con GuardarCambiosAsync (una sola transacción por semana)
     }
+
+    public void Eliminar(Turno turno) =>
+        _db.Turnos.Remove(turno); // los participantes caen en cascada
 
     public Task GuardarCambiosAsync(CancellationToken ct = default) =>
         _db.SaveChangesAsync(ct);

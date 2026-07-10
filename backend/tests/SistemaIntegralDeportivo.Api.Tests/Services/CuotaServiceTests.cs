@@ -24,6 +24,7 @@ public class CuotaServiceTests
     private readonly Mock<ICargoRepository> _cargos;
     private readonly Mock<ITurnoRepository> _turnos;
     private readonly Mock<ITenantRepository> _tenant;
+    private readonly Mock<ITurnoService> _turnoService;
     private readonly CuotaService _service;
     private readonly List<Cargo> _agregados = [];
 
@@ -32,7 +33,8 @@ public class CuotaServiceTests
         _cargos = new Mock<ICargoRepository>();
         _turnos = new Mock<ITurnoRepository>();
         _tenant = new Mock<ITenantRepository>();
-        _service = new CuotaService(_cargos.Object, _turnos.Object, _tenant.Object);
+        _turnoService = new Mock<ITurnoService>();
+        _service = new CuotaService(_cargos.Object, _turnos.Object, _tenant.Object, _turnoService.Object);
 
         // Tenant con los precios configurados (base real: $16.000)
         _tenant.Setup(t => t.ObtenerActualAsync(It.IsAny<CancellationToken>()))
@@ -135,6 +137,46 @@ public class CuotaServiceTests
     }
 
     [Fact]
+    public async Task Mes_ClaseIndividual_De30Min_ProrrateaPorDuracion()
+    {
+        // El precio configurado es POR HORA: 30' = la mitad
+        var turno = TurnoIndividual(Juan);
+        turno.DuracionMinutos = 30;
+        _turnos.Setup(t => t.ListarEntreAsync(It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([turno]);
+
+        await _service.ObtenerMesAsync(2026, 7);
+
+        var cargo = Assert.Single(_agregados);
+        Assert.Equal(8_000m, cargo.Monto); // 16.000 × (30 ÷ 60)
+    }
+
+    [Fact]
+    public async Task Mes_ClaseGrupal_De90Min_ProrrateaPorDuracion_YDivideEntreAsignados()
+    {
+        // Hora y media de grupo de 4: 16.000 × 1,5 ÷ 4 = $6.000 cada uno
+        var turno = TurnoGrupal((Juan, true), (Sofia, true), (Mateo, true), (Vale, true));
+        turno.DuracionMinutos = 90;
+        _turnos.Setup(t => t.ListarEntreAsync(It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([turno]);
+
+        await _service.ObtenerMesAsync(2026, 7);
+
+        Assert.Equal(4, _agregados.Count);
+        Assert.All(_agregados, c => Assert.Equal(6_000m, c.Monto));
+    }
+
+    [Fact]
+    public async Task Mes_MaterializaLosTurnosDelMes_AntesDeLiquidar()
+    {
+        // Cuotas no depende de que hayas visitado el Calendario: genera lo que falte
+        await _service.ObtenerMesAsync(2026, 7);
+
+        _turnoService.Verify(
+            s => s.GenerarTurnosDelMesAsync(2026, 7, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task Mes_TurnoCancelado_NoGeneraCargo()
     {
         var cancelado = TurnoGrupal((Juan, true), (Sofia, true));
@@ -233,6 +275,30 @@ public class CuotaServiceTests
 
         await Assert.ThrowsAsync<ReglaDeNegocioException>(
             () => _service.PagarCargoAsync(cargo.Id, MedioPago.Efectivo));
+    }
+
+    // ─────────────────────────────────────────────
+    // Morosidad: nadie toma clases NUEVAS con la cuota vencida
+    // ─────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("2026-06-15", "2026-07-05", true)]  // impago de junio visto en julio: vencido
+    [InlineData("2026-07-03", "2026-07-05", false)] // impago del mes en curso antes del 10: todavía no
+    [InlineData("2026-07-03", "2026-07-11", true)]  // pasó el día 10 sin pagar: vencido
+    public void TieneDeudaVencida_RespetaElDia10DelMesDelCargo(string fechaCargo, string hoyIso, bool esperado)
+    {
+        var impagos = new[]
+        {
+            new Cargo { AlumnoId = Juan, Tipo = TipoCargo.Clase, Concepto = "x", Monto = 4_000m, Fecha = DateOnly.Parse(fechaCargo) },
+        };
+
+        Assert.Equal(esperado, CuotaService.TieneDeudaVencida(impagos, DateOnly.Parse(hoyIso)));
+    }
+
+    [Fact]
+    public void TieneDeudaVencida_SinImpagos_EsFalse()
+    {
+        Assert.False(CuotaService.TieneDeudaVencida([], new DateOnly(2026, 7, 20)));
     }
 
     // ─────────────────────────────────────────────

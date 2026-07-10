@@ -15,6 +15,7 @@ public class GrupoServiceTests
 {
     private readonly Mock<IGrupoRepository> _grupos;
     private readonly Mock<IAlumnoRepository> _alumnos;
+    private readonly Mock<ICargoRepository> _cargos;
     private readonly GrupoService _service;
 
     private static readonly Guid GrupoId = Guid.NewGuid();
@@ -24,7 +25,12 @@ public class GrupoServiceTests
     {
         _grupos = new Mock<IGrupoRepository>();
         _alumnos = new Mock<IAlumnoRepository>();
-        _service = new GrupoService(_grupos.Object, _alumnos.Object);
+        _cargos = new Mock<ICargoRepository>();
+        _service = new GrupoService(_grupos.Object, _alumnos.Object, _cargos.Object);
+
+        // Por defecto: nadie debe nada
+        _cargos.Setup(c => c.ListarImpagosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([]);
 
         // Escenario base feliz: grupo con cupo 4 y 2 miembros, alumno activo sin membresía
         _grupos.Setup(g => g.ObtenerAsync(GrupoId, It.IsAny<CancellationToken>()))
@@ -105,6 +111,23 @@ public class GrupoServiceTests
 
         await Assert.ThrowsAsync<ReglaDeNegocioException>(
             () => _service.AsignarAlumnoAsync(GrupoId, AlumnoId));
+    }
+
+    [Fact]
+    public async Task Asignar_ConCuotaVencida_Lanza()
+    {
+        // Debe una clase de hace 2 meses: no puede sumarse a clases nuevas
+        _cargos.Setup(c => c.ListarImpagosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([new Cargo
+               {
+                   AlumnoId = AlumnoId, Tipo = TipoCargo.Clase, Concepto = "x", Monto = 4_000m,
+                   Fecha = DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(-2),
+               }]);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.AsignarAlumnoAsync(GrupoId, AlumnoId));
+
+        _grupos.Verify(g => g.AgregarMembresiaAsync(It.IsAny<AlumnoGrupo>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

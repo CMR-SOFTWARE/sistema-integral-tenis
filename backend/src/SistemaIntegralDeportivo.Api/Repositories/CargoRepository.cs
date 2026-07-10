@@ -30,12 +30,27 @@ public class CargoRepository : ICargoRepository
     public Task<Cargo?> ObtenerAsync(Guid id, CancellationToken ct = default) =>
         _db.Cargos.FirstOrDefaultAsync(c => c.TenantId == TenantId && c.Id == id, ct);
 
+    public async Task<IReadOnlyList<Cargo>> ListarPorTurnosAsync(
+        IReadOnlyCollection<Guid> turnoIds, CancellationToken ct = default) =>
+        await _db.Cargos
+            .Where(c => c.TenantId == TenantId && c.TurnoId != null && turnoIds.Contains(c.TurnoId.Value))
+            .ToListAsync(ct);
+
+    public async Task<IReadOnlyList<Cargo>> ListarImpagosAsync(
+        IReadOnlyCollection<Guid> alumnoIds, CancellationToken ct = default) =>
+        await _db.Cargos
+            .Where(c => c.TenantId == TenantId && c.PagadoEl == null && alumnoIds.Contains(c.AlumnoId))
+            .ToListAsync(ct);
+
     public async Task AgregarAsync(Cargo cargo, CancellationToken ct = default)
     {
         cargo.TenantId = TenantId;
         _db.Cargos.Add(cargo);
         await Task.CompletedTask; // se persiste con GuardarCambiosAsync (misma transacción)
     }
+
+    public void Eliminar(Cargo cargo) =>
+        _db.Cargos.Remove(cargo);
 
     public Task GuardarCambiosAsync(CancellationToken ct = default) =>
         _db.SaveChangesAsync(ct);

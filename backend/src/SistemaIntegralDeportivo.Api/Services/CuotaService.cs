@@ -13,12 +13,15 @@ public class CuotaService : ICuotaService
     private readonly ICargoRepository _cargos;
     private readonly ITurnoRepository _turnos;
     private readonly ITenantRepository _tenant;
+    private readonly ITurnoService _turnoService;
 
-    public CuotaService(ICargoRepository cargos, ITurnoRepository turnos, ITenantRepository tenant)
+    public CuotaService(
+        ICargoRepository cargos, ITurnoRepository turnos, ITenantRepository tenant, ITurnoService turnoService)
     {
         _cargos = cargos;
         _turnos = turnos;
         _tenant = tenant;
+        _turnoService = turnoService;
     }
 
     public async Task<LiquidacionMesDto> ObtenerMesAsync(int anio, int mes, CancellationToken ct = default)
@@ -26,6 +29,10 @@ public class CuotaService : ICuotaService
         var tenant = await _tenant.ObtenerActualAsync(ct);
         var primerDia = new DateOnly(anio, mes, 1);
         var ultimoDia = primerDia.AddMonths(1).AddDays(-1);
+
+        // Materializar los turnos del mes ANTES de liquidar: la cuota no
+        // depende de que se haya paseado por el Calendario semana a semana
+        await _turnoService.GenerarTurnosDelMesAsync(anio, mes, ct);
 
         // ── Generación perezosa de cargos de clase (idempotente) ──
         var turnos = await _turnos.ListarEntreAsync(primerDia, ultimoDia, ct);
@@ -42,24 +49,27 @@ public class CuotaService : ICuotaService
             if (turno.Estado == EstadoTurno.Cancelado) continue;
             if (turno.Participantes.Count == 0) continue;
 
-            // La fórmula (modelo-precios.md): individual entera;
-            // grupal = valor hora ÷ ASIGNADOS (el ausente paga igual)
+            // La fórmula (modelo-precios.md): ambos precios son POR HORA y se
+            // prorratean por la duración del turno; grupal además se divide
+            // entre los ASIGNADOS (el ausente paga igual)
             var esIndividual = turno.Horario?.AlumnoId is not null;
+            var factorDuracion = turno.DuracionMinutos / 60m;
             decimal monto;
             string concepto;
             if (esIndividual)
             {
-                monto = tenant.ValorClaseIndividual
+                var valorHora = tenant.ValorClaseIndividual
                     ?? throw new ReglaDeNegocioException(
-                        "Configurá el valor de la clase individual antes de liquidar (Configuración).");
-                concepto = "Clase individual";
+                        "Configurá el valor hora de la clase individual antes de liquidar (Configuración).");
+                monto = Math.Round(valorHora * factorDuracion, 2);
+                concepto = $"Clase individual ({turno.DuracionMinutos}')";
             }
             else
             {
                 var valorHora = tenant.ValorHoraGrupal
                     ?? throw new ReglaDeNegocioException(
                         "Configurá el valor hora grupal antes de liquidar (Configuración).");
-                monto = Math.Round(valorHora / turno.Participantes.Count, 2);
+                monto = Math.Round(valorHora * factorDuracion / turno.Participantes.Count, 2);
                 concepto = $"Clase grupal — {turno.Horario?.Grupo?.Nombre ?? "grupo"} ({turno.Participantes.Count})";
             }
 
@@ -178,6 +188,14 @@ public class CuotaService : ICuotaService
         cargo.MedioPago = medio;
         await _cargos.GuardarCambiosAsync(ct);
     }
+
+    /// <summary>
+    /// Morosidad: true si algún cargo impago pertenece a un mes cuya
+    /// liquidación ya venció (día 10). Bloquea asignaciones NUEVAS (grupo u
+    /// horario individual); las clases ya asignadas siguen y se cobran igual.
+    /// </summary>
+    public static bool TieneDeudaVencida(IEnumerable<Cargo> cargosImpagos, DateOnly hoy) =>
+        cargosImpagos.Any(c => CalcularEstado(c.Fecha.Year, c.Fecha.Month, saldo: 1m, hoy) == "Vencida");
 
     /// <summary>
     /// Estado de la liquidación, CALCULADO (nunca guardado): Pagada si no

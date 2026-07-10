@@ -10,12 +10,15 @@ public class TurnoService : ITurnoService
     private readonly ITurnoRepository _turnos;
     private readonly IHorarioRepository _horarios;
     private readonly IGrupoRepository _grupos;
+    private readonly ICargoRepository _cargos;
 
-    public TurnoService(ITurnoRepository turnos, IHorarioRepository horarios, IGrupoRepository grupos)
+    public TurnoService(
+        ITurnoRepository turnos, IHorarioRepository horarios, IGrupoRepository grupos, ICargoRepository cargos)
     {
         _turnos = turnos;
         _horarios = horarios;
         _grupos = grupos;
+        _cargos = cargos;
     }
 
     public async Task<IReadOnlyList<TurnoResponseDto>> ObtenerSemanaAsync(
@@ -24,58 +27,98 @@ public class TurnoService : ITurnoService
         var domingo = lunes.AddDays(6);
 
         // Generación perezosa: materializar lo que falte de esta semana
+        if (await GenerarFaltantesAsync(lunes, domingo, ct))
+            await _turnos.GuardarCambiosAsync(ct);
+
+        var turnosSemana = await _turnos.ListarEntreAsync(lunes, domingo, ct);
+        var deudores = await DeudoresDeAsync(turnosSemana, ct);
+        return turnosSemana
+            .OrderBy(t => t.Fecha).ThenBy(t => t.HoraInicio)
+            .Select(t => Mapear(t, deudores))
+            .ToList();
+    }
+
+    /// <summary>Alumnos del roster con cuota vencida (señal para el profe, no mueve plata).</summary>
+    private async Task<HashSet<Guid>> DeudoresDeAsync(IReadOnlyList<Turno> turnos, CancellationToken ct)
+    {
+        var alumnoIds = turnos
+            .SelectMany(t => t.Participantes)
+            .Select(p => p.AlumnoId)
+            .Distinct()
+            .ToList();
+        if (alumnoIds.Count == 0) return [];
+
+        var impagos = await _cargos.ListarImpagosAsync(alumnoIds, ct);
+        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+        return impagos
+            .GroupBy(c => c.AlumnoId)
+            .Where(g => CuotaService.TieneDeudaVencida(g, hoy))
+            .Select(g => g.Key)
+            .ToHashSet();
+    }
+
+    public async Task GenerarTurnosDelMesAsync(int anio, int mes, CancellationToken ct = default)
+    {
+        var primerDia = new DateOnly(anio, mes, 1);
+        var ultimoDia = primerDia.AddMonths(1).AddDays(-1);
+
+        if (await GenerarFaltantesAsync(primerDia, ultimoDia, ct))
+            await _turnos.GuardarCambiosAsync(ct);
+    }
+
+    /// <summary>
+    /// Materializa los turnos que falten en [desde, hasta] desde los horarios
+    /// activos. Idempotente: las fechas ya generadas no se tocan (refuerzo
+    /// extra: índice único HorarioId+Fecha en la base). NO guarda: el caller
+    /// decide cuándo persistir. Devuelve si generó alguno.
+    /// </summary>
+    private async Task<bool> GenerarFaltantesAsync(DateOnly desde, DateOnly hasta, CancellationToken ct)
+    {
         var horarios = await _horarios.ListarActivosAsync(ct);
         var generoAlguno = false;
 
         foreach (var horario in horarios)
         {
-            // Fecha concreta del día del horario dentro de esta semana
-            var offset = ((int)horario.Dia - (int)DayOfWeek.Monday + 7) % 7;
-            var fecha = lunes.AddDays(offset);
-
-            // Idempotencia: si ya existe el turno de esa fecha, no se toca
-            // (refuerzo extra: índice único HorarioId+Fecha en la base)
-            var yaGeneradas = await _turnos.FechasGeneradasAsync(horario.Id, lunes, domingo, ct);
-            if (yaGeneradas.Contains(fecha)) continue;
-
-            var turno = new Turno
-            {
-                HorarioId = horario.Id,
-                CanchaId = horario.CanchaId,
-                Fecha = fecha,
-                HoraInicio = horario.HoraInicio,
-                DuracionMinutos = horario.DuracionMinutos,
-                // TenantId lo asigna el repositorio
-            };
+            var yaGeneradas = await _turnos.FechasGeneradasAsync(horario.Id, desde, hasta, ct);
 
             // Roster CONGELADO al generar (fija el divisor del precio):
             // grupal → miembros activos del grupo; individual → ese alumno
+            List<Guid> roster = [];
             if (horario.GrupoId is not null)
             {
                 var grupo = await _grupos.ObtenerAsync(horario.GrupoId.Value, ct);
                 if (grupo is not null)
-                {
-                    foreach (var m in grupo.Alumnos.Where(x => x.FechaBaja is null))
-                        turno.Participantes.Add(new TurnoParticipante { Turno = turno, AlumnoId = m.AlumnoId });
-                }
+                    roster = [.. grupo.Alumnos.Where(x => x.FechaBaja is null).Select(x => x.AlumnoId)];
             }
             else if (horario.AlumnoId is not null)
             {
-                turno.Participantes.Add(new TurnoParticipante { Turno = turno, AlumnoId = horario.AlumnoId.Value });
+                roster = [horario.AlumnoId.Value];
             }
 
-            await _turnos.AgregarAsync(turno, ct);
-            generoAlguno = true;
+            // Primera fecha del rango que cae en el día del horario, y de ahí de a 7
+            var offset = ((int)horario.Dia - (int)desde.DayOfWeek + 7) % 7;
+            for (var fecha = desde.AddDays(offset); fecha <= hasta; fecha = fecha.AddDays(7))
+            {
+                if (yaGeneradas.Contains(fecha)) continue;
+
+                var turno = new Turno
+                {
+                    HorarioId = horario.Id,
+                    CanchaId = horario.CanchaId,
+                    Fecha = fecha,
+                    HoraInicio = horario.HoraInicio,
+                    DuracionMinutos = horario.DuracionMinutos,
+                    // TenantId lo asigna el repositorio
+                };
+                foreach (var alumnoId in roster)
+                    turno.Participantes.Add(new TurnoParticipante { Turno = turno, AlumnoId = alumnoId });
+
+                await _turnos.AgregarAsync(turno, ct);
+                generoAlguno = true;
+            }
         }
 
-        if (generoAlguno)
-            await _turnos.GuardarCambiosAsync(ct);
-
-        var turnosSemana = await _turnos.ListarEntreAsync(lunes, domingo, ct);
-        return turnosSemana
-            .OrderBy(t => t.Fecha).ThenBy(t => t.HoraInicio)
-            .Select(Mapear)
-            .ToList();
+        return generoAlguno;
     }
 
     public async Task MarcarAsistenciaAsync(
@@ -107,7 +150,7 @@ public class TurnoService : ITurnoService
         await _turnos.GuardarCambiosAsync(ct);
     }
 
-    private static TurnoResponseDto Mapear(Turno t) => new()
+    private static TurnoResponseDto Mapear(Turno t, HashSet<Guid> deudores) => new()
     {
         Id = t.Id,
         Fecha = t.Fecha,
@@ -127,6 +170,7 @@ public class TurnoService : ITurnoService
             Nombre = p.Alumno?.Nombre ?? string.Empty,
             Apellido = p.Alumno?.Apellido ?? string.Empty,
             Presente = p.Presente,
+            DeudaVencida = deudores.Contains(p.AlumnoId),
         }).ToList(),
     };
 }

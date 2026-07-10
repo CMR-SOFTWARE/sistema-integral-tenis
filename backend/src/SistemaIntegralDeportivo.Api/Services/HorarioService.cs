@@ -8,10 +8,14 @@ namespace SistemaIntegralDeportivo.Api.Services;
 public class HorarioService : IHorarioService
 {
     private readonly IHorarioRepository _horarios;
+    private readonly ITurnoRepository _turnos;
+    private readonly ICargoRepository _cargos;
 
-    public HorarioService(IHorarioRepository horarios)
+    public HorarioService(IHorarioRepository horarios, ITurnoRepository turnos, ICargoRepository cargos)
     {
         _horarios = horarios;
+        _turnos = turnos;
+        _cargos = cargos;
     }
 
     public async Task<HorarioResponseDto> CrearAsync(CreateHorarioDto dto, CancellationToken ct = default)
@@ -22,6 +26,15 @@ public class HorarioService : IHorarioService
         if (tieneGrupo == tieneAlumno) // ambos o ninguno
             throw new ReglaDeNegocioException(
                 "El horario debe apuntar a un grupo O a un alumno individual (exactamente uno).");
+
+        // Regla: nadie toma clases NUEVAS con la cuota vencida (las ya asignadas siguen)
+        if (dto.AlumnoId is not null)
+        {
+            var impagos = await _cargos.ListarImpagosAsync([dto.AlumnoId.Value], ct);
+            if (CuotaService.TieneDeudaVencida(impagos, DateOnly.FromDateTime(DateTime.UtcNow)))
+                throw new ReglaDeNegocioException(
+                    "El alumno tiene la cuota vencida: registrá el pago en Cuotas antes de asignarle clases nuevas.");
+        }
 
         // Regla: sin solapamiento en la MISMA cancha (mismo día, rangos que se pisan)
         var fin = dto.HoraInicio.AddMinutes(dto.DuracionMinutos);
@@ -58,9 +71,28 @@ public class HorarioService : IHorarioService
         var horario = await _horarios.ObtenerAsync(id, ct)
             ?? throw new ReglaDeNegocioException("El horario no existe.");
 
-        // Los turnos ya generados no se tocan (historia); solo se apaga la plantilla
         horario.Activo = false;
-        await _horarios.GuardarCambiosAsync(ct);
+
+        // Lo pasado es historia y no se toca. Lo futuro (≥ hoy) se limpia para
+        // no dejar facturado algo que ya no va a ocurrir — salvo turnos con
+        // algún cargo PAGADO: la plata cobrada no se rompe.
+        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+        var futuros = await _turnos.ListarPorHorarioDesdeAsync(id, hoy, ct);
+        if (futuros.Count > 0)
+        {
+            var cargos = await _cargos.ListarPorTurnosAsync(futuros.Select(t => t.Id).ToList(), ct);
+            var porTurno = cargos.ToLookup(c => c.TurnoId!.Value);
+            foreach (var turno in futuros)
+            {
+                if (porTurno[turno.Id].Any(c => c.PagadoEl is not null)) continue;
+
+                foreach (var cargo in porTurno[turno.Id])
+                    _cargos.Eliminar(cargo);
+                _turnos.Eliminar(turno);
+            }
+        }
+
+        await _horarios.GuardarCambiosAsync(ct); // mismo DbContext: persiste todo junto
     }
 
     private static HorarioResponseDto Mapear(Horario h) => new()
