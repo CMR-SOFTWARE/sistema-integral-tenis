@@ -38,6 +38,17 @@ public class TurnoRepository : ITurnoRepository
             .Include(t => t.Participantes)
             .FirstOrDefaultAsync(t => t.TenantId == TenantId && t.Id == id, ct);
 
+    public async Task<IReadOnlyList<Turno>> ListarPorAlumnoEntreAsync(
+        Guid alumnoId, DateOnly desde, DateOnly hasta, CancellationToken ct = default) =>
+        await _db.Turnos
+            .AsNoTracking()
+            .Include(t => t.Cancha).ThenInclude(c => c.Sede)
+            .Include(t => t.Horario).ThenInclude(h => h.Grupo)
+            .Include(t => t.Participantes).ThenInclude(p => p.Alumno) // compañeros
+            .Where(t => t.Fecha >= desde && t.Fecha <= hasta &&
+                        t.Participantes.Any(p => p.AlumnoId == alumnoId))
+            .ToListAsync(ct);
+
     public async Task<IReadOnlyList<Turno>> ListarPorHorarioDesdeAsync(
         Guid horarioId, DateOnly desde, CancellationToken ct = default) =>
         await _db.Turnos
