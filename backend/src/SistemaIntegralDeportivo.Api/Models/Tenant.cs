@@ -15,6 +15,10 @@ public class Tenant
     public bool Activo { get; set; } = true;
     public DateTime CreadoEl { get; set; } = DateTime.UtcNow;
 
+    // ── Auth: el usuario dueño del negocio (su rol Profesor en ESTE tenant).
+    //    Membresía mínima del ADR-0007; Staff y demás roles, en fases futuras. ──
+    public Guid? OwnerUserId { get; set; }
+
     // ── Precios (config del profe; null = todavía no configurado) ──
     // La fórmula (modelo-precios.md): grupal se divide entre los ASIGNADOS
     // del turno; individual la paga entera el alumno.

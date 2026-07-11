@@ -3,6 +3,8 @@
 // reenvía a Kestrel (localhost:5223) en desarrollo, así el navegador ve
 // un solo origen y no hay fricción de CORS en dev.
 
+import { cerrarSesion, obtenerToken } from '../features/auth/sesion';
+
 const BASE = '/api';
 
 export class ApiError extends Error {
@@ -17,10 +19,21 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = obtenerToken();
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     ...init,
   });
+
+  // Token vencido o inválido: a login de nuevo (si NO había token era un
+  // login fallido y el error se muestra en el formulario, no acá)
+  if (res.status === 401 && token) {
+    cerrarSesion();
+    window.location.href = '/login';
+  }
 
   if (!res.ok) {
     // ASP.NET devuelve ProblemDetails (JSON) en errores; intentamos leerlo

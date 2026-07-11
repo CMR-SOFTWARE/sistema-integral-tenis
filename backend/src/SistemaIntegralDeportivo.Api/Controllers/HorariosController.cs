@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaIntegralDeportivo.Api.Common;
 using SistemaIntegralDeportivo.Api.Dtos;
@@ -6,6 +7,7 @@ using SistemaIntegralDeportivo.Api.Services;
 namespace SistemaIntegralDeportivo.Api.Controllers;
 
 [ApiController]
+[Authorize(Policy = "Profesor")]
 [Route("api/horarios")]
 public class HorariosController : ControllerBase
 {

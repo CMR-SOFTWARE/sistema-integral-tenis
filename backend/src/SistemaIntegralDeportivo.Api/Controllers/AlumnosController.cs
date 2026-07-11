@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaIntegralDeportivo.Api.Common;
 using SistemaIntegralDeportivo.Api.Dtos;
@@ -11,6 +12,7 @@ namespace SistemaIntegralDeportivo.Api.Controllers;
 /// Acá NO hay reglas de negocio ni acceso a datos.
 /// </summary>
 [ApiController]
+[Authorize(Policy = "Profesor")]
 [Route("api/alumnos")]
 public class AlumnosController : ControllerBase
 {

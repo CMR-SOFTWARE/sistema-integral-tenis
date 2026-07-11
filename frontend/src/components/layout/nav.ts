@@ -48,3 +48,16 @@ export const profNav: NavItem[] = [
 export const pageTitles: Record<string, string> = Object.fromEntries(
   profNav.map((item) => [item.to, item.label]),
 );
+
+// ── Portal del alumno (las 4 secciones del mockup) ──
+
+export const alumnoNav: NavItem[] = [
+  { to: '/portal', label: 'Inicio', icon: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z' },
+  { to: '/portal/turnos', label: 'Mis turnos', icon: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4' },
+  { to: '/portal/cuota', label: 'Mi cuota', icon: 'M1 5h22v14H1zM1 10h22' },
+  { to: '/portal/perfil', label: 'Mi perfil', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0' },
+];
+
+export const portalTitles: Record<string, string> = Object.fromEntries(
+  alumnoNav.map((item) => [item.to, item.label]),
+);

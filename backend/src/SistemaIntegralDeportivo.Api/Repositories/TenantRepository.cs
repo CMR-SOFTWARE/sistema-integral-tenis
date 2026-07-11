@@ -18,4 +18,7 @@ public class TenantRepository : ITenantRepository
 
     public Task GuardarCambiosAsync(CancellationToken ct = default) =>
         _db.SaveChangesAsync(ct);
+
+    public Task<bool> EsDuenioAsync(Guid userId, CancellationToken ct = default) =>
+        _db.Tenants.AnyAsync(t => t.OwnerUserId == userId, ct);
 }

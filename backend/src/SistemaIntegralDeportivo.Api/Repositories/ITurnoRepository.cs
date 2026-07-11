@@ -19,6 +19,10 @@ public interface ITurnoRepository
     Task<IReadOnlyList<Turno>> ListarPorHorarioDesdeAsync(
         Guid horarioId, DateOnly desde, CancellationToken ct = default);
 
+    /// <summary>Turnos donde PARTICIPA un alumno, en un rango (portal alumno).</summary>
+    Task<IReadOnlyList<Turno>> ListarPorAlumnoEntreAsync(
+        Guid alumnoId, DateOnly desde, DateOnly hasta, CancellationToken ct = default);
+
     Task AgregarAsync(Turno turno, CancellationToken ct = default);
 
     /// <summary>Marca el turno para borrar (se persiste con GuardarCambiosAsync).</summary>

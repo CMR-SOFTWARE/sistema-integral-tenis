@@ -1,9 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaIntegralDeportivo.Api.Services;
 
 namespace SistemaIntegralDeportivo.Api.Controllers;
 
 [ApiController]
+[Authorize(Policy = "Profesor")]
 [Route("api/configuracion")]
 public class ConfiguracionController : ControllerBase
 {
