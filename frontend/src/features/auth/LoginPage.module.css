@@ -236,6 +236,99 @@
   text-align: center;
 }
 
+/* ── Formularios de login / registro ── */
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.campo > span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-soft);
+}
+
+.campo input {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+}
+
+.campo input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.dosCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.btnEntrar {
+  width: 100%;
+  margin-top: 6px;
+  padding: 13px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-dark);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.btnEntrar:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.linkCambio {
+  display: block;
+  width: 100%;
+  margin-top: 18px;
+  padding: 10px;
+  border: none;
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  text-align: center;
+}
+
+.linkCambio b {
+  color: var(--color-primary-dark);
+}
+
+.error {
+  margin-bottom: 14px;
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: 10px 13px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* ── Vincular: corregir datos y volver a buscar ── */
+.vincularDatos {
+  margin-top: 20px;
+  padding-top: 18px;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.vincularTexto {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
 /* En pantallas chicas, solo el panel de login */
 @media (max-width: 900px) {
   .pantalla {

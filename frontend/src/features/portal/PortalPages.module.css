@@ -1,0 +1,481 @@
+/* Páginas del portal alumno (mockup CourtSet, rol alumno). */
+
+/* ── Base compartida ── */
+.tarjeta {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+.tarjetaTitulo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  margin: 0 0 12px;
+}
+
+.seccion {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.01em;
+  margin: 26px 0 12px;
+}
+
+.seccion:first-child {
+  margin-top: 0;
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vacio {
+  padding: 18px 4px;
+  color: var(--color-text-faint);
+  font-size: 14px;
+}
+
+.error {
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: 11px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+.nota {
+  margin: 12px 2px 0;
+  font-size: 12px;
+  color: var(--color-text-faint);
+}
+
+.chip {
+  display: inline-block;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chipVerde { background: #e7f6ec; color: #0e6b3c; }
+.chipAmbar { background: #fef6e7; color: #b7791f; }
+.chipRojo  { background: #fdeaea; color: #b91c1c; }
+.chipGris  { background: #f3f4f6; color: #6b7280; }
+
+.chipCat {
+  padding: 3px 8px;
+  border-radius: 7px;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* ── Inicio ── */
+.inicioGrilla {
+  display: grid;
+  grid-template-columns: 1.7fr 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: radial-gradient(circle at 82% 85%, #1ea35a 0%, #137a43 52%, #0d5e34 100%);
+  color: #fff;
+  padding: 30px 30px 44px;
+  min-height: 200px;
+}
+
+.heroPelota {
+  position: absolute;
+  right: -50px;
+  bottom: -70px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #d8fb5b, #b6e83a);
+  opacity: 0.9;
+}
+
+.heroEyebrow {
+  font: 700 12px/1 var(--font-display);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #cdf57f;
+  margin-bottom: 16px;
+}
+
+.heroFecha {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 46px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin-bottom: 10px;
+}
+
+.heroDetalle {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.heroCompaneros {
+  margin-top: 10px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.cuotaMonto {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 34px;
+  letter-spacing: -0.02em;
+  margin-bottom: 10px;
+}
+
+.cuotaVence {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.btnPrimario {
+  display: block;
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-dark);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  text-align: center;
+  text-decoration: none;
+}
+
+.horariosLista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.horarioFila {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.horarioDia {
+  width: 56px;
+  flex: none;
+  text-align: center;
+}
+
+.horarioDiaNombre {
+  font: 800 11px/1.2 var(--font-display);
+  letter-spacing: 0.06em;
+  color: var(--color-primary-dark);
+}
+
+.horarioHora {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 17px;
+}
+
+.horarioInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.horarioTitulo {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.horarioDetalle {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* ── Mis turnos ── */
+.turno {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+}
+
+.turnoCancelado {
+  opacity: 0.65;
+}
+
+.turnoHoraGrande {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 21px;
+  letter-spacing: -0.02em;
+}
+
+.turnoInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.turnoTituloFila {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.turnoTitulo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.turnoDetalle {
+  margin-top: 3px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.historialFila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 2px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: 14px;
+}
+
+.historialFila:last-child {
+  border-bottom: none;
+}
+
+.historialFecha {
+  font-weight: 700;
+}
+
+.historialTitulo {
+  flex: 1;
+  min-width: 0;
+  color: var(--color-text-muted);
+}
+
+/* ── Mi cuota ── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.nav {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.rango {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17px;
+}
+
+.statsCuota {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.cargo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: 13px;
+}
+
+.cargo:last-child {
+  border-bottom: none;
+}
+
+.cargoFecha {
+  width: 44px;
+  flex: none;
+  color: var(--color-text-muted);
+}
+
+.cargoConcepto {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.cargoTipo {
+  font-weight: 400;
+  color: var(--color-text-muted);
+}
+
+.cargoMonto {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── Mi perfil ── */
+.perfilCol {
+  max-width: 640px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.perfilCabecera {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.perfilAvatar {
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 21px;
+}
+
+.perfilNombre {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 21px;
+  margin-bottom: 6px;
+}
+
+.perfilChips {
+  display: flex;
+  gap: 8px;
+}
+
+.perfilDato {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  font-size: 14px;
+}
+
+.perfilDato:last-child {
+  border-bottom: none;
+}
+
+.perfilLabel {
+  color: var(--color-text-muted);
+}
+
+.perfilValor {
+  font-weight: 600;
+  text-align: right;
+}
+
+.btnEditar {
+  padding: 9px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--color-primary-dark);
+  cursor: pointer;
+}
+
+.btnEditar:hover {
+  border-color: var(--color-primary);
+}
+
+.btnGuardar {
+  padding: 9px 16px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-dark);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btnGuardar:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.perfilEdicion {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  margin-bottom: 4px;
+}
+
+.perfilCampo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.perfilCampo > span {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-soft);
+}
+
+.perfilCampo input {
+  padding: 11px 13px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+}
+
+.perfilAcciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* ── Responsive ── */
+@media (max-width: 980px) {
+  .inicioGrilla,
+  .statsCuota {
+    grid-template-columns: 1fr;
+  }
+}
