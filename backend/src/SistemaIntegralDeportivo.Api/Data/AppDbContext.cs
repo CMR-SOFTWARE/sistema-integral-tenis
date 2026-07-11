@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using SistemaIntegralDeportivo.Api.Models;
 
@@ -7,8 +9,10 @@ namespace SistemaIntegralDeportivo.Api.Data;
 /// El puente entre las entidades C# y la base SQLite. Cada DbSet es una tabla;
 /// OnModelCreating ajusta lo que la convención por defecto no resuelve sola
 /// (clave compuesta, índices únicos, enums como texto, datos semilla).
+/// Hereda de IdentityUserContext: suma las tablas de Identity para Usuario
+/// (sin las de roles: los roles son membresías por tenant, ADR-0007).
 /// </summary>
-public class AppDbContext : DbContext
+public class AppDbContext : IdentityUserContext<Usuario, Guid>
 {
     /// <summary>
     /// Id fijo del tenant de demostración. Mientras no haya login real, todo

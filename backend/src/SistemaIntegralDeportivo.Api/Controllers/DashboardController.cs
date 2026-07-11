@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SistemaIntegralDeportivo.Api.Dtos;
 using SistemaIntegralDeportivo.Api.Services;
@@ -5,6 +6,7 @@ using SistemaIntegralDeportivo.Api.Services;
 namespace SistemaIntegralDeportivo.Api.Controllers;
 
 [ApiController]
+[Authorize(Policy = "Profesor")]
 [Route("api/dashboard")]
 public class DashboardController : ControllerBase
 {

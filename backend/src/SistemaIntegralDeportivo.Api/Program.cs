@@ -1,6 +1,11 @@
+using System.Text;
 using System.Text.Json.Serialization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using SistemaIntegralDeportivo.Api.Data;
+using SistemaIntegralDeportivo.Api.Models;
 using SistemaIntegralDeportivo.Api.Repositories;
 using SistemaIntegralDeportivo.Api.Services;
 
@@ -29,10 +34,52 @@ builder.Services.AddScoped<ICargoRepository, CargoRepository>();
 builder.Services.AddScoped<ITenantRepository, TenantRepository>();
 builder.Services.AddScoped<ICuotaService, CuotaService>();
 builder.Services.AddScoped<IConfigService, ConfigService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IPortalService, PortalService>();
 
 // Base de datos: EF Core sobre SQLite (la connection string vive en appsettings.json)
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
+
+// ── Auth (ADR-0007) ──
+// Identity CORE (sin roles de Identity: los roles son membresías por tenant).
+// Aporta hashing de contraseñas, validaciones y UserManager.
+builder.Services.AddIdentityCore<Usuario>(options =>
+{
+    // Prototipo: reglas mínimas razonables; endurecer al desplegar
+    options.Password.RequiredLength = 8;
+    options.Password.RequireNonAlphanumeric = false;
+    options.Password.RequireUppercase = false;
+    options.Password.RequireDigit = false;
+    options.User.RequireUniqueEmail = true;
+})
+.AddErrorDescriber<SistemaIntegralDeportivo.Api.Common.IdentityErroresEnEspanol>()
+.AddEntityFrameworkStores<AppDbContext>();
+
+// JWT Bearer: el front manda el token en Authorization; acá se valida
+var jwtKey = builder.Configuration["Jwt:Key"]
+    ?? throw new InvalidOperationException("Falta Jwt:Key en la configuración.");
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        // Los claims llegan tal como se emitieron ("sub", no el URI de .NET)
+        options.MapInboundClaims = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
+            ValidateLifetime = true,
+        };
+    });
+
+// Policy "Profesor": el claim lo emite TokenService si es dueño de un tenant
+builder.Services.AddAuthorization(options =>
+    options.AddPolicy("Profesor", p => p.RequireClaim("profesor", "true")));
 
 // CORS: el front (Vite, puerto 5173) corre en otro origen que esta API,
 // y el navegador bloquea esas llamadas salvo que las permitamos explícitamente.
@@ -59,8 +106,13 @@ app.UseHttpsRedirection();
 
 app.UseCors("Frontend");
 
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+
+// Seed de auth: el profe dueño del tenant demo (idempotente)
+using (var scope = app.Services.CreateScope())
+    await AuthSeeder.SeedAsync(scope.ServiceProvider);
 
 app.Run();

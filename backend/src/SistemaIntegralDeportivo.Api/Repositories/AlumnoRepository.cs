@@ -66,6 +66,24 @@ public class AlumnoRepository : IAlumnoRepository
     public Task GuardarCambiosAsync(CancellationToken ct = default) =>
         _db.SaveChangesAsync(ct);
 
+    // ── Auth / portal: estos dos son GLOBALES a propósito (no scopean por
+    //    tenant): la identidad cruza negocios y el reclamo busca la ficha de
+    //    la persona en TODOS los tenants (ADR-0007) ──
+
+    public async Task<IReadOnlyList<Alumno>> BuscarReclamablesAsync(
+        string? dni, string? telefono, CancellationToken ct = default) =>
+        await _db.Alumnos
+            .Include(a => a.Tenant)
+            .Where(a => a.UserId == null &&
+                ((dni != null && dni != "" && a.Dni == dni) ||
+                 (telefono != null && telefono != "" && a.Telefono == telefono)))
+            .ToListAsync(ct);
+
+    public Task<Alumno?> ObtenerPorUserIdAsync(Guid userId, CancellationToken ct = default) =>
+        _db.Alumnos
+            .Include(a => a.Tenant)
+            .FirstOrDefaultAsync(a => a.UserId == userId, ct);
+
     public Task<int> ContarPorEstadoAsync(EstadoAlumno estado, CancellationToken ct = default) =>
         _db.Alumnos.CountAsync(a => a.TenantId == TenantId && a.Estado == estado, ct);
 

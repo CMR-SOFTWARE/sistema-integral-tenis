@@ -24,6 +24,15 @@ public interface IAlumnoRepository
     /// <summary>Confirma en la base los cambios hechos a entidades trackeadas.</summary>
     Task GuardarCambiosAsync(CancellationToken ct = default);
 
+    // ── Auth / portal (ADR-0007: reclamo de ficha y membresía) ──
+
+    /// <summary>Fichas SIN usuario cuyo DNI o teléfono coinciden (candidatas a reclamo), con su Tenant.</summary>
+    Task<IReadOnlyList<Alumno>> BuscarReclamablesAsync(
+        string? dni, string? telefono, CancellationToken ct = default);
+
+    /// <summary>La ficha vinculada a un usuario global, con su Tenant (null si no reclamó).</summary>
+    Task<Alumno?> ObtenerPorUserIdAsync(Guid userId, CancellationToken ct = default);
+
     // ── Agregados para el dashboard (queries de solo lectura) ──
 
     /// <summary>Cantidad de alumnos del tenant en un estado dado.</summary>
