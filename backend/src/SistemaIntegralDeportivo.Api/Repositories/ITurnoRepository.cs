@@ -23,6 +23,10 @@ public interface ITurnoRepository
     Task<IReadOnlyList<Turno>> ListarPorAlumnoEntreAsync(
         Guid alumnoId, DateOnly desde, DateOnly hasta, CancellationToken ct = default);
 
+    /// <summary>Últimos turnos cancelados, más recientes primero (dashboard).</summary>
+    Task<IReadOnlyList<Turno>> ListarCanceladosRecientesAsync(
+        int cantidad, CancellationToken ct = default);
+
     Task AgregarAsync(Turno turno, CancellationToken ct = default);
 
     /// <summary>Marca el turno para borrar (se persiste con GuardarCambiosAsync).</summary>
