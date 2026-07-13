@@ -27,6 +27,13 @@ public interface ITurnoRepository
     Task<IReadOnlyList<Turno>> ListarCanceladosRecientesAsync(
         int cantidad, CancellationToken ct = default);
 
+    /// <summary>
+    /// Turnos PROGRAMADOS desde una fecha, opcionalmente de una cancha, con
+    /// participantes y contexto (cascada e impacto de bloqueos).
+    /// </summary>
+    Task<IReadOnlyList<Turno>> ListarProgramadosDesdeAsync(
+        DateOnly desde, Guid? canchaId, CancellationToken ct = default);
+
     Task AgregarAsync(Turno turno, CancellationToken ct = default);
 
     /// <summary>Marca el turno para borrar (se persiste con GuardarCambiosAsync).</summary>

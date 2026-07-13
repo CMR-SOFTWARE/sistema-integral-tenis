@@ -37,6 +37,8 @@ builder.Services.AddScoped<IConfigService, ConfigService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IPortalService, PortalService>();
+builder.Services.AddScoped<IBloqueoRepository, BloqueoRepository>();
+builder.Services.AddScoped<IBloqueoService, BloqueoService>();
 
 // Base de datos: EF Core sobre SQLite (la connection string vive en appsettings.json)
 builder.Services.AddDbContext<AppDbContext>(options =>

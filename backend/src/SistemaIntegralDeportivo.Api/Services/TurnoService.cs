@@ -11,14 +11,17 @@ public class TurnoService : ITurnoService
     private readonly IHorarioRepository _horarios;
     private readonly IGrupoRepository _grupos;
     private readonly ICargoRepository _cargos;
+    private readonly IBloqueoRepository _bloqueos;
 
     public TurnoService(
-        ITurnoRepository turnos, IHorarioRepository horarios, IGrupoRepository grupos, ICargoRepository cargos)
+        ITurnoRepository turnos, IHorarioRepository horarios, IGrupoRepository grupos,
+        ICargoRepository cargos, IBloqueoRepository bloqueos)
     {
         _turnos = turnos;
         _horarios = horarios;
         _grupos = grupos;
         _cargos = cargos;
+        _bloqueos = bloqueos;
     }
 
     public async Task<IReadOnlyList<TurnoResponseDto>> ObtenerSemanaAsync(
@@ -75,6 +78,7 @@ public class TurnoService : ITurnoService
     private async Task<bool> GenerarFaltantesAsync(DateOnly desde, DateOnly hasta, CancellationToken ct)
     {
         var horarios = await _horarios.ListarActivosAsync(ct);
+        var bloqueos = await _bloqueos.ListarAsync(ct);
         var generoAlguno = false;
 
         foreach (var horario in horarios)
@@ -100,6 +104,13 @@ public class TurnoService : ITurnoService
             for (var fecha = desde.AddDays(offset); fecha <= hasta; fecha = fecha.AddDays(7))
             {
                 if (yaGeneradas.Contains(fecha)) continue;
+
+                // Slot bloqueado → NO se genera (si el bloqueo se borra,
+                // reaparece solo en la próxima generación)
+                var f = fecha;
+                if (bloqueos.Any(b => BloqueoService.Cubre(
+                        b, f, horario.HoraInicio, horario.DuracionMinutos, horario.CanchaId)))
+                    continue;
 
                 var turno = new Turno
                 {
