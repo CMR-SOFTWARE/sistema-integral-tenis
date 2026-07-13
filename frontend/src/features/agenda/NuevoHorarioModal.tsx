@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import Modal from '../../components/Modal';
+import HoraSelect from '../../components/HoraSelect';
 import { api, ApiError } from '../../lib/api';
 import type { Alumno } from '../alumnos/types';
 import type { Grupo } from '../grupos/types';
@@ -128,7 +129,7 @@ export default function NuevoHorarioModal({ sedes, onClose, onCrear }: Props) {
         </label>
         <label className={s.campo}>
           <span>Hora de inicio</span>
-          <input type="time" value={hora} onChange={(e) => setHora(e.target.value)} />
+          <HoraSelect value={hora} onChange={setHora} />
         </label>
         <label className={s.campo}>
           <span>Duración (minutos)</span>

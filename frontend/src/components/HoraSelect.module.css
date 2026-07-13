@@ -1,0 +1,15 @@
+.fila {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.select {
+  flex: 1;
+  min-width: 0;
+}
+
+.separador {
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
