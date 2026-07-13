@@ -7,19 +7,57 @@ public class CategoriaConteoDto
     public int Cantidad { get; set; }
 }
 
+/// <summary>Una clase de HOY para la tarjeta "Próximas clases".</summary>
+public class ClaseHoyDto
+{
+    public Guid TurnoId { get; set; }
+    public TimeOnly HoraInicio { get; set; }
+    public int DuracionMinutos { get; set; }
+    public string Titulo { get; set; } = string.Empty;
+    public string Cancha { get; set; } = string.Empty;
+    public int Participantes { get; set; }
+    public string Estado { get; set; } = string.Empty;
+}
+
 /// <summary>
-/// Resumen del dashboard del profesor. Todo sale de datos reales del tenant;
-/// lo que aún no tiene vertical (clases, cuotas, cancelaciones) no viene acá.
+/// Resumen de cuotas del mes en curso, sobre cargos YA materializados
+/// (el dashboard no genera liquidación: eso pasa al entrar a Cuotas).
 /// </summary>
+public class CuotasPendientesDto
+{
+    public int AlumnosPendientes { get; set; }
+    public int AlumnosVencidos { get; set; }
+    public decimal TotalPendiente { get; set; }
+}
+
+/// <summary>Turno cancelado reciente (quién lo canceló llega con la vertical Cancelaciones).</summary>
+public class CancelacionRecienteDto
+{
+    public DateOnly Fecha { get; set; }
+    public TimeOnly HoraInicio { get; set; }
+    public string Titulo { get; set; } = string.Empty;
+    public string? Motivo { get; set; }
+    public DateTime? CanceladoEl { get; set; }
+}
+
+/// <summary>Resumen del dashboard del profesor. Todo sale de datos reales del tenant.</summary>
 public class DashboardResumenDto
 {
     public int AlumnosActivos { get; set; }
     public int NuevosEsteMes { get; set; }
     public int Pausados { get; set; }
 
-    /// <summary>Suma de aranceles de alumnos activos (estimado, hasta que exista Cuotas).</summary>
-    public decimal IngresoMensualEstimado { get; set; }
+    /// <summary>Cargos del mes en curso ya pagados (misma definición que "Total cobrado" de Cuotas).</summary>
+    public decimal RecaudacionDelMes { get; set; }
 
     /// <summary>Alumnos por categoría (excluye dados de baja), orden 1ra → 7ma.</summary>
     public List<CategoriaConteoDto> PorCategoria { get; set; } = [];
+
+    /// <summary>Turnos de hoy ordenados por hora (incluye los cancelados, marcados).</summary>
+    public List<ClaseHoyDto> ClasesHoy { get; set; } = [];
+
+    public CuotasPendientesDto CuotasPendientes { get; set; } = new();
+
+    /// <summary>Últimos turnos cancelados (más recientes primero).</summary>
+    public List<CancelacionRecienteDto> CancelacionesRecientes { get; set; } = [];
 }

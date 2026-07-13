@@ -139,13 +139,94 @@
   text-align: right;
 }
 
-.placeholder {
+.vacio {
   font-size: 13px;
   color: var(--color-text-faint);
   padding: 20px;
   border: 1px dashed var(--color-border);
   border-radius: var(--radius-md);
   text-align: center;
+}
+
+/* ── Listas de clases / cancelaciones ── */
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fila,
+.filaCancelada {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.filaCancelada {
+  opacity: 0.55;
+}
+
+.filaCancelada .filaTitulo {
+  text-decoration: line-through;
+}
+
+.filaHora {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+  min-width: 52px;
+}
+
+.filaCuerpo {
+  min-width: 0;
+}
+
+.filaTitulo {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.filaMeta {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 1px;
+}
+
+/* ── Stats de cuotas ── */
+
+.statsCuotas {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.statCuota {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  text-align: center;
+}
+
+.statValor {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 22px;
+  letter-spacing: -0.02em;
+}
+
+.statVencida {
+  color: var(--color-danger);
+}
+
+.statLabel {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-weight: 600;
+  margin-top: 3px;
 }
 
 .cargando,

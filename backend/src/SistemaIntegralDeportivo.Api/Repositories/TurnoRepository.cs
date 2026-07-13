@@ -49,6 +49,18 @@ public class TurnoRepository : ITurnoRepository
                         t.Participantes.Any(p => p.AlumnoId == alumnoId))
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<Turno>> ListarCanceladosRecientesAsync(
+        int cantidad, CancellationToken ct = default) =>
+        await _db.Turnos
+            .AsNoTracking()
+            .Include(t => t.Cancha)
+            .Include(t => t.Horario).ThenInclude(h => h.Grupo)
+            .Include(t => t.Horario).ThenInclude(h => h.Alumno)
+            .Where(t => t.TenantId == TenantId && t.Estado == EstadoTurno.Cancelado)
+            .OrderByDescending(t => t.CanceladoEl)
+            .Take(cantidad)
+            .ToListAsync(ct);
+
     public async Task<IReadOnlyList<Turno>> ListarPorHorarioDesdeAsync(
         Guid horarioId, DateOnly desde, CancellationToken ct = default) =>
         await _db.Turnos
