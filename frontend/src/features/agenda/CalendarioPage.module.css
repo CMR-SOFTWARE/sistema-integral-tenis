@@ -122,6 +122,68 @@
   font-size: 11px;
 }
 
+/* ── Franjas bloqueadas y leyenda ── */
+
+.franjaBloqueada {
+  border: 1px dashed #9ca3af;
+  border-radius: 10px;
+  padding: 8px 9px;
+  font-size: 12px;
+  background: repeating-linear-gradient(
+    -45deg,
+    #f3f4f6,
+    #f3f4f6 6px,
+    #e5e7eb 6px,
+    #e5e7eb 12px
+  );
+  color: #4b5563;
+}
+
+.franjaMotivo {
+  font-weight: 700;
+  font-size: 11px;
+  margin-top: 2px;
+}
+
+.leyenda {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-bottom: 14px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.leyendaItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.puntoProgramado,
+.puntoCancelado,
+.puntoBloqueado {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.puntoProgramado {
+  background: var(--color-primary);
+}
+
+.puntoCancelado {
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  opacity: 0.8;
+}
+
+.puntoBloqueado {
+  background: repeating-linear-gradient(-45deg, #f3f4f6, #f3f4f6 3px, #d1d5db 3px, #d1d5db 6px);
+  border: 1px dashed #9ca3af;
+}
+
 .vacio,
 .vacioCard {
   padding: 32px;

@@ -23,6 +23,7 @@ public class TurnoServiceTests
     private readonly Mock<IHorarioRepository> _horarios;
     private readonly Mock<IGrupoRepository> _grupos;
     private readonly Mock<ICargoRepository> _cargos;
+    private readonly Mock<IBloqueoRepository> _bloqueos;
     private readonly TurnoService _service;
 
     public TurnoServiceTests()
@@ -31,11 +32,15 @@ public class TurnoServiceTests
         _horarios = new Mock<IHorarioRepository>();
         _grupos = new Mock<IGrupoRepository>();
         _cargos = new Mock<ICargoRepository>();
-        _service = new TurnoService(_turnos.Object, _horarios.Object, _grupos.Object, _cargos.Object);
+        _bloqueos = new Mock<IBloqueoRepository>();
+        _service = new TurnoService(
+            _turnos.Object, _horarios.Object, _grupos.Object, _cargos.Object, _bloqueos.Object);
 
-        // Por defecto: nadie debe nada
+        // Por defecto: nadie debe nada y no hay bloqueos
         _cargos.Setup(c => c.ListarImpagosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
                .ReturnsAsync([]);
+        _bloqueos.Setup(b => b.ListarAsync(It.IsAny<CancellationToken>()))
+                 .ReturnsAsync([]);
 
         // Horario grupal: martes 18:00, 60'
         _horarios.Setup(h => h.ListarActivosAsync(It.IsAny<CancellationToken>()))
@@ -196,6 +201,75 @@ public class TurnoServiceTests
 
         Assert.Equal(3, generados.Count); // 7, 21 y 28: el 14 no se duplica
         Assert.DoesNotContain(generados, t => t.Fecha == new DateOnly(2026, 7, 14));
+    }
+
+    // ─────────────────────────────────────────────
+    // Bloqueos: la generación perezosa SALTEA los slots cubiertos
+    // (no genera cancelados: borrar el bloqueo los hace reaparecer)
+    // ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task Mes_SalteaElSlotConBloqueoDeRango_YGeneraLosDemas()
+    {
+        // Bloqueo puntual el martes 14/07 que pisa la franja 18-19
+        _bloqueos.Setup(b => b.ListarAsync(It.IsAny<CancellationToken>()))
+                 .ReturnsAsync([new Bloqueo
+                 {
+                     Tipo = TipoBloqueo.Rango,
+                     Fecha = new DateOnly(2026, 7, 14),
+                     HoraInicio = new TimeOnly(17, 0),
+                     HoraFin = new TimeOnly(20, 0),
+                     Motivo = MotivoBloqueo.MalClima,
+                 }]);
+        var generados = new List<Turno>();
+        _turnos.Setup(t => t.AgregarAsync(It.IsAny<Turno>(), It.IsAny<CancellationToken>()))
+               .Callback((Turno t, CancellationToken _) => generados.Add(t))
+               .Returns(Task.CompletedTask);
+
+        await _service.GenerarTurnosDelMesAsync(2026, 7);
+
+        Assert.Equal(3, generados.Count); // 7, 21 y 28: el 14 está bloqueado
+        Assert.DoesNotContain(generados, t => t.Fecha == new DateOnly(2026, 7, 14));
+    }
+
+    [Fact]
+    public async Task Mes_BloqueoFijoDelDia_NoGeneraNingunTurnoDeEseHorario()
+    {
+        // Fijo todos los martes 17:30-18:30: solapa parcialmente el turno de 18
+        _bloqueos.Setup(b => b.ListarAsync(It.IsAny<CancellationToken>()))
+                 .ReturnsAsync([new Bloqueo
+                 {
+                     Tipo = TipoBloqueo.Fijo,
+                     Dia = DayOfWeek.Tuesday,
+                     HoraInicio = new TimeOnly(17, 30),
+                     HoraFin = new TimeOnly(18, 30),
+                 }]);
+
+        await _service.GenerarTurnosDelMesAsync(2026, 7);
+
+        _turnos.Verify(t => t.AgregarAsync(It.IsAny<Turno>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Mes_BloqueoDeOtraCancha_NoAfectaLaGeneracion()
+    {
+        _bloqueos.Setup(b => b.ListarAsync(It.IsAny<CancellationToken>()))
+                 .ReturnsAsync([new Bloqueo
+                 {
+                     Tipo = TipoBloqueo.Fijo,
+                     Dia = DayOfWeek.Tuesday,
+                     HoraInicio = new TimeOnly(17, 0),
+                     HoraFin = new TimeOnly(20, 0),
+                     CanchaId = Guid.NewGuid(), // otra cancha
+                 }]);
+        var generados = new List<Turno>();
+        _turnos.Setup(t => t.AgregarAsync(It.IsAny<Turno>(), It.IsAny<CancellationToken>()))
+               .Callback((Turno t, CancellationToken _) => generados.Add(t))
+               .Returns(Task.CompletedTask);
+
+        await _service.GenerarTurnosDelMesAsync(2026, 7);
+
+        Assert.Equal(4, generados.Count); // los 4 martes de julio, sin salteos
     }
 
     // ─────────────────────────────────────────────
