@@ -11,6 +11,18 @@ public enum TipoTenant
     Club // Fase 2, pero el enum ya lo soporta
 }
 
+/// <summary>
+/// Ciclo de vida del negocio: nace PendientePago al registrarse el profesor
+/// y pasa a Activo cuando paga la suscripción (hoy simulado; Mercado Pago al
+/// desplegar). Suspendido: dejó de pagar (fase futura).
+/// </summary>
+public enum EstadoTenant
+{
+    PendientePago,
+    Activo,
+    Suspendido
+}
+
 /// <summary>Categoría deportiva del alumno (7ma = inicial, 1ra = la mejor).</summary>
 public enum CategoriaAlumno
 {

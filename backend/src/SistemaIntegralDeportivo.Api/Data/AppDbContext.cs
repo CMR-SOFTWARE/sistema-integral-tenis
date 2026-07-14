@@ -42,6 +42,8 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
         // ── Enums guardados como TEXTO en la base (legibles al inspeccionar
         //    el .db, en vez de 0,1,2...) ──
         modelBuilder.Entity<Tenant>().Property(t => t.Tipo).HasConversion<string>();
+        modelBuilder.Entity<Tenant>().Property(t => t.Estado).HasConversion<string>();
+        modelBuilder.Entity<Usuario>().Property(u => u.Categoria).HasConversion<string>();
         modelBuilder.Entity<Alumno>().Property(a => a.Categoria).HasConversion<string>();
         modelBuilder.Entity<Alumno>().Property(a => a.Estado).HasConversion<string>();
         modelBuilder.Entity<Tutor>().Property(t => t.Relacion).HasConversion<string>();
@@ -176,7 +178,7 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
             Subdominio = "demo",
             Nombre = "Club Demo",
             Tipo = TipoTenant.Profesor,
-            Activo = true,
+            Estado = EstadoTenant.Activo, // el demo no pasa por el checkout
             CreadoEl = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc)
         });
     }
