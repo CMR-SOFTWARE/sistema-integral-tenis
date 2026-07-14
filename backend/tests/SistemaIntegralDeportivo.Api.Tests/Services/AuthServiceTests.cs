@@ -18,6 +18,8 @@ public class AuthServiceTests
     private readonly Mock<IAlumnoRepository> _alumnos;
     private readonly Mock<ITenantRepository> _tenants;
     private readonly Mock<ITokenService> _tokens;
+    private readonly Mock<ISedeRepository> _sedes;
+    private readonly Mock<ITenantActual> _tenantActual;
     private readonly AuthService _service;
 
     public AuthServiceTests()
@@ -25,7 +27,12 @@ public class AuthServiceTests
         _alumnos = new Mock<IAlumnoRepository>();
         _tenants = new Mock<ITenantRepository>();
         _tokens = new Mock<ITokenService>();
-        _service = new AuthService(_alumnos.Object, _tenants.Object, _tokens.Object);
+        _sedes = new Mock<ISedeRepository>();
+        _tenantActual = new Mock<ITenantActual>();
+        _service = new AuthService(
+            _alumnos.Object, _tenants.Object, _tokens.Object, _sedes.Object, _tenantActual.Object);
+        _sedes.Setup(s => s.AgregarAsync(It.IsAny<Sede>(), It.IsAny<CancellationToken>()))
+              .ReturnsAsync((Sede s, CancellationToken _) => s);
 
         // Por defecto: no es dueño de tenants, sin ficha vinculada ni coincidencias
         _tenants.Setup(t => t.ObtenerPorOwnerAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
@@ -65,18 +72,170 @@ public class AuthServiceTests
     // ─────────────────────────────────────────────
 
     [Fact]
-    public async Task Sesion_DuenioDeTenant_EsProfesor_YElTokenLlevaSuTenant()
+    public async Task Sesion_DuenioDeTenantActivo_EsProfesor_YElTokenLlevaSuTenant()
     {
         var profe = Jugador();
-        var suClub = new Tenant { Subdominio = "mi-club", Nombre = "Mi Club", OwnerUserId = UserId };
+        var suClub = new Tenant
+        {
+            Subdominio = "mi-club", Nombre = "Mi Club",
+            OwnerUserId = UserId, Estado = EstadoTenant.Activo,
+        };
         _tenants.Setup(t => t.ObtenerPorOwnerAsync(UserId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(suClub);
 
         var sesion = await _service.ArmarSesionAsync(profe, incluirToken: true);
 
         Assert.True(sesion.EsProfesor);
+        Assert.Equal("Activo", sesion.EstadoTenant);
         Assert.Equal("jwt-de-prueba", sesion.Token);
         _tokens.Verify(t => t.Generar(profe, suClub), Times.Once); // el claim tenant sale de acá
+    }
+
+    [Fact]
+    public async Task Sesion_DuenioPendienteDePago_NoEsProfesor_YExponeElEstado()
+    {
+        // Un profe que no pagó todavía NO pasa la policy: el token va SIN tenant
+        var profe = Jugador();
+        var suClub = new Tenant
+        {
+            Subdominio = "mi-club", Nombre = "Mi Club",
+            OwnerUserId = UserId, Estado = EstadoTenant.PendientePago,
+        };
+        _tenants.Setup(t => t.ObtenerPorOwnerAsync(UserId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(suClub);
+
+        var sesion = await _service.ArmarSesionAsync(profe, incluirToken: true);
+
+        Assert.False(sesion.EsProfesor);
+        Assert.Equal("PendientePago", sesion.EstadoTenant);
+        _tokens.Verify(t => t.Generar(profe, null), Times.Once);
+    }
+
+    // ─────────────────────────────────────────────
+    // Registro de profesor: su tenant nace PENDIENTE_PAGO
+    // ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task CrearTenant_NacePendienteConOwnerYSubdominioSlug()
+    {
+        Tenant? creado = null;
+        _tenants.Setup(t => t.AgregarAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()))
+                .Callback((Tenant t, CancellationToken _) => creado = t)
+                .Returns(Task.CompletedTask);
+
+        await _service.CrearTenantParaAsync(Jugador(), "Academia Río Cuarto");
+
+        Assert.NotNull(creado);
+        Assert.Equal("academia-rio-cuarto", creado!.Subdominio); // minúsculas, sin acentos
+        Assert.Equal("Academia Río Cuarto", creado.Nombre);
+        Assert.Equal(EstadoTenant.PendientePago, creado.Estado);
+        Assert.Equal(UserId, creado.OwnerUserId);
+        Assert.Equal(TipoTenant.Profesor, creado.Tipo);
+        _tenants.Verify(t => t.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CrearTenant_CreaLaPrimeraSedeConElNombreDelClub()
+    {
+        // El caso típico (un solo lugar): el club nace con su sede lista,
+        // renombrable en Configuración — sin pasos duplicados post-registro
+        Tenant? tenantCreado = null;
+        _tenants.Setup(t => t.AgregarAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()))
+                .Callback((Tenant t, CancellationToken _) => tenantCreado = t)
+                .Returns(Task.CompletedTask);
+        Sede? sedeCreada = null;
+        _sedes.Setup(s => s.AgregarAsync(It.IsAny<Sede>(), It.IsAny<CancellationToken>()))
+              .Callback((Sede s, CancellationToken _) => sedeCreada = s)
+              .ReturnsAsync((Sede s, CancellationToken _) => s);
+
+        await _service.CrearTenantParaAsync(Jugador(), "Academia Río Cuarto");
+
+        Assert.NotNull(sedeCreada);
+        Assert.Equal("Academia Río Cuarto", sedeCreada!.Nombre);
+        // El repo de sedes scopea por ITenantActual: hay que fijar el club nuevo ANTES
+        _tenantActual.Verify(t => t.Establecer(tenantCreado!.Id), Times.Once);
+    }
+
+    [Fact]
+    public async Task CrearTenant_SubdominioOcupado_AgregaSufijo()
+    {
+        _tenants.Setup(t => t.ExisteSubdominioAsync("club-x", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+        Tenant? creado = null;
+        _tenants.Setup(t => t.AgregarAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()))
+                .Callback((Tenant t, CancellationToken _) => creado = t)
+                .Returns(Task.CompletedTask);
+
+        await _service.CrearTenantParaAsync(Jugador(), "Club X");
+
+        Assert.Equal("club-x-2", creado!.Subdominio);
+    }
+
+    [Fact]
+    public async Task CrearTenant_YaEsDuenioDeOtro_Lanza()
+    {
+        _tenants.Setup(t => t.ObtenerPorOwnerAsync(UserId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Tenant { Subdominio = "x", Nombre = "X", OwnerUserId = UserId });
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.CrearTenantParaAsync(Jugador(), "Otro Club"));
+
+        _tenants.Verify(t => t.AgregarAsync(It.IsAny<Tenant>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CrearTenant_NombreVacio_Lanza()
+    {
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.CrearTenantParaAsync(Jugador(), "   "));
+    }
+
+    // ─────────────────────────────────────────────
+    // Activación (el "webhook" — hoy simulado, MP al desplegar)
+    // ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task Activar_TenantPendiente_PasaAActivo_YDevuelveTokenNuevo()
+    {
+        var suClub = new Tenant
+        {
+            Subdominio = "mi-club", Nombre = "Mi Club",
+            OwnerUserId = UserId, Estado = EstadoTenant.PendientePago,
+        };
+        _tenants.Setup(t => t.ObtenerPorOwnerAsync(UserId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(suClub);
+
+        var sesion = await _service.ActivarTenantAsync(Jugador());
+
+        Assert.Equal(EstadoTenant.Activo, suClub.Estado);
+        Assert.True(sesion.EsProfesor);
+        Assert.Equal("jwt-de-prueba", sesion.Token); // token nuevo con claims profe+tenant
+        _tenants.Verify(t => t.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Activar_TenantYaActivo_EsIdempotente()
+    {
+        // El webhook real de MP reintenta: activar dos veces no puede romper
+        var suClub = new Tenant
+        {
+            Subdominio = "mi-club", Nombre = "Mi Club",
+            OwnerUserId = UserId, Estado = EstadoTenant.Activo,
+        };
+        _tenants.Setup(t => t.ObtenerPorOwnerAsync(UserId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(suClub);
+
+        var sesion = await _service.ActivarTenantAsync(Jugador());
+
+        Assert.True(sesion.EsProfesor);
+        _tenants.Verify(t => t.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Activar_SinTenant_Lanza()
+    {
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.ActivarTenantAsync(Jugador()));
     }
 
     [Fact]

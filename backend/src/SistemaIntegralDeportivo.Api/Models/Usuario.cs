@@ -17,5 +17,10 @@ public class Usuario : IdentityUser<Guid>
     /// <summary>Para el reclamo de fichas por coincidencia (modelo-identidad-roles §3).</summary>
     public string? Dni { get; set; }
 
+    // ── Datos deportivos del JUGADOR (registro segmentado): viajan a la
+    //    ficha cuando se vincula a un club (solicitudes, plan v2) ──
+    public DateTime? FechaNacimiento { get; set; }
+    public CategoriaAlumno? Categoria { get; set; }
+
     public DateTime CreadoEl { get; set; } = DateTime.UtcNow;
 }

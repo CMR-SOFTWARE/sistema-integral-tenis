@@ -14,6 +14,8 @@ export interface Sesion {
   apellido: string;
   email: string;
   esProfesor: boolean;
+  /** Estado del club propio; "PendientePago" manda al checkout. */
+  estadoTenant: 'PendientePago' | 'Activo' | 'Suspendido' | null;
   alumno: Ficha | null;
   fichasPorReclamar: Ficha[];
 }

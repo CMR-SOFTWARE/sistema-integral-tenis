@@ -2,6 +2,10 @@ import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom
 import AppLayout from './components/layout/AppLayout';
 import AlumnosPage from './features/alumnos/AlumnosPage';
 import LoginPage from './features/auth/LoginPage';
+import RegistroPage from './features/auth/RegistroPage';
+import RegistroJugadorPage from './features/auth/RegistroJugadorPage';
+import RegistroProfesorPage from './features/auth/RegistroProfesorPage';
+import CheckoutPage from './features/auth/CheckoutPage';
 import { obtenerSesion, obtenerToken } from './features/auth/sesion';
 import DashboardPage from './features/dashboard/DashboardPage';
 import GruposPage from './features/grupos/GruposPage';
@@ -32,6 +36,17 @@ function RequiereJugador() {
   const sesion = obtenerSesion();
   if (!obtenerToken() || !sesion) return <Navigate to="/login" replace />;
   if (sesion.esProfesor) return <Navigate to="/dashboard" replace />;
+  if (sesion.estadoTenant === 'PendientePago') return <Navigate to="/checkout" replace />;
+  return <Outlet />;
+}
+
+/** Checkout: solo para el profe registrado que todavía no pagó. */
+function RequiereCheckout() {
+  const sesion = obtenerSesion();
+  if (!obtenerToken() || !sesion) return <Navigate to="/login" replace />;
+  if (sesion.estadoTenant !== 'PendientePago') {
+    return <Navigate to={sesion.esProfesor ? '/dashboard' : '/portal'} replace />;
+  }
   return <Outlet />;
 }
 
@@ -40,6 +55,12 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/registro" element={<RegistroPage />} />
+        <Route path="/registro/jugador" element={<RegistroJugadorPage />} />
+        <Route path="/registro/profesor" element={<RegistroProfesorPage />} />
+        <Route element={<RequiereCheckout />}>
+          <Route path="/checkout" element={<CheckoutPage />} />
+        </Route>
 
         <Route element={<RequiereProfesor />}>
           <Route element={<AppLayout />}>

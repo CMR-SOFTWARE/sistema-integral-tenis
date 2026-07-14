@@ -12,7 +12,10 @@ public class Tenant
     public required string Subdominio { get; set; } // único: juanperez.midominio.com
     public required string Nombre { get; set; }
     public TipoTenant Tipo { get; set; } = TipoTenant.Profesor;
-    public bool Activo { get; set; } = true;
+
+    /// <summary>Default PendientePago: nada se activa sin pagar (o sin seed).</summary>
+    public EstadoTenant Estado { get; set; } = EstadoTenant.PendientePago;
+
     public DateTime CreadoEl { get; set; } = DateTime.UtcNow;
 
     // ── Auth: el usuario dueño del negocio (su rol Profesor en ESTE tenant).
