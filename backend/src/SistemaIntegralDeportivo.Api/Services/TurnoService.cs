@@ -101,9 +101,14 @@ public class TurnoService : ITurnoService
 
             // Primera fecha del rango que cae en el día del horario, y de ahí de a 7
             var offset = ((int)horario.Dia - (int)desde.DayOfWeek + 7) % 7;
+            var alta = DateOnly.FromDateTime(horario.CreadoEl);
             for (var fecha = desde.AddDays(offset); fecha <= hasta; fecha = fecha.AddDays(7))
             {
                 if (yaGeneradas.Contains(fecha)) continue;
+
+                // Un horario nuevo no genera (ni cobra) fechas anteriores a
+                // su alta: esas clases no existieron
+                if (fecha < alta) continue;
 
                 // Slot bloqueado → NO se genera (si el bloqueo se borra,
                 // reaparece solo en la próxima generación)
@@ -154,11 +159,19 @@ public class TurnoService : ITurnoService
         if (turno.Estado == EstadoTurno.Cancelado)
             throw new ReglaDeNegocioException("El turno ya está cancelado.");
 
-        // Nunca se borra: queda motivo y cuándo (historia)
+        // Nunca se borra: queda motivo, cuándo y quién (historia)
         turno.Estado = EstadoTurno.Cancelado;
         turno.CanceladoMotivo = motivo;
         turno.CanceladoEl = DateTime.UtcNow;
-        await _turnos.GuardarCambiosAsync(ct);
+        turno.CanceladoPor = Models.CanceladoPor.Profesor;
+
+        // La clase no ocurre → nadie paga: cargos impagos fuera, pagados
+        // intocables (mismo criterio que la cascada de bloqueos)
+        var cargos = await _cargos.ListarPorTurnosAsync([turno.Id], ct);
+        foreach (var cargo in cargos.Where(c => c.PagadoEl is null))
+            _cargos.Eliminar(cargo);
+
+        await _turnos.GuardarCambiosAsync(ct); // mismo DbContext: persiste todo junto
     }
 
     private static TurnoResponseDto Mapear(Turno t, HashSet<Guid> deudores) => new()

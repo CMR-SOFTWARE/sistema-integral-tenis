@@ -84,6 +84,23 @@ public class PortalController : ControllerBase
         }
     }
 
+    /// <summary>POST api/portal/mis-turnos/{id}/cancelar — aviso que no vengo (mi cargo queda).</summary>
+    [HttpPost("mis-turnos/{turnoId:guid}/cancelar")]
+    public async Task<IActionResult> CancelarMiTurno(
+        Guid turnoId, CancelarMiTurnoDto dto, CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            await _portal.CancelarMiTurnoAsync(userId, turnoId, dto.Motivo, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     private Guid? UserId() =>
         Guid.TryParse(User.FindFirst("sub")?.Value, out var id) ? id : null;
 }

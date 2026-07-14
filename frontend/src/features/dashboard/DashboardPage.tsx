@@ -32,7 +32,9 @@ interface CancelacionReciente {
   horaInicio: string;
   titulo: string;
   motivo: string | null;
-  canceladoEl: string | null;
+  por: 'Profesor' | 'Alumno';
+  alumnoNombre: string | null;
+  canceladoEl: string;
 }
 
 interface Resumen {
@@ -196,18 +198,26 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* ── Cancelaciones recientes (quién canceló llega con esa vertical) ── */}
+        {/* ── Cancelaciones recientes (turnos enteros + avisos de alumnos) ── */}
         <div className={s.tarjeta}>
-          <h3 className={s.tarjetaTitulo}>Cancelaciones recientes</h3>
+          <div className={s.tarjetaHeader}>
+            <h3 className={s.tarjetaTitulo}>Cancelaciones recientes</h3>
+            <Link to="/cancelaciones" className={s.linkReal}>Ver todas →</Link>
+          </div>
           {resumen.cancelacionesRecientes.length === 0 ? (
             <div className={s.vacio}>Sin cancelaciones recientes.</div>
           ) : (
             <div className={s.lista}>
               {resumen.cancelacionesRecientes.map((c) => (
-                <div key={`${c.fecha}-${c.horaInicio}-${c.titulo}`} className={s.fila}>
+                <div key={c.canceladoEl} className={s.fila}>
                   <span className={s.filaHora}>{fechaCorta(c.fecha)}</span>
                   <div className={s.filaCuerpo}>
-                    <div className={s.filaTitulo}>{c.titulo} · {horaCorta(c.horaInicio)}</div>
+                    <div className={s.filaTitulo}>
+                      {c.alumnoNombre ?? c.titulo} · {horaCorta(c.horaInicio)}
+                      <span className={c.por === 'Alumno' ? s.chipPorAlumno : s.chipPorProfe}>
+                        {c.por === 'Alumno' ? 'alumno' : 'profe'}
+                      </span>
+                    </div>
                     {c.motivo && <div className={s.filaMeta}>{c.motivo}</div>}
                   </div>
                 </div>

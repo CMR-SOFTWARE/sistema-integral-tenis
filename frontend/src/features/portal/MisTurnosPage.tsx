@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { CAT_COLOR, CAT_LABEL } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import { fechaCorta, horaCorta, DIAS } from '../agenda/types';
+import CancelarTurnoModal from './CancelarTurnoModal';
 import type { MisTurnos, MiTurno } from './types';
 import s from './PortalPages.module.css';
 
@@ -21,16 +22,27 @@ function ChipCategoria({ categoria }: { categoria: string | null }) {
   );
 }
 
-/** Mis turnos (mockup): próximos con compañeros, y el historial reciente. */
+/** Mis turnos (mockup): próximos con compañeros (con aviso de cancelación),
+ *  y el historial reciente. */
 export default function MisTurnosPage() {
   const [turnos, setTurnos] = useState<MisTurnos | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [aCancelar, setACancelar] = useState<MiTurno | null>(null);
 
-  useEffect(() => {
+  const cargar = useCallback(() => {
     api.get<MisTurnos>('/portal/mis-turnos')
       .then(setTurnos)
       .catch((e) => setError(e instanceof Error ? e.message : 'Error cargando tus turnos'));
   }, []);
+
+  useEffect(() => {
+    cargar();
+  }, [cargar]);
+
+  const cancelar = async (turnoId: string, motivo: string) => {
+    await api.post(`/portal/mis-turnos/${turnoId}/cancelar`, { motivo });
+    cargar();
+  };
 
   if (error) return <div className={s.error}>{error}</div>;
   if (!turnos) return <div className={s.vacio}>Cargando tus clases…</div>;
@@ -38,9 +50,18 @@ export default function MisTurnosPage() {
   const estadoHistorial = (t: MiTurno) =>
     t.estado === 'Cancelado'
       ? <span className={`${s.chip} ${s.chipRojo}`} title={t.canceladoMotivo ?? ''}>Cancelada</span>
-      : t.presente
-        ? <span className={`${s.chip} ${s.chipVerde}`}>Asistió</span>
-        : <span className={`${s.chip} ${s.chipGris}`}>Faltó</span>;
+      : t.canceladoPorMi
+        ? <span className={`${s.chip} ${s.chipAmbar}`}>Avisaste que no ibas</span>
+        : t.presente
+          ? <span className={`${s.chip} ${s.chipVerde}`}>Asistió</span>
+          : <span className={`${s.chip} ${s.chipGris}`}>Faltó</span>;
+
+  const estadoProximo = (t: MiTurno) =>
+    t.estado === 'Cancelado'
+      ? <span className={`${s.chip} ${s.chipRojo}`} title={t.canceladoMotivo ?? ''}>Cancelada</span>
+      : t.canceladoPorMi
+        ? <span className={`${s.chip} ${s.chipAmbar}`}>Cancelado por vos</span>
+        : <span className={`${s.chip} ${s.chipVerde}`}>Confirmada</span>;
 
   return (
     <div>
@@ -65,9 +86,12 @@ export default function MisTurnosPage() {
                 {t.companeros.length > 0 && <> · con {t.companeros.map((c) => c.split(' ')[0]).join(', ')}</>}
               </div>
             </div>
-            {t.estado === 'Cancelado'
-              ? <span className={`${s.chip} ${s.chipRojo}`} title={t.canceladoMotivo ?? ''}>Cancelada</span>
-              : <span className={`${s.chip} ${s.chipVerde}`}>Confirmada</span>}
+            {estadoProximo(t)}
+            {t.puedoCancelar && (
+              <button className={s.btnCancelarTurno} onClick={() => setACancelar(t)}>
+                Cancelar
+              </button>
+            )}
           </div>
         ))}
       </div>
@@ -89,6 +113,14 @@ export default function MisTurnosPage() {
             </div>
           ))}
         </div>
+      )}
+
+      {aCancelar && (
+        <CancelarTurnoModal
+          turno={aCancelar}
+          onClose={() => setACancelar(null)}
+          onCancelar={cancelar}
+        />
       )}
     </div>
   );

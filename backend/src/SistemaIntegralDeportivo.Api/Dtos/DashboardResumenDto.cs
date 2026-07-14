@@ -30,16 +30,6 @@ public class CuotasPendientesDto
     public decimal TotalPendiente { get; set; }
 }
 
-/// <summary>Turno cancelado reciente (quién lo canceló llega con la vertical Cancelaciones).</summary>
-public class CancelacionRecienteDto
-{
-    public DateOnly Fecha { get; set; }
-    public TimeOnly HoraInicio { get; set; }
-    public string Titulo { get; set; } = string.Empty;
-    public string? Motivo { get; set; }
-    public DateTime? CanceladoEl { get; set; }
-}
-
 /// <summary>Resumen del dashboard del profesor. Todo sale de datos reales del tenant.</summary>
 public class DashboardResumenDto
 {
@@ -58,6 +48,6 @@ public class DashboardResumenDto
 
     public CuotasPendientesDto CuotasPendientes { get; set; } = new();
 
-    /// <summary>Últimos turnos cancelados (más recientes primero).</summary>
-    public List<CancelacionRecienteDto> CancelacionesRecientes { get; set; } = [];
+    /// <summary>Últimas cancelaciones (turnos enteros + avisos de alumnos), la más nueva primero.</summary>
+    public List<CancelacionDto> CancelacionesRecientes { get; set; } = [];
 }

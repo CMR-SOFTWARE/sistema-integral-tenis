@@ -15,4 +15,10 @@ public class TurnoParticipante
     public Alumno Alumno { get; set; } = null!;
 
     public bool Presente { get; set; } = true;
+
+    // ── Aviso de cancelación DEL ALUMNO (portal): el turno sigue en pie para
+    //    el resto y su cargo queda (= falta con aviso; modelo-precios.md).
+    //    La recuperación es a discreción del profe. ──
+    public DateTime? CanceloEl { get; set; }
+    public string? CancelacionMotivo { get; set; }
 }

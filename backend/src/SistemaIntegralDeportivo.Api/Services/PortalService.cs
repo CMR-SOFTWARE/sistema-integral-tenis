@@ -99,27 +99,79 @@ public class PortalService : IPortalService
         return await MiPerfilAsync(userId, ct);
     }
 
+    public async Task CancelarMiTurnoAsync(
+        Guid userId, Guid turnoId, string motivo, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+
+        if (string.IsNullOrWhiteSpace(motivo))
+            throw new ReglaDeNegocioException("Contanos el motivo de la cancelación.");
+        if (motivo.Trim().Length > 200)
+            throw new ReglaDeNegocioException("El motivo no puede superar los 200 caracteres.");
+
+        var turno = await _turnos.ObtenerAsync(turnoId, ct)
+            ?? throw new ReglaDeNegocioException("El turno no existe.");
+
+        // MI participación: si no estoy en el roster, este turno no es mío
+        var mia = turno.Participantes.FirstOrDefault(p => p.AlumnoId == ficha.Id)
+            ?? throw new ReglaDeNegocioException("No participás de este turno.");
+
+        if (turno.Estado == EstadoTurno.Cancelado)
+            throw new ReglaDeNegocioException("La clase ya está cancelada.");
+        if (mia.CanceloEl is not null)
+            throw new ReglaDeNegocioException("Ya avisaste que no venís a esta clase.");
+
+        // Hasta la hora de inicio (decisión de producto: el aviso no mueve
+        // plata, solo informa — sin mínimo de anticipación)
+        var ahora = DateTime.UtcNow;
+        var hoy = DateOnly.FromDateTime(ahora);
+        var yaEmpezo = turno.Fecha < hoy ||
+            (turno.Fecha == hoy && turno.HoraInicio <= TimeOnly.FromDateTime(ahora));
+        if (yaEmpezo)
+            throw new ReglaDeNegocioException("La clase ya empezó o pasó: no se puede cancelar.");
+
+        // Solo MI participación: el turno sigue para el resto y el cargo
+        // queda (= falta con aviso, modelo-precios.md; recuperación a
+        // discreción del profe)
+        mia.CanceloEl = ahora;
+        mia.CancelacionMotivo = motivo.Trim();
+        mia.Presente = false;
+        await _turnos.GuardarCambiosAsync(ct);
+    }
+
     private async Task<Alumno> FichaDeAsync(Guid userId, CancellationToken ct) =>
         await _alumnos.ObtenerPorUserIdAsync(userId, ct)
             ?? throw new ReglaDeNegocioException(
                 "Tu cuenta no está vinculada a ningún club todavía. Reclamá tu ficha desde el inicio.");
 
-    private static MiTurnoDto Mapear(Turno t, Guid miAlumnoId) => new()
+    private static MiTurnoDto Mapear(Turno t, Guid miAlumnoId)
     {
-        Id = t.Id,
-        Fecha = t.Fecha,
-        HoraInicio = t.HoraInicio,
-        DuracionMinutos = t.DuracionMinutos,
-        Titulo = t.Horario?.Grupo?.Nombre ?? "Clase individual",
-        Categoria = t.Horario?.Grupo?.Categoria?.ToString(),
-        Sede = t.Cancha?.Sede?.Nombre ?? string.Empty,
-        Cancha = t.Cancha?.Nombre ?? string.Empty,
-        Estado = t.Estado.ToString(),
-        CanceladoMotivo = t.CanceladoMotivo,
-        Presente = t.Participantes.FirstOrDefault(p => p.AlumnoId == miAlumnoId)?.Presente ?? true,
-        Companeros = t.Participantes
-            .Where(p => p.AlumnoId != miAlumnoId && p.Alumno is not null)
-            .Select(p => $"{p.Alumno!.Nombre} {p.Alumno.Apellido}")
-            .ToList(),
-    };
+        var mia = t.Participantes.FirstOrDefault(p => p.AlumnoId == miAlumnoId);
+        var canceladoPorMi = mia?.CanceloEl is not null;
+        var ahora = DateTime.UtcNow;
+        var hoy = DateOnly.FromDateTime(ahora);
+        var empezo = t.Fecha < hoy ||
+            (t.Fecha == hoy && t.HoraInicio <= TimeOnly.FromDateTime(ahora));
+
+        return new MiTurnoDto
+        {
+            Id = t.Id,
+            Fecha = t.Fecha,
+            HoraInicio = t.HoraInicio,
+            DuracionMinutos = t.DuracionMinutos,
+            Titulo = t.Horario?.Grupo?.Nombre ?? "Clase individual",
+            Categoria = t.Horario?.Grupo?.Categoria?.ToString(),
+            Sede = t.Cancha?.Sede?.Nombre ?? string.Empty,
+            Cancha = t.Cancha?.Nombre ?? string.Empty,
+            Estado = t.Estado.ToString(),
+            CanceladoMotivo = t.CanceladoMotivo,
+            Presente = mia?.Presente ?? true,
+            Companeros = t.Participantes
+                .Where(p => p.AlumnoId != miAlumnoId && p.Alumno is not null)
+                .Select(p => $"{p.Alumno!.Nombre} {p.Alumno.Apellido}")
+                .ToList(),
+            CanceladoPorMi = canceladoPorMi,
+            PuedoCancelar = t.Estado == EstadoTurno.Programado && !canceladoPorMi && !empezo,
+        };
+    }
 }

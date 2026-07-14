@@ -27,4 +27,14 @@ public interface IPortalService
     /// <exception cref="Common.ReglaDeNegocioException">Sin ficha vinculada o teléfono vacío.</exception>
     Task<MiPerfilDto> ActualizarMiPerfilAsync(
         Guid userId, ActualizarMiPerfilDto dto, CancellationToken ct = default);
+
+    /// <summary>
+    /// Aviso de cancelación de MI turno (hasta la hora de inicio): el turno
+    /// sigue para el resto y mi cargo queda (falta con aviso; la recuperación
+    /// la decide el profe). No mueve plata.
+    /// </summary>
+    /// <exception cref="Common.ReglaDeNegocioException">
+    /// Sin ficha, turno inexistente/ajeno/pasado/cancelado, ya avisado o sin motivo.
+    /// </exception>
+    Task CancelarMiTurnoAsync(Guid userId, Guid turnoId, string motivo, CancellationToken ct = default);
 }

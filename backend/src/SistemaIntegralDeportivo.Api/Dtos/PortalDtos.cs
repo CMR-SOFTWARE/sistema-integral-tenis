@@ -17,6 +17,18 @@ public class MiTurnoDto
     public bool Presente { get; set; }
     /// <summary>Nombres de los demás participantes ("con Mateo, Lucas").</summary>
     public List<string> Companeros { get; set; } = [];
+
+    /// <summary>Ya avisé que no vengo (mi aviso, no el estado del turno).</summary>
+    public bool CanceladoPorMi { get; set; }
+
+    /// <summary>Puedo cancelar: turno vigente, futuro y sin aviso previo.</summary>
+    public bool PuedoCancelar { get; set; }
+}
+
+/// <summary>Aviso de cancelación del alumno (portal): motivo obligatorio.</summary>
+public class CancelarMiTurnoDto
+{
+    public required string Motivo { get; set; }
 }
 
 /// <summary>Mis turnos: los que vienen y lo que ya pasó (historial).</summary>

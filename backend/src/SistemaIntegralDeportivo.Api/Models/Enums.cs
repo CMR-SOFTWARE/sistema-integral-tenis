@@ -48,6 +48,13 @@ public enum EstadoTurno
     Cancelado
 }
 
+/// <summary>Quién canceló el turno ENTERO (el aviso individual del alumno vive en TurnoParticipante).</summary>
+public enum CanceladoPor
+{
+    Profesor,
+    Alumno
+}
+
 /// <summary>Forma del bloqueo de agenda: recurrente semanal o fecha puntual.</summary>
 public enum TipoBloqueo
 {

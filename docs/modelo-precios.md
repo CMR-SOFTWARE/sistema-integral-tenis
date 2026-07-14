@@ -72,6 +72,21 @@ posible. Por eso el orden de construcción es:
 - ~~Alumno que falta: ¿paga igual?~~ → paga igual, siempre. El divisor son
   los asignados, no los presentes (ver §2).
 
+**RESUELTO (13/07/2026, vertical Cancelaciones):**
+
+- ~~¿Qué pasa cuando el ALUMNO cancela desde el portal?~~ → Es un **AVISO**
+  (falta con aviso): el turno sigue en pie para el resto, **el divisor NO
+  cambia y su cargo queda** — coherente con "la asistencia no mueve la
+  plata". Se registra en su participación (`TurnoParticipante.CanceloEl` +
+  motivo) y lo marca ausente. Puede avisar **hasta la hora de inicio** (sin
+  mínimo de anticipación: como no mueve plata, solo informa). La
+  recuperación sigue siendo a discreción del profe (ve el aviso en la
+  pantalla Cancelaciones, con WhatsApp para coordinar).
+- ~~Turno cancelado ENTERO, ¿y el cargo ya generado?~~ → Cancelación del
+  profe (a mano o vía bloqueo) = la clase no ocurre = **nadie paga**: los
+  cargos IMPAGOS del turno se eliminan; los ya PAGADOS no se tocan (plata
+  cobrada es intocable). `Turno.CanceladoPor` registra quién canceló.
+
 **Pendientes (siguen abiertos):**
 
 - [ ] Pagos parciales de una liquidación mensual (hoy: no).

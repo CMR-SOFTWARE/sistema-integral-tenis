@@ -36,8 +36,10 @@ public class TurnoServiceTests
         _service = new TurnoService(
             _turnos.Object, _horarios.Object, _grupos.Object, _cargos.Object, _bloqueos.Object);
 
-        // Por defecto: nadie debe nada y no hay bloqueos
+        // Por defecto: nadie debe nada, sin cargos generados y sin bloqueos
         _cargos.Setup(c => c.ListarImpagosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([]);
+        _cargos.Setup(c => c.ListarPorTurnosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
                .ReturnsAsync([]);
         _bloqueos.Setup(b => b.ListarAsync(It.IsAny<CancellationToken>()))
                  .ReturnsAsync([]);
@@ -65,6 +67,8 @@ public class TurnoServiceTests
         Dia = DayOfWeek.Tuesday,
         HoraInicio = new TimeOnly(18, 0),
         DuracionMinutos = 60,
+        // Alta vieja: los tests de generación cubren el mes completo
+        CreadoEl = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc),
     };
 
     private static Grupo GrupoConMiembros() => new()
@@ -203,6 +207,45 @@ public class TurnoServiceTests
         Assert.DoesNotContain(generados, t => t.Fecha == new DateOnly(2026, 7, 14));
     }
 
+    [Fact]
+    public async Task Mes_NoGeneraTurnosAnterioresAlAltaDelHorario()
+    {
+        // Horario dado de alta el lunes 13/07: las clases del 7/07 no
+        // existieron — un horario nuevo no genera (ni cobra) el pasado
+        var horario = HorarioGrupal();
+        horario.CreadoEl = new DateTime(2026, 7, 13, 12, 0, 0, DateTimeKind.Utc);
+        _horarios.Setup(h => h.ListarActivosAsync(It.IsAny<CancellationToken>()))
+                 .ReturnsAsync([horario]);
+        var generados = new List<Turno>();
+        _turnos.Setup(t => t.AgregarAsync(It.IsAny<Turno>(), It.IsAny<CancellationToken>()))
+               .Callback((Turno t, CancellationToken _) => generados.Add(t))
+               .Returns(Task.CompletedTask);
+
+        await _service.GenerarTurnosDelMesAsync(2026, 7);
+
+        // Martes de julio: 7, 14, 21, 28 → solo desde el alta (14, 21, 28)
+        Assert.Equal(3, generados.Count);
+        Assert.DoesNotContain(generados, t => t.Fecha < new DateOnly(2026, 7, 13));
+    }
+
+    [Fact]
+    public async Task Mes_ElMismoDiaDelAlta_SiSeGenera()
+    {
+        // Alta un martes: la clase de ESE martes sí va (fecha == alta)
+        var horario = HorarioGrupal();
+        horario.CreadoEl = new DateTime(2026, 7, 14, 10, 0, 0, DateTimeKind.Utc);
+        _horarios.Setup(h => h.ListarActivosAsync(It.IsAny<CancellationToken>()))
+                 .ReturnsAsync([horario]);
+        var generados = new List<Turno>();
+        _turnos.Setup(t => t.AgregarAsync(It.IsAny<Turno>(), It.IsAny<CancellationToken>()))
+               .Callback((Turno t, CancellationToken _) => generados.Add(t))
+               .Returns(Task.CompletedTask);
+
+        await _service.GenerarTurnosDelMesAsync(2026, 7);
+
+        Assert.Contains(generados, t => t.Fecha == new DateOnly(2026, 7, 14));
+    }
+
     // ─────────────────────────────────────────────
     // Bloqueos: la generación perezosa SALTEA los slots cubiertos
     // (no genera cancelados: borrar el bloqueo los hace reaparecer)
@@ -312,7 +355,7 @@ public class TurnoServiceTests
     }
 
     [Fact]
-    public async Task Cancelar_GuardaMotivoYFecha_SinBorrar()
+    public async Task Cancelar_GuardaMotivoFechaYQuien_SinBorrar()
     {
         var turno = TurnoConJuan();
 
@@ -321,7 +364,35 @@ public class TurnoServiceTests
         Assert.Equal(EstadoTurno.Cancelado, turno.Estado);
         Assert.Equal("Lluvia", turno.CanceladoMotivo);
         Assert.NotNull(turno.CanceladoEl);
+        Assert.Equal(CanceladoPor.Profesor, turno.CanceladoPor);
         _turnos.Verify(t => t.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Cancelar_EliminaLosCargosImpagosDelTurno_YRespetaPagados()
+    {
+        // Turno cancelado por el profe = la clase no ocurre → nadie paga.
+        // El cargo YA PAGADO no se toca (plata cobrada es intocable).
+        var turno = TurnoConJuan();
+        var impago = new Cargo
+        {
+            AlumnoId = AlumnoJuan, TurnoId = turno.Id, Tipo = TipoCargo.Clase,
+            Concepto = "x", Monto = 4_000m, Fecha = turno.Fecha,
+        };
+        var pagado = new Cargo
+        {
+            AlumnoId = AlumnaSofia, TurnoId = turno.Id, Tipo = TipoCargo.Clase,
+            Concepto = "x", Monto = 4_000m, Fecha = turno.Fecha,
+            PagadoEl = DateTime.UtcNow, MedioPago = MedioPago.Efectivo,
+        };
+        _cargos.Setup(c => c.ListarPorTurnosAsync(
+                   It.Is<IReadOnlyCollection<Guid>>(ids => ids.Contains(turno.Id)), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([impago, pagado]);
+
+        await _service.CancelarAsync(turno.Id, "Lluvia");
+
+        _cargos.Verify(c => c.Eliminar(impago), Times.Once);
+        _cargos.Verify(c => c.Eliminar(pagado), Times.Never);
     }
 
     [Fact]

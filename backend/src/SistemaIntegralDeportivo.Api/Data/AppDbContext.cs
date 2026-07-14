@@ -112,6 +112,7 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
             .OnDelete(DeleteBehavior.SetNull);
 
         modelBuilder.Entity<Turno>().Property(t => t.Estado).HasConversion<string>();
+        modelBuilder.Entity<Turno>().Property(t => t.CanceladoPor).HasConversion<string>();
         // Idempotencia de la generación: UN turno por horario y fecha
         modelBuilder.Entity<Turno>()
             .HasIndex(t => new { t.HorarioId, t.Fecha })

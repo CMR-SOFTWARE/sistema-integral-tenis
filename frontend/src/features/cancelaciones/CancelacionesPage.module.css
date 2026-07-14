@@ -1,0 +1,117 @@
+/* Cancelaciones — lista unificada con chip por-quién y WhatsApp */
+
+.intro {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-bottom: 16px;
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fila {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+}
+
+.dotProfe,
+.dotAlumno {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.dotProfe {
+  background: #b91c1c;
+}
+
+.dotAlumno {
+  background: #b7791f;
+}
+
+.cuerpo {
+  flex: 1;
+  min-width: 0;
+}
+
+.filaTitulo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.chipProfe,
+.chipAlumno {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.chipProfe {
+  background: #fdeaea;
+  color: #b91c1c;
+}
+
+.chipAlumno {
+  background: #fef6e7;
+  color: #b7791f;
+}
+
+.detalle {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.btnWhatsapp {
+  border: none;
+  background: #25d3661a;
+  color: #128c4b;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 7px 12px;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.vacio,
+.error {
+  padding: 48px;
+  text-align: center;
+  color: var(--color-text-faint);
+  font-size: 14px;
+}
+
+.error {
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+}
+
+.vacioCard {
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}

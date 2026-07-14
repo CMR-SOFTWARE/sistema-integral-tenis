@@ -27,6 +27,10 @@ public interface ITurnoRepository
     Task<IReadOnlyList<Turno>> ListarCanceladosRecientesAsync(
         int cantidad, CancellationToken ct = default);
 
+    /// <summary>Últimos AVISOS de alumnos (participaciones con CanceloEl), más recientes primero.</summary>
+    Task<IReadOnlyList<TurnoParticipante>> ListarAvisosRecientesAsync(
+        int cantidad, CancellationToken ct = default);
+
     /// <summary>
     /// Turnos PROGRAMADOS desde una fecha, opcionalmente de una cancha, con
     /// participantes y contexto (cascada e impacto de bloqueos).

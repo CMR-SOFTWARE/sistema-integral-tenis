@@ -25,15 +25,18 @@ public class DashboardService : IDashboardService
     private readonly ITurnoRepository _turnos;
     private readonly ICargoRepository _cargos;
     private readonly ITurnoService _turnoService;
+    private readonly ICancelacionService _cancelaciones;
 
     public DashboardService(
         IAlumnoRepository alumnos, ITurnoRepository turnos,
-        ICargoRepository cargos, ITurnoService turnoService)
+        ICargoRepository cargos, ITurnoService turnoService,
+        ICancelacionService cancelaciones)
     {
         _alumnos = alumnos;
         _turnos = turnos;
         _cargos = cargos;
         _turnoService = turnoService;
+        _cancelaciones = cancelaciones;
     }
 
     public async Task<DashboardResumenDto> ObtenerResumenAsync(CancellationToken ct = default)
@@ -64,7 +67,6 @@ public class DashboardService : IDashboardService
             .Select(a => CuotaService.CalcularEstado(hoy.Year, hoy.Month, a.Saldo, hoy))
             .ToList();
 
-        var cancelados = await _turnos.ListarCanceladosRecientesAsync(CancelacionesAMostrar, ct);
         var porCategoria = await _alumnos.ContarPorCategoriaAsync(ct);
 
         return new DashboardResumenDto
@@ -99,16 +101,8 @@ public class DashboardService : IDashboardService
                 AlumnosVencidos = estados.Count(e => e == "Vencida"),
                 TotalPendiente = porAlumno.Where(a => a.Saldo > 0).Sum(a => a.Saldo),
             },
-            CancelacionesRecientes = cancelados
-                .Select(t => new CancelacionRecienteDto
-                {
-                    Fecha = t.Fecha,
-                    HoraInicio = t.HoraInicio,
-                    Titulo = Titulo(t),
-                    Motivo = t.CanceladoMotivo,
-                    CanceladoEl = t.CanceladoEl,
-                })
-                .ToList(),
+            CancelacionesRecientes =
+                [.. await _cancelaciones.ListarRecientesAsync(CancelacionesAMostrar, ct)],
         };
     }
 
