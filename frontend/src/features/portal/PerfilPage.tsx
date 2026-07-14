@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError } from '../../lib/api';
 import { obtenerSesion } from '../auth/sesion';
+import SinClub from './SinClub';
 import { CAT_LABEL, avatarColor, iniciales } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import type { MiPerfil } from './types';
@@ -12,6 +13,7 @@ import s from './PortalPages.module.css';
  */
 export default function PerfilPage() {
   const sesion = obtenerSesion();
+  const conClub = sesion?.alumno != null;
   const [perfil, setPerfil] = useState<MiPerfil | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,11 +24,13 @@ export default function PerfilPage() {
   const [guardado, setGuardado] = useState(false);
 
   useEffect(() => {
+    if (!conClub) return;
     api.get<MiPerfil>('/portal/perfil')
       .then(setPerfil)
       .catch((e) => setError(e instanceof Error ? e.message : 'Error cargando tu perfil'));
-  }, []);
+  }, [conClub]);
 
+  if (!conClub) return <SinClub mensaje="Tu ficha con categoría y datos deportivos vive en el club de tu profesor." />;
   if (error && !perfil) return <div className={s.error}>{error}</div>;
   if (!perfil) return <div className={s.vacio}>Cargando…</div>;
 

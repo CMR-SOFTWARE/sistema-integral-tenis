@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../lib/api';
+import { obtenerSesion } from '../auth/sesion';
+import SinClub from './SinClub';
 import { formatoPlata } from '../alumnos/types';
 import { ESTADO_LIQ_UI, MESES } from '../cuotas/types';
 import { fechaCorta, horaCorta, DIAS } from '../agenda/types';
@@ -20,11 +22,13 @@ function diaCorto(iso: string): string {
  */
 export default function InicioPage() {
   const hoy = new Date();
+  const conClub = obtenerSesion()?.alumno != null;
   const [turnos, setTurnos] = useState<MisTurnos | null>(null);
   const [cuota, setCuota] = useState<MiLiquidacion | null | undefined>(undefined); // undefined = cargando
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!conClub) return; // sin ficha no hay nada que pedir
     api.get<MisTurnos>('/portal/mis-turnos')
       .then(setTurnos)
       .catch((e) => setError(e instanceof Error ? e.message : 'Error cargando tus clases'));
@@ -32,8 +36,9 @@ export default function InicioPage() {
       .then((c) => setCuota(c ?? null))
       .catch(() => setCuota(null));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [conClub]);
 
+  if (!conClub) return <SinClub />;
   if (error) return <div className={s.error}>{error}</div>;
   if (!turnos || cuota === undefined) return <div className={s.vacio}>Cargando…</div>;
 

@@ -46,3 +46,8 @@ export function cerrarSesion(): void {
   localStorage.removeItem(KEY_TOKEN);
   localStorage.removeItem(KEY_SESION);
 }
+
+/** Jugador logueado sin ficha vinculada: entra al portal en modo "sin club". */
+export function sinClub(s: Sesion | null): boolean {
+  return s !== null && !s.esProfesor && s.alumno === null;
+}
