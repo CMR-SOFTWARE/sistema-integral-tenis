@@ -42,6 +42,19 @@ public class CargoRepository : ICargoRepository
             .Where(c => c.TenantId == TenantId && c.PagadoEl == null && alumnoIds.Contains(c.AlumnoId))
             .ToListAsync(ct);
 
+    public async Task<Dictionary<(int Anio, int Mes), decimal>> SumarPagadosPorMesAsync(
+        DateOnly desde, DateOnly hasta, CancellationToken ct = default)
+    {
+        var porMes = await _db.Cargos
+            .Where(c => c.TenantId == TenantId && c.PagadoEl != null &&
+                        c.Fecha >= desde && c.Fecha <= hasta)
+            .GroupBy(c => new { c.Fecha.Year, c.Fecha.Month })
+            .Select(g => new { g.Key.Year, g.Key.Month, Total = g.Sum(c => c.Monto) })
+            .ToListAsync(ct);
+
+        return porMes.ToDictionary(x => (x.Year, x.Month), x => x.Total);
+    }
+
     public async Task AgregarAsync(Cargo cargo, CancellationToken ct = default)
     {
         cargo.TenantId = TenantId;

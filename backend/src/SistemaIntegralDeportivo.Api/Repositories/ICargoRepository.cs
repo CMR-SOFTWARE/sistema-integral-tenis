@@ -18,6 +18,13 @@ public interface ICargoRepository
     Task<IReadOnlyList<Cargo>> ListarImpagosAsync(
         IReadOnlyCollection<Guid> alumnoIds, CancellationToken ct = default);
 
+    /// <summary>
+    /// Recaudación por mes: suma de cargos PAGADOS con Fecha en el rango,
+    /// agrupada por (año, mes) del cargo — agregación en SQL (reportes).
+    /// </summary>
+    Task<Dictionary<(int Anio, int Mes), decimal>> SumarPagadosPorMesAsync(
+        DateOnly desde, DateOnly hasta, CancellationToken ct = default);
+
     Task AgregarAsync(Cargo cargo, CancellationToken ct = default);
 
     /// <summary>Marca el cargo para borrar (se persiste con GuardarCambiosAsync).</summary>
