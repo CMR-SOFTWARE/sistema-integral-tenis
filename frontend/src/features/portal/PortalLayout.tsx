@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
-import { cerrarSesion, obtenerSesion } from '../auth/sesion';
+import { cerrarSesion, guardarSesion, obtenerSesion } from '../auth/sesion';
+import type { Sesion } from '../auth/sesion';
 import { alumnoNav, portalTitles } from '../../components/layout/nav';
 import { CAT_LABEL } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
@@ -27,12 +28,22 @@ function fechaDeHoy(): string {
 export default function PortalLayout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const sesion = obtenerSesion();
+  const [sesion, setSesion] = useState<Sesion | null>(obtenerSesion());
   const [perfil, setPerfil] = useState<MiPerfil | null>(null);
   const title = portalTitles[pathname] ?? 'CourtSet';
 
   useEffect(() => {
-    api.get<MiPerfil>('/portal/perfil').then(setPerfil).catch(() => setPerfil(null));
+    // Refrescar la sesión al entrar: si reclamó ficha en otra pestaña o el
+    // profe lo cargó después, acá se entera sin re-loguear
+    api.get<Sesion>('/auth/yo')
+      .then((s2) => {
+        guardarSesion(s2);
+        setSesion(s2);
+        if (s2.alumno) {
+          api.get<MiPerfil>('/portal/perfil').then(setPerfil).catch(() => setPerfil(null));
+        }
+      })
+      .catch(() => {}); // sin red: seguimos con la sesión guardada
   }, []);
 
   const salir = () => {
@@ -77,7 +88,7 @@ export default function PortalLayout() {
             </div>
             <div className={s.userInfo}>
               <div className={s.userName}>{nombre}</div>
-              <div className={s.userRole}>{cat ? `Cat. ${cat}` : sesion?.alumno?.club}</div>
+              <div className={s.userRole}>{cat ? `Cat. ${cat}` : sesion?.alumno?.club ?? 'Sin club'}</div>
             </div>
             <button className={s.logout} title="Salir" onClick={salir}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

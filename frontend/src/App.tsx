@@ -17,6 +17,7 @@ import InicioPage from './features/portal/InicioPage';
 import MisTurnosPage from './features/portal/MisTurnosPage';
 import MiCuotaPage from './features/portal/MiCuotaPage';
 import PerfilPage from './features/portal/PerfilPage';
+import BuscarClubPage from './features/portal/BuscarClubPage';
 
 /** Gestión: hace falta token Y membresía de profesor (JWT real). */
 function RequiereProfesor() {
@@ -25,11 +26,13 @@ function RequiereProfesor() {
     : <Navigate to="/login" replace />;
 }
 
-/** Portal: hace falta token Y ficha de alumno vinculada. */
-function RequiereAlumno() {
-  return obtenerToken() && obtenerSesion()?.alumno
-    ? <Outlet />
-    : <Navigate to="/login" replace />;
+/** Portal: alcanza con ser jugador logueado (con o SIN ficha vinculada —
+ *  el portal muestra el estado "sin club" y deja elegir profe). */
+function RequiereJugador() {
+  const sesion = obtenerSesion();
+  if (!obtenerToken() || !sesion) return <Navigate to="/login" replace />;
+  if (sesion.esProfesor) return <Navigate to="/dashboard" replace />;
+  return <Outlet />;
 }
 
 export default function App() {
@@ -54,12 +57,13 @@ export default function App() {
           </Route>
         </Route>
 
-        <Route element={<RequiereAlumno />}>
+        <Route element={<RequiereJugador />}>
           <Route path="/portal" element={<PortalLayout />}>
             <Route index element={<InicioPage />} />
             <Route path="turnos" element={<MisTurnosPage />} />
             <Route path="cuota" element={<MiCuotaPage />} />
             <Route path="perfil" element={<PerfilPage />} />
+            <Route path="club" element={<BuscarClubPage />} />
           </Route>
         </Route>
 

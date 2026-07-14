@@ -56,6 +56,7 @@ export const alumnoNav: NavItem[] = [
   { to: '/portal/turnos', label: 'Mis turnos', icon: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4' },
   { to: '/portal/cuota', label: 'Mi cuota', icon: 'M1 5h22v14H1zM1 10h22' },
   { to: '/portal/perfil', label: 'Mi perfil', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0' },
+  { to: '/portal/club', label: 'Mi club', icon: 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6' },
 ];
 
 export const portalTitles: Record<string, string> = Object.fromEntries(

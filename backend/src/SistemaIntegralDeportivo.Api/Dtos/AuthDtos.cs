@@ -1,15 +1,37 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace SistemaIntegralDeportivo.Api.Dtos;
+
+// Formatos compartidos: DNI solo dígitos; teléfono flexible (el match del
+// reclamo es igualdad EXACTA de strings — formato sugerido E.164)
+public static class FormatosAuth
+{
+    public const string Dni = @"^\d{7,9}$";
+    public const string DniMensaje = "El DNI debe tener solo números (7 a 9 dígitos), sin puntos.";
+    public const string Telefono = @"^\+?[0-9 -]{8,20}$";
+    public const string TelefonoMensaje = "El teléfono debe tener entre 8 y 20 dígitos (podés incluir el +54).";
+}
 
 /// <summary>Registro GRATIS de jugador (ADR-0007): crea la identidad global.</summary>
 public class RegistroJugadorDto
 {
+    [Required, StringLength(80)]
     public required string Nombre { get; set; }
+
+    [Required, StringLength(80)]
     public required string Apellido { get; set; }
+
+    [Required, EmailAddress(ErrorMessage = "El email no tiene un formato válido.")]
     public required string Email { get; set; }
+
+    [Required, MinLength(8, ErrorMessage = "La contraseña necesita al menos 8 caracteres.")]
     public required string Password { get; set; }
 
     // Opcionales, pero son la llave del reclamo de ficha (match por DNI/teléfono)
+    [RegularExpression(FormatosAuth.Dni, ErrorMessage = FormatosAuth.DniMensaje)]
     public string? Dni { get; set; }
+
+    [RegularExpression(FormatosAuth.Telefono, ErrorMessage = FormatosAuth.TelefonoMensaje)]
     public string? Telefono { get; set; }
 }
 
@@ -36,7 +58,10 @@ public class ReclamarFichaDto
 /// <summary>Corregir DNI/teléfono de MI cuenta (para que el reclamo matchee).</summary>
 public class ActualizarMisDatosDto
 {
+    [RegularExpression(FormatosAuth.Dni, ErrorMessage = FormatosAuth.DniMensaje)]
     public string? Dni { get; set; }
+
+    [RegularExpression(FormatosAuth.Telefono, ErrorMessage = FormatosAuth.TelefonoMensaje)]
     public string? Telefono { get; set; }
 }
 

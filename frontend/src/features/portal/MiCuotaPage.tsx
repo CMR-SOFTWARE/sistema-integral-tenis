@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
+import { obtenerSesion } from '../auth/sesion';
+import SinClub from './SinClub';
 import { formatoPlata } from '../alumnos/types';
 import { ESTADO_LIQ_UI, MESES } from '../cuotas/types';
 import type { MiLiquidacion } from './types';
@@ -8,6 +10,7 @@ import s from './PortalPages.module.css';
 /** Mi cuota (mockup): tres cards de resumen + el detalle de cargos del mes. */
 export default function MiCuotaPage() {
   const hoy = new Date();
+  const conClub = obtenerSesion()?.alumno != null;
   const [anio, setAnio] = useState(hoy.getFullYear());
   const [mes, setMes] = useState(hoy.getMonth() + 1);
   const [cuota, setCuota] = useState<MiLiquidacion | null>(null);
@@ -15,13 +18,16 @@ export default function MiCuotaPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!conClub) return;
     setCargando(true);
     setError(null);
     api.get<MiLiquidacion | undefined>(`/portal/mi-cuota/${anio}/${mes}`)
       .then((c) => setCuota(c ?? null)) // 204 = sin movimientos
       .catch((e) => setError(e instanceof Error ? e.message : 'Error cargando tu cuota'))
       .finally(() => setCargando(false));
-  }, [anio, mes]);
+  }, [anio, mes, conClub]);
+
+  if (!conClub) return <SinClub mensaje="Cuando estés en un club, acá vas a ver tu cuota mensual y tus pagos." />;
 
   const mesAnterior = () => {
     if (mes === 1) { setMes(12); setAnio(anio - 1); } else setMes(mes - 1);

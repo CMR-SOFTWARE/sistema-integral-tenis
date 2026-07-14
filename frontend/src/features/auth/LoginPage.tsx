@@ -37,9 +37,13 @@ export default function LoginPage() {
     guardarSesion(s);
     if (s.esProfesor) navigate('/dashboard');
     else if (s.alumno) navigate('/portal');
-    else {
+    else if (s.fichasPorReclamar.length > 0) {
+      // Un club ya lo tiene cargado: ofrecer el reclamo
       setSesion(s);
       setVista('vincular');
+    } else {
+      // Jugador sin club: entra a su portal igual (elige profe desde ahí)
+      navigate('/portal');
     }
   };
 
@@ -60,8 +64,26 @@ export default function LoginPage() {
       entrar(await api.post<Sesion>('/auth/login', { email, password }));
     }, 'No se pudo iniciar sesión.');
 
-  const registrar = () =>
-    conError(async () => {
+  /** Validación local del registro ANTES de llamar a la API (espejo del DTO). */
+  const validarRegistro = (): string | null => {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reg.email.trim()))
+      return 'El email no tiene un formato válido.';
+    if (reg.dni.trim() !== '' && !/^\d{7,9}$/.test(reg.dni.trim()))
+      return 'El DNI debe tener solo números (7 a 9 dígitos), sin puntos.';
+    if (reg.telefono.trim() !== '' && !/^\+?[0-9 -]{8,20}$/.test(reg.telefono.trim()))
+      return 'El teléfono debe tener entre 8 y 20 dígitos (podés incluir el +54).';
+    if (reg.password.length < 8)
+      return 'La contraseña necesita al menos 8 caracteres.';
+    return null;
+  };
+
+  const registrar = () => {
+    const invalido = validarRegistro();
+    if (invalido) {
+      setError(invalido);
+      return;
+    }
+    return conError(async () => {
       entrar(await api.post<Sesion>('/auth/registro', {
         nombre: reg.nombre.trim(),
         apellido: reg.apellido.trim(),
@@ -71,6 +93,7 @@ export default function LoginPage() {
         telefono: reg.telefono.trim() || undefined,
       }));
     }, 'No se pudo crear la cuenta.');
+  };
 
   const reclamar = (alumnoId: string) =>
     conError(async () => {
