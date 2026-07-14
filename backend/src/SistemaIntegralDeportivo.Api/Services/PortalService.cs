@@ -11,15 +11,18 @@ public class PortalService : IPortalService
     private readonly ITurnoRepository _turnos;
     private readonly ITurnoService _turnoService;
     private readonly ICuotaService _cuotas;
+    private readonly ITenantActual _tenantActual;
 
     public PortalService(
         IAlumnoRepository alumnos, ITurnoRepository turnos,
-        ITurnoService turnoService, ICuotaService cuotas)
+        ITurnoService turnoService, ICuotaService cuotas,
+        ITenantActual tenantActual)
     {
         _alumnos = alumnos;
         _turnos = turnos;
         _turnoService = turnoService;
         _cuotas = cuotas;
+        _tenantActual = tenantActual;
     }
 
     public async Task<MisTurnosDto> MisTurnosAsync(Guid userId, CancellationToken ct = default)
@@ -139,10 +142,18 @@ public class PortalService : IPortalService
         await _turnos.GuardarCambiosAsync(ct);
     }
 
-    private async Task<Alumno> FichaDeAsync(Guid userId, CancellationToken ct) =>
-        await _alumnos.ObtenerPorUserIdAsync(userId, ct)
+    private async Task<Alumno> FichaDeAsync(Guid userId, CancellationToken ct)
+    {
+        var ficha = await _alumnos.ObtenerPorUserIdAsync(userId, ct)
             ?? throw new ReglaDeNegocioException(
-                "Tu cuenta no está vinculada a ningún club todavía. Reclamá tu ficha desde el inicio.");
+                "Tu cuenta no está vinculada a ningún club todavía. Buscá tu club desde el portal.");
+
+        // COSTURA CLAVE (ADR-0010): el alumno no trae claim tenant — el tenant
+        // del request es el del CLUB de su ficha. Con esto, la generación de
+        // turnos y la liquidación de cuotas operan el club correcto.
+        _tenantActual.Establecer(ficha.TenantId);
+        return ficha;
+    }
 
     private static MiTurnoDto Mapear(Turno t, Guid miAlumnoId)
     {

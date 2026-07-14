@@ -28,13 +28,13 @@ public class AuthServiceTests
         _service = new AuthService(_alumnos.Object, _tenants.Object, _tokens.Object);
 
         // Por defecto: no es dueño de tenants, sin ficha vinculada ni coincidencias
-        _tenants.Setup(t => t.EsDuenioAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(false);
+        _tenants.Setup(t => t.ObtenerPorOwnerAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((Tenant?)null);
         _alumnos.Setup(a => a.ObtenerPorUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((Alumno?)null);
         _alumnos.Setup(a => a.BuscarReclamablesAsync(It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync([]);
-        _tokens.Setup(t => t.Generar(It.IsAny<Usuario>(), It.IsAny<bool>()))
+        _tokens.Setup(t => t.Generar(It.IsAny<Usuario>(), It.IsAny<Tenant?>()))
                .Returns("jwt-de-prueba");
     }
 
@@ -65,17 +65,27 @@ public class AuthServiceTests
     // ─────────────────────────────────────────────
 
     [Fact]
-    public async Task Sesion_DuenioDeTenant_EsProfesor_YElTokenLlevaElClaim()
+    public async Task Sesion_DuenioDeTenant_EsProfesor_YElTokenLlevaSuTenant()
     {
         var profe = Jugador();
-        _tenants.Setup(t => t.EsDuenioAsync(UserId, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(true);
+        var suClub = new Tenant { Subdominio = "mi-club", Nombre = "Mi Club", OwnerUserId = UserId };
+        _tenants.Setup(t => t.ObtenerPorOwnerAsync(UserId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(suClub);
 
         var sesion = await _service.ArmarSesionAsync(profe, incluirToken: true);
 
         Assert.True(sesion.EsProfesor);
         Assert.Equal("jwt-de-prueba", sesion.Token);
-        _tokens.Verify(t => t.Generar(profe, true), Times.Once);
+        _tokens.Verify(t => t.Generar(profe, suClub), Times.Once); // el claim tenant sale de acá
+    }
+
+    [Fact]
+    public async Task Sesion_Jugador_ElTokenVaSinTenant()
+    {
+        var sesion = await _service.ArmarSesionAsync(Jugador(), incluirToken: true);
+
+        Assert.False(sesion.EsProfesor);
+        _tokens.Verify(t => t.Generar(It.IsAny<Usuario>(), null), Times.Once);
     }
 
     [Fact]
@@ -84,7 +94,7 @@ public class AuthServiceTests
         var sesion = await _service.ArmarSesionAsync(Jugador(), incluirToken: false);
 
         Assert.Null(sesion.Token);
-        _tokens.Verify(t => t.Generar(It.IsAny<Usuario>(), It.IsAny<bool>()), Times.Never);
+        _tokens.Verify(t => t.Generar(It.IsAny<Usuario>(), It.IsAny<Tenant?>()), Times.Never);
     }
 
     [Fact]

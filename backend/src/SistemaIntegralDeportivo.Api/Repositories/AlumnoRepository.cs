@@ -1,20 +1,22 @@
 using Microsoft.EntityFrameworkCore;
 using SistemaIntegralDeportivo.Api.Data;
 using SistemaIntegralDeportivo.Api.Models;
+using SistemaIntegralDeportivo.Api.Services;
 
 namespace SistemaIntegralDeportivo.Api.Repositories;
 
 public class AlumnoRepository : IAlumnoRepository
 {
     private readonly AppDbContext _db;
+    private readonly ITenantActual _tenantActual;
 
-    // Mientras no haya auth, todo opera sobre el tenant demo (ADR-0004).
-    // Cuando exista login, este valor saldrá del contexto del request.
-    private static Guid TenantId => AppDbContext.TenantDemoId;
+    // El tenant sale del token o del override del portal (ADR-0010)
+    private Guid TenantId => _tenantActual.TenantId;
 
-    public AlumnoRepository(AppDbContext db)
+    public AlumnoRepository(AppDbContext db, ITenantActual tenantActual)
     {
         _db = db;
+        _tenantActual = tenantActual;
     }
 
     public Task<bool> ExisteDniAsync(string dni, CancellationToken ct = default) =>

@@ -18,6 +18,10 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers().AddJsonOptions(options =>
     options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
+// El tenant del request (ADR-0010): claim "tenant" del JWT u override del portal
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ITenantActual, TenantActual>();
+
 // DI del módulo Alumnos: las capas se consumen por interfaz (ADR-0002)
 builder.Services.AddScoped<IAlumnoRepository, AlumnoRepository>();
 builder.Services.AddScoped<IAlumnoService, AlumnoService>();

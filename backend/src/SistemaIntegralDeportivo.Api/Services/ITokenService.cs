@@ -6,9 +6,10 @@ namespace SistemaIntegralDeportivo.Api.Services;
 public interface ITokenService
 {
     /// <summary>
-    /// Claims: sub (userId), email, nombre y "profesor" si es dueño de un
-    /// tenant. La ficha de alumno NO va en el token (puede reclamarse después
-    /// de emitido): el portal la resuelve por userId en cada request.
+    /// Claims: sub (userId), email, nombre; si <paramref name="tenantPropio"/>
+    /// viene, agrega "profesor" y "tenant" (el club que administra, ADR-0010).
+    /// La ficha de alumno NO va en el token (puede vincularse después de
+    /// emitido): el portal la resuelve por userId en cada request.
     /// </summary>
-    string Generar(Usuario usuario, bool esProfesor);
+    string Generar(Usuario usuario, Tenant? tenantPropio);
 }
