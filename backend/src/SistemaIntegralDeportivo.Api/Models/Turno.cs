@@ -27,6 +27,8 @@ public class Turno
     public EstadoTurno Estado { get; set; } = EstadoTurno.Programado;
     public string? CanceladoMotivo { get; set; }
     public DateTime? CanceladoEl { get; set; }
+    /// <summary>Quién lo canceló (null en cancelaciones previas a esta columna).</summary>
+    public CanceladoPor? CanceladoPor { get; set; }
 
     public DateTime CreadoEl { get; set; } = DateTime.UtcNow;
 
