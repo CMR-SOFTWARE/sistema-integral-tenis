@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using SistemaIntegralDeportivo.Api.Common;
 using SistemaIntegralDeportivo.Api.Dtos;
 using SistemaIntegralDeportivo.Api.Models;
+using SistemaIntegralDeportivo.Api.Repositories;
 using SistemaIntegralDeportivo.Api.Services;
 
 namespace SistemaIntegralDeportivo.Api.Controllers;
@@ -19,16 +20,48 @@ public class AuthController : ControllerBase
 {
     private readonly UserManager<Usuario> _userManager;
     private readonly IAuthService _auth;
+    private readonly ITenantRepository _tenants;
 
-    public AuthController(UserManager<Usuario> userManager, IAuthService auth)
+    public AuthController(UserManager<Usuario> userManager, IAuthService auth, ITenantRepository tenants)
     {
         _userManager = userManager;
         _auth = auth;
+        _tenants = tenants;
     }
 
-    /// <summary>POST api/auth/registro — alta GRATIS de jugador.</summary>
+    /// <summary>POST api/auth/registro — alta GRATIS de jugador (datos completos).</summary>
     [HttpPost("registro")]
     public async Task<ActionResult<SesionDto>> Registro(RegistroJugadorDto dto, CancellationToken ct)
+    {
+        var usuario = new Usuario
+        {
+            UserName = dto.Email.Trim(),
+            Email = dto.Email.Trim(),
+            Nombre = dto.Nombre.Trim(),
+            Apellido = dto.Apellido.Trim(),
+            Dni = dto.Dni.Trim(),
+            PhoneNumber = dto.Telefono.Trim(),
+            FechaNacimiento = dto.FechaNacimiento,
+            Categoria = dto.Categoria,
+        };
+
+        var resultado = await _userManager.CreateAsync(usuario, dto.Password);
+        if (!resultado.Succeeded)
+            return Problem(
+                // Distinct: UserName == Email, y los duplicados dicen lo mismo
+                detail: string.Join(" ", resultado.Errors.Select(e => e.Description).Distinct()),
+                statusCode: StatusCodes.Status400BadRequest);
+
+        return Ok(await _auth.ArmarSesionAsync(usuario, incluirToken: true, ct));
+    }
+
+    /// <summary>
+    /// POST api/auth/registro-profesor — identidad + su club en PENDIENTE_PAGO.
+    /// Después del checkout (POST activar-tenant) recién habilita la gestión.
+    /// </summary>
+    [HttpPost("registro-profesor")]
+    public async Task<ActionResult<SesionDto>> RegistroProfesor(
+        RegistroProfesorDto dto, CancellationToken ct)
     {
         var usuario = new Usuario
         {
@@ -43,11 +76,58 @@ public class AuthController : ControllerBase
         var resultado = await _userManager.CreateAsync(usuario, dto.Password);
         if (!resultado.Succeeded)
             return Problem(
-                // Distinct: UserName == Email, y los duplicados dicen lo mismo
                 detail: string.Join(" ", resultado.Errors.Select(e => e.Description).Distinct()),
                 statusCode: StatusCodes.Status400BadRequest);
 
+        try
+        {
+            await _auth.CrearTenantParaAsync(usuario, dto.NombreClub, ct);
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            // Compensación: sin club no hay registro de profe a medias
+            await _userManager.DeleteAsync(usuario);
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+
         return Ok(await _auth.ArmarSesionAsync(usuario, incluirToken: true, ct));
+    }
+
+    /// <summary>
+    /// POST api/auth/activar-tenant — el "pago" del checkout SIMULADO.
+    /// Al desplegar: el webhook de Mercado Pago llama al mismo ActivarTenantAsync
+    /// y este endpoint se limita a Development.
+    /// </summary>
+    [Authorize]
+    [HttpPost("activar-tenant")]
+    public async Task<ActionResult<SesionDto>> ActivarTenant(CancellationToken ct)
+    {
+        var usuario = await UsuarioActualAsync();
+        if (usuario is null) return Unauthorized();
+
+        try
+        {
+            return Ok(await _auth.ActivarTenantAsync(usuario, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>GET api/auth/profesores?buscar= — búsqueda pública de clubes activos.</summary>
+    [HttpGet("profesores")]
+    public async Task<ActionResult<IReadOnlyList<ProfesorPublicoDto>>> Profesores(
+        CancellationToken ct, [FromQuery] string? buscar = null)
+    {
+        var activos = await _tenants.ListarActivosAsync(buscar, ct);
+        // Solo datos públicos: club y nombre del profe (nada de precios/contactos)
+        return Ok(activos.Select(x => new ProfesorPublicoDto
+        {
+            TenantId = x.Tenant.Id,
+            Club = x.Tenant.Nombre,
+            Profesor = x.Profesor,
+        }).ToList());
     }
 
     /// <summary>POST api/auth/login — email + contraseña → JWT + membresías.</summary>

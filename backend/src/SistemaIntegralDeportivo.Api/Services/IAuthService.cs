@@ -23,4 +23,20 @@ public interface IAuthService
     /// </summary>
     /// <exception cref="Common.ReglaDeNegocioException">Si no es reclamable por este usuario.</exception>
     Task ReclamarFichaAsync(Usuario usuario, Guid alumnoId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Registro de profesor: crea SU tenant en PENDIENTE_PAGO (subdominio =
+    /// slug del nombre, con sufijo si colisiona). Un tenant por profe.
+    /// </summary>
+    /// <exception cref="Common.ReglaDeNegocioException">Nombre vacío o ya es dueño de un club.</exception>
+    Task<Tenant> CrearTenantParaAsync(Usuario usuario, string nombreClub, CancellationToken ct = default);
+
+    /// <summary>
+    /// "Pagó la suscripción": PENDIENTE_PAGO → ACTIVO. IDEMPOTENTE (el webhook
+    /// de MP reintenta). Hoy lo dispara el checkout simulado; al desplegar,
+    /// el webhook real llama a este MISMO método — la costura es esta.
+    /// Devuelve la sesión con token nuevo (claims profesor + tenant).
+    /// </summary>
+    /// <exception cref="Common.ReglaDeNegocioException">Si no tiene ningún club.</exception>
+    Task<SesionDto> ActivarTenantAsync(Usuario usuario, CancellationToken ct = default);
 }

@@ -12,7 +12,10 @@ public static class FormatosAuth
     public const string TelefonoMensaje = "El teléfono debe tener entre 8 y 20 dígitos (podés incluir el +54).";
 }
 
-/// <summary>Registro GRATIS de jugador (ADR-0007): crea la identidad global.</summary>
+/// <summary>
+/// Registro GRATIS de jugador (ADR-0007): crea la identidad global con los
+/// datos deportivos completos (viajan a la ficha al vincularse a un club).
+/// </summary>
 public class RegistroJugadorDto
 {
     [Required, StringLength(80)]
@@ -27,12 +30,52 @@ public class RegistroJugadorDto
     [Required, MinLength(8, ErrorMessage = "La contraseña necesita al menos 8 caracteres.")]
     public required string Password { get; set; }
 
-    // Opcionales, pero son la llave del reclamo de ficha (match por DNI/teléfono)
+    [Required(ErrorMessage = "El DNI es obligatorio."),
+     RegularExpression(FormatosAuth.Dni, ErrorMessage = FormatosAuth.DniMensaje)]
+    public required string Dni { get; set; }
+
+    [Required(ErrorMessage = "El teléfono es obligatorio."),
+     RegularExpression(FormatosAuth.Telefono, ErrorMessage = FormatosAuth.TelefonoMensaje)]
+    public required string Telefono { get; set; }
+
+    [Required(ErrorMessage = "La fecha de nacimiento es obligatoria.")]
+    public required DateTime FechaNacimiento { get; set; }
+
+    /// <summary>"No sé todavía" = SinCategoria.</summary>
+    public Models.CategoriaAlumno Categoria { get; set; } = Models.CategoriaAlumno.SinCategoria;
+}
+
+/// <summary>Registro de PROFESOR: identidad + su club, que nace PENDIENTE_PAGO.</summary>
+public class RegistroProfesorDto
+{
+    [Required, StringLength(80)]
+    public required string Nombre { get; set; }
+
+    [Required, StringLength(80)]
+    public required string Apellido { get; set; }
+
+    [Required, EmailAddress(ErrorMessage = "El email no tiene un formato válido.")]
+    public required string Email { get; set; }
+
+    [Required, MinLength(8, ErrorMessage = "La contraseña necesita al menos 8 caracteres.")]
+    public required string Password { get; set; }
+
     [RegularExpression(FormatosAuth.Dni, ErrorMessage = FormatosAuth.DniMensaje)]
     public string? Dni { get; set; }
 
     [RegularExpression(FormatosAuth.Telefono, ErrorMessage = FormatosAuth.TelefonoMensaje)]
     public string? Telefono { get; set; }
+
+    [Required(ErrorMessage = "Poné el nombre de tu club o academia."), StringLength(80)]
+    public required string NombreClub { get; set; }
+}
+
+/// <summary>Un profesor visible públicamente (búsqueda del registro/solicitudes).</summary>
+public class ProfesorPublicoDto
+{
+    public Guid TenantId { get; set; }
+    public string Club { get; set; } = string.Empty;
+    public string Profesor { get; set; } = string.Empty;
 }
 
 public class LoginDto
@@ -78,8 +121,11 @@ public class SesionDto
     public string Apellido { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
 
-    /// <summary>Dueño de un tenant (membresía Profesor, ADR-0007).</summary>
+    /// <summary>Dueño de un tenant ACTIVO (membresía Profesor, ADR-0007).</summary>
     public bool EsProfesor { get; set; }
+
+    /// <summary>Estado del club propio ("PendientePago" manda al checkout); null si no tiene.</summary>
+    public string? EstadoTenant { get; set; }
 
     /// <summary>Ficha vinculada (habilita el portal); null si no reclamó ninguna.</summary>
     public FichaDto? Alumno { get; set; }
