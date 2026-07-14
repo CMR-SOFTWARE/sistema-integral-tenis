@@ -1,18 +1,22 @@
 using Microsoft.EntityFrameworkCore;
 using SistemaIntegralDeportivo.Api.Data;
 using SistemaIntegralDeportivo.Api.Models;
+using SistemaIntegralDeportivo.Api.Services;
 
 namespace SistemaIntegralDeportivo.Api.Repositories;
 
 public class CargoRepository : ICargoRepository
 {
     private readonly AppDbContext _db;
+    private readonly ITenantActual _tenantActual;
 
-    private static Guid TenantId => AppDbContext.TenantDemoId;
+    // El tenant sale del token o del override del portal (ADR-0010)
+    private Guid TenantId => _tenantActual.TenantId;
 
-    public CargoRepository(AppDbContext db)
+    public CargoRepository(AppDbContext db, ITenantActual tenantActual)
     {
         _db = db;
+        _tenantActual = tenantActual;
     }
 
     public async Task<IReadOnlyList<Cargo>> ListarDelMesAsync(int anio, int mes, CancellationToken ct = default)

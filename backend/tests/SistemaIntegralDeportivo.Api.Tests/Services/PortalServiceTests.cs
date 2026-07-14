@@ -20,6 +20,7 @@ public class PortalServiceTests
     private readonly Mock<ITurnoRepository> _turnos;
     private readonly Mock<ITurnoService> _turnoService;
     private readonly Mock<ICuotaService> _cuotas;
+    private readonly Mock<ITenantActual> _tenantActual;
     private readonly PortalService _service;
     private readonly Alumno _ficha;
 
@@ -29,7 +30,9 @@ public class PortalServiceTests
         _turnos = new Mock<ITurnoRepository>();
         _turnoService = new Mock<ITurnoService>();
         _cuotas = new Mock<ICuotaService>();
-        _service = new PortalService(_alumnos.Object, _turnos.Object, _turnoService.Object, _cuotas.Object);
+        _tenantActual = new Mock<ITenantActual>();
+        _service = new PortalService(
+            _alumnos.Object, _turnos.Object, _turnoService.Object, _cuotas.Object, _tenantActual.Object);
 
         _ficha = new Alumno
         {
@@ -54,6 +57,16 @@ public class PortalServiceTests
 
         await Assert.ThrowsAsync<ReglaDeNegocioException>(
             () => _service.MisTurnosAsync(sinFicha));
+    }
+
+    [Fact]
+    public async Task MisTurnos_FijaElTenantDelClubDeLaFicha()
+    {
+        // COSTURA ADR-0010: el alumno no trae claim tenant — el portal debe
+        // fijar el tenant de SU club antes de generar turnos o liquidar
+        await _service.MisTurnosAsync(UserId);
+
+        _tenantActual.Verify(t => t.Establecer(_ficha.TenantId), Times.Once);
     }
 
     [Fact]

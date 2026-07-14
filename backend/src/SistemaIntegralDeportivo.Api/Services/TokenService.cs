@@ -15,7 +15,7 @@ public class TokenService : ITokenService
         _config = config;
     }
 
-    public string Generar(Usuario usuario, bool esProfesor)
+    public string Generar(Usuario usuario, Tenant? tenantPropio)
     {
         var claims = new List<Claim>
         {
@@ -23,8 +23,12 @@ public class TokenService : ITokenService
             new(JwtRegisteredClaimNames.Email, usuario.Email ?? string.Empty),
             new("nombre", $"{usuario.Nombre} {usuario.Apellido}"),
         };
-        if (esProfesor)
+        if (tenantPropio is not null)
+        {
             claims.Add(new Claim("profesor", "true"));
+            // El club que administra: los repos de gestión operan este tenant (ADR-0010)
+            claims.Add(new Claim("tenant", tenantPropio.Id.ToString()));
+        }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]
             ?? throw new InvalidOperationException("Falta Jwt:Key en la configuración.")));

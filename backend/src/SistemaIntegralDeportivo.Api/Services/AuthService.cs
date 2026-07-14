@@ -21,7 +21,10 @@ public class AuthService : IAuthService
     public async Task<SesionDto> ArmarSesionAsync(
         Usuario usuario, bool incluirToken, CancellationToken ct = default)
     {
-        var esProfesor = await _tenants.EsDuenioAsync(usuario.Id, ct);
+        // El tenant que administra (si es dueño) viaja en el token: los repos
+        // de gestión operan ESE club (ADR-0010)
+        var tenantPropio = await _tenants.ObtenerPorOwnerAsync(usuario.Id, ct);
+        var esProfesor = tenantPropio is not null;
 
         // Una ficha por usuario en el prototipo (multi-membresía: fase futura).
         // Si ya reclamó una, no se ofrecen más.
@@ -32,7 +35,7 @@ public class AuthService : IAuthService
 
         return new SesionDto
         {
-            Token = incluirToken ? _tokens.Generar(usuario, esProfesor) : null,
+            Token = incluirToken ? _tokens.Generar(usuario, tenantPropio) : null,
             Nombre = usuario.Nombre,
             Apellido = usuario.Apellido,
             Email = usuario.Email ?? string.Empty,

@@ -1,18 +1,22 @@
 using Microsoft.EntityFrameworkCore;
 using SistemaIntegralDeportivo.Api.Data;
 using SistemaIntegralDeportivo.Api.Models;
+using SistemaIntegralDeportivo.Api.Services;
 
 namespace SistemaIntegralDeportivo.Api.Repositories;
 
 public class TurnoRepository : ITurnoRepository
 {
     private readonly AppDbContext _db;
+    private readonly ITenantActual _tenantActual;
 
-    private static Guid TenantId => AppDbContext.TenantDemoId;
+    // El tenant sale del token o del override del portal (ADR-0010)
+    private Guid TenantId => _tenantActual.TenantId;
 
-    public TurnoRepository(AppDbContext db)
+    public TurnoRepository(AppDbContext db, ITenantActual tenantActual)
     {
         _db = db;
+        _tenantActual = tenantActual;
     }
 
     public async Task<IReadOnlyList<Turno>> ListarEntreAsync(
