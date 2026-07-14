@@ -1,6 +1,5 @@
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import AppLayout from './components/layout/AppLayout';
-import Placeholder from './components/Placeholder';
 import AlumnosPage from './features/alumnos/AlumnosPage';
 import LoginPage from './features/auth/LoginPage';
 import { obtenerSesion, obtenerToken } from './features/auth/sesion';
@@ -12,6 +11,7 @@ import ConfiguracionPage from './features/agenda/ConfiguracionPage';
 import CuotasPage from './features/cuotas/CuotasPage';
 import BloqueosPage from './features/bloqueos/BloqueosPage';
 import CancelacionesPage from './features/cancelaciones/CancelacionesPage';
+import ReportesPage from './features/reportes/ReportesPage';
 import PortalLayout from './features/portal/PortalLayout';
 import InicioPage from './features/portal/InicioPage';
 import MisTurnosPage from './features/portal/MisTurnosPage';
@@ -49,7 +49,7 @@ export default function App() {
             <Route path="/cuotas" element={<CuotasPage />} />
             <Route path="/bloqueos" element={<BloqueosPage />} />
             <Route path="/cancelaciones" element={<CancelacionesPage />} />
-            <Route path="/reportes" element={<Placeholder titulo="Reportes" />} />
+            <Route path="/reportes" element={<ReportesPage />} />
             <Route path="/configuracion" element={<ConfiguracionPage />} />
           </Route>
         </Route>
