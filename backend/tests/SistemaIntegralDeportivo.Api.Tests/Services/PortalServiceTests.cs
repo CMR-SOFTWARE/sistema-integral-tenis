@@ -136,6 +136,113 @@ public class PortalServiceTests
         Assert.Empty(mis.Historial);
     }
 
+    // ─────────────────────────────────────────────
+    // Cancelar MI turno (aviso individual: el turno sigue, mi cargo queda)
+    // ─────────────────────────────────────────────
+
+    private Turno TurnoConmigo(DateOnly fecha, TimeOnly? hora = null)
+    {
+        var turno = TurnoDelGrupo(fecha);
+        turno.HoraInicio = hora ?? new TimeOnly(23, 59); // futuro dentro del día
+        _turnos.Setup(t => t.ObtenerAsync(turno.Id, It.IsAny<CancellationToken>()))
+               .ReturnsAsync(turno);
+        return turno;
+    }
+
+    [Fact]
+    public async Task CancelarMiTurno_RegistraElAvisoEnMiParticipacion_SinTocarElTurno()
+    {
+        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+        var turno = TurnoConmigo(hoy.AddDays(2));
+
+        await _service.CancelarMiTurnoAsync(UserId, turno.Id, "Viaje de trabajo");
+
+        var mia = turno.Participantes.Single(p => p.AlumnoId == _ficha.Id);
+        Assert.NotNull(mia.CanceloEl);
+        Assert.Equal("Viaje de trabajo", mia.CancelacionMotivo);
+        Assert.False(mia.Presente); // avisó que no viene
+        // El turno SIGUE para los demás y nadie toca la plata
+        Assert.Equal(EstadoTurno.Programado, turno.Estado);
+        var otro = turno.Participantes.Single(p => p.AlumnoId == OtroAlumnoId);
+        Assert.Null(otro.CanceloEl);
+        _turnos.Verify(t => t.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CancelarMiTurno_DeUnTurnoDondeNoParticipo_Lanza()
+    {
+        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+        var turno = TurnoConmigo(hoy.AddDays(2));
+        turno.Participantes.Remove(turno.Participantes.Single(p => p.AlumnoId == _ficha.Id));
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.CancelarMiTurnoAsync(UserId, turno.Id, "x"));
+    }
+
+    [Fact]
+    public async Task CancelarMiTurno_Inexistente_Lanza()
+    {
+        _turnos.Setup(t => t.ObtenerAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync((Turno?)null);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.CancelarMiTurnoAsync(UserId, Guid.NewGuid(), "x"));
+    }
+
+    [Fact]
+    public async Task CancelarMiTurno_TurnoPasado_Lanza()
+    {
+        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+        var turno = TurnoConmigo(hoy.AddDays(-1));
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.CancelarMiTurnoAsync(UserId, turno.Id, "x"));
+    }
+
+    [Fact]
+    public async Task CancelarMiTurno_HoyPeroYaEmpezo_Lanza()
+    {
+        var ahora = DateTime.UtcNow;
+        var turno = TurnoConmigo(
+            DateOnly.FromDateTime(ahora),
+            TimeOnly.FromDateTime(ahora).AddMinutes(-10)); // arrancó hace 10'
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.CancelarMiTurnoAsync(UserId, turno.Id, "x"));
+    }
+
+    [Fact]
+    public async Task CancelarMiTurno_YaAvise_Lanza()
+    {
+        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+        var turno = TurnoConmigo(hoy.AddDays(2));
+        turno.Participantes.Single(p => p.AlumnoId == _ficha.Id).CanceloEl = DateTime.UtcNow;
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.CancelarMiTurnoAsync(UserId, turno.Id, "otra vez"));
+    }
+
+    [Fact]
+    public async Task CancelarMiTurno_TurnoYaCanceladoEntero_Lanza()
+    {
+        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+        var turno = TurnoConmigo(hoy.AddDays(2));
+        turno.Estado = EstadoTurno.Cancelado;
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.CancelarMiTurnoAsync(UserId, turno.Id, "x"));
+    }
+
+    [Fact]
+    public async Task CancelarMiTurno_SinMotivo_Lanza()
+    {
+        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+        var turno = TurnoConmigo(hoy.AddDays(2));
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.CancelarMiTurnoAsync(UserId, turno.Id, "   "));
+    }
+
     [Fact]
     public async Task MiCuota_DevuelveSoloMiLiquidacion()
     {

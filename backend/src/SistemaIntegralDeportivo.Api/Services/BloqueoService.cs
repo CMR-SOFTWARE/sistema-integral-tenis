@@ -51,6 +51,7 @@ public class BloqueoService : IBloqueoService
                 turno.Estado = EstadoTurno.Cancelado;
                 turno.CanceladoMotivo = motivo;
                 turno.CanceladoEl = ahora;
+                turno.CanceladoPor = CanceladoPor.Profesor; // el bloqueo es del profe
             }
         }
 
