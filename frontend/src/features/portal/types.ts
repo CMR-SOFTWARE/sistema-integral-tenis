@@ -15,6 +15,10 @@ export interface MiTurno {
   canceladoMotivo: string | null;
   presente: boolean;
   companeros: string[]; // "con Mateo, Lucas"
+  /** Ya avisé que no vengo (mi aviso; el turno puede seguir en pie). */
+  canceladoPorMi: boolean;
+  /** Puedo cancelar: vigente, futuro y sin aviso previo. */
+  puedoCancelar: boolean;
 }
 
 export interface MisTurnos {
