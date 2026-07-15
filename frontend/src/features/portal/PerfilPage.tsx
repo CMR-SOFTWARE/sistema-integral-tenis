@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
-import { obtenerSesion } from '../auth/sesion';
-import SinClub from './SinClub';
+import { guardarSesion, obtenerSesion } from '../auth/sesion';
+import type { Sesion } from '../auth/sesion';
+import MisDatosForm from './MisDatosForm';
 import { CAT_LABEL, avatarColor, iniciales } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import type { MiPerfil } from './types';
@@ -30,7 +32,15 @@ export default function PerfilPage() {
       .catch((e) => setError(e instanceof Error ? e.message : 'Error cargando tu perfil'));
   }, [conClub]);
 
-  if (!conClub) return <SinClub mensaje="Tu ficha con categoría y datos deportivos vive en el club de tu profesor." />;
+  // Sin club: el perfil son TUS datos de cuenta (los necesita la solicitud)
+  if (!conClub) {
+    return (
+      <MisDatosForm
+        sesion={sesion}
+        onGuardado={(s2: Sesion) => guardarSesion(s2)}
+      />
+    );
+  }
   if (error && !perfil) return <div className={s.error}>{error}</div>;
   if (!perfil) return <div className={s.vacio}>Cargando…</div>;
 
@@ -148,6 +158,17 @@ export default function PerfilPage() {
         Podés editar tu teléfono y email. El resto de los datos (DNI, categoría,
         modalidad) los corrige tu profesor.
       </p>
+
+      <div className={s.tarjeta}>
+        <h3 className={s.tarjetaTitulo}>Mi cuenta</h3>
+        <div className={s.perfilDato}>
+          <span className={s.perfilLabel}>Email de acceso</span>
+          <span className={s.perfilValor}>{sesion?.email}</span>
+        </div>
+        <div className={s.perfilAcciones}>
+          <Link to="/cambiar-password" className={s.btnEditar}>Cambiar contraseña</Link>
+        </div>
+      </div>
     </div>
   );
 }

@@ -2,20 +2,22 @@ import { useState } from 'react';
 import Modal from '../../components/Modal';
 import { ApiError } from '../../lib/api';
 import { CATEGORIAS, CAT_LABEL, edad } from './types';
-import type { Categoria, CreateAlumno, RelacionTutor } from './types';
+import type { AlumnoCreado, Categoria, CreateAlumno, RelacionTutor } from './types';
 import s from './NuevoAlumnoModal.module.css';
 
 interface Props {
   onClose: () => void;
-  onCrear: (dto: CreateAlumno) => Promise<unknown>;
+  onCrear: (dto: CreateAlumno) => Promise<AlumnoCreado>;
+  /** El alta devuelve las credenciales: el padre muestra el modal de éxito. */
+  onCreado: (creado: AlumnoCreado) => void;
 }
 
 /**
- * Alta de alumno. Mejora sobre el mockup: cuando la fecha de nacimiento
- * da menor de 18, aparece el bloque de tutor + consentimiento (obligatorios
- * por la regla del menor). Se quitó el "acceso al portal" (fase futura).
+ * Alta de alumno CON acceso al portal (plan v2: registro único — email
+ * obligatorio, el sistema genera la contraseña temporal). Cuando la fecha
+ * de nacimiento da menor de 18, aparece el bloque de tutor + consentimiento.
  */
-export default function NuevoAlumnoModal({ onClose, onCrear }: Props) {
+export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) {
   const [form, setForm] = useState({
     nombre: '', apellido: '', dni: '', telefono: '', email: '',
     fechaNacimiento: '', categoria: 'SinCategoria' as Categoria,
@@ -41,7 +43,7 @@ export default function NuevoAlumnoModal({ onClose, onCrear }: Props) {
         apellido: form.apellido.trim(),
         dni: form.dni.trim(),
         telefono: form.telefono.trim(),
-        email: form.email.trim() || undefined,
+        email: form.email.trim(),
         fechaNacimiento: form.fechaNacimiento,
         categoria: form.categoria,
         // Arancel ya no se carga acá: el monto real sale de los cargos (ADR-0009)
@@ -58,8 +60,8 @@ export default function NuevoAlumnoModal({ onClose, onCrear }: Props) {
             }
           : undefined,
       };
-      await onCrear(dto);
-      onClose();
+      const creado = await onCrear(dto);
+      onCreado(creado); // el padre muestra las credenciales (una sola vez)
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo crear el alumno.');
     } finally {
@@ -75,7 +77,11 @@ export default function NuevoAlumnoModal({ onClose, onCrear }: Props) {
       footer={
         <>
           <button className={s.btnSecundario} onClick={onClose}>Cancelar</button>
-          <button className={s.btnPrimario} onClick={guardar} disabled={enviando}>
+          <button
+            className={s.btnPrimario}
+            onClick={guardar}
+            disabled={enviando || !form.email.trim()}
+          >
             {enviando ? 'Creando…' : 'Crear alumno'}
           </button>
         </>
@@ -99,7 +105,7 @@ export default function NuevoAlumnoModal({ onClose, onCrear }: Props) {
           <input value={form.telefono} onChange={(e) => set('telefono', e.target.value)} placeholder="+5491155551234" />
         </label>
         <label className={`${s.campo} ${s.span2}`}>
-          <span>Email (opcional)</span>
+          <span>Email (con él se crea su acceso al portal)</span>
           <input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="juan@email.com" />
         </label>
         <label className={s.campo}>

@@ -99,3 +99,42 @@
   cursor: pointer;
   color: var(--color-text-soft);
 }
+
+/* ── Credenciales creadas (se muestran UNA vez) ── */
+
+.credenciales {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.credFila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.credLabel {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-soft);
+}
+
+.credValor {
+  font-size: 15px;
+  font-weight: 700;
+  background: #f3f4f6;
+  padding: 4px 10px;
+  border-radius: 7px;
+}
+
+.credAviso {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+}

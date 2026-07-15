@@ -190,3 +190,21 @@
   max-width: 1280px;
   width: 100%;
 }
+
+/* ── Badge de solicitudes pendientes ── */
+
+.badge {
+  margin-left: auto;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #b91c1c;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 11px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}

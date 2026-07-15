@@ -27,6 +27,8 @@ export interface Alumno {
   creadoEl: string;
   /** Cuota vencida (pasó el día 10 sin pagar): bloquea asignaciones nuevas. */
   deudaVencida: boolean;
+  /** Ya tiene acceso al portal (usuario creado). */
+  tieneUsuario: boolean;
 }
 
 /** Espejo de CreateAlumnoDto. */
@@ -35,7 +37,8 @@ export interface CreateAlumno {
   apellido: string;
   dni: string;
   telefono: string;
-  email?: string;
+  /** Obligatorio: el alta crea también el usuario del portal. */
+  email: string;
   fechaNacimiento: string;
   categoria: Categoria;
   arancel?: number;
@@ -49,6 +52,19 @@ export interface CreateAlumno {
     telefono: string;
     relacion: RelacionTutor;
   };
+}
+
+/** Espejo de AlumnoCreadoDto: la temporal se muestra UNA sola vez. */
+export interface AlumnoCreado {
+  alumno: Alumno;
+  email: string;
+  passwordTemporal: string;
+}
+
+/** Espejo de AccesoCreadoDto (botón "Crear acceso" en fichas viejas). */
+export interface AccesoCreado {
+  email: string;
+  passwordTemporal: string;
 }
 
 export const CATEGORIAS: Categoria[] = [
