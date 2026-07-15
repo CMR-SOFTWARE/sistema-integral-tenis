@@ -7,11 +7,25 @@ namespace SistemaIntegralDeportivo.Api.Services;
 public interface IAlumnoService
 {
     /// <summary>
-    /// Alta de alumno. Reglas: DNI único por tenant; si es menor de 18,
-    /// tutor y consentimiento de datos obligatorios (Ley 25.326).
+    /// Alta de alumno CON credenciales (plan v2: registro único — el profe
+    /// crea usuario + ficha juntos; la temporal se devuelve UNA vez).
+    /// Reglas: DNI único por tenant; menor → tutor + consentimiento; email
+    /// sin cuenta previa.
     /// </summary>
     /// <exception cref="Common.ReglaDeNegocioException">Si viola una regla.</exception>
-    Task<AlumnoResponseDto> CrearAsync(CreateAlumnoDto dto, CancellationToken ct = default);
+    Task<AlumnoCreadoDto> CrearAsync(CreateAlumnoDto dto, CancellationToken ct = default);
+
+    /// <summary>Acceso al portal para una ficha vieja SIN usuario (genera la temporal).</summary>
+    /// <exception cref="Common.ReglaDeNegocioException">Ya tiene acceso, o falta email.</exception>
+    Task<AccesoCreadoDto> CrearAccesoAsync(Guid alumnoId, string? email, CancellationToken ct = default);
+
+    /// <summary>
+    /// Ficha para un usuario que YA existe (aprobación de solicitud): si hay
+    /// ficha libre con el mismo DNI, la vincula; si no, crea una nueva con
+    /// el UserId. Nunca toca Identity.
+    /// </summary>
+    /// <exception cref="Common.ReglaDeNegocioException">DNI de otra cuenta, o regla del menor.</exception>
+    Task<AlumnoResponseDto> CrearVinculadoAsync(CreateAlumnoDto dto, Guid userId, CancellationToken ct = default);
 
     /// <summary>Lista del tenant, filtrable por categoría y estado.</summary>
     Task<IReadOnlyList<AlumnoResponseDto>> ListarAsync(

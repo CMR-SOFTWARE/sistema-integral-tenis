@@ -23,4 +23,7 @@ public class AlumnoResponseDto
     public DateTime CreadoEl { get; set; }
     /// <summary>Señal de morosidad (cuota vencida = pasó el día 10 sin pagar).</summary>
     public bool DeudaVencida { get; set; }
+
+    /// <summary>Tiene acceso al portal (para mostrar/ocultar "Crear acceso").</summary>
+    public bool TieneUsuario { get; set; }
 }

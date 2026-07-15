@@ -9,60 +9,101 @@ public class AlumnoService : IAlumnoService
 {
     private readonly IAlumnoRepository _repo;
     private readonly ICargoRepository _cargos;
+    private readonly ICredencialesService _credenciales;
 
-    public AlumnoService(IAlumnoRepository repo, ICargoRepository cargos)
+    public AlumnoService(IAlumnoRepository repo, ICargoRepository cargos, ICredencialesService credenciales)
     {
         _repo = repo;
         _cargos = cargos;
+        _credenciales = credenciales;
     }
 
-    public async Task<AlumnoResponseDto> CrearAsync(CreateAlumnoDto dto, CancellationToken ct = default)
+    public async Task<AlumnoCreadoDto> CrearAsync(CreateAlumnoDto dto, CancellationToken ct = default)
     {
-        // Regla: DNI único por tenant
+        // Orden anti-huérfanos: TODAS las reglas de la ficha se validan ANTES
+        // de tocar Identity (si algo falla acá, no nace ningún usuario)
         if (await _repo.ExisteDniAsync(dto.Dni, ct))
             throw new ReglaDeNegocioException($"Ya existe un alumno con DNI {dto.Dni}.");
+        ValidarMenor(dto);
 
-        // Regla del menor (Ley 25.326): tutor + consentimiento obligatorios
-        var esMenor = CalcularEdad(dto.FechaNacimiento) < 18;
-        if (esMenor)
+        // Plan v2: el registro es UNA sola vez — el profe crea usuario + ficha
+        // juntos; la temporal se muestra una vez y el alumno la cambia al entrar
+        var cred = await _credenciales.CrearConTemporalAsync(
+            dto.Email, dto.Nombre, dto.Apellido, dto.Dni, dto.Telefono, ct);
+
+        try
         {
-            if (dto.Tutor is null)
-                throw new ReglaDeNegocioException("Un alumno menor de edad requiere un tutor.");
-            if (!dto.ConsentimientoDatos)
+            var alumno = Construir(dto);
+            alumno.UserId = cred.UserId;
+            var creado = await _repo.AgregarAsync(alumno, ct);
+            return new AlumnoCreadoDto
+            {
+                Alumno = Mapear(creado),
+                Email = dto.Email.Trim(),
+                PasswordTemporal = cred.PasswordTemporal,
+            };
+        }
+        catch
+        {
+            // Compensación: la ficha falló (p.ej. carrera del índice único) →
+            // el usuario recién creado no puede quedar huérfano
+            await _credenciales.EliminarAsync(cred.UserId, ct);
+            throw;
+        }
+    }
+
+    public async Task<AccesoCreadoDto> CrearAccesoAsync(
+        Guid alumnoId, string? email, CancellationToken ct = default)
+    {
+        var ficha = await _repo.ObtenerAsync(alumnoId, ct)
+            ?? throw new ReglaDeNegocioException("El alumno no existe.");
+
+        if (ficha.UserId is not null)
+            throw new ReglaDeNegocioException("Este alumno ya tiene acceso al portal.");
+
+        string mail;
+        if (!string.IsNullOrWhiteSpace(email)) mail = email.Trim();
+        else if (!string.IsNullOrWhiteSpace(ficha.Email)) mail = ficha.Email;
+        else throw new ReglaDeNegocioException(
+            "La ficha no tiene email: indicá uno para crear el acceso.");
+
+        var cred = await _credenciales.CrearConTemporalAsync(
+            mail, ficha.Nombre, ficha.Apellido, ficha.Dni, ficha.Telefono, ct);
+
+        ficha.UserId = cred.UserId;
+        ficha.Email = mail;
+        ficha.ActualizadoEl = DateTime.UtcNow;
+        await _repo.GuardarCambiosAsync(ct);
+
+        return new AccesoCreadoDto { Email = mail, PasswordTemporal = cred.PasswordTemporal };
+    }
+
+    public async Task<AlumnoResponseDto> CrearVinculadoAsync(
+        CreateAlumnoDto dto, Guid userId, CancellationToken ct = default)
+    {
+        // Aprobación de solicitud: el usuario YA existe — nada de credenciales.
+        // Si el profe ya lo tenía cargado (mismo DNI, ficha libre), se vincula
+        // ESA ficha en vez de duplicar: el reemplazo elegante del reclamo.
+        var existente = await _repo.ObtenerPorDniAsync(dto.Dni, ct);
+        if (existente is not null)
+        {
+            // Ya vinculada a ESTE usuario: idempotente (re-aprobar no rompe)
+            if (existente.UserId == userId) return Mapear(existente);
+
+            if (existente.UserId is not null)
                 throw new ReglaDeNegocioException(
-                    "Un alumno menor requiere el consentimiento de datos otorgado por su tutor.");
+                    $"Ya existe un alumno con DNI {dto.Dni} vinculado a otra cuenta.");
+
+            existente.UserId = userId;
+            existente.ActualizadoEl = DateTime.UtcNow;
+            await _repo.GuardarCambiosAsync(ct);
+            return Mapear(existente);
         }
 
-        // Consentimientos: el bool viene del DTO; el timestamp lo pone el server
-        var ahora = DateTime.UtcNow;
-        var alumno = new Alumno
-        {
-            Nombre = dto.Nombre,
-            Apellido = dto.Apellido,
-            Dni = dto.Dni,
-            Telefono = dto.Telefono,
-            Email = dto.Email,
-            FechaNacimiento = dto.FechaNacimiento,
-            Categoria = dto.Categoria,
-            Arancel = dto.Arancel,
-            Notas = dto.Notas,
-            ConsentimientoWhatsapp = dto.ConsentimientoWhatsapp,
-            ConsentimientoWhatsappEl = dto.ConsentimientoWhatsapp ? ahora : null,
-            ConsentimientoDatos = dto.ConsentimientoDatos,
-            ConsentimientoDatosEl = dto.ConsentimientoDatos ? ahora : null,
-            Tutor = dto.Tutor is null
-                ? null
-                : new Tutor
-                {
-                    Nombre = dto.Tutor.Nombre,
-                    Apellido = dto.Tutor.Apellido,
-                    Dni = dto.Tutor.Dni,
-                    Telefono = dto.Tutor.Telefono,
-                    Relacion = dto.Tutor.Relacion,
-                },
-            // TenantId lo asigna el repositorio (dueño del scoping por tenant)
-        };
+        ValidarMenor(dto);
 
+        var alumno = Construir(dto);
+        alumno.UserId = userId;
         var creado = await _repo.AgregarAsync(alumno, ct);
         return Mapear(creado);
     }
@@ -108,6 +149,51 @@ public class AlumnoService : IAlumnoService
         return true;
     }
 
+    /// <summary>Regla del menor (Ley 25.326): tutor + consentimiento obligatorios.</summary>
+    private static void ValidarMenor(CreateAlumnoDto dto)
+    {
+        if (CalcularEdad(dto.FechaNacimiento) >= 18) return;
+
+        if (dto.Tutor is null)
+            throw new ReglaDeNegocioException("Un alumno menor de edad requiere un tutor.");
+        if (!dto.ConsentimientoDatos)
+            throw new ReglaDeNegocioException(
+                "Un alumno menor requiere el consentimiento de datos otorgado por su tutor.");
+    }
+
+    /// <summary>La entidad desde el DTO (consentimientos con timestamp del server).</summary>
+    private static Alumno Construir(CreateAlumnoDto dto)
+    {
+        var ahora = DateTime.UtcNow;
+        return new Alumno
+        {
+            Nombre = dto.Nombre,
+            Apellido = dto.Apellido,
+            Dni = dto.Dni,
+            Telefono = dto.Telefono,
+            Email = dto.Email,
+            FechaNacimiento = dto.FechaNacimiento,
+            Categoria = dto.Categoria,
+            Arancel = dto.Arancel,
+            Notas = dto.Notas,
+            ConsentimientoWhatsapp = dto.ConsentimientoWhatsapp,
+            ConsentimientoWhatsappEl = dto.ConsentimientoWhatsapp ? ahora : null,
+            ConsentimientoDatos = dto.ConsentimientoDatos,
+            ConsentimientoDatosEl = dto.ConsentimientoDatos ? ahora : null,
+            Tutor = dto.Tutor is null
+                ? null
+                : new Tutor
+                {
+                    Nombre = dto.Tutor.Nombre,
+                    Apellido = dto.Tutor.Apellido,
+                    Dni = dto.Tutor.Dni,
+                    Telefono = dto.Tutor.Telefono,
+                    Relacion = dto.Tutor.Relacion,
+                },
+            // TenantId lo asigna el repositorio (dueño del scoping por tenant)
+        };
+    }
+
     /// <summary>Alumnos con cuota vencida (señal en la ficha; la regla vive en CuotaService).</summary>
     private async Task<HashSet<Guid>> DeudoresDeAsync(IReadOnlyCollection<Guid> alumnoIds, CancellationToken ct)
     {
@@ -148,5 +234,6 @@ public class AlumnoService : IAlumnoService
         TutorId = a.TutorId ?? a.Tutor?.Id,
         CreadoEl = a.CreadoEl,
         DeudaVencida = deudaVencida,
+        TieneUsuario = a.UserId is not null,
     };
 }

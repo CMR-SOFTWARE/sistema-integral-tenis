@@ -16,10 +16,43 @@ namespace SistemaIntegralDeportivo.Api.Controllers;
 public class PortalController : ControllerBase
 {
     private readonly IPortalService _portal;
+    private readonly ISolicitudService _solicitudes;
+    private readonly Microsoft.AspNetCore.Identity.UserManager<Models.Usuario> _userManager;
 
-    public PortalController(IPortalService portal)
+    public PortalController(
+        IPortalService portal, ISolicitudService solicitudes,
+        Microsoft.AspNetCore.Identity.UserManager<Models.Usuario> userManager)
     {
         _portal = portal;
+        _solicitudes = solicitudes;
+        _userManager = userManager;
+    }
+
+    /// <summary>GET api/portal/solicitudes — mis solicitudes con estado.</summary>
+    [HttpGet("solicitudes")]
+    public async Task<ActionResult<IReadOnlyList<MiSolicitudDto>>> MisSolicitudes(CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        return Ok(await _solicitudes.MisAsync(userId, ct));
+    }
+
+    /// <summary>POST api/portal/solicitudes — pido entrar a un club.</summary>
+    [HttpPost("solicitudes")]
+    public async Task<ActionResult<IReadOnlyList<MiSolicitudDto>>> CrearSolicitud(
+        CrearSolicitudDto dto, CancellationToken ct)
+    {
+        var sub = User.FindFirst("sub")?.Value;
+        var usuario = sub is null ? null : await _userManager.FindByIdAsync(sub);
+        if (usuario is null) return Unauthorized();
+
+        try
+        {
+            return Ok(await _solicitudes.CrearAsync(usuario, dto, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
     }
 
     /// <summary>GET api/portal/mis-turnos — próximas clases + historial reciente.</summary>

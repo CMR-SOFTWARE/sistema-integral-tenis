@@ -45,6 +45,9 @@ builder.Services.AddScoped<IBloqueoRepository, BloqueoRepository>();
 builder.Services.AddScoped<IBloqueoService, BloqueoService>();
 builder.Services.AddScoped<ICancelacionService, CancelacionService>();
 builder.Services.AddScoped<IReporteService, ReporteService>();
+builder.Services.AddScoped<ICredencialesService, CredencialesService>();
+builder.Services.AddScoped<ISolicitudRepository, SolicitudRepository>();
+builder.Services.AddScoped<ISolicitudService, SolicitudService>();
 
 // Base de datos: EF Core sobre SQLite (la connection string vive en appsettings.json)
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -55,10 +58,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 // Aporta hashing de contraseñas, validaciones y UserManager.
 builder.Services.AddIdentityCore<Usuario>(options =>
 {
-    // Prototipo: reglas mínimas razonables; endurecer al desplegar
+    // Prototipo: solo mínimo de largo (coincide con lo que valida el front,
+    // y permite usar el teléfono del alumno como contraseña inicial —
+    // sin exigir mayúscula/minúscula/dígito). Endurecer al desplegar.
     options.Password.RequiredLength = 8;
     options.Password.RequireNonAlphanumeric = false;
     options.Password.RequireUppercase = false;
+    options.Password.RequireLowercase = false;
     options.Password.RequireDigit = false;
     options.User.RequireUniqueEmail = true;
 })

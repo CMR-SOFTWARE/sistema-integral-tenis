@@ -93,19 +93,34 @@ public class FichaDto
     public string Club { get; set; } = string.Empty;
 }
 
-public class ReclamarFichaDto
+/// <summary>
+/// Los datos deportivos de MI cuenta (jugador sin club los completa desde
+/// su perfil: la solicitud los necesita para armar la ficha).
+/// </summary>
+public class MisDatosDto
 {
-    public Guid AlumnoId { get; set; }
+    [Required(ErrorMessage = "El DNI es obligatorio."),
+     RegularExpression(FormatosAuth.Dni, ErrorMessage = FormatosAuth.DniMensaje)]
+    public required string Dni { get; set; }
+
+    [Required(ErrorMessage = "El teléfono es obligatorio."),
+     RegularExpression(FormatosAuth.Telefono, ErrorMessage = FormatosAuth.TelefonoMensaje)]
+    public required string Telefono { get; set; }
+
+    [Required(ErrorMessage = "La fecha de nacimiento es obligatoria.")]
+    public required DateTime FechaNacimiento { get; set; }
+
+    public Models.CategoriaAlumno Categoria { get; set; } = Models.CategoriaAlumno.SinCategoria;
 }
 
-/// <summary>Corregir DNI/teléfono de MI cuenta (para que el reclamo matchee).</summary>
-public class ActualizarMisDatosDto
+/// <summary>Cambio de contraseña (opcional, desde el perfil).</summary>
+public class CambiarPasswordDto
 {
-    [RegularExpression(FormatosAuth.Dni, ErrorMessage = FormatosAuth.DniMensaje)]
-    public string? Dni { get; set; }
+    [Required]
+    public required string PasswordActual { get; set; }
 
-    [RegularExpression(FormatosAuth.Telefono, ErrorMessage = FormatosAuth.TelefonoMensaje)]
-    public string? Telefono { get; set; }
+    [Required, MinLength(8, ErrorMessage = "La contraseña nueva necesita al menos 8 caracteres.")]
+    public required string PasswordNueva { get; set; }
 }
 
 /// <summary>
@@ -127,9 +142,16 @@ public class SesionDto
     /// <summary>Estado del club propio ("PendientePago" manda al checkout); null si no tiene.</summary>
     public string? EstadoTenant { get; set; }
 
-    /// <summary>Ficha vinculada (habilita el portal); null si no reclamó ninguna.</summary>
-    public FichaDto? Alumno { get; set; }
+    /// <summary>Nació con contraseña inicial del profe (informativo).</summary>
+    public bool DebeCambiarPassword { get; set; }
 
-    /// <summary>Fichas precargadas por negocios que coinciden con mi DNI/teléfono.</summary>
-    public List<FichaDto> FichasPorReclamar { get; set; } = [];
+    // ── Mis datos deportivos (para prefill del perfil sin club y para saber
+    //    si la solicitud es posible) ──
+    public string? Dni { get; set; }
+    public string? Telefono { get; set; }
+    public DateTime? FechaNacimiento { get; set; }
+    public string? Categoria { get; set; }
+
+    /// <summary>Ficha vinculada (habilita el portal); null si no está en ningún club.</summary>
+    public FichaDto? Alumno { get; set; }
 }

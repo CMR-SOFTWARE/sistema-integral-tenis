@@ -83,6 +83,14 @@ public enum MotivoBloqueo
     MantenimientoCancha
 }
 
+/// <summary>Ciclo de una solicitud de alumno a un club.</summary>
+public enum EstadoSolicitud
+{
+    Pendiente,
+    Aprobada,
+    Rechazada
+}
+
 /// <summary>Tipo de línea en la cuenta corriente del alumno (ADR-0009).</summary>
 public enum TipoCargo
 {

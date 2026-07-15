@@ -11,6 +11,9 @@ public interface ITenantRepository
     /// <summary>El tenant que el usuario ADMINISTRA (membresía Profesor, ADR-0007); null si no es dueño.</summary>
     Task<Tenant?> ObtenerPorOwnerAsync(Guid userId, CancellationToken ct = default);
 
+    /// <summary>Un tenant por id, GLOBAL (para validar solicitudes a otros clubes).</summary>
+    Task<Tenant?> ObtenerPorIdAsync(Guid id, CancellationToken ct = default);
+
     /// <summary>¿El subdominio ya está tomado? (para el slug del registro de profe).</summary>
     Task<bool> ExisteSubdominioAsync(string subdominio, CancellationToken ct = default);
 

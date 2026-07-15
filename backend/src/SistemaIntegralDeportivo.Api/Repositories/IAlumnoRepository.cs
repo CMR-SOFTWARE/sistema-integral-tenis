@@ -24,13 +24,12 @@ public interface IAlumnoRepository
     /// <summary>Confirma en la base los cambios hechos a entidades trackeadas.</summary>
     Task GuardarCambiosAsync(CancellationToken ct = default);
 
-    // ── Auth / portal (ADR-0007: reclamo de ficha y membresía) ──
+    /// <summary>La ficha del tenant con ese DNI (para vincular al aprobar solicitudes).</summary>
+    Task<Alumno?> ObtenerPorDniAsync(string dni, CancellationToken ct = default);
 
-    /// <summary>Fichas SIN usuario cuyo DNI o teléfono coinciden (candidatas a reclamo), con su Tenant.</summary>
-    Task<IReadOnlyList<Alumno>> BuscarReclamablesAsync(
-        string? dni, string? telefono, CancellationToken ct = default);
+    // ── Auth / portal (ADR-0007: membresía del jugador) ──
 
-    /// <summary>La ficha vinculada a un usuario global, con su Tenant (null si no reclamó).</summary>
+    /// <summary>La ficha vinculada a un usuario global, con su Tenant (null si no tiene club).</summary>
     Task<Alumno?> ObtenerPorUserIdAsync(Guid userId, CancellationToken ct = default);
 
     // ── Agregados para el dashboard (queries de solo lectura) ──

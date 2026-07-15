@@ -40,8 +40,9 @@ public class CreateAlumnoDto
     [Required, StringLength(25)]
     public string Telefono { get; set; } = string.Empty;
 
-    [EmailAddress]
-    public string? Email { get; set; }
+    /// <summary>Obligatorio: el alta crea TAMBIÉN el usuario del portal (plan v2).</summary>
+    [Required(ErrorMessage = "El email es obligatorio: con él se crea el acceso del alumno."), EmailAddress]
+    public string Email { get; set; } = string.Empty;
 
     [Required]
     public DateTime FechaNacimiento { get; set; }
@@ -60,4 +61,29 @@ public class CreateAlumnoDto
 
     /// <summary>Obligatorio cuando el alumno es menor de 18.</summary>
     public TutorDto? Tutor { get; set; }
+}
+
+/// <summary>
+/// Respuesta del ALTA: la ficha + las credenciales del portal. La temporal
+/// se muestra UNA sola vez (no se persiste ni vuelve a aparecer).
+/// </summary>
+public class AlumnoCreadoDto
+{
+    public required AlumnoResponseDto Alumno { get; set; }
+    public required string Email { get; set; }
+    public required string PasswordTemporal { get; set; }
+}
+
+/// <summary>Body de "Crear acceso" (fichas viejas): email solo si la ficha no tiene.</summary>
+public class CrearAccesoDto
+{
+    [EmailAddress]
+    public string? Email { get; set; }
+}
+
+/// <summary>Respuesta de "Crear acceso": credenciales para pasarle al alumno.</summary>
+public class AccesoCreadoDto
+{
+    public required string Email { get; set; }
+    public required string PasswordTemporal { get; set; }
 }
