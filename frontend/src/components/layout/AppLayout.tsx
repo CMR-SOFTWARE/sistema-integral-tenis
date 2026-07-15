@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { api } from '../../lib/api';
 import { cerrarSesion, obtenerSesion } from '../../features/auth/sesion';
 import { profNav, pageTitles } from './nav';
 import s from './AppLayout.module.css';
@@ -24,6 +26,14 @@ export default function AppLayout() {
   const navigate = useNavigate();
   const title = pageTitles[pathname] ?? 'CourtSet';
   const sesion = obtenerSesion();
+  const [pendientes, setPendientes] = useState(0);
+
+  // Badge de solicitudes: se refresca al navegar (barato: un COUNT)
+  useEffect(() => {
+    api.get<{ pendientes: number }>('/solicitudes/conteo')
+      .then((c) => setPendientes(c.pendientes))
+      .catch(() => setPendientes(0));
+  }, [pathname]);
 
   const salir = () => {
     cerrarSesion();
@@ -52,6 +62,9 @@ export default function AppLayout() {
                 <path d={item.icon} />
               </svg>
               <span>{item.label}</span>
+              {item.to === '/solicitudes' && pendientes > 0 && (
+                <span className={s.badge}>{pendientes}</span>
+              )}
             </NavLink>
           ))}
         </nav>

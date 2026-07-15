@@ -22,5 +22,11 @@ public class Usuario : IdentityUser<Guid>
     public DateTime? FechaNacimiento { get; set; }
     public CategoriaAlumno? Categoria { get; set; }
 
+    /// <summary>
+    /// Nació con contraseña TEMPORAL (lo dio de alta su profe): debe
+    /// cambiarla en el primer login antes de usar el portal.
+    /// </summary>
+    public bool DebeCambiarPassword { get; set; }
+
     public DateTime CreadoEl { get; set; } = DateTime.UtcNow;
 }

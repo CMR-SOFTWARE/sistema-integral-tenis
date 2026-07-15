@@ -6,6 +6,8 @@ import RegistroPage from './features/auth/RegistroPage';
 import RegistroJugadorPage from './features/auth/RegistroJugadorPage';
 import RegistroProfesorPage from './features/auth/RegistroProfesorPage';
 import CheckoutPage from './features/auth/CheckoutPage';
+import CambiarPasswordPage from './features/auth/CambiarPasswordPage';
+import SolicitudesPage from './features/solicitudes/SolicitudesPage';
 import { obtenerSesion, obtenerToken } from './features/auth/sesion';
 import DashboardPage from './features/dashboard/DashboardPage';
 import GruposPage from './features/grupos/GruposPage';
@@ -25,13 +27,13 @@ import BuscarClubPage from './features/portal/BuscarClubPage';
 
 /** Gestión: hace falta token Y membresía de profesor (JWT real). */
 function RequiereProfesor() {
-  return obtenerToken() && obtenerSesion()?.esProfesor
-    ? <Outlet />
-    : <Navigate to="/login" replace />;
+  const sesion = obtenerSesion();
+  if (!obtenerToken() || !sesion) return <Navigate to="/login" replace />;
+  return sesion.esProfesor ? <Outlet /> : <Navigate to="/login" replace />;
 }
 
 /** Portal: alcanza con ser jugador logueado (con o SIN ficha vinculada —
- *  el portal muestra el estado "sin club" y deja elegir profe). */
+ *  el portal muestra el estado "sin club" y deja solicitar un profe). */
 function RequiereJugador() {
   const sesion = obtenerSesion();
   if (!obtenerToken() || !sesion) return <Navigate to="/login" replace />;
@@ -50,6 +52,11 @@ function RequiereCheckout() {
   return <Outlet />;
 }
 
+/** Cambio de contraseña: cualquier logueado (obligatorio si nació con temporal). */
+function RequiereLogueado() {
+  return obtenerToken() ? <Outlet /> : <Navigate to="/login" replace />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -60,6 +67,9 @@ export default function App() {
         <Route path="/registro/profesor" element={<RegistroProfesorPage />} />
         <Route element={<RequiereCheckout />}>
           <Route path="/checkout" element={<CheckoutPage />} />
+        </Route>
+        <Route element={<RequiereLogueado />}>
+          <Route path="/cambiar-password" element={<CambiarPasswordPage />} />
         </Route>
 
         <Route element={<RequiereProfesor />}>
@@ -73,6 +83,7 @@ export default function App() {
             <Route path="/cuotas" element={<CuotasPage />} />
             <Route path="/bloqueos" element={<BloqueosPage />} />
             <Route path="/cancelaciones" element={<CancelacionesPage />} />
+            <Route path="/solicitudes" element={<SolicitudesPage />} />
             <Route path="/reportes" element={<ReportesPage />} />
             <Route path="/configuracion" element={<ConfiguracionPage />} />
           </Route>

@@ -30,6 +30,11 @@ export const profNav: NavItem[] = [
     label: 'Cuotas',
     icon: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
   },
+  {
+    to: '/solicitudes',
+    label: 'Solicitudes',
+    icon: 'M22 6l-10 7L2 6M2 4h20v16H2z',
+  },
   { to: '/bloqueos', label: 'Bloqueos', icon: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM5.6 5.6l12.8 12.8' },
   {
     to: '/cancelaciones',

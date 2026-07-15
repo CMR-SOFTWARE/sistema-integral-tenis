@@ -3,8 +3,15 @@ import { CAT_COLOR, CAT_LABEL, ESTADO_UI, avatarColor, formatoPlata, iniciales }
 import type { Alumno } from './types';
 import s from './DetalleAlumnoModal.module.css';
 
+interface Props {
+  alumno: Alumno;
+  onClose: () => void;
+  /** "Crear acceso" para fichas sin usuario (genera credenciales del portal). */
+  onCrearAcceso?: (alumno: Alumno) => void;
+}
+
 /** Ficha del alumno. Horarios y pagos: placeholders hasta sus verticales. */
-export default function DetalleAlumnoModal({ alumno, onClose }: { alumno: Alumno; onClose: () => void }) {
+export default function DetalleAlumnoModal({ alumno, onClose, onCrearAcceso }: Props) {
   const av = avatarColor(alumno.nombre + alumno.apellido);
   const cat = CAT_COLOR[alumno.categoria];
   const estado = ESTADO_UI[alumno.estado];
@@ -49,6 +56,20 @@ export default function DetalleAlumnoModal({ alumno, onClose }: { alumno: Alumno
           ))}
           <div className={s.seccion} style={{ marginTop: 18 }}>Observaciones del profesor</div>
           <div className={s.obs}>{alumno.notas ?? 'Sin observaciones.'}</div>
+
+          <div className={s.seccion} style={{ marginTop: 18 }}>Acceso al portal</div>
+          {alumno.tieneUsuario ? (
+            <div className={s.obs}>Tiene su cuenta activa. ✅</div>
+          ) : (
+            <>
+              <div className={s.obs}>Todavía no tiene cuenta para entrar al portal.</div>
+              {onCrearAcceso && (
+                <button className={s.btnAcceso} onClick={() => onCrearAcceso(alumno)}>
+                  Crear acceso al portal
+                </button>
+              )}
+            </>
+          )}
         </div>
         <div>
           <div className={s.seccion}>Horarios asignados</div>

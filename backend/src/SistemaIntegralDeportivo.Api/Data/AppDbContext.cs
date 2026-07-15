@@ -34,6 +34,7 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
     public DbSet<TurnoParticipante> TurnoParticipantes => Set<TurnoParticipante>();
     public DbSet<Cargo> Cargos => Set<Cargo>();
     public DbSet<Bloqueo> Bloqueos => Set<Bloqueo>();
+    public DbSet<Solicitud> Solicitudes => Set<Solicitud>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -169,6 +170,20 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
             .WithMany()
             .HasForeignKey(b => b.CanchaId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // ── Solicitudes alumno→profe (plan v2, reemplaza al reclamo) ──
+
+        modelBuilder.Entity<Solicitud>().Property(s => s.Estado).HasConversion<string>();
+
+        // UNA sola pendiente por (usuario, club) — índice único PARCIAL
+        modelBuilder.Entity<Solicitud>()
+            .HasIndex(s => new { s.UserId, s.TenantId })
+            .IsUnique()
+            .HasFilter("Estado = 'Pendiente'");
+
+        // El listado del profe: pendientes de SU club
+        modelBuilder.Entity<Solicitud>()
+            .HasIndex(s => new { s.TenantId, s.Estado });
 
         // ── Datos semilla: el tenant demo (valores fijos, sin Guid.NewGuid()
         //    ni DateTime.Now, porque HasData exige datos determinísticos) ──

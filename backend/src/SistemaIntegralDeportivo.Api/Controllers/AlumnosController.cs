@@ -38,17 +38,33 @@ public class AlumnosController : ControllerBase
         return alumno is null ? NotFound() : Ok(alumno);
     }
 
+    /// <summary>POST api/alumnos — alta CON credenciales (la temporal viaja una sola vez).</summary>
     [HttpPost]
-    public async Task<ActionResult<AlumnoResponseDto>> Crear(CreateAlumnoDto dto, CancellationToken ct)
+    public async Task<ActionResult<AlumnoCreadoDto>> Crear(CreateAlumnoDto dto, CancellationToken ct)
     {
         try
         {
             var creado = await _service.CrearAsync(dto, ct);
-            return CreatedAtAction(nameof(Obtener), new { id = creado.Id }, creado);
+            return CreatedAtAction(nameof(Obtener), new { id = creado.Alumno.Id }, creado);
         }
         catch (ReglaDeNegocioException ex)
         {
             // Violación de regla de negocio → 400 con ProblemDetails (detail legible)
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>POST api/alumnos/{id}/acceso — credenciales para una ficha vieja sin usuario.</summary>
+    [HttpPost("{id:guid}/acceso")]
+    public async Task<ActionResult<AccesoCreadoDto>> CrearAcceso(
+        Guid id, CrearAccesoDto dto, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await _service.CrearAccesoAsync(id, dto.Email, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
             return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
         }
     }

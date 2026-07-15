@@ -11,18 +11,11 @@ namespace SistemaIntegralDeportivo.Api.Services;
 public interface IAuthService
 {
     /// <summary>
-    /// La sesión que ve el front: es profesor si es dueño de un tenant, su
-    /// ficha de alumno si reclamó una, y las fichas que puede reclamar
-    /// (match por DNI/teléfono) si todavía no tiene ninguna.
+    /// La sesión que ve el front: es profesor si es dueño de un tenant
+    /// ACTIVO, su ficha de alumno si está vinculado a un club, y si debe
+    /// cambiar la contraseña temporal antes de seguir.
     /// </summary>
     Task<SesionDto> ArmarSesionAsync(Usuario usuario, bool incluirToken, CancellationToken ct = default);
-
-    /// <summary>
-    /// Vincula una ficha al usuario. Solo procede si la ficha está libre
-    /// (sin UserId) Y coincide con el DNI o teléfono del usuario.
-    /// </summary>
-    /// <exception cref="Common.ReglaDeNegocioException">Si no es reclamable por este usuario.</exception>
-    Task ReclamarFichaAsync(Usuario usuario, Guid alumnoId, CancellationToken ct = default);
 
     /// <summary>
     /// Registro de profesor: crea SU tenant en PENDIENTE_PAGO (subdominio =

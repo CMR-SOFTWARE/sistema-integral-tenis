@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../lib/api';
-import type { Alumno, Categoria, CreateAlumno, Estado } from './types';
+import type { AccesoCreado, Alumno, AlumnoCreado, Categoria, CreateAlumno, Estado } from './types';
 
 /**
  * Estado y operaciones de la pantalla Alumnos contra la API .NET.
@@ -29,9 +29,16 @@ export function useAlumnos(categoria: Categoria | 'todas') {
   }, [cargar]);
 
   const crear = async (dto: CreateAlumno) => {
-    const creado = await api.post<Alumno>('/alumnos', dto);
+    // Devuelve la ficha + credenciales (la temporal viaja UNA sola vez)
+    const creado = await api.post<AlumnoCreado>('/alumnos', dto);
     await cargar();
     return creado;
+  };
+
+  const crearAcceso = async (id: string, email?: string) => {
+    const acceso = await api.post<AccesoCreado>(`/alumnos/${id}/acceso`, { email });
+    await cargar();
+    return acceso;
   };
 
   const cambiarEstado = async (id: string, estado: Estado) => {
@@ -44,5 +51,5 @@ export function useAlumnos(categoria: Categoria | 'todas') {
     await cargar();
   };
 
-  return { alumnos, cargando, error, crear, cambiarEstado, darDeBaja };
+  return { alumnos, cargando, error, crear, crearAcceso, cambiarEstado, darDeBaja };
 }

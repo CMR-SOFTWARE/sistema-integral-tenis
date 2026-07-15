@@ -16,8 +16,19 @@ export interface Sesion {
   esProfesor: boolean;
   /** Estado del club propio; "PendientePago" manda al checkout. */
   estadoTenant: 'PendientePago' | 'Activo' | 'Suspendido' | null;
+  /** Nació con contraseña inicial del profe (informativo). */
+  debeCambiarPassword: boolean;
+  /** Mis datos deportivos (el jugador sin club los completa en su perfil). */
+  dni: string | null;
+  telefono: string | null;
+  fechaNacimiento: string | null;
+  categoria: string | null;
   alumno: Ficha | null;
-  fichasPorReclamar: Ficha[];
+}
+
+/** ¿Tiene lo necesario para mandar una solicitud? (espejo de la regla del back) */
+export function datosCompletos(s: Sesion | null): boolean {
+  return !!s && !!s.dni && !!s.telefono && !!s.fechaNacimiento;
 }
 
 const KEY_TOKEN = 'token';

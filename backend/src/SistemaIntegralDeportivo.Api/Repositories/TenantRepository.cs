@@ -25,6 +25,9 @@ public class TenantRepository : ITenantRepository
     public Task<Tenant?> ObtenerPorOwnerAsync(Guid userId, CancellationToken ct = default) =>
         _db.Tenants.FirstOrDefaultAsync(t => t.OwnerUserId == userId, ct);
 
+    public Task<Tenant?> ObtenerPorIdAsync(Guid id, CancellationToken ct = default) =>
+        _db.Tenants.FirstOrDefaultAsync(t => t.Id == id, ct);
+
     public Task<bool> ExisteSubdominioAsync(string subdominio, CancellationToken ct = default) =>
         _db.Tenants.AnyAsync(t => t.Subdominio == subdominio, ct);
 

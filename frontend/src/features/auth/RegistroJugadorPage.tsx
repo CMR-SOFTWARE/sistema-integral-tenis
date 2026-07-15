@@ -54,10 +54,7 @@ export default function RegistroJugadorPage() {
         fechaNacimiento: f.fechaNacimiento,
         categoria: f.categoria,
       });
-      if (!entrarConSesion(sesion, navigate)) {
-        // Hay fichas por reclamar: el login tiene esa pantalla
-        navigate('/login', { state: { reclamar: true } });
-      }
+      entrarConSesion(sesion, navigate); // → portal (elige su profe desde Mi club)
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo crear la cuenta.');
       setEnviando(false);

@@ -22,6 +22,9 @@ public class AlumnoRepository : IAlumnoRepository
     public Task<bool> ExisteDniAsync(string dni, CancellationToken ct = default) =>
         _db.Alumnos.AnyAsync(a => a.TenantId == TenantId && a.Dni == dni, ct);
 
+    public Task<Alumno?> ObtenerPorDniAsync(string dni, CancellationToken ct = default) =>
+        _db.Alumnos.FirstOrDefaultAsync(a => a.TenantId == TenantId && a.Dni == dni, ct);
+
     public async Task<Alumno> AgregarAsync(Alumno alumno, CancellationToken ct = default)
     {
         alumno.TenantId = TenantId;
@@ -68,18 +71,8 @@ public class AlumnoRepository : IAlumnoRepository
     public Task GuardarCambiosAsync(CancellationToken ct = default) =>
         _db.SaveChangesAsync(ct);
 
-    // ── Auth / portal: estos dos son GLOBALES a propósito (no scopean por
-    //    tenant): la identidad cruza negocios y el reclamo busca la ficha de
-    //    la persona en TODOS los tenants (ADR-0007) ──
-
-    public async Task<IReadOnlyList<Alumno>> BuscarReclamablesAsync(
-        string? dni, string? telefono, CancellationToken ct = default) =>
-        await _db.Alumnos
-            .Include(a => a.Tenant)
-            .Where(a => a.UserId == null &&
-                ((dni != null && dni != "" && a.Dni == dni) ||
-                 (telefono != null && telefono != "" && a.Telefono == telefono)))
-            .ToListAsync(ct);
+    // ── Auth / portal: GLOBAL a propósito (no scopea por tenant): la
+    //    identidad cruza negocios (ADR-0007) ──
 
     public Task<Alumno?> ObtenerPorUserIdAsync(Guid userId, CancellationToken ct = default) =>
         _db.Alumnos

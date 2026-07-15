@@ -33,12 +33,8 @@ public class AuthService : IAuthService
         var tenantPropio = await _tenants.ObtenerPorOwnerAsync(usuario.Id, ct);
         var esProfesor = tenantPropio?.Estado == EstadoTenant.Activo;
 
-        // Una ficha por usuario en el prototipo (multi-membresía: fase futura).
-        // Si ya reclamó una, no se ofrecen más.
+        // Una ficha por usuario en el prototipo (multi-membresía: fase futura)
         var vinculada = await _alumnos.ObtenerPorUserIdAsync(usuario.Id, ct);
-        var porReclamar = vinculada is null
-            ? await CandidatasAsync(usuario, ct)
-            : [];
 
         return new SesionDto
         {
@@ -48,8 +44,12 @@ public class AuthService : IAuthService
             Email = usuario.Email ?? string.Empty,
             EsProfesor = esProfesor,
             EstadoTenant = tenantPropio?.Estado.ToString(),
+            DebeCambiarPassword = usuario.DebeCambiarPassword,
+            Dni = usuario.Dni,
+            Telefono = usuario.PhoneNumber,
+            FechaNacimiento = usuario.FechaNacimiento,
+            Categoria = usuario.Categoria?.ToString(),
             Alumno = vinculada is null ? null : Mapear(vinculada),
-            FichasPorReclamar = porReclamar.Select(Mapear).ToList(),
         };
     }
 
@@ -122,29 +122,6 @@ public class AuthService : IAuthService
             else if (slug.Length > 0 && slug[^1] != '-') slug.Append('-');
         }
         return slug.ToString().Trim('-');
-    }
-
-    public async Task ReclamarFichaAsync(
-        Usuario usuario, Guid alumnoId, CancellationToken ct = default)
-    {
-        // La ficha tiene que estar entre MIS candidatas: libre (sin UserId)
-        // y coincidente por DNI/teléfono. Todo lo demás es un reclamo inválido.
-        var candidatas = await CandidatasAsync(usuario, ct);
-        var ficha = candidatas.FirstOrDefault(a => a.Id == alumnoId)
-            ?? throw new ReglaDeNegocioException(
-                "La ficha no existe, ya fue reclamada o no coincide con tus datos (DNI/teléfono).");
-
-        ficha.UserId = usuario.Id;
-        await _alumnos.GuardarCambiosAsync(ct);
-    }
-
-    private async Task<IReadOnlyList<Alumno>> CandidatasAsync(Usuario usuario, CancellationToken ct)
-    {
-        // Sin DNI ni teléfono no hay contra qué matchear
-        if (string.IsNullOrWhiteSpace(usuario.Dni) && string.IsNullOrWhiteSpace(usuario.PhoneNumber))
-            return [];
-
-        return await _alumnos.BuscarReclamablesAsync(usuario.Dni, usuario.PhoneNumber, ct);
     }
 
     private static FichaDto Mapear(Alumno a) => new()

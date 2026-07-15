@@ -154,45 +154,52 @@ public class AuthController : ControllerBase
         return Ok(await _auth.ArmarSesionAsync(usuario, incluirToken: false, ct));
     }
 
-    /// <summary>POST api/auth/reclamar — vincula una ficha coincidente a mi cuenta.</summary>
-    [Authorize]
-    [HttpPost("reclamar")]
-    public async Task<ActionResult<SesionDto>> Reclamar(ReclamarFichaDto dto, CancellationToken ct)
-    {
-        var usuario = await UsuarioActualAsync();
-        if (usuario is null) return Unauthorized();
-
-        try
-        {
-            await _auth.ReclamarFichaAsync(usuario, dto.AlumnoId, ct);
-            return Ok(await _auth.ArmarSesionAsync(usuario, incluirToken: false, ct));
-        }
-        catch (ReglaDeNegocioException ex)
-        {
-            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
-        }
-    }
-
     /// <summary>
-    /// POST api/auth/mis-datos — corrige el DNI/teléfono de MI cuenta y
-    /// devuelve la sesión con las coincidencias recalculadas (reclamo).
+    /// POST api/auth/mis-datos — el jugador sin club completa/corrige sus
+    /// datos deportivos (la solicitud los necesita para armar la ficha).
     /// </summary>
     [Authorize]
     [HttpPost("mis-datos")]
-    public async Task<ActionResult<SesionDto>> ActualizarMisDatos(
-        ActualizarMisDatosDto dto, CancellationToken ct)
+    public async Task<ActionResult<SesionDto>> MisDatos(MisDatosDto dto, CancellationToken ct)
     {
         var usuario = await UsuarioActualAsync();
         if (usuario is null) return Unauthorized();
 
-        usuario.Dni = string.IsNullOrWhiteSpace(dto.Dni) ? null : dto.Dni.Trim();
-        usuario.PhoneNumber = string.IsNullOrWhiteSpace(dto.Telefono) ? null : dto.Telefono.Trim();
+        usuario.Dni = dto.Dni.Trim();
+        usuario.PhoneNumber = dto.Telefono.Trim();
+        usuario.FechaNacimiento = dto.FechaNacimiento;
+        usuario.Categoria = dto.Categoria;
 
         var resultado = await _userManager.UpdateAsync(usuario);
         if (!resultado.Succeeded)
             return Problem(
                 detail: string.Join(" ", resultado.Errors.Select(e => e.Description).Distinct()),
                 statusCode: StatusCodes.Status400BadRequest);
+
+        return Ok(await _auth.ArmarSesionAsync(usuario, incluirToken: false, ct));
+    }
+
+    /// <summary>POST api/auth/cambiar-password — cambio voluntario (desde el perfil).</summary>
+    [Authorize]
+    [HttpPost("cambiar-password")]
+    public async Task<ActionResult<SesionDto>> CambiarPassword(
+        CambiarPasswordDto dto, CancellationToken ct)
+    {
+        var usuario = await UsuarioActualAsync();
+        if (usuario is null) return Unauthorized();
+
+        var resultado = await _userManager.ChangePasswordAsync(
+            usuario, dto.PasswordActual, dto.PasswordNueva);
+        if (!resultado.Succeeded)
+            return Problem(
+                detail: string.Join(" ", resultado.Errors.Select(e => e.Description).Distinct()),
+                statusCode: StatusCodes.Status400BadRequest);
+
+        if (usuario.DebeCambiarPassword)
+        {
+            usuario.DebeCambiarPassword = false;
+            await _userManager.UpdateAsync(usuario);
+        }
 
         return Ok(await _auth.ArmarSesionAsync(usuario, incluirToken: false, ct));
     }

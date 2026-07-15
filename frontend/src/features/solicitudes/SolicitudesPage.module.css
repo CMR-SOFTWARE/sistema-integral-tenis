@@ -1,0 +1,162 @@
+/* Solicitudes de alumnos — tarjetas aprobar/rechazar */
+
+.intro {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-bottom: 16px;
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tarjetaSol {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  flex: none;
+}
+
+.cuerpo {
+  flex: 1;
+  min-width: 0;
+}
+
+.nombreFila {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.nombre {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+}
+
+.chip {
+  display: inline-flex;
+  padding: 3px 9px;
+  border-radius: 7px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+}
+
+.chipMenor {
+  display: inline-flex;
+  padding: 3px 9px;
+  border-radius: 7px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+  background: #fef6e7;
+  color: #b7791f;
+}
+
+.detalle {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.mensaje {
+  font-size: 13px;
+  font-style: italic;
+  color: var(--color-text-soft);
+  margin-top: 6px;
+}
+
+.acciones {
+  display: flex;
+  gap: 8px;
+  flex: none;
+}
+
+.btnAprobar {
+  padding: 9px 16px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-dark);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btnRechazar {
+  padding: 9px 14px;
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius-md);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btnAprobar:disabled,
+.btnRechazar:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.vacio,
+.error {
+  padding: 48px;
+  text-align: center;
+  color: var(--color-text-faint);
+  font-size: 14px;
+}
+
+.error {
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  font-weight: 600;
+}
+
+.vacioCard {
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 32px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: #101828;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 12px 18px;
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
+  z-index: 50;
+}

@@ -7,9 +7,9 @@ using SistemaIntegralDeportivo.Api.Services;
 namespace SistemaIntegralDeportivo.Api.Tests.Services;
 
 /// <summary>
-/// Reglas de identidad y membresías (TDD, ADR-0007): la sesión refleja las
-/// membresías reales, y el reclamo de ficha solo procede si la ficha está
-/// libre Y coincide con el DNI/teléfono del usuario.
+/// Reglas de identidad y membresías (TDD, ADR-0007 + plan v2): la sesión
+/// refleja las membresías reales, el registro de profe crea su club en
+/// PENDIENTE_PAGO y la activación es idempotente.
 /// </summary>
 public class AuthServiceTests
 {
@@ -34,13 +34,11 @@ public class AuthServiceTests
         _sedes.Setup(s => s.AgregarAsync(It.IsAny<Sede>(), It.IsAny<CancellationToken>()))
               .ReturnsAsync((Sede s, CancellationToken _) => s);
 
-        // Por defecto: no es dueño de tenants, sin ficha vinculada ni coincidencias
+        // Por defecto: no es dueño de tenants y sin ficha vinculada
         _tenants.Setup(t => t.ObtenerPorOwnerAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((Tenant?)null);
         _alumnos.Setup(a => a.ObtenerPorUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((Alumno?)null);
-        _alumnos.Setup(a => a.BuscarReclamablesAsync(It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync([]);
         _tokens.Setup(t => t.Generar(It.IsAny<Usuario>(), It.IsAny<Tenant?>()))
                .Returns("jwt-de-prueba");
     }
@@ -257,22 +255,7 @@ public class AuthServiceTests
     }
 
     [Fact]
-    public async Task Sesion_SinFichaVinculada_OfreceLasCoincidencias()
-    {
-        var ficha = Ficha();
-        _alumnos.Setup(a => a.BuscarReclamablesAsync("30111222", "+549115555", It.IsAny<CancellationToken>()))
-                .ReturnsAsync([ficha]);
-
-        var sesion = await _service.ArmarSesionAsync(Jugador(), incluirToken: false);
-
-        Assert.Null(sesion.Alumno);
-        var oferta = Assert.Single(sesion.FichasPorReclamar);
-        Assert.Equal(ficha.Id, oferta.AlumnoId);
-        Assert.Equal("Club Demo", oferta.Club);
-    }
-
-    [Fact]
-    public async Task Sesion_ConFichaVinculada_LaInforma_YNoOfreceReclamos()
+    public async Task Sesion_ConFichaVinculada_LaInforma()
     {
         var vinculada = Ficha(userId: UserId);
         _alumnos.Setup(a => a.ObtenerPorUserIdAsync(UserId, It.IsAny<CancellationToken>()))
@@ -282,50 +265,17 @@ public class AuthServiceTests
 
         Assert.NotNull(sesion.Alumno);
         Assert.Equal(vinculada.Id, sesion.Alumno!.AlumnoId);
-        Assert.Empty(sesion.FichasPorReclamar);
-        _alumnos.Verify(a => a.BuscarReclamablesAsync(It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Equal("Club Demo", sesion.Alumno.Club);
     }
 
     [Fact]
-    public async Task Sesion_UsuarioSinDniNiTelefono_NoBuscaCoincidencias()
+    public async Task Sesion_ConTemporalSinCambiar_LoInforma()
     {
-        await _service.ArmarSesionAsync(Jugador(dni: null, telefono: null), incluirToken: false);
+        var usuario = Jugador();
+        usuario.DebeCambiarPassword = true; // lo dio de alta su profe
 
-        _alumnos.Verify(a => a.BuscarReclamablesAsync(It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
-    }
+        var sesion = await _service.ArmarSesionAsync(usuario, incluirToken: false);
 
-    // ─────────────────────────────────────────────
-    // Reclamo de ficha: solo si está libre Y coincide conmigo
-    // ─────────────────────────────────────────────
-
-    [Fact]
-    public async Task Reclamar_FichaCoincidente_VinculaElUsuario()
-    {
-        var ficha = Ficha();
-        _alumnos.Setup(a => a.BuscarReclamablesAsync("30111222", "+549115555", It.IsAny<CancellationToken>()))
-                .ReturnsAsync([ficha]);
-
-        await _service.ReclamarFichaAsync(Jugador(), ficha.Id);
-
-        Assert.Equal(UserId, ficha.UserId);
-        _alumnos.Verify(a => a.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    [Fact]
-    public async Task Reclamar_FichaQueNoEstaEntreMisCoincidencias_Lanza()
-    {
-        // La ficha existe pero es de OTRA persona (o ya fue reclamada):
-        // no aparece entre las candidatas del usuario
-        await Assert.ThrowsAsync<ReglaDeNegocioException>(
-            () => _service.ReclamarFichaAsync(Jugador(), Guid.NewGuid()));
-
-        _alumnos.Verify(a => a.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task Reclamar_SinDniNiTelefonoCargados_Lanza()
-    {
-        await Assert.ThrowsAsync<ReglaDeNegocioException>(
-            () => _service.ReclamarFichaAsync(Jugador(dni: null, telefono: null), Guid.NewGuid()));
+        Assert.True(sesion.DebeCambiarPassword);
     }
 }

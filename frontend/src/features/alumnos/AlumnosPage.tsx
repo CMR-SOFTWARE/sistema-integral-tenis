@@ -2,20 +2,45 @@ import { useState } from 'react';
 import { useAlumnos } from './useAlumnos';
 import NuevoAlumnoModal from './NuevoAlumnoModal';
 import DetalleAlumnoModal from './DetalleAlumnoModal';
+import AccesoCreadoModal from './AccesoCreadoModal';
+import { ApiError } from '../../lib/api';
 import { CATEGORIAS, CAT_COLOR, CAT_LABEL, ESTADO_UI, avatarColor, iniciales } from './types';
 import type { Alumno, Categoria } from './types';
 import s from './AlumnosPage.module.css';
 
+interface Credenciales {
+  nombre: string;
+  email: string;
+  passwordTemporal: string;
+}
+
 export default function AlumnosPage() {
   const [filtro, setFiltro] = useState<Categoria | 'todas'>('todas');
-  const { alumnos, cargando, error, crear, cambiarEstado, darDeBaja } = useAlumnos(filtro);
+  const { alumnos, cargando, error, crear, crearAcceso, cambiarEstado, darDeBaja } = useAlumnos(filtro);
   const [modalNuevo, setModalNuevo] = useState(false);
   const [detalle, setDetalle] = useState<Alumno | null>(null);
+  const [credenciales, setCredenciales] = useState<Credenciales | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
   const avisar = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2600);
+  };
+
+  /** "Crear acceso" para fichas viejas sin usuario (desde la ficha). */
+  const accesoParaFicha = async (a: Alumno) => {
+    let email = a.email ?? undefined;
+    if (!email) {
+      email = window.prompt('La ficha no tiene email. Ingresá el email del alumno:')?.trim();
+      if (!email) return;
+    }
+    try {
+      const acceso = await crearAcceso(a.id, a.email ? undefined : email);
+      setDetalle(null);
+      setCredenciales({ nombre: `${a.nombre} ${a.apellido}`, ...acceso });
+    } catch (e) {
+      avisar(e instanceof ApiError ? e.message : 'No se pudo crear el acceso.');
+    }
   };
 
   const pausarOReactivar = async (a: Alumno) => {
@@ -162,13 +187,32 @@ export default function AlumnosPage() {
       {modalNuevo && (
         <NuevoAlumnoModal
           onClose={() => setModalNuevo(false)}
-          onCrear={async (dto) => {
-            await crear(dto);
-            avisar(`${dto.nombre} ${dto.apellido} creado`);
+          onCrear={crear}
+          onCreado={(creado) => {
+            setModalNuevo(false);
+            setCredenciales({
+              nombre: `${creado.alumno.nombre} ${creado.alumno.apellido}`,
+              email: creado.email,
+              passwordTemporal: creado.passwordTemporal,
+            });
           }}
         />
       )}
-      {detalle && <DetalleAlumnoModal alumno={detalle} onClose={() => setDetalle(null)} />}
+      {detalle && (
+        <DetalleAlumnoModal
+          alumno={detalle}
+          onClose={() => setDetalle(null)}
+          onCrearAcceso={accesoParaFicha}
+        />
+      )}
+      {credenciales && (
+        <AccesoCreadoModal
+          nombre={credenciales.nombre}
+          email={credenciales.email}
+          passwordTemporal={credenciales.passwordTemporal}
+          onClose={() => setCredenciales(null)}
+        />
+      )}
 
       {toast && (
         <div className={s.toast}>
