@@ -64,3 +64,32 @@
   gap: 10px;
   justify-content: flex-end;
 }
+
+/* ── Móvil: el modal ocupa la pantalla ── */
+@media (max-width: 760px) {
+  .overlay {
+    padding: 12px;
+    align-items: flex-start;
+  }
+
+  .header {
+    padding: 16px 18px;
+  }
+
+  .titulo {
+    font-size: 17px;
+  }
+
+  .body {
+    padding: 18px;
+  }
+
+  .footer {
+    padding: 14px 18px;
+    flex-wrap: wrap;
+  }
+
+  .footer > * {
+    flex: 1; /* botones a lo ancho, más fáciles de tocar */
+  }
+}

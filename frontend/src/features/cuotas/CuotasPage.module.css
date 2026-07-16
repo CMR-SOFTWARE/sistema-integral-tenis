@@ -283,3 +283,11 @@
   font-weight: 600;
   margin-bottom: 16px;
 }
+
+/* ── Móvil ── */
+@media (max-width: 760px) {
+  .stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+}

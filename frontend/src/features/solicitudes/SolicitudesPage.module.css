@@ -160,3 +160,23 @@
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
   z-index: 50;
 }
+
+/* ── Móvil: la tarjeta se apila y los botones ocupan el ancho ── */
+@media (max-width: 760px) {
+  .tarjetaSol {
+    flex-wrap: wrap;
+  }
+
+  .cuerpo {
+    flex-basis: calc(100% - 58px); /* deja el avatar a la izquierda */
+  }
+
+  .acciones {
+    width: 100%;
+  }
+
+  .btnAprobar,
+  .btnRechazar {
+    flex: 1;
+  }
+}

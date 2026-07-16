@@ -229,3 +229,79 @@
   gap: 10px;
   animation: pop 0.3s ease;
 }
+
+/* ── Móvil: la tabla deja de ser tabla y cada alumno es una TARJETA ──
+   (deslizar de lado para ver estado y acciones es incómodo en el celular).
+   Se reordenan las celdas con flex+order, sin tocar el JSX:
+
+     [AV] Nombre Apellido            [ver][pausar][baja]
+          DNI 12345678
+     [4ta] [Al día] [Activo]              3364204567          */
+@media (max-width: 900px) {
+  .tabla,
+  .tabla tbody,
+  .tabla tr,
+  .tabla td {
+    display: block;
+  }
+
+  .tabla thead {
+    display: none; /* sin encabezados: cada dato se explica solo */
+  }
+
+  .tabla tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 16px;
+    border-top: 1px solid var(--color-border-subtle);
+  }
+
+  .tabla td {
+    padding: 0;
+    border: none;
+  }
+
+  /* Primera línea: el alumno ocupa el ancho y las acciones van a la derecha */
+  .tabla td:nth-child(1) {
+    order: 1;
+    flex: 1 1 60%;
+  }
+
+  .tabla td:nth-child(6) {
+    order: 2;
+  }
+
+  /* Segunda línea: los chips juntos y el teléfono al final */
+  .tabla td:nth-child(2) { order: 3; }
+  .tabla td:nth-child(4) { order: 4; }
+  .tabla td:nth-child(5) { order: 5; }
+
+  .tabla td:nth-child(3) {
+    order: 6;
+    margin-left: auto;
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 760px) {
+  .toolbar {
+    gap: 8px;
+  }
+
+  .filtros {
+    overflow-x: auto; /* los 8 filtros de categoría se deslizan */
+    max-width: 100%;
+  }
+
+  .filtro,
+  .filtroActivo {
+    white-space: nowrap;
+  }
+
+  .btnNuevo {
+    flex: 1;
+    justify-content: center;
+  }
+}

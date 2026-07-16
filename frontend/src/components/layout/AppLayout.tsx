@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { cerrarSesion, obtenerSesion } from '../../features/auth/sesion';
+import BotonMenu from './BotonMenu';
 import { profNav, pageTitles } from './nav';
 import s from './AppLayout.module.css';
 
@@ -27,12 +28,18 @@ export default function AppLayout() {
   const title = pageTitles[pathname] ?? 'CourtSet';
   const sesion = obtenerSesion();
   const [pendientes, setPendientes] = useState(0);
+  const [menuAbierto, setMenuAbierto] = useState(false);
 
   // Badge de solicitudes: se refresca al navegar (barato: un COUNT)
   useEffect(() => {
     api.get<{ pendientes: number }>('/solicitudes/conteo')
       .then((c) => setPendientes(c.pendientes))
       .catch(() => setPendientes(0));
+  }, [pathname]);
+
+  // Al navegar se cierra el drawer (en escritorio no se ve: CSS)
+  useEffect(() => {
+    setMenuAbierto(false);
   }, [pathname]);
 
   const salir = () => {
@@ -42,7 +49,15 @@ export default function AppLayout() {
 
   return (
     <div className={s.shell}>
-      <aside className={s.sidebar}>
+      {menuAbierto && (
+        <button
+          className={s.backdrop}
+          onClick={() => setMenuAbierto(false)}
+          aria-label="Cerrar menú"
+        />
+      )}
+
+      <aside className={`${s.sidebar} ${menuAbierto ? s.sidebarAbierto : ''}`}>
         <div className={s.brand}>
           <div className={s.brandLogo}>C</div>
           <div>
@@ -89,6 +104,7 @@ export default function AppLayout() {
 
       <div className={s.main}>
         <header className={s.header}>
+          <BotonMenu onClick={() => setMenuAbierto(true)} />
           <div className={s.headerTitles}>
             <h1 className={s.pageTitle}>{title}</h1>
             <div className={s.pageDate}>{fechaDeHoy()}</div>

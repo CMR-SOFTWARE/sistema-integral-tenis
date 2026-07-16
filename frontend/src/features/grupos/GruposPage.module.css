@@ -199,3 +199,10 @@
   gap: 10px;
   animation: pop 0.3s ease;
 }
+
+/* ── Móvil ── */
+@media (max-width: 760px) {
+  .grilla {
+    grid-template-columns: 1fr;
+  }
+}

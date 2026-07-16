@@ -378,4 +378,11 @@
   .panelMarca {
     display: none;
   }
+  /* Un campo por fila: nombre/apellido, DNI/teléfono, etc. */
+  .dosCol {
+    grid-template-columns: 1fr;
+  }
+  .panelLogin {
+    padding: 24px 16px;
+  }
 }
