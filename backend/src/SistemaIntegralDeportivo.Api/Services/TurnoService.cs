@@ -86,18 +86,28 @@ public class TurnoService : ITurnoService
             var yaGeneradas = await _turnos.FechasGeneradasAsync(horario.Id, desde, hasta, ct);
 
             // Roster CONGELADO al generar (fija el divisor del precio):
-            // grupal → miembros activos del grupo; individual → ese alumno
+            // grupal → miembros del grupo que estén ACTIVOS; individual → ese
+            // alumno si está activo. El pausado/dado de baja no ocupa lugar ni
+            // paga clases a las que no va (y no infla el divisor abaratando al resto).
             List<Guid> roster = [];
             if (horario.GrupoId is not null)
             {
                 var grupo = await _grupos.ObtenerAsync(horario.GrupoId.Value, ct);
                 if (grupo is not null)
-                    roster = [.. grupo.Alumnos.Where(x => x.FechaBaja is null).Select(x => x.AlumnoId)];
+                    roster =
+                    [
+                        .. grupo.Alumnos
+                            .Where(x => x.FechaBaja is null && x.Alumno?.Estado == EstadoAlumno.Activo)
+                            .Select(x => x.AlumnoId)
+                    ];
             }
-            else if (horario.AlumnoId is not null)
+            else if (horario.AlumnoId is not null && horario.Alumno?.Estado == EstadoAlumno.Activo)
             {
                 roster = [horario.AlumnoId.Value];
             }
+
+            // Sin nadie que juegue no hay turno que generar
+            if (roster.Count == 0) continue;
 
             // Primera fecha del rango que cae en el día del horario, y de ahí de a 7
             var offset = ((int)horario.Dia - (int)desde.DayOfWeek + 7) % 7;

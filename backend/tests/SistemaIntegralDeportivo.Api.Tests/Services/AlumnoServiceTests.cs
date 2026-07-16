@@ -19,6 +19,9 @@ public class AlumnoServiceTests
     private readonly Mock<IAlumnoRepository> _repo;
     private readonly Mock<ICargoRepository> _cargos;
     private readonly Mock<ICredencialesService> _credenciales;
+    private readonly Mock<ITurnoRepository> _turnos;
+    private readonly Mock<IGrupoRepository> _grupos;
+    private readonly Mock<IHorarioRepository> _horarios;
     private readonly AlumnoService _service;
 
     public AlumnoServiceTests()
@@ -26,6 +29,23 @@ public class AlumnoServiceTests
         _repo = new Mock<IAlumnoRepository>();
         _cargos = new Mock<ICargoRepository>();
         _credenciales = new Mock<ICredencialesService>();
+        _turnos = new Mock<ITurnoRepository>();
+        _grupos = new Mock<IGrupoRepository>();
+        _horarios = new Mock<IHorarioRepository>();
+
+        // Por defecto: sin turnos futuros, sin grupos ni horarios individuales
+        _turnos.Setup(t => t.ListarFuturosDeAlumnoAsync(It.IsAny<Guid>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([]);
+        _turnos.Setup(t => t.ListarPorHorarioDesdeAsync(It.IsAny<Guid>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([]);
+        _cargos.Setup(c => c.ListarPorTurnosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([]);
+        _grupos.Setup(g => g.ListarMembresiasActivasDeAlumnoAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([]);
+        _horarios.Setup(h => h.ListarIndividualesDeAlumnoAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                 .ReturnsAsync([]);
+        _horarios.Setup(h => h.ListarActivosAsync(It.IsAny<CancellationToken>()))
+                 .ReturnsAsync([]);
 
         // Por defecto: el DNI no existe y AgregarAsync devuelve lo que recibe
         _repo.Setup(r => r.ExisteDniAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
@@ -43,7 +63,9 @@ public class AlumnoServiceTests
                 It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
              .ReturnsAsync(new CredencialesCreadas(UserIdNuevo, "Temp1234AB"));
 
-        _service = new AlumnoService(_repo.Object, _cargos.Object, _credenciales.Object);
+        _service = new AlumnoService(
+            _repo.Object, _cargos.Object, _credenciales.Object,
+            _turnos.Object, _grupos.Object, _horarios.Object);
     }
 
     /// <summary>DTO válido de un alumno MAYOR de edad (base de los tests).</summary>
@@ -368,6 +390,222 @@ public class AlumnoServiceTests
 
         await Assert.ThrowsAsync<ReglaDeNegocioException>(
             () => _service.EditarAsync(Guid.NewGuid(), Edicion()));
+    }
+
+    // ─────────────────────────────────────────────
+    // Estado ↔ calendario: pausar/dar de baja saca del calendario
+    // (pausa GUARDA el lugar; baja lo LIBERA)
+    // ─────────────────────────────────────────────
+
+    private static readonly Guid OtroAlumno = Guid.NewGuid();
+
+    /// <summary>Turno grupal futuro con el alumno + otro compañero.</summary>
+    private Turno TurnoGrupalFuturo(Alumno mio, int enDias = 3)
+    {
+        var turno = new Turno
+        {
+            HorarioId = Guid.NewGuid(),
+            Fecha = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(enDias),
+            HoraInicio = new TimeOnly(18, 0),
+            DuracionMinutos = 60,
+        };
+        turno.Participantes.Add(new TurnoParticipante { Turno = turno, AlumnoId = mio.Id });
+        turno.Participantes.Add(new TurnoParticipante { Turno = turno, AlumnoId = OtroAlumno });
+        return turno;
+    }
+
+    [Fact]
+    public async Task Pausar_LoSaca_YRecalculaLaCuotaDelResto()
+    {
+        // El divisor baja (÷3 en vez de ÷4): los cargos impagos del turno se
+        // invalidan (mío Y del compañero) para que la liquidación los
+        // regenere con el nuevo divisor. Sin esto, el compañero quedaba con
+        // la cuota vieja más barata (era el bug reportado, en su forma inversa).
+        var ficha = FichaExistente();
+        var turno = TurnoGrupalFuturo(ficha);
+        var miCargoImpago = new Cargo
+        {
+            AlumnoId = ficha.Id, TurnoId = turno.Id, Tipo = TipoCargo.Clase,
+            Concepto = "Clase grupal", Monto = 4_000m, Fecha = turno.Fecha,
+        };
+        var cargoDelOtro = new Cargo
+        {
+            AlumnoId = OtroAlumno, TurnoId = turno.Id, Tipo = TipoCargo.Clase,
+            Concepto = "Clase grupal", Monto = 4_000m, Fecha = turno.Fecha,
+        };
+        _turnos.Setup(t => t.ListarFuturosDeAlumnoAsync(ficha.Id, It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([turno]);
+        _cargos.Setup(c => c.ListarPorTurnosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([miCargoImpago, cargoDelOtro]);
+
+        await _service.CambiarEstadoAsync(ficha.Id, EstadoAlumno.Suspendido);
+
+        // Sale del roster (el turno SIGUE para el compañero)
+        _turnos.Verify(t => t.QuitarParticipante(
+            It.Is<TurnoParticipante>(p => p.AlumnoId == ficha.Id)), Times.Once);
+        _turnos.Verify(t => t.Eliminar(It.IsAny<Turno>()), Times.Never);
+        // Ambos cargos impagos se invalidan para recalcularse con ÷3
+        _cargos.Verify(c => c.Eliminar(miCargoImpago), Times.Once);
+        _cargos.Verify(c => c.Eliminar(cargoDelOtro), Times.Once);
+    }
+
+    [Fact]
+    public async Task Pausar_TurnoConSuCargoYaPAGADO_NoSeToca()
+    {
+        // Plata cobrada = intocable (regla de la casa)
+        var ficha = FichaExistente();
+        var turno = TurnoGrupalFuturo(ficha);
+        var miCargoPagado = new Cargo
+        {
+            AlumnoId = ficha.Id, TurnoId = turno.Id, Tipo = TipoCargo.Clase,
+            Concepto = "Clase grupal", Monto = 4_000m, Fecha = turno.Fecha,
+            PagadoEl = DateTime.UtcNow, MedioPago = MedioPago.Efectivo,
+        };
+        _turnos.Setup(t => t.ListarFuturosDeAlumnoAsync(ficha.Id, It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([turno]);
+        _cargos.Setup(c => c.ListarPorTurnosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([miCargoPagado]);
+
+        await _service.CambiarEstadoAsync(ficha.Id, EstadoAlumno.Suspendido);
+
+        _turnos.Verify(t => t.QuitarParticipante(It.IsAny<TurnoParticipante>()), Times.Never);
+        _cargos.Verify(c => c.Eliminar(It.IsAny<Cargo>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Pausar_TurnoIndividual_SeElimina_EnVezDeQuedarVacio()
+    {
+        var ficha = FichaExistente();
+        var individual = new Turno
+        {
+            HorarioId = Guid.NewGuid(),
+            Fecha = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(2),
+            HoraInicio = new TimeOnly(9, 0),
+            DuracionMinutos = 60,
+        };
+        individual.Participantes.Add(new TurnoParticipante { Turno = individual, AlumnoId = ficha.Id });
+        _turnos.Setup(t => t.ListarFuturosDeAlumnoAsync(ficha.Id, It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([individual]);
+
+        await _service.CambiarEstadoAsync(ficha.Id, EstadoAlumno.Suspendido);
+
+        // Era el único: el turno entero se va (libera el slot en el calendario)
+        _turnos.Verify(t => t.Eliminar(individual), Times.Once);
+    }
+
+    [Fact]
+    public async Task Pausar_NO_TocaSusGruposNiSuHorarioIndividual()
+    {
+        // La PAUSA le guarda el lugar (lesión/viaje): vuelve solo al reactivarlo
+        var ficha = FichaExistente();
+        var membresia = new AlumnoGrupo { AlumnoId = ficha.Id, GrupoId = Guid.NewGuid() };
+        var suHorario = new Horario
+        {
+            CanchaId = Guid.NewGuid(), AlumnoId = ficha.Id, Dia = DayOfWeek.Monday,
+            HoraInicio = new TimeOnly(9, 0), DuracionMinutos = 60,
+        };
+        _grupos.Setup(g => g.ListarMembresiasActivasDeAlumnoAsync(ficha.Id, It.IsAny<CancellationToken>()))
+               .ReturnsAsync([membresia]);
+        _horarios.Setup(h => h.ListarIndividualesDeAlumnoAsync(ficha.Id, It.IsAny<CancellationToken>()))
+                 .ReturnsAsync([suHorario]);
+
+        await _service.CambiarEstadoAsync(ficha.Id, EstadoAlumno.Suspendido);
+
+        Assert.Null(membresia.FechaBaja); // sigue en el grupo: nadie le toma el lugar
+        Assert.True(suHorario.Activo);    // su horario sigue reservado
+    }
+
+    [Fact]
+    public async Task Baja_LiberaElLugar_SacaDeGruposYDesactivaSuHorario()
+    {
+        var ficha = FichaExistente();
+        var membresia = new AlumnoGrupo { AlumnoId = ficha.Id, GrupoId = Guid.NewGuid() };
+        var suHorario = new Horario
+        {
+            CanchaId = Guid.NewGuid(), AlumnoId = ficha.Id, Dia = DayOfWeek.Monday,
+            HoraInicio = new TimeOnly(9, 0), DuracionMinutos = 60,
+        };
+        _grupos.Setup(g => g.ListarMembresiasActivasDeAlumnoAsync(ficha.Id, It.IsAny<CancellationToken>()))
+               .ReturnsAsync([membresia]);
+        _horarios.Setup(h => h.ListarIndividualesDeAlumnoAsync(ficha.Id, It.IsAny<CancellationToken>()))
+                 .ReturnsAsync([suHorario]);
+
+        await _service.DarDeBajaAsync(ficha.Id);
+
+        Assert.Equal(EstadoAlumno.Inactivo, ficha.Estado);
+        Assert.NotNull(membresia.FechaBaja); // libera el cupo del grupo
+        Assert.False(suHorario.Activo);      // libera el slot de la cancha
+    }
+
+    [Fact]
+    public async Task Reactivar_LoRepone_EnLosTurnosFuturosDeSusGrupos()
+    {
+        var ficha = FichaExistente(userId: null);
+        ficha.Estado = EstadoAlumno.Suspendido;
+        var grupoId = Guid.NewGuid();
+        var horarioGrupal = new Horario
+        {
+            CanchaId = Guid.NewGuid(), GrupoId = grupoId, Dia = DayOfWeek.Tuesday,
+            HoraInicio = new TimeOnly(18, 0), DuracionMinutos = 60,
+        };
+        // Turno futuro del grupo SIN él (lo sacamos al pausarlo)
+        var turnoSinMi = new Turno
+        {
+            HorarioId = horarioGrupal.Id,
+            Fecha = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(3),
+            HoraInicio = new TimeOnly(18, 0), DuracionMinutos = 60,
+        };
+        turnoSinMi.Participantes.Add(new TurnoParticipante { Turno = turnoSinMi, AlumnoId = OtroAlumno });
+
+        _grupos.Setup(g => g.ListarMembresiasActivasDeAlumnoAsync(ficha.Id, It.IsAny<CancellationToken>()))
+               .ReturnsAsync([new AlumnoGrupo { AlumnoId = ficha.Id, GrupoId = grupoId }]);
+        _horarios.Setup(h => h.ListarActivosAsync(It.IsAny<CancellationToken>()))
+                 .ReturnsAsync([horarioGrupal]);
+        _turnos.Setup(t => t.ListarPorHorarioDesdeAsync(horarioGrupal.Id, It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([turnoSinMi]);
+
+        // El turno tenía un cargo impago del compañero calculado con divisor
+        // viejo (÷1, sin el que vuelve): al reponerlo debe invalidarse para
+        // recalcularse ÷2 — ESTE es el bug que reportó Lucas.
+        var cargoViejoDelOtro = new Cargo
+        {
+            AlumnoId = OtroAlumno, TurnoId = turnoSinMi.Id, Tipo = TipoCargo.Clase,
+            Concepto = "Clase grupal", Monto = 8_000m, Fecha = turnoSinMi.Fecha,
+        };
+        _cargos.Setup(c => c.ListarPorTurnosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([cargoViejoDelOtro]);
+
+        await _service.CambiarEstadoAsync(ficha.Id, EstadoAlumno.Activo);
+
+        Assert.Contains(turnoSinMi.Participantes, p => p.AlumnoId == ficha.Id); // volvió al roster
+        _cargos.Verify(c => c.Eliminar(cargoViejoDelOtro), Times.Once);         // se recalcula
+        // La reconciliación no persiste: el cambio de estado hace un único
+        // GuardarCambios (mismo DbContext) al final
+        _repo.Verify(r => r.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Reactivar_NoDuplicaSiYaEstabaEnElTurno()
+    {
+        var ficha = FichaExistente();
+        ficha.Estado = EstadoAlumno.Suspendido;
+        var grupoId = Guid.NewGuid();
+        var horarioGrupal = new Horario
+        {
+            CanchaId = Guid.NewGuid(), GrupoId = grupoId, Dia = DayOfWeek.Tuesday,
+            HoraInicio = new TimeOnly(18, 0), DuracionMinutos = 60,
+        };
+        var turnoConMi = TurnoGrupalFuturo(ficha);
+        _grupos.Setup(g => g.ListarMembresiasActivasDeAlumnoAsync(ficha.Id, It.IsAny<CancellationToken>()))
+               .ReturnsAsync([new AlumnoGrupo { AlumnoId = ficha.Id, GrupoId = grupoId }]);
+        _horarios.Setup(h => h.ListarActivosAsync(It.IsAny<CancellationToken>()))
+                 .ReturnsAsync([horarioGrupal]);
+        _turnos.Setup(t => t.ListarPorHorarioDesdeAsync(horarioGrupal.Id, It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([turnoConMi]);
+
+        await _service.CambiarEstadoAsync(ficha.Id, EstadoAlumno.Activo);
+
+        Assert.Single(turnoConMi.Participantes, p => p.AlumnoId == ficha.Id);
     }
 
     // ─────────────────────────────────────────────

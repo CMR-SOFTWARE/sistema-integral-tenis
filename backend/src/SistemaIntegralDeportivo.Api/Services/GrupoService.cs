@@ -10,12 +10,16 @@ public class GrupoService : IGrupoService
     private readonly IGrupoRepository _grupos;
     private readonly IAlumnoRepository _alumnos;
     private readonly ICargoRepository _cargos;
+    private readonly IAlumnoService _alumnoService;
 
-    public GrupoService(IGrupoRepository grupos, IAlumnoRepository alumnos, ICargoRepository cargos)
+    public GrupoService(
+        IGrupoRepository grupos, IAlumnoRepository alumnos, ICargoRepository cargos,
+        IAlumnoService alumnoService)
     {
         _grupos = grupos;
         _alumnos = alumnos;
         _cargos = cargos;
+        _alumnoService = alumnoService;
     }
 
     public async Task<GrupoResponseDto> CrearAsync(CreateGrupoDto dto, CancellationToken ct = default)
@@ -95,6 +99,16 @@ public class GrupoService : IGrupoService
             }, ct);
         }
 
+        // Persistir la membresía ANTES de reconciliar: la reconciliación
+        // consulta las membresías activas del alumno (query a la base) y tiene
+        // que ver ya la que acabamos de dar de alta.
+        await _grupos.GuardarCambiosAsync(ct);
+
+        // Sumarlo a un grupo lo repone en los turnos futuros YA generados de
+        // ese grupo y recalcula el divisor: sin esto, el que vuelve no aparece
+        // en el calendario ni se le genera cuota (el bug de Lucas al re-agregar
+        // a un alumno tras darlo de baja).
+        await _alumnoService.SincronizarCalendarioAsync(alumnoId, ct);
         await _grupos.GuardarCambiosAsync(ct);
     }
 
@@ -106,6 +120,11 @@ public class GrupoService : IGrupoService
 
         // Baja lógica: se conserva la historia ("estuvo de marzo a junio")
         membresia.FechaBaja = DateTime.UtcNow;
+        await _grupos.GuardarCambiosAsync(ct);
+
+        // Ya no es de este grupo: sacarlo de sus turnos futuros (sigue Activo y
+        // en sus OTROS grupos, así que la reconciliación solo lo saca de este).
+        await _alumnoService.SincronizarCalendarioAsync(alumnoId, ct);
         await _grupos.GuardarCambiosAsync(ct);
     }
 

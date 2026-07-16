@@ -10,6 +10,13 @@ public class CuotaService : ICuotaService
     /// <summary>Día del mes en que vence la liquidación (modelo-precios.md).</summary>
     public const int DiaVencimiento = 10;
 
+    /// <summary>
+    /// Día del mes a partir del cual el profe puede sacar del calendario al
+    /// que no pagó (5 días de gracia después del vencimiento). No es
+    /// automático: se le sugiere al profe y él confirma.
+    /// </summary>
+    public const int DiaSuspension = 15;
+
     private readonly ICargoRepository _cargos;
     private readonly ITurnoRepository _turnos;
     private readonly ITenantRepository _tenant;
@@ -196,6 +203,14 @@ public class CuotaService : ICuotaService
     /// </summary>
     public static bool TieneDeudaVencida(IEnumerable<Cargo> cargosImpagos, DateOnly hoy) =>
         cargosImpagos.Any(c => CalcularEstado(c.Fecha.Year, c.Fecha.Month, saldo: 1m, hoy) == "Vencida");
+
+    /// <summary>
+    /// Morosidad DURA: algún cargo impago de un mes cuyo día 15 ya pasó. El
+    /// profe puede sacarlo del calendario (pausarlo) desde el panel de
+    /// morosos — nunca es automático.
+    /// </summary>
+    public static bool DebeSuspenderse(IEnumerable<Cargo> cargosImpagos, DateOnly hoy) =>
+        cargosImpagos.Any(c => hoy > new DateOnly(c.Fecha.Year, c.Fecha.Month, DiaSuspension));
 
     /// <summary>
     /// Estado de la liquidación, CALCULADO (nunca guardado): Pagada si no

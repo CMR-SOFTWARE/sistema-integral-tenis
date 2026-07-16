@@ -12,6 +12,13 @@ public interface IHorarioRepository
     /// <summary>Todos los horarios activos del tenant, con cancha/sede/grupo/alumno.</summary>
     Task<IReadOnlyList<Horario>> ListarActivosAsync(CancellationToken ct = default);
 
+    /// <summary>
+    /// Horarios INDIVIDUALES activos de un alumno, TRACKEADOS: la baja del
+    /// alumno los desactiva para liberar el slot de la cancha.
+    /// </summary>
+    Task<IReadOnlyList<Horario>> ListarIndividualesDeAlumnoAsync(
+        Guid alumnoId, CancellationToken ct = default);
+
     Task<Horario?> ObtenerAsync(Guid id, CancellationToken ct = default);
 
     Task<Horario> AgregarAsync(Horario horario, CancellationToken ct = default);

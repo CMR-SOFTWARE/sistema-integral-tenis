@@ -31,6 +31,14 @@ public class AlumnosController : ControllerBase
         CancellationToken ct) =>
         Ok(await _service.ListarAsync(categoria, estado, ct));
 
+    /// <summary>
+    /// GET api/alumnos/morosos — activos con la cuota impaga pasado el día 15
+    /// (el profe decide si los saca del calendario; nunca es automático).
+    /// </summary>
+    [HttpGet("morosos")]
+    public async Task<ActionResult<IReadOnlyList<MorosoDto>>> Morosos(CancellationToken ct) =>
+        Ok(await _service.ListarMorososAsync(ct));
+
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<AlumnoResponseDto>> Obtener(Guid id, CancellationToken ct)
     {

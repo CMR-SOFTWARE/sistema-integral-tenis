@@ -50,6 +50,13 @@ public class GrupoRepository : IGrupoRepository
     public Task<int> ContarMiembrosActivosAsync(Guid grupoId, CancellationToken ct = default) =>
         _db.AlumnoGrupos.CountAsync(m => m.GrupoId == grupoId && m.FechaBaja == null, ct);
 
+    public async Task<IReadOnlyList<AlumnoGrupo>> ListarMembresiasActivasDeAlumnoAsync(
+        Guid alumnoId, CancellationToken ct = default) =>
+        // TRACKEADO: la baja del alumno les pone FechaBaja
+        await _db.AlumnoGrupos
+            .Where(m => m.AlumnoId == alumnoId && m.FechaBaja == null)
+            .ToListAsync(ct);
+
     public async Task AgregarMembresiaAsync(AlumnoGrupo membresia, CancellationToken ct = default)
     {
         _db.AlumnoGrupos.Add(membresia);
