@@ -43,5 +43,5 @@ export function useCuotas(anio: number, mes: number) {
     await cargar();
   };
 
-  return { datos, cargando, error, pagarMes, pagarCargo, agregarCargo };
+  return { datos, cargando, error, pagarMes, pagarCargo, agregarCargo, recargar: cargar };
 }

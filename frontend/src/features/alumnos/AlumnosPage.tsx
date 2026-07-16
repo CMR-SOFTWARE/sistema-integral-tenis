@@ -48,15 +48,23 @@ export default function AlumnosPage() {
   };
 
   const pausarOReactivar = async (a: Alumno) => {
-    const nuevo = a.estado === 'Activo' ? 'Suspendido' : 'Activo';
-    await cambiarEstado(a.id, nuevo);
-    avisar(nuevo === 'Suspendido' ? `${a.nombre} pausado` : `${a.nombre} reactivado`);
+    const pausar = a.estado === 'Activo';
+    if (pausar && !window.confirm(
+      `¿Pausar a ${a.nombre} ${a.apellido}? Sale de sus turnos futuros y deja de pagarlos, pero le guardamos su lugar: al reactivarlo vuelve solo.`,
+    )) return;
+
+    await cambiarEstado(a.id, pausar ? 'Suspendido' : 'Activo');
+    avisar(pausar
+      ? `${a.nombre} pausado y fuera del calendario`
+      : `${a.nombre} reactivado: vuelve a sus turnos`);
   };
 
   const baja = async (a: Alumno) => {
-    if (!window.confirm(`¿Dar de baja a ${a.nombre} ${a.apellido}? El historial se conserva.`)) return;
+    if (!window.confirm(
+      `¿Dar de baja a ${a.nombre} ${a.apellido}? Sale del calendario, de sus grupos (se libera el cupo) y se desactivan sus horarios individuales. El historial se conserva.`,
+    )) return;
     await darDeBaja(a.id);
-    avisar(`${a.nombre} dado de baja`);
+    avisar(`${a.nombre} dado de baja y fuera del calendario`);
   };
 
   return (

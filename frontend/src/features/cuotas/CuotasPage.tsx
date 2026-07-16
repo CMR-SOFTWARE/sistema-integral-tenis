@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useCuotas } from './useCuotas';
 import MedioModal from './MedioModal';
 import NuevoCargoModal from './NuevoCargoModal';
+import PanelMorosos from './PanelMorosos';
 import { ESTADO_LIQ_UI, MESES } from './types';
 import type { EstadoLiquidacion } from './types';
 import type { Liquidacion, Medio } from './types';
@@ -13,7 +14,7 @@ export default function CuotasPage() {
   const hoy = new Date();
   const [anio, setAnio] = useState(hoy.getFullYear());
   const [mes, setMes] = useState(hoy.getMonth() + 1);
-  const { datos, cargando, error, pagarMes, pagarCargo, agregarCargo } = useCuotas(anio, mes);
+  const { datos, cargando, error, pagarMes, pagarCargo, agregarCargo, recargar } = useCuotas(anio, mes);
 
   const [filtro, setFiltro] = useState<'todas' | EstadoLiquidacion>('todas');
   const [abiertos, setAbiertos] = useState<Set<string>>(new Set());
@@ -62,6 +63,8 @@ export default function CuotasPage() {
           ))}
         </div>
       </div>
+
+      <PanelMorosos onCambio={() => void recargar()} />
 
       {error && (
         <div className={s.error}>

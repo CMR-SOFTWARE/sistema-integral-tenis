@@ -72,6 +72,43 @@ posible. Por eso el orden de construcción es:
 - ~~Alumno que falta: ¿paga igual?~~ → paga igual, siempre. El divisor son
   los asignados, no los presentes (ver §2).
 
+**RESUELTO (16/07/2026, estado del alumno ↔ calendario):**
+
+- ~~¿Qué pasa con los turnos de un alumno pausado o dado de baja?~~ → **El
+  estado manda sobre el calendario**. Antes no pasaba nada: el pausado seguía
+  en sus turnos futuros, se le generaban cargos de clases a las que no iba y
+  —peor— al contar en `turno.Participantes.Count` **abarataba la clase al
+  resto** (÷4 en vez de ÷3). Ahora:
+  - **Pausado** (lesión, viaje): sale de sus turnos futuros y sus cargos
+    IMPAGOS de esos turnos se borran (no va → no paga). Se le **guarda el
+    lugar**: sigue en sus grupos y su horario individual queda activo. Al
+    reactivarlo **vuelve solo** a los turnos futuros de sus grupos (los
+    individuales los regenera la generación perezosa).
+  - **Baja**: lo mismo + **libera el lugar** (sale de sus grupos → el cupo
+    queda disponible; sus horarios individuales se desactivan → la cancha se
+    libera). Si vuelve, el profe lo reasigna.
+  - **Lo PAGADO es intocable**: un turno futuro con su cargo ya pagado no se
+    toca (mismo criterio que `HorarioService.DesactivarAsync` y bloqueos).
+  - La **generación perezosa** ya no incluye en el roster a quien no esté
+    `Activo` (ni genera el turno individual de un pausado).
+  - **Entrar o salir de un grupo también sincroniza el calendario**: al
+    sumar a un alumno a un grupo, se lo repone en los turnos futuros YA
+    generados de ese grupo (y se recalcula el divisor); al quitarlo, se lo
+    saca de esos turnos. Antes esto se olvidaba y el que volvía tras una baja
+    no aparecía en el calendario ni se le generaba cuota (bug de Lucas,
+    16/07/2026). Toda la lógica vive en un solo lugar
+    —`AlumnoService.SincronizarCalendarioAsync`, la reconciliación
+    idempotente del estado↔calendario— que llaman por igual el cambio de
+    estado, la baja y `GrupoService` al tocar una membresía. Un solo lugar =
+    el agujero no se repite.
+- ~~¿La morosidad saca del calendario?~~ → **Día 15 (5 días de gracia después
+  del vencimiento del 10): NO es automático.** El profe ve un panel en Cuotas
+  con los morosos y decide: puede recordarles por WhatsApp o **sacarlos del
+  calendario** (los pausa, con todo lo de arriba). Cuando pagan, los reactiva
+  y vuelven. Regla: `CuotaService.DebeSuspenderse(cargosImpagos, hoy)` con
+  `DiaSuspension = 15` (convive con `DiaVencimiento = 10`, que sigue
+  bloqueando altas nuevas y pintando las señales visuales).
+
 **RESUELTO (13/07/2026, vertical Cancelaciones):**
 
 - ~~¿Qué pasa cuando el ALUMNO cancela desde el portal?~~ → Es un **AVISO**
