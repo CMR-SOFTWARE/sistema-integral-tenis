@@ -4,6 +4,7 @@ import { api, ApiError } from '../../lib/api';
 import { CATEGORIAS, CAT_LABEL } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import AuthShell from './AuthShell';
+import InputPassword from '../../components/InputPassword';
 import { entrarConSesion } from './entrar';
 import type { Sesion } from './sesion';
 import s from './LoginPage.module.css';
@@ -110,7 +111,7 @@ export default function RegistroJugadorPage() {
         </div>
         <label className={s.campo}>
           <span>Contraseña (mínimo 8 caracteres)</span>
-          <input type="password" value={f.password} onChange={(e) => set('password', e.target.value)} />
+          <InputPassword value={f.password} onChange={(v) => set('password', v)} />
         </label>
 
         {error && <div className={s.error}>{error}</div>}

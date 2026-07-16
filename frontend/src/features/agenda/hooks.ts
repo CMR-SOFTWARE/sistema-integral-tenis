@@ -29,7 +29,18 @@ export function useSedes() {
     await cargar();
   };
 
-  return { sedes, cargando, crearSede, agregarCancha };
+  /** Baja lógica: deja de ofrecerse para horarios nuevos (la historia queda). */
+  const desactivarSede = async (sedeId: string) => {
+    await api.delete(`/sedes/${sedeId}`);
+    await cargar();
+  };
+
+  const reactivarSede = async (sedeId: string) => {
+    await api.post(`/sedes/${sedeId}/reactivar`, {});
+    await cargar();
+  };
+
+  return { sedes, cargando, crearSede, agregarCancha, desactivarSede, reactivarSede };
 }
 
 export function useHorarios() {

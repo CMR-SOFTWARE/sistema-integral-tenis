@@ -62,7 +62,7 @@ function PreciosCard() {
 
 /** Configuración del tenant. Por ahora: sedes y canchas (donde trabaja el profe). */
 export default function ConfiguracionPage() {
-  const { sedes, cargando, crearSede, agregarCancha } = useSedes();
+  const { sedes, cargando, crearSede, agregarCancha, desactivarSede, reactivarSede } = useSedes();
   const [nombreSede, setNombreSede] = useState('');
   const [canchaEn, setCanchaEn] = useState<string | null>(null); // sedeId con input abierto
   const [nombreCancha, setNombreCancha] = useState('');
@@ -76,6 +76,27 @@ export default function ConfiguracionPage() {
       setNombreSede('');
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo crear la sede.');
+    }
+  };
+
+  const bajaSede = async (sedeId: string, nombre: string) => {
+    if (!window.confirm(
+      `¿Deshabilitar "${nombre}"? Deja de ofrecerse para horarios nuevos; los turnos ya generados se conservan.`,
+    )) return;
+    setError(null);
+    try {
+      await desactivarSede(sedeId);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'No se pudo deshabilitar la sede.');
+    }
+  };
+
+  const altaDeNuevo = async (sedeId: string) => {
+    setError(null);
+    try {
+      await reactivarSede(sedeId);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'No se pudo habilitar la sede.');
     }
   };
 
@@ -109,6 +130,7 @@ export default function ConfiguracionPage() {
             onChange={(e) => setNombreSede(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && void altaSede()}
             placeholder="Nombre de la sede, ej: Club Atlético Norte"
+            maxLength={80}
           />
           <button className={s.btnPrimario} onClick={() => void altaSede()} disabled={nombreSede.trim() === ''}>
             + Agregar sede
@@ -122,14 +144,29 @@ export default function ConfiguracionPage() {
 
         <div className={s.sedes}>
           {sedes.map((sede) => (
-            <div key={sede.id} className={s.sede}>
+            <div key={sede.id} className={sede.activo ? s.sede : s.sedeInactiva}>
               <div className={s.sedeHeader}>
                 <span className={s.sedeNombre}>{sede.nombre}</span>
+                {!sede.activo && <span className={s.chipInactiva}>Deshabilitada</span>}
                 <span className={s.sedeCanchas}>
                   {sede.canchas.length === 0
                     ? 'sin canchas'
                     : `${sede.canchas.length} cancha${sede.canchas.length > 1 ? 's' : ''}`}
                 </span>
+                <div className={s.spacer} />
+                {sede.activo ? (
+                  <button
+                    className={s.btnMiniGris}
+                    title="Deshabilitar: deja de ofrecerse para horarios nuevos"
+                    onClick={() => void bajaSede(sede.id, sede.nombre)}
+                  >
+                    Deshabilitar
+                  </button>
+                ) : (
+                  <button className={s.btnMini} onClick={() => void altaDeNuevo(sede.id)}>
+                    Habilitar
+                  </button>
+                )}
               </div>
               <div className={s.canchas}>
                 {sede.canchas.map((c) => (
@@ -143,6 +180,7 @@ export default function ConfiguracionPage() {
                       onChange={(e) => setNombreCancha(e.target.value)}
                       onKeyDown={(e) => e.key === 'Enter' && void altaCancha(sede.id)}
                       placeholder="Cancha 1"
+                      maxLength={40}
                     />
                     <button className={s.btnMini} onClick={() => void altaCancha(sede.id)}>OK</button>
                     <button className={s.btnMiniGris} onClick={() => { setCanchaEn(null); setNombreCancha(''); }}>✕</button>

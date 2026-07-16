@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useAlumnos } from './useAlumnos';
 import NuevoAlumnoModal from './NuevoAlumnoModal';
+import EditarAlumnoModal from './EditarAlumnoModal';
 import DetalleAlumnoModal from './DetalleAlumnoModal';
 import AccesoCreadoModal from './AccesoCreadoModal';
 import { ApiError } from '../../lib/api';
 import { CATEGORIAS, CAT_COLOR, CAT_LABEL, ESTADO_UI, avatarColor, iniciales } from './types';
-import type { Alumno, Categoria } from './types';
+import type { Alumno, Categoria, Estado } from './types';
 import s from './AlumnosPage.module.css';
 
 interface Credenciales {
@@ -16,8 +17,11 @@ interface Credenciales {
 
 export default function AlumnosPage() {
   const [filtro, setFiltro] = useState<Categoria | 'todas'>('todas');
-  const { alumnos, cargando, error, crear, crearAcceso, cambiarEstado, darDeBaja } = useAlumnos(filtro);
+  const [filtroEstado, setFiltroEstado] = useState<Estado | 'todos'>('todos');
+  const { alumnos, cargando, error, crear, crearAcceso, editar, cambiarEstado, darDeBaja } =
+    useAlumnos(filtro, filtroEstado);
   const [modalNuevo, setModalNuevo] = useState(false);
+  const [editando, setEditando] = useState<Alumno | null>(null);
   const [detalle, setDetalle] = useState<Alumno | null>(null);
   const [credenciales, setCredenciales] = useState<Credenciales | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -75,6 +79,18 @@ export default function AlumnosPage() {
             </button>
           ))}
         </div>
+        {/* Estado: por defecto se ven todos (incluidas bajas) */}
+        <select
+          className={s.selectEstado}
+          value={filtroEstado}
+          onChange={(e) => setFiltroEstado(e.target.value as Estado | 'todos')}
+        >
+          <option value="todos">Todos los estados</option>
+          <option value="Activo">Activos</option>
+          <option value="Suspendido">Pausados</option>
+          <option value="Inactivo">Bajas</option>
+        </select>
+
         <div className={s.spacer} />
         <div className={s.contador}>{alumnos.length} alumnos</div>
         <button className={s.btnNuevo} onClick={() => setModalNuevo(true)}>
@@ -147,6 +163,11 @@ export default function AlumnosPage() {
                             <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z" /><circle cx="12" cy="12" r="3" />
                           </svg>
                         </button>
+                        <button className={s.accion} title="Editar datos" onClick={() => setEditando(a)}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M11 4H4v16h16v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z" />
+                          </svg>
+                        </button>
                         <button
                           className={`${s.accion} ${s.accionPausa}`}
                           title={a.estado === 'Activo' ? 'Pausar' : 'Reactivar'}
@@ -195,6 +216,16 @@ export default function AlumnosPage() {
               email: creado.email,
               passwordTemporal: creado.passwordTemporal,
             });
+          }}
+        />
+      )}
+      {editando && (
+        <EditarAlumnoModal
+          alumno={editando}
+          onClose={() => setEditando(null)}
+          onEditar={async (id, dto) => {
+            await editar(id, dto);
+            avisar(`${dto.nombre} ${dto.apellido} actualizado`);
           }}
         />
       )}

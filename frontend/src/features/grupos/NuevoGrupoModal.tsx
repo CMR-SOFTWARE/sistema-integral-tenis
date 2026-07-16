@@ -53,7 +53,7 @@ export default function NuevoGrupoModal({ onClose, onCrear }: Props) {
       <div className={s.grid}>
         <label className={`${s.campo} ${s.span2}`}>
           <span>Nombre</span>
-          <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Intermedios martes" />
+          <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Intermedios martes" maxLength={80} />
         </label>
         <label className={s.campo}>
           <span>Categoría sugerida (opcional)</span>

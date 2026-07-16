@@ -39,4 +39,34 @@ public class SedesController : ControllerBase
             return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
         }
     }
+
+    /// <summary>DELETE api/sedes/{id} — baja LÓGICA (deja de ofrecerse; la historia queda).</summary>
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Desactivar(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            await _service.DesactivarAsync(id, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>POST api/sedes/{id}/reactivar — vuelve a habilitarla.</summary>
+    [HttpPost("{id:guid}/reactivar")]
+    public async Task<IActionResult> Reactivar(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            await _service.ReactivarAsync(id, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
 }
