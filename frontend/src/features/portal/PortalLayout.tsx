@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { cerrarSesion, guardarSesion, obtenerSesion } from '../auth/sesion';
 import type { Sesion } from '../auth/sesion';
+import BotonMenu from '../../components/layout/BotonMenu';
 import { alumnoNav, portalTitles } from '../../components/layout/nav';
 import { CAT_LABEL } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
@@ -30,7 +31,13 @@ export default function PortalLayout() {
   const navigate = useNavigate();
   const [sesion, setSesion] = useState<Sesion | null>(obtenerSesion());
   const [perfil, setPerfil] = useState<MiPerfil | null>(null);
+  const [menuAbierto, setMenuAbierto] = useState(false);
   const title = portalTitles[pathname] ?? 'CourtSet';
+
+  // Al navegar se cierra el drawer (en escritorio no se ve: CSS)
+  useEffect(() => {
+    setMenuAbierto(false);
+  }, [pathname]);
 
   useEffect(() => {
     // Refrescar la sesión al entrar: si reclamó ficha en otra pestaña o el
@@ -56,7 +63,15 @@ export default function PortalLayout() {
 
   return (
     <div className={s.shell}>
-      <aside className={s.sidebar}>
+      {menuAbierto && (
+        <button
+          className={s.backdrop}
+          onClick={() => setMenuAbierto(false)}
+          aria-label="Cerrar menú"
+        />
+      )}
+
+      <aside className={`${s.sidebar} ${menuAbierto ? s.sidebarAbierto : ''}`}>
         <div className={s.brand}>
           <div className={s.brandLogo}>C</div>
           <div>
@@ -101,6 +116,7 @@ export default function PortalLayout() {
 
       <div className={s.main}>
         <header className={s.header}>
+          <BotonMenu onClick={() => setMenuAbierto(true)} />
           <div className={s.headerTitles}>
             <h1 className={s.pageTitle}>{title}</h1>
             <div className={s.pageDate}>{fechaDeHoy()}</div>

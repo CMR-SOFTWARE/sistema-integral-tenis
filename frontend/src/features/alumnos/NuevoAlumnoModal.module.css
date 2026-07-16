@@ -138,3 +138,10 @@
   color: var(--color-text-muted);
   line-height: 1.5;
 }
+
+/* ── Móvil: un campo por fila ── */
+@media (max-width: 760px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}

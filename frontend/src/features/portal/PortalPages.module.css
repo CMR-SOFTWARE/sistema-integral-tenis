@@ -569,3 +569,42 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Móvil: filas que envuelven y hero más contenido ── */
+@media (max-width: 760px) {
+  .turno,
+  .turnoCancelado {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 14px;
+  }
+
+  .historialFila {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .historialTitulo {
+    flex-basis: 100%;
+  }
+
+  .hero {
+    padding: 24px 20px 32px;
+    min-height: 0;
+  }
+
+  .heroFecha {
+    font-size: 34px;
+  }
+
+  .heroPelota {
+    width: 140px;
+    height: 140px;
+    right: -40px;
+    bottom: -50px;
+  }
+
+  .cuotaMonto {
+    font-size: 28px;
+  }
+}

@@ -157,3 +157,19 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Móvil: las 6 barras entran, con menos aire y números más chicos ── */
+@media (max-width: 760px) {
+  .grafico {
+    gap: 6px;
+    height: 200px;
+  }
+
+  .valor {
+    font-size: 9px;
+  }
+
+  .barraMes {
+    width: 82%;
+  }
+}

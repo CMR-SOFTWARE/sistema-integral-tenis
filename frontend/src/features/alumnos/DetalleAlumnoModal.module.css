@@ -103,3 +103,10 @@
   font-size: 13px;
   cursor: pointer;
 }
+
+/* ── Móvil: las dos columnas de la ficha se apilan ── */
+@media (max-width: 760px) {
+  .columnas {
+    grid-template-columns: 1fr;
+  }
+}

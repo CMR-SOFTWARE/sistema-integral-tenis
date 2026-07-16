@@ -266,3 +266,21 @@
   border-radius: var(--radius-md);
   font-weight: 600;
 }
+
+/* ── Móvil ── */
+@media (max-width: 760px) {
+  .metricas {
+    grid-template-columns: repeat(2, 1fr); /* 2x2: mejor que 4 tarjetas apiladas */
+    gap: 12px;
+  }
+
+  .filaPrincipal,
+  .filaSecundaria,
+  .statsCuotas {
+    grid-template-columns: 1fr;
+  }
+
+  .metricaValor {
+    font-size: 24px;
+  }
+}

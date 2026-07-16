@@ -150,3 +150,14 @@
   font-weight: 600;
   margin-bottom: 16px;
 }
+
+/* ── Móvil: la semana se desliza de lado (7 columnas no entran) ── */
+@media (max-width: 900px) {
+  .grilla {
+    overflow-x: auto;
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 150px;
+    padding-bottom: 8px;
+  }
+}
