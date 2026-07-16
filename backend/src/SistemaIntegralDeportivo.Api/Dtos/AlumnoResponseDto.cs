@@ -17,6 +17,8 @@ public class AlumnoResponseDto
     public bool EsMenor { get; set; }
     public string Categoria { get; set; } = string.Empty;
     public string Estado { get; set; } = string.Empty;
+    /// <summary>Cómo liquida: Mensual (vence el 10) o PorClase (ADR-0009).</summary>
+    public string Modalidad { get; set; } = string.Empty;
     public decimal? Arancel { get; set; }
     public string? Notas { get; set; }
     public Guid? TutorId { get; set; }

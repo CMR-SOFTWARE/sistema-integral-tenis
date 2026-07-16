@@ -46,4 +46,7 @@ public class SedeRepository : ISedeRepository
         await _db.SaveChangesAsync(ct);
         return cancha;
     }
+
+    public Task GuardarCambiosAsync(CancellationToken ct = default) =>
+        _db.SaveChangesAsync(ct);
 }

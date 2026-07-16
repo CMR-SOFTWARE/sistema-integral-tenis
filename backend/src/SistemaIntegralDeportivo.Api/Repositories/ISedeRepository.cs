@@ -9,4 +9,7 @@ public interface ISedeRepository
     Task<Sede?> ObtenerAsync(Guid id, CancellationToken ct = default);
     Task<Sede> AgregarAsync(Sede sede, CancellationToken ct = default);
     Task<Cancha> AgregarCanchaAsync(Cancha cancha, CancellationToken ct = default);
+
+    /// <summary>Confirma cambios sobre entidades trackeadas (baja/alta lógica).</summary>
+    Task GuardarCambiosAsync(CancellationToken ct = default);
 }

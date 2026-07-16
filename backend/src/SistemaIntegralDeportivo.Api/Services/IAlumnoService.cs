@@ -27,6 +27,13 @@ public interface IAlumnoService
     /// <exception cref="Common.ReglaDeNegocioException">DNI de otra cuenta, o regla del menor.</exception>
     Task<AlumnoResponseDto> CrearVinculadoAsync(CreateAlumnoDto dto, Guid userId, CancellationToken ct = default);
 
+    /// <summary>
+    /// El profe corrige los datos de la ficha. Reglas: DNI único (salvo el
+    /// propio); si la fecha nueva lo vuelve menor, necesita tutor cargado.
+    /// </summary>
+    /// <exception cref="Common.ReglaDeNegocioException">No existe o viola una regla.</exception>
+    Task<AlumnoResponseDto> EditarAsync(Guid id, UpdateAlumnoDto dto, CancellationToken ct = default);
+
     /// <summary>Lista del tenant, filtrable por categoría y estado.</summary>
     Task<IReadOnlyList<AlumnoResponseDto>> ListarAsync(
         CategoriaAlumno? categoria, EstadoAlumno? estado, CancellationToken ct = default);

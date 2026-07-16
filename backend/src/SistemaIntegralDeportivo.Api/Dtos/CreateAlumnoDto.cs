@@ -52,6 +52,7 @@ public class CreateAlumnoDto
     [Range(0, 99_999_999)]
     public decimal? Arancel { get; set; }
 
+    [StringLength(500)]
     public string? Notas { get; set; }
 
     public bool ConsentimientoWhatsapp { get; set; }
@@ -61,6 +62,38 @@ public class CreateAlumnoDto
 
     /// <summary>Obligatorio cuando el alumno es menor de 18.</summary>
     public TutorDto? Tutor { get; set; }
+}
+
+/// <summary>
+/// Edición de la ficha por el PROFE. No incluye credenciales (el email de
+/// login vive en Identity) ni tutor (se administra aparte).
+/// </summary>
+public class UpdateAlumnoDto
+{
+    [Required, StringLength(80)]
+    public string Nombre { get; set; } = string.Empty;
+
+    [Required, StringLength(80)]
+    public string Apellido { get; set; } = string.Empty;
+
+    [Required, StringLength(15)]
+    public string Dni { get; set; } = string.Empty;
+
+    [Required, StringLength(25)]
+    public string Telefono { get; set; } = string.Empty;
+
+    [EmailAddress]
+    public string? Email { get; set; }
+
+    [Required]
+    public DateTime FechaNacimiento { get; set; }
+
+    public CategoriaAlumno Categoria { get; set; } = CategoriaAlumno.SinCategoria;
+
+    public ModalidadPago Modalidad { get; set; } = ModalidadPago.Mensual;
+
+    [StringLength(500)]
+    public string? Notas { get; set; }
 }
 
 /// <summary>

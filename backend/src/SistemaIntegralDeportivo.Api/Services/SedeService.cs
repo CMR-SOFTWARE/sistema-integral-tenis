@@ -8,10 +8,12 @@ namespace SistemaIntegralDeportivo.Api.Services;
 public class SedeService : ISedeService
 {
     private readonly ISedeRepository _sedes;
+    private readonly IHorarioRepository _horarios;
 
-    public SedeService(ISedeRepository sedes)
+    public SedeService(ISedeRepository sedes, IHorarioRepository horarios)
     {
         _sedes = sedes;
+        _horarios = horarios;
     }
 
     public async Task<IReadOnlyList<SedeResponseDto>> ListarAsync(CancellationToken ct = default)
@@ -36,6 +38,33 @@ public class SedeService : ISedeService
             new Cancha { SedeId = sede.Id, Nombre = dto.Nombre }, ct);
 
         return new CanchaResponseDto { Id = cancha.Id, Nombre = cancha.Nombre, Activo = cancha.Activo };
+    }
+
+    public async Task DesactivarAsync(Guid id, CancellationToken ct = default)
+    {
+        var sede = await _sedes.ObtenerAsync(id, ct)
+            ?? throw new ReglaDeNegocioException("La sede no existe.");
+
+        // Una sede en uso no se da de baja "por sorpresa": el profe primero
+        // decide qué hacer con esos horarios (desactivarlos limpia sus turnos)
+        var canchas = sede.Canchas.Select(c => c.Id).ToHashSet();
+        var activos = await _horarios.ListarActivosAsync(ct);
+        if (activos.Any(h => canchas.Contains(h.CanchaId)))
+            throw new ReglaDeNegocioException(
+                "La sede tiene horarios activos: desactivalos primero (Horarios) y volvé a intentar.");
+
+        // Baja LÓGICA: nunca se borra (la historia de turnos la referencia)
+        sede.Activo = false;
+        await _sedes.GuardarCambiosAsync(ct);
+    }
+
+    public async Task ReactivarAsync(Guid id, CancellationToken ct = default)
+    {
+        var sede = await _sedes.ObtenerAsync(id, ct)
+            ?? throw new ReglaDeNegocioException("La sede no existe.");
+
+        sede.Activo = true;
+        await _sedes.GuardarCambiosAsync(ct);
     }
 
     private static SedeResponseDto Mapear(Sede s) => new()

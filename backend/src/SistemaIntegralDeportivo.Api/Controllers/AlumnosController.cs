@@ -69,6 +69,21 @@ public class AlumnosController : ControllerBase
         }
     }
 
+    /// <summary>PUT api/alumnos/{id} — el profe corrige los datos de la ficha.</summary>
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<AlumnoResponseDto>> Editar(
+        Guid id, UpdateAlumnoDto dto, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await _service.EditarAsync(id, dto, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     /// <summary>PATCH api/alumnos/{id}/estado — pausar (Suspendido) / reactivar (Activo).</summary>
     [HttpPatch("{id:guid}/estado")]
     public async Task<ActionResult<AlumnoResponseDto>> CambiarEstado(

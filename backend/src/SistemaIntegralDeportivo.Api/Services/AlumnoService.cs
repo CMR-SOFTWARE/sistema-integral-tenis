@@ -108,6 +108,40 @@ public class AlumnoService : IAlumnoService
         return Mapear(creado);
     }
 
+    public async Task<AlumnoResponseDto> EditarAsync(
+        Guid id, UpdateAlumnoDto dto, CancellationToken ct = default)
+    {
+        var alumno = await _repo.ObtenerAsync(id, ct)
+            ?? throw new ReglaDeNegocioException("El alumno no existe.");
+
+        // DNI único por tenant, pero sin chocar contra uno mismo
+        if (dto.Dni != alumno.Dni)
+        {
+            var dueño = await _repo.ObtenerPorDniAsync(dto.Dni, ct);
+            if (dueño is not null && dueño.Id != alumno.Id)
+                throw new ReglaDeNegocioException($"Ya existe un alumno con DNI {dto.Dni}.");
+        }
+
+        // Corregir la fecha no puede dejar un menor sin tutor (Ley 25.326)
+        if (CalcularEdad(dto.FechaNacimiento) < 18 && alumno.TutorId is null && alumno.Tutor is null)
+            throw new ReglaDeNegocioException(
+                "Con esa fecha el alumno es menor: necesita un tutor cargado.");
+
+        alumno.Nombre = dto.Nombre;
+        alumno.Apellido = dto.Apellido;
+        alumno.Dni = dto.Dni;
+        alumno.Telefono = dto.Telefono;
+        alumno.Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
+        alumno.FechaNacimiento = dto.FechaNacimiento;
+        alumno.Categoria = dto.Categoria;
+        alumno.Modalidad = dto.Modalidad;
+        alumno.Notas = string.IsNullOrWhiteSpace(dto.Notas) ? null : dto.Notas;
+        alumno.ActualizadoEl = DateTime.UtcNow;
+
+        await _repo.GuardarCambiosAsync(ct);
+        return Mapear(alumno);
+    }
+
     public async Task<IReadOnlyList<AlumnoResponseDto>> ListarAsync(
         CategoriaAlumno? categoria, EstadoAlumno? estado, CancellationToken ct = default)
     {
@@ -229,6 +263,7 @@ public class AlumnoService : IAlumnoService
         EsMenor = CalcularEdad(a.FechaNacimiento) < 18,
         Categoria = a.Categoria.ToString(),
         Estado = a.Estado.ToString(),
+        Modalidad = a.Modalidad.ToString(),
         Arancel = a.Arancel,
         Notas = a.Notas,
         TutorId = a.TutorId ?? a.Tutor?.Id,

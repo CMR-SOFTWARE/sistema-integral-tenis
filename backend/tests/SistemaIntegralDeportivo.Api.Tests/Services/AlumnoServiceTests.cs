@@ -286,6 +286,91 @@ public class AlumnoServiceTests
     }
 
     // ─────────────────────────────────────────────
+    // Editar la ficha (el profe corrige datos del alumno)
+    // ─────────────────────────────────────────────
+
+    private static UpdateAlumnoDto Edicion() => new()
+    {
+        Nombre = "Juan Carlos",
+        Apellido = "Pérez",
+        Dni = "30111222",
+        Telefono = "+5491199998888",
+        Email = "nuevo@mail.com",
+        FechaNacimiento = DateTime.UtcNow.AddYears(-30),
+        Categoria = CategoriaAlumno.Tercera,
+        Modalidad = ModalidadPago.PorClase,
+        Notas = "Mejoró el revés",
+    };
+
+    [Fact]
+    public async Task EditarAsync_ActualizaLosDatos_YDevuelveLaFicha()
+    {
+        var ficha = FichaExistente();
+
+        var result = await _service.EditarAsync(ficha.Id, Edicion());
+
+        Assert.Equal("Juan Carlos", result.Nombre);
+        Assert.Equal("Tercera", result.Categoria);
+        Assert.Equal("+5491199998888", ficha.Telefono);
+        Assert.Equal(ModalidadPago.PorClase, ficha.Modalidad);
+        Assert.Equal("Mejoró el revés", ficha.Notas);
+        _repo.Verify(r => r.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task EditarAsync_MismoDni_NoSeQuejaDeDuplicado()
+    {
+        // Guardar sin cambiar el DNI no puede chocar contra uno mismo
+        var ficha = FichaExistente();
+        _repo.Setup(r => r.ObtenerPorDniAsync("30111222", It.IsAny<CancellationToken>()))
+             .ReturnsAsync(ficha); // el dueño del DNI es él mismo
+
+        var result = await _service.EditarAsync(ficha.Id, Edicion());
+
+        Assert.Equal("30111222", result.Dni);
+    }
+
+    [Fact]
+    public async Task EditarAsync_DniDeOtroAlumno_Lanza()
+    {
+        var ficha = FichaExistente();
+        var otro = new Alumno
+        {
+            Nombre = "Otro", Apellido = "Alumno", Dni = "99999999",
+            Telefono = "+549110000", FechaNacimiento = DateTime.UtcNow.AddYears(-20),
+        };
+        _repo.Setup(r => r.ObtenerPorDniAsync("99999999", It.IsAny<CancellationToken>()))
+             .ReturnsAsync(otro);
+        var dto = Edicion();
+        dto.Dni = "99999999";
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.EditarAsync(ficha.Id, dto));
+
+        _repo.Verify(r => r.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task EditarAsync_FechaQueLoVuelveMenorSinTutor_Lanza()
+    {
+        // Corregir mal la fecha no puede dejar un menor sin tutor (Ley 25.326)
+        var ficha = FichaExistente(); // sin tutor
+        var dto = Edicion();
+        dto.FechaNacimiento = DateTime.UtcNow.AddYears(-15);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.EditarAsync(ficha.Id, dto));
+    }
+
+    [Fact]
+    public async Task EditarAsync_Inexistente_Lanza()
+    {
+        _repo.Setup(r => r.ObtenerAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync((Alumno?)null);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.EditarAsync(Guid.NewGuid(), Edicion()));
+    }
+
+    // ─────────────────────────────────────────────
     // Consentimiento con timestamp + unicidad de DNI (reglas previas)
     // ─────────────────────────────────────────────
 
