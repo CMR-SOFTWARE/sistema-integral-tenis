@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 import AuthShell from './AuthShell';
+import InputPassword from '../../components/InputPassword';
 import { entrarConSesion } from './entrar';
 import type { Sesion } from './sesion';
 import s from './LoginPage.module.css';
@@ -41,7 +42,7 @@ export default function LoginPage() {
         </label>
         <label className={s.campo}>
           <span>Contraseña</span>
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" />
+          <InputPassword value={password} onChange={setPassword} />
         </label>
         {error && <div className={s.error}>{error}</div>}
         <button type="submit" className={s.btnEntrar} disabled={enviando || !email || !password}>

@@ -90,19 +90,19 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
       <div className={s.grid}>
         <label className={s.campo}>
           <span>Nombre</span>
-          <input value={form.nombre} onChange={(e) => set('nombre', e.target.value)} placeholder="Juan" />
+          <input value={form.nombre} onChange={(e) => set('nombre', e.target.value)} placeholder="Juan" maxLength={80} />
         </label>
         <label className={s.campo}>
           <span>Apellido</span>
-          <input value={form.apellido} onChange={(e) => set('apellido', e.target.value)} placeholder="Pérez" />
+          <input value={form.apellido} onChange={(e) => set('apellido', e.target.value)} placeholder="Pérez" maxLength={80} />
         </label>
         <label className={s.campo}>
           <span>DNI</span>
-          <input value={form.dni} onChange={(e) => set('dni', e.target.value)} placeholder="35123456" />
+          <input value={form.dni} onChange={(e) => set('dni', e.target.value)} placeholder="35123456" maxLength={15} />
         </label>
         <label className={s.campo}>
           <span>Teléfono</span>
-          <input value={form.telefono} onChange={(e) => set('telefono', e.target.value)} placeholder="+5491155551234" />
+          <input value={form.telefono} onChange={(e) => set('telefono', e.target.value)} placeholder="+5491155551234" maxLength={25} />
         </label>
         <label className={`${s.campo} ${s.span2}`}>
           <span>Email (con él se crea su acceso al portal)</span>
@@ -133,7 +133,7 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
         </label>
         <label className={`${s.campo} ${s.span2}`}>
           <span>Observaciones</span>
-          <textarea rows={2} value={form.notas} onChange={(e) => set('notas', e.target.value)} placeholder="Notas internas…" />
+          <textarea rows={2} value={form.notas} onChange={(e) => set('notas', e.target.value)} placeholder="Notas internas…" maxLength={500} />
         </label>
 
         {esMenor && (
@@ -144,19 +144,19 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
             <div className={s.grid}>
               <label className={s.campo}>
                 <span>Nombre del tutor</span>
-                <input value={form.tutorNombre} onChange={(e) => set('tutorNombre', e.target.value)} placeholder="Marta" />
+                <input value={form.tutorNombre} onChange={(e) => set('tutorNombre', e.target.value)} placeholder="Marta" maxLength={80} />
               </label>
               <label className={s.campo}>
                 <span>Apellido</span>
-                <input value={form.tutorApellido} onChange={(e) => set('tutorApellido', e.target.value)} placeholder="Gómez" />
+                <input value={form.tutorApellido} onChange={(e) => set('tutorApellido', e.target.value)} placeholder="Gómez" maxLength={80} />
               </label>
               <label className={s.campo}>
                 <span>DNI del tutor</span>
-                <input value={form.tutorDni} onChange={(e) => set('tutorDni', e.target.value)} placeholder="22555666" />
+                <input value={form.tutorDni} onChange={(e) => set('tutorDni', e.target.value)} placeholder="22555666" maxLength={15} />
               </label>
               <label className={s.campo}>
                 <span>Teléfono del tutor</span>
-                <input value={form.tutorTelefono} onChange={(e) => set('tutorTelefono', e.target.value)} placeholder="+5491144443333" />
+                <input value={form.tutorTelefono} onChange={(e) => set('tutorTelefono', e.target.value)} placeholder="+5491144443333" maxLength={25} />
               </label>
               <label className={s.campo}>
                 <span>Relación</span>

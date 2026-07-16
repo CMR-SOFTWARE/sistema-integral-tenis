@@ -41,6 +41,18 @@
   color: #fff;
 }
 
+.selectEstado {
+  padding: 9px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--font-display);
+  color: var(--color-text-soft);
+  cursor: pointer;
+}
+
 .spacer {
   flex: 1;
 }

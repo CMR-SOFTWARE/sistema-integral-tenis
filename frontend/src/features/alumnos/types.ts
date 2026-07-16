@@ -7,6 +7,9 @@ export type Categoria =
 
 export type Estado = 'Activo' | 'Suspendido' | 'Inactivo';
 
+/** Cómo liquida el alumno (ADR-0009). */
+export type Modalidad = 'Mensual' | 'PorClase';
+
 export type RelacionTutor = 'Padre' | 'Madre' | 'TutorLegal' | 'Otro';
 
 /** Espejo de AlumnoResponseDto. */
@@ -21,6 +24,7 @@ export interface Alumno {
   esMenor: boolean;
   categoria: Categoria;
   estado: Estado;
+  modalidad: Modalidad;
   arancel: number | null;
   notas: string | null;
   tutorId: string | null;
@@ -52,6 +56,19 @@ export interface CreateAlumno {
     telefono: string;
     relacion: RelacionTutor;
   };
+}
+
+/** Espejo de UpdateAlumnoDto: el profe corrige la ficha (sin credenciales ni tutor). */
+export interface UpdateAlumno {
+  nombre: string;
+  apellido: string;
+  dni: string;
+  telefono: string;
+  email?: string;
+  fechaNacimiento: string;
+  categoria: Categoria;
+  modalidad: Modalidad;
+  notas?: string;
 }
 
 /** Espejo de AlumnoCreadoDto: la temporal se muestra UNA sola vez. */

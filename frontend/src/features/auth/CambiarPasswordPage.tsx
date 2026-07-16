@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 import AuthShell from './AuthShell';
+import InputPassword from '../../components/InputPassword';
 import { entrarConSesion } from './entrar';
 import { obtenerSesion } from './sesion';
 import type { Sesion } from './sesion';
@@ -53,15 +54,15 @@ export default function CambiarPasswordPage() {
       <form onSubmit={(e) => { e.preventDefault(); void cambiar(); }}>
         <label className={s.campo}>
           <span>Contraseña actual</span>
-          <input type="password" value={actual} onChange={(e) => setActual(e.target.value)} autoFocus />
+          <InputPassword value={actual} onChange={setActual} autoFocus />
         </label>
         <label className={s.campo}>
           <span>Contraseña nueva (mínimo 8 caracteres)</span>
-          <input type="password" value={nueva} onChange={(e) => setNueva(e.target.value)} />
+          <InputPassword value={nueva} onChange={setNueva} />
         </label>
         <label className={s.campo}>
           <span>Repetir contraseña nueva</span>
-          <input type="password" value={confirmar} onChange={(e) => setConfirmar(e.target.value)} />
+          <InputPassword value={confirmar} onChange={setConfirmar} />
         </label>
         {error && <div className={s.error}>{error}</div>}
         <button

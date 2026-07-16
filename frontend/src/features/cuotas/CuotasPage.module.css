@@ -1,9 +1,48 @@
 .toolbar {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 14px;
   margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.spacer {
+  flex: 1;
+}
+
+/* Filtro por estado de la cuota (mismo lenguaje que los de Alumnos) */
+.filtros {
+  display: flex;
+  gap: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 4px;
+}
+
+.filtro,
+.filtroActivo {
+  border: none;
+  background: none;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-display);
+  cursor: pointer;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.filtro:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.filtroActivo {
+  background: var(--color-primary-dark);
+  color: #fff;
 }
 
 .nav {

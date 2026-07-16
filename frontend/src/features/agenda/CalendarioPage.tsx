@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
-import { useSemana } from './hooks';
+import { useSedes, useSemana } from './hooks';
 import TurnoModal from './TurnoModal';
+import SelectSede from './SelectSede';
 import { aISO, fechaCorta, horaCorta, lunesDe, rangoSemana, sumarDias } from './types';
 import type { Turno } from './types';
 import { useBloqueos } from '../bloqueos/useBloqueos';
@@ -12,7 +13,11 @@ export default function CalendarioPage() {
   const [lunes, setLunes] = useState(() => lunesDe(new Date()));
   const { turnos, cargando, error, marcarAsistencia, cancelar } = useSemana(lunes);
   const { bloqueos } = useBloqueos();
+  const { sedes } = useSedes();
+  const [sede, setSede] = useState(''); // '' = todas
   const [abierto, setAbierto] = useState<string | null>(null); // turnoId
+
+  const visibles = turnos.filter((t) => sede === '' || t.sede === sede);
 
   const dias = useMemo(
     () => Array.from({ length: 7 }, (_, i) => sumarDias(lunes, i)),
@@ -34,6 +39,7 @@ export default function CalendarioPage() {
           )}
         </div>
         <button className={s.nav} onClick={() => setLunes(sumarDias(lunes, 7))}>›</button>
+        <SelectSede sedes={sedes} valor={sede} onChange={setSede} />
       </div>
 
       <div className={s.leyenda}>
@@ -48,7 +54,7 @@ export default function CalendarioPage() {
       {!cargando && !error && (
         <div className={s.grilla}>
           {dias.map((fecha) => {
-            const delDia = turnos.filter((t) => t.fecha === fecha);
+            const delDia = visibles.filter((t) => t.fecha === fecha);
             const bloqueosDia = bloqueos.filter((b) => cubreFecha(b, fecha));
             const esHoy = fecha === aISO(new Date());
             return (

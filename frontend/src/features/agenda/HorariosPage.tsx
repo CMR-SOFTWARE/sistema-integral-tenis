@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useHorarios, useSedes } from './hooks';
 import NuevoHorarioModal from './NuevoHorarioModal';
+import SelectSede from './SelectSede';
 import { DIAS, horaCorta } from './types';
 import { CAT_COLOR, CAT_LABEL } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
@@ -11,8 +12,13 @@ export default function HorariosPage() {
   const { horarios, cargando, error, crear, desactivar } = useHorarios();
   const { sedes } = useSedes();
   const [modal, setModal] = useState(false);
+  const [sede, setSede] = useState(''); // '' = todas
 
-  const sinCanchas = sedes.every((x) => x.canchas.length === 0);
+  // Para dar de alta solo se ofrecen las sedes habilitadas; el filtro de
+  // arriba sí muestra todas (puede haber horarios de una sede dada de baja)
+  const disponibles = sedes.filter((x) => x.activo);
+  const sinCanchas = disponibles.every((x) => x.canchas.length === 0);
+  const visibles = horarios.filter((h) => sede === '' || h.sede === sede);
 
   const baja = async (id: string, titulo: string) => {
     if (!window.confirm(
@@ -26,6 +32,7 @@ export default function HorariosPage() {
       <div className={s.toolbar}>
         <div className={s.hint}>Plantillas de la temporada — el calendario genera los turnos concretos desde acá</div>
         <div className={s.spacer} />
+        <SelectSede sedes={sedes} valor={sede} onChange={setSede} />
         <button
           className={s.btnNuevo}
           onClick={() => setModal(true)}
@@ -46,7 +53,7 @@ export default function HorariosPage() {
 
       <div className={s.grilla}>
         {DIAS.map((d) => {
-          const delDia = horarios
+          const delDia = visibles
             .filter((h) => h.dia === d.valor)
             .sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
           return (
@@ -89,7 +96,7 @@ export default function HorariosPage() {
 
       {modal && (
         <NuevoHorarioModal
-          sedes={sedes}
+          sedes={disponibles}
           onClose={() => setModal(false)}
           onCrear={crear}
         />

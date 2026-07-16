@@ -3,6 +3,7 @@ import { useCuotas } from './useCuotas';
 import MedioModal from './MedioModal';
 import NuevoCargoModal from './NuevoCargoModal';
 import { ESTADO_LIQ_UI, MESES } from './types';
+import type { EstadoLiquidacion } from './types';
 import type { Liquidacion, Medio } from './types';
 import { avatarColor, formatoPlata, iniciales } from '../alumnos/types';
 import s from './CuotasPage.module.css';
@@ -14,6 +15,7 @@ export default function CuotasPage() {
   const [mes, setMes] = useState(hoy.getMonth() + 1);
   const { datos, cargando, error, pagarMes, pagarCargo, agregarCargo } = useCuotas(anio, mes);
 
+  const [filtro, setFiltro] = useState<'todas' | EstadoLiquidacion>('todas');
   const [abiertos, setAbiertos] = useState<Set<string>>(new Set());
   const [pagandoMes, setPagandoMes] = useState<Liquidacion | null>(null);
   const [pagandoCargo, setPagandoCargo] = useState<{ id: string; concepto: string } | null>(null);
@@ -35,12 +37,30 @@ export default function CuotasPage() {
 
   const sinPrecios = error?.toLowerCase().includes('configur');
 
+  const liquidaciones = (datos?.liquidaciones ?? [])
+    .filter((l) => filtro === 'todas' || l.estado === filtro);
+
   return (
     <div>
       <div className={s.toolbar}>
         <button className={s.nav} onClick={mesAnterior}>‹</button>
         <div className={s.rango}>{MESES[mes - 1]} {anio}</div>
         <button className={s.nav} onClick={mesSiguiente}>›</button>
+
+        <div className={s.spacer} />
+
+        {/* Filtro por estado de la liquidación (client-side: ya está cargada) */}
+        <div className={s.filtros}>
+          {(['todas', 'Pagada', 'Pendiente', 'Vencida'] as const).map((f) => (
+            <button
+              key={f}
+              className={filtro === f ? s.filtroActivo : s.filtro}
+              onClick={() => setFiltro(f)}
+            >
+              {f === 'todas' ? 'Todas' : f + 's'}
+            </button>
+          ))}
+        </div>
       </div>
 
       {error && (
@@ -82,9 +102,15 @@ export default function CuotasPage() {
             </div>
           )}
 
+          {datos.liquidaciones.length > 0 && liquidaciones.length === 0 && (
+            <div className={s.vacioCard}>
+              Ningún alumno tiene la cuota <b>{filtro.toLowerCase()}</b> este mes.
+            </div>
+          )}
+
           {/* ── Liquidaciones por alumno ── */}
           <div className={s.lista}>
-            {datos.liquidaciones.map((l) => {
+            {liquidaciones.map((l) => {
               const av = avatarColor(l.nombre + l.apellido);
               const estado = ESTADO_LIQ_UI[l.estado];
               const abierto = abiertos.has(l.alumnoId);
