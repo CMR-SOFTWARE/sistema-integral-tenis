@@ -651,3 +651,119 @@
     font-size: 28px;
   }
 }
+
+/* ── Foto de perfil (M3) ── */
+.perfilAvatarWrap {
+  position: relative;
+  width: 62px;
+  height: 62px;
+  flex-shrink: 0;
+}
+
+.perfilFoto {
+  width: 62px;
+  height: 62px;
+  border-radius: 18px;
+  object-fit: cover;
+  display: block;
+}
+
+.fotoBtn {
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 2px solid var(--color-surface);
+  background: var(--color-primary-dark);
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.fotoBtn:disabled { opacity: 0.6; cursor: default; }
+
+.fotoQuitar {
+  margin-top: 8px;
+  border: none;
+  background: none;
+  color: #b91c1c;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* ── Mis raquetas (M3) ── */
+.raquetaHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.raquetaForm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.raquetaForm input {
+  padding: 9px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+}
+
+.raquetaForm input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.raquetaAcciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.raquetaFila {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.raquetaInfo { flex: 1; }
+
+.raquetaMarca {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.raquetaDetalle {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.btnMiniPortal {
+  padding: 5px 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  cursor: pointer;
+}
+
+.btnMiniPortal:hover { border-color: var(--color-primary); }

@@ -1,5 +1,6 @@
 import Modal from '../../components/Modal';
-import { CAT_COLOR, CAT_LABEL, ESTADO_UI, avatarColor, formatoPlata, iniciales } from './types';
+import Avatar from '../../components/Avatar';
+import { CAT_COLOR, CAT_LABEL, ESTADO_UI, formatoPlata } from './types';
 import type { Alumno } from './types';
 import s from './DetalleAlumnoModal.module.css';
 
@@ -12,7 +13,6 @@ interface Props {
 
 /** Ficha del alumno. Horarios y pagos: placeholders hasta sus verticales. */
 export default function DetalleAlumnoModal({ alumno, onClose, onCrearAcceso }: Props) {
-  const av = avatarColor(alumno.nombre + alumno.apellido);
   const cat = CAT_COLOR[alumno.categoria];
   const estado = ESTADO_UI[alumno.estado];
 
@@ -29,9 +29,7 @@ export default function DetalleAlumnoModal({ alumno, onClose, onCrearAcceso }: P
   return (
     <Modal titulo="" onClose={onClose} ancho={620}>
       <div className={s.cabecera}>
-        <div className={s.avatar} style={{ background: `${av}1a`, color: av }}>
-          {iniciales(alumno.nombre, alumno.apellido)}
-        </div>
+        <Avatar nombre={alumno.nombre} apellido={alumno.apellido} fotoUrl={alumno.fotoUrl} size={56} radius={16} />
         <div>
           <div className={s.nombre}>{alumno.nombre} {alumno.apellido}</div>
           <div className={s.chips}>

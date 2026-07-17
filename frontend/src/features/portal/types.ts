@@ -46,6 +46,13 @@ export interface DatosPago {
   titular: string | null;
 }
 
+export interface Raqueta {
+  id: string;
+  marca: string;
+  tension: string | null;
+  marcaEncordado: string | null;
+}
+
 export interface MiPerfil {
   nombre: string;
   apellido: string;
@@ -57,4 +64,6 @@ export interface MiPerfil {
   estado: string;
   modalidad: string;
   club: string;
+  fotoUrl: string | null;
+  raquetas: Raqueta[];
 }

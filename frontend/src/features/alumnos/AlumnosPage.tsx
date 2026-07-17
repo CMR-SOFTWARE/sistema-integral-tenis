@@ -5,7 +5,8 @@ import EditarAlumnoModal from './EditarAlumnoModal';
 import DetalleAlumnoModal from './DetalleAlumnoModal';
 import AccesoCreadoModal from './AccesoCreadoModal';
 import { ApiError } from '../../lib/api';
-import { CATEGORIAS, CAT_COLOR, CAT_LABEL, ESTADO_UI, avatarColor, iniciales } from './types';
+import Avatar from '../../components/Avatar';
+import { CATEGORIAS, CAT_COLOR, CAT_LABEL, ESTADO_UI } from './types';
 import type { Alumno, Categoria, Estado } from './types';
 import s from './AlumnosPage.module.css';
 
@@ -126,16 +127,13 @@ export default function AlumnosPage() {
             </thead>
             <tbody>
               {alumnos.map((a) => {
-                const av = avatarColor(a.nombre + a.apellido);
                 const cat = CAT_COLOR[a.categoria];
                 const estado = ESTADO_UI[a.estado];
                 return (
                   <tr key={a.id}>
                     <td>
                       <div className={s.celdaAlumno}>
-                        <div className={s.avatar} style={{ background: `${av}1a`, color: av }}>
-                          {iniciales(a.nombre, a.apellido)}
-                        </div>
+                        <Avatar nombre={a.nombre} apellido={a.apellido} fotoUrl={a.fotoUrl} size={40} radius={12} />
                         <div>
                           <div className={s.nombre}>{a.nombre} {a.apellido}</div>
                           <div className={s.dni}>DNI {a.dni}{a.esMenor ? ' · menor' : ''}</div>
