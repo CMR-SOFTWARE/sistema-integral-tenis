@@ -35,6 +35,8 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
     public DbSet<Cargo> Cargos => Set<Cargo>();
     public DbSet<Bloqueo> Bloqueos => Set<Bloqueo>();
     public DbSet<Solicitud> Solicitudes => Set<Solicitud>();
+    public DbSet<Servicio> Servicios => Set<Servicio>();
+    public DbSet<Pedido> Pedidos => Set<Pedido>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -153,6 +155,32 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
             .HasOne(c => c.Turno)
             .WithMany()
             .HasForeignKey(c => c.TurnoId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // ── Servicios (catálogo del profe) y Pedidos del alumno (M4) ──
+
+        modelBuilder.Entity<Servicio>().Property(s => s.Precio).HasPrecision(12, 2);
+        modelBuilder.Entity<Servicio>()
+            .HasIndex(s => s.TenantId); // "el catálogo del profe"
+
+        modelBuilder.Entity<Pedido>().Property(p => p.Estado).HasConversion<string>();
+        modelBuilder.Entity<Pedido>().Property(p => p.Precio).HasPrecision(12, 2);
+        modelBuilder.Entity<Pedido>()
+            .HasIndex(p => new { p.TenantId, p.Estado }); // "pedidos pendientes del profe"
+
+        // El servicio puede desactivarse pero el pedido conserva su snapshot:
+        // si se borrara el servicio, el pedido histórico no se rompe
+        modelBuilder.Entity<Pedido>()
+            .HasOne(p => p.Servicio)
+            .WithMany()
+            .HasForeignKey(p => p.ServicioId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // El cargo que nació del pedido: si se borrara, el pedido queda sin él
+        modelBuilder.Entity<Pedido>()
+            .HasOne(p => p.Cargo)
+            .WithMany()
+            .HasForeignKey(p => p.CargoId)
             .OnDelete(DeleteBehavior.SetNull);
 
         // ── Bloqueos de agenda ──
