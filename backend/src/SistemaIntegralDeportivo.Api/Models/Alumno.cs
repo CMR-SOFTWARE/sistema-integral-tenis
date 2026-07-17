@@ -59,4 +59,5 @@ public class Alumno
 
     // ── Relaciones ──
     public ICollection<AlumnoGrupo> Grupos { get; set; } = new List<AlumnoGrupo>();
+    public ICollection<Raqueta> Raquetas { get; set; } = new List<Raqueta>();
 }

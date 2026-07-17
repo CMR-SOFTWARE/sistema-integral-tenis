@@ -37,6 +37,7 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
     public DbSet<Solicitud> Solicitudes => Set<Solicitud>();
     public DbSet<Servicio> Servicios => Set<Servicio>();
     public DbSet<Pedido> Pedidos => Set<Pedido>();
+    public DbSet<Raqueta> Raquetas => Set<Raqueta>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -182,6 +183,16 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
             .WithMany()
             .HasForeignKey(p => p.CargoId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // ── Raquetas del alumno (M3) ──
+
+        modelBuilder.Entity<Raqueta>()
+            .HasOne(r => r.Alumno)
+            .WithMany(a => a.Raquetas)
+            .HasForeignKey(r => r.AlumnoId)
+            .OnDelete(DeleteBehavior.Cascade); // si se borrara el alumno, se van sus raquetas
+        modelBuilder.Entity<Raqueta>()
+            .HasIndex(r => r.AlumnoId); // "las raquetas de este alumno"
 
         // ── Bloqueos de agenda ──
 
