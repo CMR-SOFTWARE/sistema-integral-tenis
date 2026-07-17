@@ -45,6 +45,28 @@ export interface Precios {
   valorClaseIndividual: number | null;
 }
 
+// ── Servicios + pedidos (M4) ──
+
+export type EstadoPedido = 'Pendiente' | 'Aceptado' | 'Rechazado';
+
+export interface Servicio {
+  id: string;
+  nombre: string;
+  precio: number;
+  activo: boolean;
+}
+
+export interface Pedido {
+  id: string;
+  alumnoId: string;
+  alumnoNombre: string;
+  nombreServicio: string;
+  precio: number;
+  estado: EstadoPedido;
+  pedidoEl: string;
+  resueltoEl: string | null;
+}
+
 export const MESES = [
   'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
   'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',

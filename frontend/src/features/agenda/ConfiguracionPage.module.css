@@ -67,6 +67,22 @@
   font-size: 14px;
 }
 
+/* Inputs de la fila de edición de un servicio (mismo look que los de alta) */
+.editInput {
+  padding: 9px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+}
+
+.editInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.editNombre { flex: 1; }
+.editPrecio { width: 120px; }
+
 .btnPrimario {
   background: var(--color-primary-dark);
   color: #fff;

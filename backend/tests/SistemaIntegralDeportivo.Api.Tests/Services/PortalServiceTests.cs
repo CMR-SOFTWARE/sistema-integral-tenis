@@ -20,6 +20,8 @@ public class PortalServiceTests
     private readonly Mock<ITurnoRepository> _turnos;
     private readonly Mock<ITurnoService> _turnoService;
     private readonly Mock<ICuotaService> _cuotas;
+    private readonly Mock<IServicioService> _servicios;
+    private readonly Mock<IPedidoService> _pedidos;
     private readonly Mock<ITenantActual> _tenantActual;
     private readonly PortalService _service;
     private readonly Alumno _ficha;
@@ -30,9 +32,12 @@ public class PortalServiceTests
         _turnos = new Mock<ITurnoRepository>();
         _turnoService = new Mock<ITurnoService>();
         _cuotas = new Mock<ICuotaService>();
+        _servicios = new Mock<IServicioService>();
+        _pedidos = new Mock<IPedidoService>();
         _tenantActual = new Mock<ITenantActual>();
         _service = new PortalService(
-            _alumnos.Object, _turnos.Object, _turnoService.Object, _cuotas.Object, _tenantActual.Object);
+            _alumnos.Object, _turnos.Object, _turnoService.Object, _cuotas.Object,
+            _servicios.Object, _pedidos.Object, _tenantActual.Object);
 
         _ficha = new Alumno
         {

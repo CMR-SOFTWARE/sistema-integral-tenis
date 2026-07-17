@@ -53,11 +53,13 @@ interface Resumen {
 export default function DashboardPage() {
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pedidosPend, setPedidosPend] = useState(0);
 
   useEffect(() => {
     api.get<Resumen>('/dashboard')
       .then(setResumen)
       .catch((e) => setError(e instanceof Error ? e.message : 'Error cargando el dashboard'));
+    api.get<number>('/pedidos/pendientes/cuenta').then(setPedidosPend).catch(() => setPedidosPend(0));
   }, []);
 
   if (error) {
@@ -103,6 +105,13 @@ export default function DashboardPage() {
 
   return (
     <div>
+      {pedidosPend > 0 && (
+        <Link to="/cuotas" className={s.avisoPedidos}>
+          <span className={s.avisoPedidosBadge}>{pedidosPend}</span>
+          {pedidosPend === 1 ? 'pedido de servicio sin resolver' : 'pedidos de servicios sin resolver'} — resolvé en Cuotas
+        </Link>
+      )}
+
       {/* ── Métricas (datos reales) ── */}
       <div className={s.metricas}>
         {metricas.map((m) => (

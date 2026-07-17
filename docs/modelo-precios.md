@@ -72,6 +72,28 @@ posible. Por eso el orden de construcción es:
 - ~~Alumno que falta: ¿paga igual?~~ → paga igual, siempre. El divisor son
   los asignados, no los presentes (ver §2).
 
+**RESUELTO (17/07/2026, servicios + pedidos — M4):**
+
+- ~~¿Cómo pide el alumno un servicio (encordado, tubo) desde el portal?~~ → El
+  profe arma su **catálogo de servicios** (`Servicio`: nombre + precio +
+  activo, en Configuración; cada profe tiene el suyo). El alumno **pide** uno
+  → nace un **`Pedido`** en estado **Pendiente** con snapshot del nombre y
+  precio (si el profe cambia el precio después, el pedido conserva lo que el
+  alumno vio). **La deuda NO existe todavía.**
+- ~~¿Cuándo se le cobra?~~ → **Cuando el profe ACEPTA.** Aceptar el pedido
+  genera un `Cargo` tipo Producto (con el snapshot) que entra en la cuenta
+  corriente y se cobra con la maquinaria de M2 (informar→confirmar).
+  **Rechazar** descarta el pedido sin deuda. Así la cuenta corriente solo
+  tiene deudas reales — nunca algo que el profe quizás no hace.
+- **Dónde lo resuelve el profe**: un **panel arriba de Cuotas** (mismo patrón
+  que el de morosos) — acepta/rechaza ahí, y el cargo aparece en la
+  liquidación de abajo. Un contador en el Dashboard avisa cuántos hay
+  pendientes. Nada de pantallas nuevas desconectadas de la plata.
+- **Baja lógica del servicio** (`Activo=false`): desactivar uno del catálogo
+  no rompe los pedidos históricos que lo referencian (snapshot + FK Restrict).
+- **Reusa M2**: el cargo que nace del pedido se cobra igual que cualquier
+  otro (el alumno informa la transferencia, el profe confirma).
+
 **RESUELTO (17/07/2026, pago informado desde el portal — M2):**
 
 - ~~¿Cómo paga el alumno desde el portal sin Mercado Pago?~~ → **Informa la

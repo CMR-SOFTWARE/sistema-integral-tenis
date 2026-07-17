@@ -48,6 +48,10 @@ builder.Services.AddScoped<IReporteService, ReporteService>();
 builder.Services.AddScoped<ICredencialesService, CredencialesService>();
 builder.Services.AddScoped<ISolicitudRepository, SolicitudRepository>();
 builder.Services.AddScoped<ISolicitudService, SolicitudService>();
+builder.Services.AddScoped<IServicioRepository, ServicioRepository>();
+builder.Services.AddScoped<IServicioService, ServicioService>();
+builder.Services.AddScoped<IPedidoRepository, PedidoRepository>();
+builder.Services.AddScoped<IPedidoService, PedidoService>();
 
 // Base de datos: EF Core sobre SQLite (la connection string vive en appsettings.json)
 builder.Services.AddDbContext<AppDbContext>(options =>

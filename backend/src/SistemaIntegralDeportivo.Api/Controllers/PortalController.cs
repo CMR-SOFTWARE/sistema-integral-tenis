@@ -133,6 +133,51 @@ public class PortalController : ControllerBase
         }
     }
 
+    /// <summary>GET api/portal/servicios — el catálogo del club (lo que puedo pedir).</summary>
+    [HttpGet("servicios")]
+    public async Task<ActionResult<IReadOnlyList<ServicioDto>>> Servicios(CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.ServiciosAsync(userId, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>POST api/portal/pedidos — pido un servicio (queda pendiente del profe).</summary>
+    [HttpPost("pedidos")]
+    public async Task<ActionResult<PedidoDto>> Pedir(CrearPedidoDto dto, CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.PedirServicioAsync(userId, dto.ServicioId, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>GET api/portal/pedidos — mis pedidos con su estado.</summary>
+    [HttpGet("pedidos")]
+    public async Task<ActionResult<IReadOnlyList<PedidoDto>>> MisPedidos(CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.MisPedidosAsync(userId, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     /// <summary>GET api/portal/perfil — mi ficha, como me ve el club.</summary>
     [HttpGet("perfil")]
     public async Task<ActionResult<MiPerfilDto>> Perfil(CancellationToken ct)

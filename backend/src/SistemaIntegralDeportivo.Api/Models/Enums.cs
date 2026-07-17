@@ -107,6 +107,18 @@ public enum MedioPago
     Otro
 }
 
+/// <summary>
+/// Ciclo de un pedido de servicio (M4): el alumno lo pide (Pendiente), el
+/// profe lo acepta (nace el cargo) o lo rechaza. La deuda recién existe si
+/// el profe acepta — la cuenta corriente solo tiene deudas reales.
+/// </summary>
+public enum EstadoPedido
+{
+    Pendiente,
+    Aceptado,
+    Rechazado
+}
+
 /// <summary>Cómo liquida el alumno: el mes entero (vence el 10) o cargo por cargo.</summary>
 public enum ModalidadPago
 {

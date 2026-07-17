@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api, ApiError } from '../../lib/api';
 import { useSedes } from './hooks';
-import type { Precios } from '../cuotas/types';
+import { formatoPlata } from '../alumnos/types';
+import type { Precios, Servicio } from '../cuotas/types';
 import s from './ConfiguracionPage.module.css';
 
 /** Card de precios del profe (la base de la fórmula de cuotas). */
@@ -119,6 +120,131 @@ function DatosPagoCard() {
   );
 }
 
+/** Card del catálogo de servicios (M4): lo que el profe ofrece, con precio. */
+function ServiciosCard() {
+  const [servicios, setServicios] = useState<Servicio[]>([]);
+  const [nombre, setNombre] = useState('');
+  const [precio, setPrecio] = useState('');
+  const [editId, setEditId] = useState<string | null>(null);
+  const [editNombre, setEditNombre] = useState('');
+  const [editPrecio, setEditPrecio] = useState('');
+  const [error, setError] = useState<string | null>(null);
+
+  const cargar = () => {
+    void api.get<Servicio[]>('/configuracion/servicios').then(setServicios).catch(() => {});
+  };
+  useEffect(cargar, []);
+
+  const agregar = async () => {
+    if (nombre.trim() === '' || precio === '') return;
+    setError(null);
+    try {
+      await api.post('/configuracion/servicios', { nombre: nombre.trim(), precio: Number(precio) });
+      setNombre(''); setPrecio(''); cargar();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'No se pudo agregar el servicio.');
+    }
+  };
+
+  const empezarEdicion = (sv: Servicio) => {
+    setEditId(sv.id); setEditNombre(sv.nombre); setEditPrecio(sv.precio.toString());
+  };
+
+  const guardarEdicion = async (id: string) => {
+    setError(null);
+    try {
+      await api.put(`/configuracion/servicios/${id}`, { nombre: editNombre.trim(), precio: Number(editPrecio) });
+      setEditId(null); cargar();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'No se pudo guardar.');
+    }
+  };
+
+  const cambiarActivo = async (sv: Servicio) => {
+    setError(null);
+    try {
+      await api.patch(`/configuracion/servicios/${sv.id}/activo`, { activo: !sv.activo });
+      cargar();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'No se pudo cambiar el estado.');
+    }
+  };
+
+  return (
+    <div className={s.tarjeta}>
+      <h3 className={s.titulo}>Servicios que ofrezco</h3>
+      <p className={s.bajada}>
+        Lo que vendés además de las clases (encordados, tubos de pelotas, etc.), con su precio.
+        Tus alumnos los piden desde el portal y vos confirmás. Cambiar un precio no toca los
+        pedidos ya hechos.
+      </p>
+      {error && <div className={s.error}>{error}</div>}
+
+      <div className={s.altaSede}>
+        <input
+          value={nombre}
+          onChange={(e) => setNombre(e.target.value)}
+          placeholder="Nombre, ej: Encordado"
+          maxLength={80}
+        />
+        <input
+          type="number"
+          min={0}
+          value={precio}
+          onChange={(e) => setPrecio(e.target.value)}
+          placeholder="Precio"
+          style={{ maxWidth: 120 }}
+        />
+        <button className={s.btnPrimario} onClick={() => void agregar()} disabled={nombre.trim() === '' || precio === ''}>
+          + Agregar
+        </button>
+      </div>
+
+      {servicios.length === 0 && <div className={s.vacio}>Todavía no cargaste servicios.</div>}
+
+      <div className={s.sedes}>
+        {servicios.map((sv) => (
+          <div key={sv.id} className={sv.activo ? s.sede : s.sedeInactiva}>
+            {editId === sv.id ? (
+              <div className={s.sedeHeader}>
+                <input
+                  className={`${s.editInput} ${s.editNombre}`}
+                  value={editNombre}
+                  onChange={(e) => setEditNombre(e.target.value)}
+                  maxLength={80}
+                />
+                <input
+                  className={`${s.editInput} ${s.editPrecio}`}
+                  type="number"
+                  min={0}
+                  value={editPrecio}
+                  onChange={(e) => setEditPrecio(e.target.value)}
+                />
+                <div className={s.spacer} />
+                <button className={s.btnMini} onClick={() => void guardarEdicion(sv.id)}>Guardar</button>
+                <button className={s.btnMiniGris} onClick={() => setEditId(null)}>✕</button>
+              </div>
+            ) : (
+              <div className={s.sedeHeader}>
+                <span className={s.sedeNombre}>{sv.nombre}</span>
+                {!sv.activo && <span className={s.chipInactiva}>Inactivo</span>}
+                <span className={s.sedeCanchas}>{formatoPlata(sv.precio)}</span>
+                <div className={s.spacer} />
+                <button className={s.btnMiniGris} onClick={() => empezarEdicion(sv)}>Editar</button>
+                {sv.activo ? (
+                  <button className={s.btnMiniGris} onClick={() => void cambiarActivo(sv)}>Desactivar</button>
+                ) : (
+                  <button className={s.btnMini} onClick={() => void cambiarActivo(sv)}>Activar</button>
+                )}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Configuración del tenant. Por ahora: sedes y canchas (donde trabaja el profe). */
 export default function ConfiguracionPage() {
   const { sedes, cargando, crearSede, agregarCancha, desactivarSede, reactivarSede } = useSedes();
@@ -175,6 +301,7 @@ export default function ConfiguracionPage() {
     <div className={s.contenedor}>
       <PreciosCard />
       <DatosPagoCard />
+      <ServiciosCard />
       <div className={s.tarjeta}>
         <h3 className={s.titulo}>Sedes y canchas</h3>
         <p className={s.bajada}>
