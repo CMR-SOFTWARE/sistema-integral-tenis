@@ -4,6 +4,7 @@ import { api } from '../../lib/api';
 import { cerrarSesion, guardarSesion, obtenerSesion } from '../auth/sesion';
 import type { Sesion } from '../auth/sesion';
 import BotonMenu from '../../components/layout/BotonMenu';
+import Avatar from '../../components/Avatar';
 import { alumnoNav, portalTitles } from '../../components/layout/nav';
 import { CAT_LABEL } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
@@ -98,9 +99,13 @@ export default function PortalLayout() {
 
         <div className={s.sidebarFooter}>
           <div className={s.userCard}>
-            <div className={s.userAvatar}>
-              {sesion ? `${sesion.nombre.charAt(0)}${sesion.apellido.charAt(0)}`.toUpperCase() : ''}
-            </div>
+            <Avatar
+              nombre={sesion?.nombre ?? ''}
+              apellido={sesion?.apellido ?? ''}
+              fotoUrl={perfil?.fotoUrl}
+              size={38}
+              radius={11}
+            />
             <div className={s.userInfo}>
               <div className={s.userName}>{nombre}</div>
               <div className={s.userRole}>{cat ? `Cat. ${cat}` : sesion?.alumno?.club ?? 'Sin club'}</div>

@@ -264,6 +264,25 @@ Viene directo del plan de acción (1.8): si no paga, se suspende el acceso a res
 
 ---
 
+## 7. Perfil editable por el alumno (M3, 17/07/2026)
+
+El alumno administra parte de su propia ficha desde el portal:
+
+- **Editable por el alumno**: teléfono, email, **categoría** y **foto**. Nombre,
+  apellido, fecha de nacimiento, DNI y modalidad de pago los mantiene el profe.
+- **Foto** (`Alumno.FotoUrl`, ya existía): se sube desde el portal, se
+  **comprime en el navegador** (~256px, JPEG) y se guarda como **data URL
+  base64** en la base — sin storage externo. Validación en el server: que sea
+  imagen y ≤ ~500 KB.
+- **Raquetas** (`Raqueta`, entidad nueva 1:N con el alumno): marca + tensión +
+  marca del encordado. El alumno tiene 1 o más y las administra él (CRUD por
+  el portal, con regla de **pertenencia**: solo toca las suyas).
+- **Categoría "por ahora" editable por el alumno**: es un solo campo en la
+  ficha, así que el cambio se refleja en todos lados (lista del profe, cuotas).
+  **Pendiente para M5**: al cambiar de categoría, validar contra sus grupos
+  (un grupo tendrá categoría requerida; ver la regla de categoría↔grupo).
+
 ## Changelog
 
 - **12/06/2026**: versión inicial. Multi-tenant, sin login de alumnos, grupos fijos, soporte menores, categorías 7ma-1ra.
+- **17/07/2026 (M3)**: perfil editable por el alumno (contacto + categoría + foto base64 + raquetas). Entidad `Raqueta`.

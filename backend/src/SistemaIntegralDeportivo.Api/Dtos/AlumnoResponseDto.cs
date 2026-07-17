@@ -28,6 +28,9 @@ public class AlumnoResponseDto
 
     /// <summary>Tiene acceso al portal (para mostrar/ocultar "Crear acceso").</summary>
     public bool TieneUsuario { get; set; }
+
+    /// <summary>Foto de perfil (data URL) que cargó el alumno, o null.</summary>
+    public string? FotoUrl { get; set; }
 }
 
 /// <summary>

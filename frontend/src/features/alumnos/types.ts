@@ -33,6 +33,8 @@ export interface Alumno {
   deudaVencida: boolean;
   /** Ya tiene acceso al portal (usuario creado). */
   tieneUsuario: boolean;
+  /** Foto de perfil (data URL) que cargó el alumno, o null. */
+  fotoUrl: string | null;
 }
 
 /** Espejo de CreateAlumnoDto. */

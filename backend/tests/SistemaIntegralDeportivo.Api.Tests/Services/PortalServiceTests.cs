@@ -22,6 +22,7 @@ public class PortalServiceTests
     private readonly Mock<ICuotaService> _cuotas;
     private readonly Mock<IServicioService> _servicios;
     private readonly Mock<IPedidoService> _pedidos;
+    private readonly Mock<IRaquetaService> _raquetas;
     private readonly Mock<ITenantActual> _tenantActual;
     private readonly PortalService _service;
     private readonly Alumno _ficha;
@@ -34,10 +35,13 @@ public class PortalServiceTests
         _cuotas = new Mock<ICuotaService>();
         _servicios = new Mock<IServicioService>();
         _pedidos = new Mock<IPedidoService>();
+        _raquetas = new Mock<IRaquetaService>();
         _tenantActual = new Mock<ITenantActual>();
         _service = new PortalService(
             _alumnos.Object, _turnos.Object, _turnoService.Object, _cuotas.Object,
-            _servicios.Object, _pedidos.Object, _tenantActual.Object);
+            _servicios.Object, _pedidos.Object, _raquetas.Object, _tenantActual.Object);
+        _raquetas.Setup(r => r.MisAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                 .ReturnsAsync([]);
 
         _ficha = new Alumno
         {
@@ -335,5 +339,55 @@ public class PortalServiceTests
     {
         await Assert.ThrowsAsync<ReglaDeNegocioException>(
             () => _service.ActualizarMiPerfilAsync(Guid.NewGuid(), new ActualizarMiPerfilDto { Telefono = "x" }));
+    }
+
+    [Fact]
+    public async Task ActualizarMiPerfil_CambiaLaCategoria_EnLaFicha()
+    {
+        // Un solo campo en la ficha = se refleja en todos lados (M3, "por ahora")
+        _ficha.Categoria = CategoriaAlumno.Cuarta;
+        var dto = new ActualizarMiPerfilDto { Telefono = "+549117777", Categoria = CategoriaAlumno.Tercera };
+
+        var perfil = await _service.ActualizarMiPerfilAsync(UserId, dto);
+
+        Assert.Equal(CategoriaAlumno.Tercera, _ficha.Categoria);
+        Assert.Equal("Tercera", perfil.Categoria);
+    }
+
+    [Fact]
+    public async Task ActualizarFoto_GuardaLaImagen()
+    {
+        await _service.ActualizarFotoAsync(UserId, "data:image/jpeg;base64,/9j/abc123");
+
+        Assert.Equal("data:image/jpeg;base64,/9j/abc123", _ficha.FotoUrl);
+        _alumnos.Verify(a => a.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task ActualizarFoto_Vacia_QuitaLaFoto()
+    {
+        _ficha.FotoUrl = "data:image/png;base64,algo";
+
+        await _service.ActualizarFotoAsync(UserId, null);
+
+        Assert.Null(_ficha.FotoUrl);
+    }
+
+    [Fact]
+    public async Task ActualizarFoto_NoEsImagen_Lanza()
+    {
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.ActualizarFotoAsync(UserId, "data:text/html;base64,PHNjcmlwdD4="));
+
+        Assert.Null(_ficha.FotoUrl);
+    }
+
+    [Fact]
+    public async Task ActualizarFoto_MuyPesada_Lanza()
+    {
+        var enorme = "data:image/jpeg;base64," + new string('A', 700_001);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.ActualizarFotoAsync(UserId, enorme));
     }
 }

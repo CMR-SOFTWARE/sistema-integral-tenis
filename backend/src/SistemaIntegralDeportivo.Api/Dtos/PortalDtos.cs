@@ -1,3 +1,5 @@
+using SistemaIntegralDeportivo.Api.Models;
+
 namespace SistemaIntegralDeportivo.Api.Dtos;
 
 /// <summary>Un turno visto por el ALUMNO, con su asistencia y sus compañeros.</summary>
@@ -42,13 +44,14 @@ public class MisTurnosDto
 }
 
 /// <summary>
-/// Lo que el alumno puede editar de su propia ficha: SUS datos de contacto.
-/// DNI, categoría, modalidad y estado los administra el profesor.
+/// Lo que el alumno puede editar de su propia ficha (M3): contacto + su
+/// categoría (por ahora). DNI, modalidad y estado los administra el profesor.
 /// </summary>
 public class ActualizarMiPerfilDto
 {
     public required string Telefono { get; set; }
     public string? Email { get; set; }
+    public CategoriaAlumno Categoria { get; set; }
 }
 
 /// <summary>
@@ -76,4 +79,7 @@ public class MiPerfilDto
     public string Estado { get; set; } = string.Empty;
     public string Modalidad { get; set; } = string.Empty;
     public string Club { get; set; } = string.Empty;
+    /// <summary>Foto de perfil como data URL (base64), o null.</summary>
+    public string? FotoUrl { get; set; }
+    public List<RaquetaDto> Raquetas { get; set; } = [];
 }
