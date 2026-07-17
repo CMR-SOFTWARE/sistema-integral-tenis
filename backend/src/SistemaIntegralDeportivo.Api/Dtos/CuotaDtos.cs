@@ -36,6 +36,13 @@ public class PagarMesDto
     public MedioPago Medio { get; set; }
 }
 
+/// <summary>El profe rechaza el pago informado del mes de un alumno (no lleva medio).</summary>
+public class RechazarPagoMesDto
+{
+    [Required]
+    public Guid AlumnoId { get; set; }
+}
+
 /// <summary>Una línea de la cuenta corriente.</summary>
 public class CargoResponseDto
 {
@@ -47,6 +54,9 @@ public class CargoResponseDto
     public bool Pagado { get; set; }
     public DateTime? PagadoEl { get; set; }
     public string? MedioPago { get; set; }
+    /// <summary>El alumno avisó que transfirió, pendiente de que el profe confirme.</summary>
+    public bool PagoInformado { get; set; }
+    public DateTime? PagoInformadoEl { get; set; }
 }
 
 /// <summary>La cuenta del mes de un alumno: cargos + totales + estado calculado.</summary>
@@ -59,7 +69,10 @@ public class AlumnoLiquidacionDto
     public decimal Total { get; set; }
     public decimal Pagado { get; set; }
     public decimal Saldo { get; set; }
-    /// <summary>Pagada | Pendiente | Vencida (calculado contra el día 10, nunca guardado).</summary>
+    /// <summary>
+    /// Pagada | Informado | Pendiente | Vencida (calculado, nunca guardado).
+    /// "Informado" = debe, pero avisó que transfirió todo y espera confirmación.
+    /// </summary>
     public string Estado { get; set; } = string.Empty;
     public List<CargoResponseDto> Cargos { get; set; } = [];
 }

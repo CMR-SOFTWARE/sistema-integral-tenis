@@ -86,6 +86,53 @@ public class PortalController : ControllerBase
         }
     }
 
+    /// <summary>GET api/portal/datos-pago — a dónde transfiero (alias/CBU del club).</summary>
+    [HttpGet("datos-pago")]
+    public async Task<ActionResult<DatosPagoDto>> DatosPago(CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.DatosPagoAsync(userId, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>POST api/portal/mi-cuota/2026/7/informar — aviso que transferí el mes.</summary>
+    [HttpPost("mi-cuota/{anio:int}/{mes:int:range(1,12)}/informar")]
+    public async Task<IActionResult> InformarMes(int anio, int mes, CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            await _portal.InformarPagoMesAsync(userId, anio, mes, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>POST api/portal/cargos/{id}/informar — aviso que transferí un cargo puntual.</summary>
+    [HttpPost("cargos/{cargoId:guid}/informar")]
+    public async Task<IActionResult> InformarCargo(Guid cargoId, CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            await _portal.InformarPagoCargoAsync(userId, cargoId, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     /// <summary>GET api/portal/perfil — mi ficha, como me ve el club.</summary>
     [HttpGet("perfil")]
     public async Task<ActionResult<MiPerfilDto>> Perfil(CancellationToken ct)

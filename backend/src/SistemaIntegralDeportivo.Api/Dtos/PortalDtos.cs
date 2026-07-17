@@ -51,6 +51,18 @@ public class ActualizarMiPerfilDto
     public string? Email { get; set; }
 }
 
+/// <summary>
+/// Los datos de transferencia del club, para que el alumno sepa a dónde
+/// mandar la plata antes de informar el pago (alias/CBU + titular; null =
+/// el profe todavía no los cargó en Configuración).
+/// </summary>
+public class DatosPagoDto
+{
+    public string Club { get; set; } = string.Empty;
+    public string? AliasCbu { get; set; }
+    public string? Titular { get; set; }
+}
+
 /// <summary>La ficha del alumno vista por él mismo.</summary>
 public class MiPerfilDto
 {
