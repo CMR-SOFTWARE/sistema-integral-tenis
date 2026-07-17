@@ -31,6 +31,11 @@ public class Cargo
     public Turno? Turno { get; set; }
 
     // ── Pago (null = impago) ──
+    // Estado intermedio: el alumno AVISÓ desde el portal que transfirió, pero
+    // el profe todavía no lo confirmó. La plata sigue IMPAGA (PagadoEl null)
+    // hasta que el profe confirme: la verdad de la plata la pone el profe, no
+    // el cliente. Al confirmar → PagadoEl; al rechazar → PagoInformadoEl null.
+    public DateTime? PagoInformadoEl { get; set; }
     public DateTime? PagadoEl { get; set; }
     public MedioPago? MedioPago { get; set; }
 
