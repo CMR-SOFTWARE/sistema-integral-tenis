@@ -39,6 +39,13 @@ export interface MiLiquidacion {
   cargos: CargoLinea[];
 }
 
+/** Espejo de DatosPagoDto: a dónde transfiero (para el modal de informar pago). */
+export interface DatosPago {
+  club: string;
+  aliasCbu: string | null;
+  titular: string | null;
+}
+
 export interface MiPerfil {
   nombre: string;
   apellido: string;

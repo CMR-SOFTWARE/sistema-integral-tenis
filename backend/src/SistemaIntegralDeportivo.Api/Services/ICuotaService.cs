@@ -25,4 +25,21 @@ public interface ICuotaService
 
     /// <summary>Modalidad PorClase (o pago suelto): salda UN cargo.</summary>
     Task PagarCargoAsync(Guid cargoId, MedioPago medio, CancellationToken ct = default);
+
+    // ── Pago informado (portal): el alumno avisa, el profe confirma/rechaza ──
+
+    /// <summary>
+    /// El alumno avisa que transfirió el mes: marca sus impagos NO informados
+    /// como "informados" (no toca PagadoEl). Lanza si no hay nada por informar.
+    /// </summary>
+    Task InformarPagoMesAsync(Guid alumnoId, int anio, int mes, CancellationToken ct = default);
+
+    /// <summary>El alumno informa el pago de UN cargo (debe ser suyo, impago y sin informar).</summary>
+    Task InformarPagoCargoAsync(Guid alumnoId, Guid cargoId, CancellationToken ct = default);
+
+    /// <summary>El profe rechaza los pagos informados del mes de un alumno (vuelven a impago).</summary>
+    Task RechazarPagoMesAsync(Guid alumnoId, int anio, int mes, CancellationToken ct = default);
+
+    /// <summary>El profe rechaza el pago informado de UN cargo.</summary>
+    Task RechazarPagoCargoAsync(Guid cargoId, CancellationToken ct = default);
 }

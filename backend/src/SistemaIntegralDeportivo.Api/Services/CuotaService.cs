@@ -113,6 +113,13 @@ public class CuotaService : ICuotaService
                 var pagado = g.Where(c => c.PagadoEl is not null).Sum(c => c.Monto);
                 var saldo = total - pagado;
                 var alumno = g.Select(c => c.Alumno).FirstOrDefault(a => a is not null);
+
+                // "Informado": debe, pero avisó que transfirió TODO el saldo y
+                // espera que el profe confirme (tapa a "Vencida": ya no es un
+                // moroso silencioso, hay una acción pendiente del profe)
+                var impagos = g.Where(c => c.PagadoEl is null).ToList();
+                var todoInformado = impagos.Count > 0 && impagos.All(c => c.PagoInformadoEl is not null);
+
                 return new AlumnoLiquidacionDto
                 {
                     AlumnoId = g.Key,
@@ -122,7 +129,7 @@ public class CuotaService : ICuotaService
                     Total = total,
                     Pagado = pagado,
                     Saldo = saldo,
-                    Estado = CalcularEstado(anio, mes, saldo, hoy),
+                    Estado = todoInformado ? "Informado" : CalcularEstado(anio, mes, saldo, hoy),
                     Cargos = g.OrderBy(c => c.Fecha).ThenBy(c => c.CreadoEl).Select(Mapear).ToList(),
                 };
             })
@@ -196,6 +203,78 @@ public class CuotaService : ICuotaService
         await _cargos.GuardarCambiosAsync(ct);
     }
 
+    // ── Pago informado (portal): el alumno AVISA que transfirió; el profe
+    //    confirma (PagarMes/PagarCargo) o rechaza. La plata no se da por
+    //    cobrada hasta la confirmación — la verdad la pone el profe. ──
+
+    public async Task InformarPagoMesAsync(
+        Guid alumnoId, int anio, int mes, CancellationToken ct = default)
+    {
+        var cargosMes = await _cargos.ListarDelMesAsync(anio, mes, ct);
+        var aInformar = cargosMes
+            .Where(c => c.AlumnoId == alumnoId && c.PagadoEl is null && c.PagoInformadoEl is null)
+            .ToList();
+
+        if (aInformar.Count == 0)
+            throw new ReglaDeNegocioException("No tenés cargos pendientes por informar en ese mes.");
+
+        var ahora = DateTime.UtcNow; // la fecha la pone el server, nunca el cliente
+        foreach (var cargo in aInformar)
+            cargo.PagoInformadoEl = ahora;
+
+        await _cargos.GuardarCambiosAsync(ct);
+    }
+
+    public async Task InformarPagoCargoAsync(
+        Guid alumnoId, Guid cargoId, CancellationToken ct = default)
+    {
+        var cargo = await _cargos.ObtenerAsync(cargoId, ct)
+            ?? throw new ReglaDeNegocioException("El cargo no existe.");
+
+        // El cargo tiene que ser MÍO (defensa extra al scoping por tenant)
+        if (cargo.AlumnoId != alumnoId)
+            throw new ReglaDeNegocioException("Ese cargo no es tuyo.");
+        if (cargo.PagadoEl is not null)
+            throw new ReglaDeNegocioException("Ese cargo ya está pagado.");
+        if (cargo.PagoInformadoEl is not null)
+            throw new ReglaDeNegocioException("Ya informaste el pago de ese cargo.");
+
+        cargo.PagoInformadoEl = DateTime.UtcNow;
+        await _cargos.GuardarCambiosAsync(ct);
+    }
+
+    public async Task RechazarPagoMesAsync(
+        Guid alumnoId, int anio, int mes, CancellationToken ct = default)
+    {
+        var cargosMes = await _cargos.ListarDelMesAsync(anio, mes, ct);
+        var informados = cargosMes
+            .Where(c => c.AlumnoId == alumnoId && c.PagadoEl is null && c.PagoInformadoEl is not null)
+            .ToList();
+
+        if (informados.Count == 0)
+            throw new ReglaDeNegocioException("No hay pagos informados sin confirmar en ese mes.");
+
+        // "No me llegó": vuelve a impago sin informar (el alumno puede reintentar)
+        foreach (var cargo in informados)
+            cargo.PagoInformadoEl = null;
+
+        await _cargos.GuardarCambiosAsync(ct);
+    }
+
+    public async Task RechazarPagoCargoAsync(Guid cargoId, CancellationToken ct = default)
+    {
+        var cargo = await _cargos.ObtenerAsync(cargoId, ct)
+            ?? throw new ReglaDeNegocioException("El cargo no existe.");
+
+        if (cargo.PagadoEl is not null)
+            throw new ReglaDeNegocioException("Ese cargo ya está pagado.");
+        if (cargo.PagoInformadoEl is null)
+            throw new ReglaDeNegocioException("Ese cargo no tiene un pago informado.");
+
+        cargo.PagoInformadoEl = null;
+        await _cargos.GuardarCambiosAsync(ct);
+    }
+
     /// <summary>
     /// Morosidad: true si algún cargo impago pertenece a un mes cuya
     /// liquidación ya venció (día 10). Bloquea asignaciones NUEVAS (grupo u
@@ -233,5 +312,7 @@ public class CuotaService : ICuotaService
         Pagado = c.PagadoEl is not null,
         PagadoEl = c.PagadoEl,
         MedioPago = c.MedioPago?.ToString(),
+        PagoInformado = c.PagoInformadoEl is not null && c.PagadoEl is null,
+        PagoInformadoEl = c.PagoInformadoEl,
     };
 }

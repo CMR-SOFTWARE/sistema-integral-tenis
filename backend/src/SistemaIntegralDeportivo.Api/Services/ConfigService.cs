@@ -12,11 +12,26 @@ public class PreciosDto
     public decimal? ValorClaseIndividual { get; set; }
 }
 
-/// <summary>Configuración del tenant (por ahora: los precios del profe).</summary>
+/// <summary>
+/// A dónde transfiere el alumno: el alias/CBU y el titular. El portal los
+/// muestra al informar un pago (null = todavía no cargados).
+/// </summary>
+public class DatosPagoConfigDto
+{
+    [StringLength(120)]
+    public string? AliasCbu { get; set; }
+
+    [StringLength(120)]
+    public string? TitularPago { get; set; }
+}
+
+/// <summary>Configuración del tenant: precios del profe y datos de transferencia.</summary>
 public interface IConfigService
 {
     Task<PreciosDto> ObtenerPreciosAsync(CancellationToken ct = default);
     Task<PreciosDto> ActualizarPreciosAsync(PreciosDto dto, CancellationToken ct = default);
+    Task<DatosPagoConfigDto> ObtenerDatosPagoAsync(CancellationToken ct = default);
+    Task<DatosPagoConfigDto> ActualizarDatosPagoAsync(DatosPagoConfigDto dto, CancellationToken ct = default);
 }
 
 public class ConfigService : IConfigService
@@ -46,5 +61,25 @@ public class ConfigService : IConfigService
         tenant.ValorClaseIndividual = dto.ValorClaseIndividual;
         await _tenant.GuardarCambiosAsync(ct);
         return dto;
+    }
+
+    public async Task<DatosPagoConfigDto> ObtenerDatosPagoAsync(CancellationToken ct = default)
+    {
+        var tenant = await _tenant.ObtenerActualAsync(ct);
+        return new DatosPagoConfigDto
+        {
+            AliasCbu = tenant.AliasCbu,
+            TitularPago = tenant.TitularPago,
+        };
+    }
+
+    public async Task<DatosPagoConfigDto> ActualizarDatosPagoAsync(
+        DatosPagoConfigDto dto, CancellationToken ct = default)
+    {
+        var tenant = await _tenant.ObtenerActualAsync(ct);
+        tenant.AliasCbu = string.IsNullOrWhiteSpace(dto.AliasCbu) ? null : dto.AliasCbu.Trim();
+        tenant.TitularPago = string.IsNullOrWhiteSpace(dto.TitularPago) ? null : dto.TitularPago.Trim();
+        await _tenant.GuardarCambiosAsync(ct);
+        return await ObtenerDatosPagoAsync(ct);
     }
 }

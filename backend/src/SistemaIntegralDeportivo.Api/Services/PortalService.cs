@@ -67,6 +67,31 @@ public class PortalService : IPortalService
         return liquidacion.Liquidaciones.FirstOrDefault(l => l.AlumnoId == ficha.Id);
     }
 
+    public async Task InformarPagoMesAsync(
+        Guid userId, int anio, int mes, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct); // establece el tenant del club
+        await _cuotas.InformarPagoMesAsync(ficha.Id, anio, mes, ct);
+    }
+
+    public async Task InformarPagoCargoAsync(
+        Guid userId, Guid cargoId, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+        await _cuotas.InformarPagoCargoAsync(ficha.Id, cargoId, ct);
+    }
+
+    public async Task<DatosPagoDto> DatosPagoAsync(Guid userId, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+        return new DatosPagoDto
+        {
+            Club = ficha.Tenant?.Nombre ?? string.Empty,
+            AliasCbu = ficha.Tenant?.AliasCbu,
+            Titular = ficha.Tenant?.TitularPago,
+        };
+    }
+
     public async Task<MiPerfilDto> MiPerfilAsync(Guid userId, CancellationToken ct = default)
     {
         var ficha = await FichaDeAsync(userId, ct);

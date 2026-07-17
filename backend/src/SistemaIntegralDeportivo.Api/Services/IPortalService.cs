@@ -19,6 +19,18 @@ public interface IPortalService
     /// <exception cref="Common.ReglaDeNegocioException">Si el usuario no tiene ficha vinculada.</exception>
     Task<AlumnoLiquidacionDto?> MiCuotaAsync(Guid userId, int anio, int mes, CancellationToken ct = default);
 
+    /// <summary>Aviso que transferí el mes completo (queda pendiente de que el profe confirme).</summary>
+    /// <exception cref="Common.ReglaDeNegocioException">Sin ficha, o nada por informar.</exception>
+    Task InformarPagoMesAsync(Guid userId, int anio, int mes, CancellationToken ct = default);
+
+    /// <summary>Aviso que transferí UN cargo puntual (ej: un encordado ya cargado).</summary>
+    /// <exception cref="Common.ReglaDeNegocioException">Sin ficha, cargo ajeno/pagado/ya informado.</exception>
+    Task InformarPagoCargoAsync(Guid userId, Guid cargoId, CancellationToken ct = default);
+
+    /// <summary>Los datos de transferencia del club (alias/CBU + titular) para el modal de pago.</summary>
+    /// <exception cref="Common.ReglaDeNegocioException">Si el usuario no tiene ficha vinculada.</exception>
+    Task<DatosPagoDto> DatosPagoAsync(Guid userId, CancellationToken ct = default);
+
     /// <summary>Mi ficha, como me ve el club.</summary>
     /// <exception cref="Common.ReglaDeNegocioException">Si el usuario no tiene ficha vinculada.</exception>
     Task<MiPerfilDto> MiPerfilAsync(Guid userId, CancellationToken ct = default);

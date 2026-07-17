@@ -33,6 +33,12 @@ export function useCuotas(anio: number, mes: number) {
     await cargar();
   };
 
+  /** Rechaza el pago informado del mes de un alumno ("no me llegó"). */
+  const rechazarMes = async (alumnoId: string) => {
+    await api.post(`/cuotas/${anio}/${mes}/rechazar`, { alumnoId });
+    await cargar();
+  };
+
   const agregarCargo = async (dto: {
     alumnoId: string;
     tipo: TipoCargo;
@@ -43,5 +49,5 @@ export function useCuotas(anio: number, mes: number) {
     await cargar();
   };
 
-  return { datos, cargando, error, pagarMes, pagarCargo, agregarCargo, recargar: cargar };
+  return { datos, cargando, error, pagarMes, pagarCargo, rechazarMes, agregarCargo, recargar: cargar };
 }

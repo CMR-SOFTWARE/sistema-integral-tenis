@@ -278,6 +278,93 @@ public class CuotaServiceTests
     }
 
     // ─────────────────────────────────────────────
+    // Pago informado (portal): el alumno avisa, el profe confirma/rechaza
+    // ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task InformarMes_MarcaImpagosNoInformados_SinTocarPagadoEl()
+    {
+        var impago1 = new Cargo { AlumnoId = Juan, Tipo = TipoCargo.Clase, Concepto = "x", Monto = 4_000m, Fecha = new DateOnly(2026, 7, 14) };
+        var impago2 = new Cargo { AlumnoId = Juan, Tipo = TipoCargo.Producto, Concepto = "Encordado", Monto = 12_000m, Fecha = new DateOnly(2026, 7, 15) };
+        var pagado = new Cargo { AlumnoId = Juan, Tipo = TipoCargo.Clase, Concepto = "x", Monto = 4_000m, Fecha = new DateOnly(2026, 7, 7), PagadoEl = DateTime.UtcNow };
+        var deOtro = new Cargo { AlumnoId = Sofia, Tipo = TipoCargo.Clase, Concepto = "x", Monto = 4_000m, Fecha = new DateOnly(2026, 7, 14) };
+        _agregados.AddRange([impago1, impago2, pagado, deOtro]);
+
+        await _service.InformarPagoMesAsync(Juan, 2026, 7);
+
+        Assert.NotNull(impago1.PagoInformadoEl);
+        Assert.NotNull(impago2.PagoInformadoEl);
+        Assert.Null(impago1.PagadoEl);            // sigue IMPAGO: el profe todavía no confirmó
+        Assert.Null(pagado.PagoInformadoEl);      // lo ya pagado no se informa
+        Assert.Null(deOtro.PagoInformadoEl);      // lo de Sofía no es de Juan
+        _cargos.Verify(c => c.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task InformarMes_SinCargosPorInformar_Lanza()
+    {
+        // Todo ya está informado: no hay nada nuevo que avisar
+        var yaInformado = new Cargo { AlumnoId = Juan, Tipo = TipoCargo.Clase, Concepto = "x", Monto = 4_000m, Fecha = new DateOnly(2026, 7, 14), PagoInformadoEl = DateTime.UtcNow };
+        _agregados.Add(yaInformado);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.InformarPagoMesAsync(Juan, 2026, 7));
+    }
+
+    [Fact]
+    public async Task InformarCargo_DeOtroAlumno_Lanza()
+    {
+        var ajeno = new Cargo { AlumnoId = Sofia, Tipo = TipoCargo.Producto, Concepto = "Encordado", Monto = 12_000m, Fecha = new DateOnly(2026, 7, 15) };
+        _cargos.Setup(c => c.ObtenerAsync(ajeno.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ajeno);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.InformarPagoCargoAsync(Juan, ajeno.Id));
+
+        Assert.Null(ajeno.PagoInformadoEl);
+    }
+
+    [Fact]
+    public async Task InformarCargo_Propio_LoMarca()
+    {
+        var mio = new Cargo { AlumnoId = Juan, Tipo = TipoCargo.Producto, Concepto = "Encordado", Monto = 12_000m, Fecha = new DateOnly(2026, 7, 15) };
+        _cargos.Setup(c => c.ObtenerAsync(mio.Id, It.IsAny<CancellationToken>())).ReturnsAsync(mio);
+
+        await _service.InformarPagoCargoAsync(Juan, mio.Id);
+
+        Assert.NotNull(mio.PagoInformadoEl);
+        Assert.Null(mio.PagadoEl); // informado ≠ pagado
+    }
+
+    [Fact]
+    public async Task Rechazar_VuelveElInformadoAImpago_SinConfirmar()
+    {
+        var informado = new Cargo { AlumnoId = Juan, Tipo = TipoCargo.Clase, Concepto = "x", Monto = 4_000m, Fecha = new DateOnly(2026, 7, 14), PagoInformadoEl = DateTime.UtcNow };
+        _cargos.Setup(c => c.ObtenerAsync(informado.Id, It.IsAny<CancellationToken>())).ReturnsAsync(informado);
+
+        await _service.RechazarPagoCargoAsync(informado.Id);
+
+        Assert.Null(informado.PagoInformadoEl); // vuelve a "sin informar"
+        Assert.Null(informado.PagadoEl);        // nunca se dio por pagado
+    }
+
+    [Fact]
+    public async Task Estado_TodoElSaldoInformado_EsInformado_YNoCuentaComoVencido()
+    {
+        // Impago de junio (vencido) pero el alumno ya avisó que transfirió:
+        // el estado tapa a "Vencida" con "Informado" (hay acción del profe pendiente)
+        var informado = new Cargo { AlumnoId = Juan, Alumno = new Alumno { Id = Juan, Nombre = "Juan", Apellido = "Pérez", Dni = "1", Telefono = "1", FechaNacimiento = DateTime.UtcNow.AddYears(-30) }, Tipo = TipoCargo.Clase, Concepto = "x", Monto = 4_000m, Fecha = new DateOnly(2026, 7, 3), PagoInformadoEl = DateTime.UtcNow };
+        _cargos.Setup(c => c.ListarDelMesAsync(2026, 7, It.IsAny<CancellationToken>()))
+               .ReturnsAsync([informado]);
+
+        var liq = await _service.ObtenerMesAsync(2026, 7);
+
+        var juan = Assert.Single(liq.Liquidaciones);
+        Assert.Equal("Informado", juan.Estado);
+        Assert.Equal(0, liq.AlumnosVencidos);
+        Assert.True(juan.Cargos[0].PagoInformado);
+    }
+
+    // ─────────────────────────────────────────────
     // Morosidad: nadie toma clases NUEVAS con la cuota vencida
     // ─────────────────────────────────────────────
 

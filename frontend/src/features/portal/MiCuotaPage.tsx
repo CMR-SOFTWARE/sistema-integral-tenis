@@ -1,13 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { obtenerSesion } from '../auth/sesion';
 import SinClub from './SinClub';
+import InformarPagoModal from './InformarPagoModal';
 import { formatoPlata } from '../alumnos/types';
 import { ESTADO_LIQ_UI, MESES } from '../cuotas/types';
 import type { MiLiquidacion } from './types';
 import s from './PortalPages.module.css';
 
-/** Mi cuota (mockup): tres cards de resumen + el detalle de cargos del mes. */
+/** El objeto de pago a informar: el mes entero o un cargo puntual. */
+type AInformar =
+  | { tipo: 'mes'; monto: number }
+  | { tipo: 'cargo'; cargoId: string; concepto: string; monto: number };
+
+/** Mi cuota: resumen del mes + detalle de cargos + "avisar que ya transferí". */
 export default function MiCuotaPage() {
   const hoy = new Date();
   const conClub = obtenerSesion()?.alumno != null;
@@ -16,8 +22,10 @@ export default function MiCuotaPage() {
   const [cuota, setCuota] = useState<MiLiquidacion | null>(null);
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [informar, setInformar] = useState<AInformar | null>(null);
+  const [aviso, setAviso] = useState<string | null>(null);
 
-  useEffect(() => {
+  const cargar = useCallback(() => {
     if (!conClub) return;
     setCargando(true);
     setError(null);
@@ -26,6 +34,8 @@ export default function MiCuotaPage() {
       .catch((e) => setError(e instanceof Error ? e.message : 'Error cargando tu cuota'))
       .finally(() => setCargando(false));
   }, [anio, mes, conClub]);
+
+  useEffect(() => { cargar(); }, [cargar]);
 
   if (!conClub) return <SinClub mensaje="Cuando estés en un club, acá vas a ver tu cuota mensual y tus pagos." />;
 
@@ -36,7 +46,20 @@ export default function MiCuotaPage() {
     if (mes === 12) { setMes(1); setAnio(anio + 1); } else setMes(mes + 1);
   };
 
+  const confirmarInforme = async () => {
+    if (!informar) return;
+    if (informar.tipo === 'mes') {
+      await api.post(`/portal/mi-cuota/${anio}/${mes}/informar`, {});
+    } else {
+      await api.post(`/portal/cargos/${informar.cargoId}/informar`, {});
+    }
+    setAviso('¡Aviso enviado! Tu profe va a confirmar el pago.');
+    setTimeout(() => setAviso(null), 3500);
+    cargar();
+  };
+
   const estado = cuota ? ESTADO_LIQ_UI[cuota.estado] : null;
+  const puedeInformarMes = (cuota?.saldo ?? 0) > 0 && cuota?.estado !== 'Informado';
 
   return (
     <div>
@@ -47,6 +70,7 @@ export default function MiCuotaPage() {
       </div>
 
       {error && <div className={s.error}>{error}</div>}
+      {aviso && <div className={s.avisoOk}>{aviso}</div>}
       {cargando && !error && <div className={s.vacio}>Calculando…</div>}
 
       {!cargando && !error && (
@@ -61,7 +85,9 @@ export default function MiCuotaPage() {
               <h3 className={s.tarjetaTitulo}>Estado actual</h3>
               {cuota && estado ? (
                 <span className={s.chip} style={{ background: estado.bg, color: estado.fg }}>
-                  {cuota.estado === 'Pagada' ? 'Pagado' : cuota.estado}
+                  {cuota.estado === 'Pagada' ? 'Pagado'
+                    : cuota.estado === 'Informado' ? 'Esperando confirmación'
+                    : cuota.estado}
                 </span>
               ) : (
                 <span className={`${s.chip} ${s.chipVerde}`}>Sin movimientos</span>
@@ -73,6 +99,17 @@ export default function MiCuotaPage() {
               <div className={s.cuotaMonto} style={{ color: (cuota?.saldo ?? 0) > 0 ? '#b91c1c' : '#0e6b3c' }}>
                 {formatoPlata(cuota?.saldo ?? 0)}
               </div>
+              {puedeInformarMes && (
+                <button
+                  className={s.btnInformar}
+                  onClick={() => setInformar({ tipo: 'mes', monto: cuota!.saldo })}
+                >
+                  Ya transferí
+                </button>
+              )}
+              {cuota?.estado === 'Informado' && (
+                <div className={s.cuotaVence}>Avisaste que transferiste. Esperando a tu profe.</div>
+              )}
             </div>
           </div>
 
@@ -90,14 +127,34 @@ export default function MiCuotaPage() {
                   {c.tipo !== 'Clase' && <span className={s.cargoTipo}> · {c.tipo}</span>}
                 </span>
                 <span className={s.cargoMonto}>{formatoPlata(c.monto)}</span>
-                {c.pagado
-                  ? <span className={`${s.chip} ${s.chipVerde}`}>✓ Pagado{c.medioPago ? ` · ${c.medioPago}` : ''}</span>
-                  : <span className={`${s.chip} ${s.chipAmbar}`}>Pendiente</span>}
+                {c.pagado ? (
+                  <span className={`${s.chip} ${s.chipVerde}`}>✓ Pagado{c.medioPago ? ` · ${c.medioPago}` : ''}</span>
+                ) : c.pagoInformado ? (
+                  <span className={`${s.chip} ${s.chipAzul}`}>Avisado ✓</span>
+                ) : (
+                  <button
+                    className={s.btnAvisarCargo}
+                    onClick={() => setInformar({ tipo: 'cargo', cargoId: c.id, concepto: c.concepto, monto: c.monto })}
+                  >
+                    Avisar pago
+                  </button>
+                )}
               </div>
             ))}
           </div>
-          <p className={s.nota}>Los pagos se registran con tu profesor.</p>
+          <p className={s.nota}>
+            Transferí y tocá <b>“Ya transferí”</b>: tu profe confirma que le llegó y tu cuota queda al día.
+          </p>
         </>
+      )}
+
+      {informar && (
+        <InformarPagoModal
+          titulo={informar.tipo === 'mes' ? 'Informar pago del mes' : `Informar pago · ${informar.concepto}`}
+          monto={informar.monto}
+          onConfirmar={confirmarInforme}
+          onClose={() => setInformar(null)}
+        />
       )}
     </div>
   );

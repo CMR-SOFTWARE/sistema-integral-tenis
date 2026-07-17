@@ -23,4 +23,14 @@ public class ConfiguracionController : ControllerBase
     [HttpPut("precios")]
     public async Task<ActionResult<PreciosDto>> ActualizarPrecios(PreciosDto dto, CancellationToken ct) =>
         Ok(await _service.ActualizarPreciosAsync(dto, ct));
+
+    /// <summary>Datos de transferencia (alias/CBU + titular) que ve el alumno al informar un pago.</summary>
+    [HttpGet("datos-pago")]
+    public async Task<ActionResult<DatosPagoConfigDto>> DatosPago(CancellationToken ct) =>
+        Ok(await _service.ObtenerDatosPagoAsync(ct));
+
+    [HttpPut("datos-pago")]
+    public async Task<ActionResult<DatosPagoConfigDto>> ActualizarDatosPago(
+        DatosPagoConfigDto dto, CancellationToken ct) =>
+        Ok(await _service.ActualizarDatosPagoAsync(dto, ct));
 }

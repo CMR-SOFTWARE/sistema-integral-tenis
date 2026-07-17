@@ -76,4 +76,36 @@ public class CuotasController : ControllerBase
             return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
         }
     }
+
+    // ── Pago informado: confirmar = pagar (arriba); rechazar = "no me llegó" ──
+
+    /// <summary>POST api/cuotas/2026/7/rechazar — rechaza el pago informado del mes de un alumno.</summary>
+    [HttpPost("{anio:int}/{mes:int:range(1,12)}/rechazar")]
+    public async Task<IActionResult> RechazarMes(int anio, int mes, RechazarPagoMesDto dto, CancellationToken ct)
+    {
+        try
+        {
+            await _service.RechazarPagoMesAsync(dto.AlumnoId, anio, mes, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>POST api/cuotas/cargos/{id}/rechazar — rechaza el pago informado de UN cargo.</summary>
+    [HttpPost("cargos/{id:guid}/rechazar")]
+    public async Task<IActionResult> RechazarCargo(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            await _service.RechazarPagoCargoAsync(id, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
 }

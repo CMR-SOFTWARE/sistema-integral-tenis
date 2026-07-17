@@ -14,7 +14,7 @@ export default function CuotasPage() {
   const hoy = new Date();
   const [anio, setAnio] = useState(hoy.getFullYear());
   const [mes, setMes] = useState(hoy.getMonth() + 1);
-  const { datos, cargando, error, pagarMes, pagarCargo, agregarCargo, recargar } = useCuotas(anio, mes);
+  const { datos, cargando, error, pagarMes, pagarCargo, rechazarMes, agregarCargo, recargar } = useCuotas(anio, mes);
 
   const [filtro, setFiltro] = useState<'todas' | EstadoLiquidacion>('todas');
   const [abiertos, setAbiertos] = useState<Set<string>>(new Set());
@@ -34,6 +34,13 @@ export default function CuotasPage() {
     if (nuevo.has(alumnoId)) nuevo.delete(alumnoId);
     else nuevo.add(alumnoId);
     setAbiertos(nuevo);
+  };
+
+  const rechazar = async (l: Liquidacion) => {
+    if (!window.confirm(
+      `¿Rechazar el pago que informó ${l.nombre} ${l.apellido}? Volvés su cuota a "pendiente" y el alumno podrá volver a informar.`,
+    )) return;
+    await rechazarMes(l.alumnoId);
   };
 
   const sinPrecios = error?.toLowerCase().includes('configur');
@@ -141,6 +148,21 @@ export default function CuotasPage() {
 
                   {abierto && (
                     <div className={s.detalle}>
+                      {l.estado === 'Informado' && (
+                        <div className={s.avisoInformado}>
+                          <span>
+                            <b>{l.nombre}</b> informó que transfirió {formatoPlata(l.saldo)}. Confirmá si te llegó.
+                          </span>
+                          <div className={s.avisoAcciones}>
+                            <button className={s.btnRechazar} onClick={() => void rechazar(l)}>
+                              No me llegó
+                            </button>
+                            <button className={s.btnPagarMes} onClick={() => setPagandoMes(l)}>
+                              Confirmar pago
+                            </button>
+                          </div>
+                        </div>
+                      )}
                       {l.cargos.map((c) => (
                         <div key={c.id} className={s.cargo}>
                           <span className={s.cargoFecha}>
@@ -153,6 +175,8 @@ export default function CuotasPage() {
                           <span className={s.cargoMonto}>{formatoPlata(c.monto)}</span>
                           {c.pagado ? (
                             <span className={s.cargoPagado}>✓ {c.medioPago}</span>
+                          ) : c.pagoInformado ? (
+                            <span className={s.cargoInformado}>Informó transf.</span>
                           ) : (
                             <button
                               className={s.btnPagarCargo}
@@ -167,7 +191,7 @@ export default function CuotasPage() {
                         <button className={s.btnSecundario} onClick={() => setCargoPara(l)}>
                           + Agregar cargo
                         </button>
-                        {l.saldo > 0 && (
+                        {l.saldo > 0 && l.estado !== 'Informado' && (
                           <button className={s.btnPagarMes} onClick={() => setPagandoMes(l)}>
                             Confirmar pago del mes ({formatoPlata(l.saldo)})
                           </button>
@@ -186,6 +210,7 @@ export default function CuotasPage() {
         <MedioModal
           titulo="Confirmar pago del mes"
           subtitulo={`${pagandoMes.nombre} ${pagandoMes.apellido} — salda ${formatoPlata(pagandoMes.saldo)} (${MESES[mes - 1]})`}
+          medioInicial={pagandoMes.estado === 'Informado' ? 'Transferencia' : 'Efectivo'}
           onClose={() => setPagandoMes(null)}
           onConfirmar={(medio: Medio) => pagarMes(pagandoMes.alumnoId, medio)}
         />

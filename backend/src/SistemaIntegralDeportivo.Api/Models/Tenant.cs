@@ -28,6 +28,11 @@ public class Tenant
     public decimal? ValorHoraGrupal { get; set; }
     public decimal? ValorClaseIndividual { get; set; }
 
+    // ── Datos de transferencia (el alumno los ve en el portal al informar un
+    //    pago; null = todavía no cargados) ──
+    public string? AliasCbu { get; set; }
+    public string? TitularPago { get; set; }
+
     // ── Navegación (las FK apuntan hacia acá) ──
     public ICollection<Alumno> Alumnos { get; set; } = new List<Alumno>();
     public ICollection<Tutor> Tutores { get; set; } = new List<Tutor>();
