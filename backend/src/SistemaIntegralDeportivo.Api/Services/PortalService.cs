@@ -11,17 +11,22 @@ public class PortalService : IPortalService
     private readonly ITurnoRepository _turnos;
     private readonly ITurnoService _turnoService;
     private readonly ICuotaService _cuotas;
+    private readonly IServicioService _servicios;
+    private readonly IPedidoService _pedidos;
     private readonly ITenantActual _tenantActual;
 
     public PortalService(
         IAlumnoRepository alumnos, ITurnoRepository turnos,
         ITurnoService turnoService, ICuotaService cuotas,
+        IServicioService servicios, IPedidoService pedidos,
         ITenantActual tenantActual)
     {
         _alumnos = alumnos;
         _turnos = turnos;
         _turnoService = turnoService;
         _cuotas = cuotas;
+        _servicios = servicios;
+        _pedidos = pedidos;
         _tenantActual = tenantActual;
     }
 
@@ -90,6 +95,25 @@ public class PortalService : IPortalService
             AliasCbu = ficha.Tenant?.AliasCbu,
             Titular = ficha.Tenant?.TitularPago,
         };
+    }
+
+    public async Task<IReadOnlyList<ServicioDto>> ServiciosAsync(Guid userId, CancellationToken ct = default)
+    {
+        await FichaDeAsync(userId, ct); // establece el tenant del club
+        return await _servicios.ListarAsync(soloActivos: true, ct);
+    }
+
+    public async Task<PedidoDto> PedirServicioAsync(
+        Guid userId, Guid servicioId, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+        return await _pedidos.PedirAsync(ficha.Id, servicioId, ct);
+    }
+
+    public async Task<IReadOnlyList<PedidoDto>> MisPedidosAsync(Guid userId, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+        return await _pedidos.MisPedidosAsync(ficha.Id, ct);
     }
 
     public async Task<MiPerfilDto> MiPerfilAsync(Guid userId, CancellationToken ct = default)

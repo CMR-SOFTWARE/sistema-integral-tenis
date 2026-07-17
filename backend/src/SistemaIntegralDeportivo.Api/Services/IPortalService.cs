@@ -31,6 +31,18 @@ public interface IPortalService
     /// <exception cref="Common.ReglaDeNegocioException">Si el usuario no tiene ficha vinculada.</exception>
     Task<DatosPagoDto> DatosPagoAsync(Guid userId, CancellationToken ct = default);
 
+    /// <summary>El catálogo de servicios activos del club (lo que puedo pedir).</summary>
+    /// <exception cref="Common.ReglaDeNegocioException">Si el usuario no tiene ficha vinculada.</exception>
+    Task<IReadOnlyList<ServicioDto>> ServiciosAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>Pido un servicio del catálogo (queda Pendiente hasta que el profe lo acepte).</summary>
+    /// <exception cref="Common.ReglaDeNegocioException">Sin ficha, o servicio inexistente/inactivo.</exception>
+    Task<PedidoDto> PedirServicioAsync(Guid userId, Guid servicioId, CancellationToken ct = default);
+
+    /// <summary>Mis pedidos con su estado (Pendiente/Aceptado/Rechazado).</summary>
+    /// <exception cref="Common.ReglaDeNegocioException">Si el usuario no tiene ficha vinculada.</exception>
+    Task<IReadOnlyList<PedidoDto>> MisPedidosAsync(Guid userId, CancellationToken ct = default);
+
     /// <summary>Mi ficha, como me ve el club.</summary>
     /// <exception cref="Common.ReglaDeNegocioException">Si el usuario no tiene ficha vinculada.</exception>
     Task<MiPerfilDto> MiPerfilAsync(Guid userId, CancellationToken ct = default);
