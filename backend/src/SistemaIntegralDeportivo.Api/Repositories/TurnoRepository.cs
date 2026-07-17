@@ -103,8 +103,22 @@ public class TurnoRepository : ITurnoRepository
         return Task.CompletedTask; // se persiste con GuardarCambiosAsync (una sola transacción por semana)
     }
 
+    public async Task<IReadOnlyList<Turno>> ListarFuturosDeAlumnoAsync(
+        Guid alumnoId, DateOnly desde, CancellationToken ct = default) =>
+        // TRACKEADO a propósito (sin AsNoTracking): el caller muta el roster
+        await _db.Turnos
+            .Include(t => t.Participantes)
+            .Where(t => t.TenantId == TenantId &&
+                        t.Estado == EstadoTurno.Programado &&
+                        t.Fecha >= desde &&
+                        t.Participantes.Any(p => p.AlumnoId == alumnoId))
+            .ToListAsync(ct);
+
     public void Eliminar(Turno turno) =>
         _db.Turnos.Remove(turno); // los participantes caen en cascada
+
+    public void QuitarParticipante(TurnoParticipante participante) =>
+        _db.TurnoParticipantes.Remove(participante);
 
     public Task GuardarCambiosAsync(CancellationToken ct = default) =>
         _db.SaveChangesAsync(ct);

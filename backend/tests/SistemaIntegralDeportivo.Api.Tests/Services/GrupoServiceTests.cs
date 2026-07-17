@@ -16,6 +16,7 @@ public class GrupoServiceTests
     private readonly Mock<IGrupoRepository> _grupos;
     private readonly Mock<IAlumnoRepository> _alumnos;
     private readonly Mock<ICargoRepository> _cargos;
+    private readonly Mock<IAlumnoService> _alumnoService;
     private readonly GrupoService _service;
 
     private static readonly Guid GrupoId = Guid.NewGuid();
@@ -26,7 +27,8 @@ public class GrupoServiceTests
         _grupos = new Mock<IGrupoRepository>();
         _alumnos = new Mock<IAlumnoRepository>();
         _cargos = new Mock<ICargoRepository>();
-        _service = new GrupoService(_grupos.Object, _alumnos.Object, _cargos.Object);
+        _alumnoService = new Mock<IAlumnoService>();
+        _service = new GrupoService(_grupos.Object, _alumnos.Object, _cargos.Object, _alumnoService.Object);
 
         // Por defecto: nadie debe nada
         _cargos.Setup(c => c.ListarImpagosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
@@ -138,7 +140,9 @@ public class GrupoServiceTests
         _grupos.Verify(g => g.AgregarMembresiaAsync(
             It.Is<AlumnoGrupo>(m => m.AlumnoId == AlumnoId && m.FechaBaja == null),
             It.IsAny<CancellationToken>()), Times.Once);
-        _grupos.Verify(g => g.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _grupos.Verify(g => g.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+        // Sumarlo al grupo lo repone en los turnos futuros ya generados
+        _alumnoService.Verify(s => s.SincronizarCalendarioAsync(AlumnoId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // ─────────────────────────────────────────────
@@ -162,7 +166,10 @@ public class GrupoServiceTests
 
         Assert.Null(membresiaVieja.FechaBaja); // reactivada
         _grupos.Verify(g => g.AgregarMembresiaAsync(It.IsAny<AlumnoGrupo>(), It.IsAny<CancellationToken>()), Times.Never); // no duplica fila
-        _grupos.Verify(g => g.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _grupos.Verify(g => g.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+        // Reactivar la membresía también lo repone en el calendario (el bug de
+        // Lucas: re-agregar tras una baja no lo devolvía a los turnos)
+        _alumnoService.Verify(s => s.SincronizarCalendarioAsync(AlumnoId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -175,7 +182,9 @@ public class GrupoServiceTests
         await _service.QuitarAlumnoAsync(GrupoId, AlumnoId);
 
         Assert.NotNull(membresia.FechaBaja); // baja lógica con historia
-        _grupos.Verify(g => g.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _grupos.Verify(g => g.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.AtLeastOnce);
+        // Quitarlo del grupo también lo saca de los turnos futuros de ese grupo
+        _alumnoService.Verify(s => s.SincronizarCalendarioAsync(AlumnoId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

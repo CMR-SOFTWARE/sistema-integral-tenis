@@ -302,6 +302,31 @@ public class CuotaServiceTests
     }
 
     // ─────────────────────────────────────────────
+    // Morosidad DURA (día 15): el profe puede sacarlo del calendario
+    // ─────────────────────────────────────────────
+
+    [Theory]
+    [InlineData("2026-07-03", "2026-07-12", false)] // vencido (pasó el 10) pero con días de gracia
+    [InlineData("2026-07-03", "2026-07-15", false)] // el 15 exacto todavía no: recién a partir del 16
+    [InlineData("2026-07-03", "2026-07-16", true)]  // pasó el 15 sin pagar: sacable del calendario
+    [InlineData("2026-06-20", "2026-07-05", true)]  // impago de junio: el 15 de junio quedó atrás
+    public void DebeSuspenderse_RespetaElDia15DelMesDelCargo(string fechaCargo, string hoyIso, bool esperado)
+    {
+        var impagos = new[]
+        {
+            new Cargo { AlumnoId = Juan, Tipo = TipoCargo.Clase, Concepto = "x", Monto = 4_000m, Fecha = DateOnly.Parse(fechaCargo) },
+        };
+
+        Assert.Equal(esperado, CuotaService.DebeSuspenderse(impagos, DateOnly.Parse(hoyIso)));
+    }
+
+    [Fact]
+    public void DebeSuspenderse_SinImpagos_EsFalse()
+    {
+        Assert.False(CuotaService.DebeSuspenderse([], new DateOnly(2026, 7, 30)));
+    }
+
+    // ─────────────────────────────────────────────
     // Estado calculado (contra el día 10 — nunca almacenado)
     // ─────────────────────────────────────────────
 

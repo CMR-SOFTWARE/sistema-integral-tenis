@@ -38,10 +38,20 @@ public interface ITurnoRepository
     Task<IReadOnlyList<Turno>> ListarProgramadosDesdeAsync(
         DateOnly desde, Guid? canchaId, CancellationToken ct = default);
 
+    /// <summary>
+    /// Turnos PROGRAMADOS futuros donde participa un alumno, TRACKEADOS y con
+    /// su roster (para sacarlo del calendario al pausarlo/darlo de baja).
+    /// </summary>
+    Task<IReadOnlyList<Turno>> ListarFuturosDeAlumnoAsync(
+        Guid alumnoId, DateOnly desde, CancellationToken ct = default);
+
     Task AgregarAsync(Turno turno, CancellationToken ct = default);
 
     /// <summary>Marca el turno para borrar (se persiste con GuardarCambiosAsync).</summary>
     void Eliminar(Turno turno);
+
+    /// <summary>Saca a UN alumno del roster de un turno (el turno sigue para el resto).</summary>
+    void QuitarParticipante(TurnoParticipante participante);
 
     Task GuardarCambiosAsync(CancellationToken ct = default);
 }

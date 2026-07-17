@@ -36,6 +36,13 @@ public class HorarioRepository : IHorarioRepository
             .OrderBy(h => h.Dia).ThenBy(h => h.HoraInicio)
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<Horario>> ListarIndividualesDeAlumnoAsync(
+        Guid alumnoId, CancellationToken ct = default) =>
+        // TRACKEADO: la baja del alumno pone Activo = false
+        await _db.Horarios
+            .Where(h => h.TenantId == TenantId && h.Activo && h.AlumnoId == alumnoId)
+            .ToListAsync(ct);
+
     public Task<Horario?> ObtenerAsync(Guid id, CancellationToken ct = default) =>
         _db.Horarios.FirstOrDefaultAsync(h => h.TenantId == TenantId && h.Id == id, ct);
 

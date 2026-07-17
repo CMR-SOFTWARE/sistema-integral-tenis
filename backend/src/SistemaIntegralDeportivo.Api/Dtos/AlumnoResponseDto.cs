@@ -29,3 +29,19 @@ public class AlumnoResponseDto
     /// <summary>Tiene acceso al portal (para mostrar/ocultar "Crear acceso").</summary>
     public bool TieneUsuario { get; set; }
 }
+
+/// <summary>
+/// Alumno ACTIVO al que se le pasó el día 15 sin pagar: el profe decide si
+/// lo saca del calendario (nunca es automático).
+/// </summary>
+public class MorosoDto
+{
+    public Guid Id { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public string Apellido { get; set; } = string.Empty;
+    public string Telefono { get; set; } = string.Empty;
+    /// <summary>Total impago (todos los meses adeudados).</summary>
+    public decimal Deuda { get; set; }
+    /// <summary>Meses con cargos impagos, ej: "Junio, Julio".</summary>
+    public string MesesAdeudados { get; set; } = string.Empty;
+}

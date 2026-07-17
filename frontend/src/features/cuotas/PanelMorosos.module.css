@@ -1,0 +1,142 @@
+/* Panel de morosos — aviso plegable arriba de la liquidación */
+
+.panel {
+  background: #fffbf4;
+  border: 1px solid #f0dcc0;
+  border-radius: var(--radius-lg);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.cabecera {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.alerta {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  border-radius: 50%;
+  background: #b7791f;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.titulo {
+  flex: 1;
+  font-weight: 700;
+  font-size: 14px;
+  color: #92610f;
+}
+
+.chevron {
+  font-size: 10px;
+  color: #b7791f;
+}
+
+.cuerpo {
+  padding: 0 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bajada {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.fila {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--color-surface);
+  border: 1px solid #f0dcc0;
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+}
+
+.info {
+  flex: 1;
+  min-width: 0;
+}
+
+.nombre {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.detalle {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 1px;
+}
+
+.btnWhatsapp {
+  border: none;
+  background: #25d3661a;
+  color: #128c4b;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 7px 12px;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.btnPausar {
+  border: 1px solid var(--color-danger-border);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  font-weight: 700;
+  font-size: 12px;
+  padding: 7px 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btnPausar:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.error {
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: 9px 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+@media (max-width: 760px) {
+  .fila {
+    flex-wrap: wrap;
+  }
+
+  .info {
+    flex-basis: 100%;
+  }
+
+  .btnWhatsapp,
+  .btnPausar {
+    flex: 1;
+    text-align: center;
+  }
+}

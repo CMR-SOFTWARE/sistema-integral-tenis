@@ -41,9 +41,34 @@ public interface IAlumnoService
     /// <summary>Un alumno por id, o null si no existe en el tenant.</summary>
     Task<AlumnoResponseDto?> ObtenerAsync(Guid id, CancellationToken ct = default);
 
-    /// <summary>Pausar (Suspendido) o reactivar (Activo). Null si no existe.</summary>
+    /// <summary>
+    /// Pausar (Suspendido) o reactivar (Activo). El estado manda sobre el
+    /// calendario: al pausar sale de sus turnos futuros (y de sus cargos
+    /// impagos) pero se le GUARDA el lugar; al reactivar vuelve solo.
+    /// Null si no existe.
+    /// </summary>
     Task<AlumnoResponseDto?> CambiarEstadoAsync(Guid id, EstadoAlumno estado, CancellationToken ct = default);
 
-    /// <summary>Baja lógica: estado → Inactivo, nunca DELETE físico. False si no existe.</summary>
+    /// <summary>
+    /// Baja lógica: estado → Inactivo, nunca DELETE físico. Además de sacarlo
+    /// del calendario, LIBERA su lugar (sale de sus grupos y se desactivan sus
+    /// horarios individuales). False si no existe.
+    /// </summary>
     Task<bool> DarDeBajaAsync(Guid id, CancellationToken ct = default);
+
+    /// <summary>
+    /// Alumnos ACTIVOS a los que se les pasó el día 15 sin pagar (candidatos
+    /// a que el profe los saque del calendario).
+    /// </summary>
+    Task<IReadOnlyList<MorosoDto>> ListarMorososAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// Reconcilia los turnos futuros del alumno con su realidad actual (estado
+    /// + membresías activas + horarios individuales activos). Idempotente: se
+    /// llama después de CUALQUIER cambio que afecte dónde debe estar —pausar,
+    /// reactivar, baja, entrar/salir de un grupo—. Un solo lugar para toda la
+    /// sincronización estado↔calendario. NO persiste: el caller hace un único
+    /// GuardarCambios (mismo DbContext).
+    /// </summary>
+    Task SincronizarCalendarioAsync(Guid alumnoId, CancellationToken ct = default);
 }
