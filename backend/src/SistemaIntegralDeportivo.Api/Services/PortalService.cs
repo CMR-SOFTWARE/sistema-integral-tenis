@@ -13,13 +13,14 @@ public class PortalService : IPortalService
     private readonly ICuotaService _cuotas;
     private readonly IServicioService _servicios;
     private readonly IPedidoService _pedidos;
+    private readonly IRaquetaService _raquetas;
     private readonly ITenantActual _tenantActual;
 
     public PortalService(
         IAlumnoRepository alumnos, ITurnoRepository turnos,
         ITurnoService turnoService, ICuotaService cuotas,
         IServicioService servicios, IPedidoService pedidos,
-        ITenantActual tenantActual)
+        IRaquetaService raquetas, ITenantActual tenantActual)
     {
         _alumnos = alumnos;
         _turnos = turnos;
@@ -27,6 +28,7 @@ public class PortalService : IPortalService
         _cuotas = cuotas;
         _servicios = servicios;
         _pedidos = pedidos;
+        _raquetas = raquetas;
         _tenantActual = tenantActual;
     }
 
@@ -131,6 +133,8 @@ public class PortalService : IPortalService
             Estado = ficha.Estado.ToString(),
             Modalidad = ficha.Modalidad.ToString(),
             Club = ficha.Tenant?.Nombre ?? string.Empty,
+            FotoUrl = ficha.FotoUrl,
+            Raquetas = [.. await _raquetas.MisAsync(ficha.Id, ct)],
         };
     }
 
@@ -145,10 +149,65 @@ public class PortalService : IPortalService
 
         ficha.Telefono = dto.Telefono.Trim();
         ficha.Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
+        // Categoría editable por el alumno "por ahora": es un solo campo en la
+        // ficha, así que el cambio se refleja en todos lados (lista del profe,
+        // ficha, cuotas). Todavía NO se valida contra sus grupos (ver M5).
+        ficha.Categoria = dto.Categoria;
         ficha.ActualizadoEl = DateTime.UtcNow;
         await _alumnos.GuardarCambiosAsync(ct);
 
         return await MiPerfilAsync(userId, ct);
+    }
+
+    public async Task<MiPerfilDto> ActualizarFotoAsync(
+        Guid userId, string? fotoUrl, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+
+        if (string.IsNullOrWhiteSpace(fotoUrl))
+        {
+            ficha.FotoUrl = null; // quitar la foto
+        }
+        else
+        {
+            // Guardamos la imagen comprimida como data URL (sin storage externo).
+            // Validación mínima: que sea imagen y no exceda un tamaño razonable.
+            if (!fotoUrl.StartsWith("data:image/", StringComparison.OrdinalIgnoreCase))
+                throw new ReglaDeNegocioException("La foto tiene que ser una imagen.");
+            if (fotoUrl.Length > 700_000) // ~500 KB de imagen en base64
+                throw new ReglaDeNegocioException("La foto es muy pesada: probá con una más chica.");
+            ficha.FotoUrl = fotoUrl;
+        }
+
+        ficha.ActualizadoEl = DateTime.UtcNow;
+        await _alumnos.GuardarCambiosAsync(ct);
+        return await MiPerfilAsync(userId, ct);
+    }
+
+    public async Task<IReadOnlyList<RaquetaDto>> MisRaquetasAsync(Guid userId, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+        return await _raquetas.MisAsync(ficha.Id, ct);
+    }
+
+    public async Task<RaquetaDto> AgregarRaquetaAsync(
+        Guid userId, GuardarRaquetaDto dto, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+        return await _raquetas.AgregarAsync(ficha.Id, dto, ct);
+    }
+
+    public async Task<RaquetaDto> EditarRaquetaAsync(
+        Guid userId, Guid raquetaId, GuardarRaquetaDto dto, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+        return await _raquetas.EditarAsync(ficha.Id, raquetaId, dto, ct);
+    }
+
+    public async Task BorrarRaquetaAsync(Guid userId, Guid raquetaId, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+        await _raquetas.BorrarAsync(ficha.Id, raquetaId, ct);
     }
 
     public async Task CancelarMiTurnoAsync(

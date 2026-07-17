@@ -47,10 +47,28 @@ public interface IPortalService
     /// <exception cref="Common.ReglaDeNegocioException">Si el usuario no tiene ficha vinculada.</exception>
     Task<MiPerfilDto> MiPerfilAsync(Guid userId, CancellationToken ct = default);
 
-    /// <summary>Edita MIS datos de contacto (teléfono/email); el resto es del profe.</summary>
+    /// <summary>Edita MIS datos: contacto (teléfono/email) + categoría; el resto es del profe.</summary>
     /// <exception cref="Common.ReglaDeNegocioException">Sin ficha vinculada o teléfono vacío.</exception>
     Task<MiPerfilDto> ActualizarMiPerfilAsync(
         Guid userId, ActualizarMiPerfilDto dto, CancellationToken ct = default);
+
+    /// <summary>Cambia mi foto de perfil (data URL base64) o la quita (null/vacío).</summary>
+    /// <exception cref="Common.ReglaDeNegocioException">Sin ficha, no es imagen o muy pesada.</exception>
+    Task<MiPerfilDto> ActualizarFotoAsync(Guid userId, string? fotoUrl, CancellationToken ct = default);
+
+    /// <summary>Mis raquetas.</summary>
+    Task<IReadOnlyList<RaquetaDto>> MisRaquetasAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>Agrego una raqueta a mi perfil.</summary>
+    Task<RaquetaDto> AgregarRaquetaAsync(Guid userId, GuardarRaquetaDto dto, CancellationToken ct = default);
+
+    /// <summary>Edito una raqueta mía.</summary>
+    /// <exception cref="Common.ReglaDeNegocioException">La raqueta no existe o no es mía.</exception>
+    Task<RaquetaDto> EditarRaquetaAsync(Guid userId, Guid raquetaId, GuardarRaquetaDto dto, CancellationToken ct = default);
+
+    /// <summary>Borro una raqueta mía.</summary>
+    /// <exception cref="Common.ReglaDeNegocioException">La raqueta no existe o no es mía.</exception>
+    Task BorrarRaquetaAsync(Guid userId, Guid raquetaId, CancellationToken ct = default);
 
     /// <summary>
     /// Aviso de cancelación de MI turno (hasta la hora de inicio): el turno

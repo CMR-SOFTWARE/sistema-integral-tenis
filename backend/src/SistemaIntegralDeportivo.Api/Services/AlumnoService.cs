@@ -435,5 +435,6 @@ public class AlumnoService : IAlumnoService
         CreadoEl = a.CreadoEl,
         DeudaVencida = deudaVencida,
         TieneUsuario = a.UserId is not null,
+        FotoUrl = a.FotoUrl,
     };
 }

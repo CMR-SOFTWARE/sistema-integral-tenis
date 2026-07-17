@@ -209,6 +209,82 @@ public class PortalController : ControllerBase
         }
     }
 
+    /// <summary>PUT api/portal/perfil/foto — cambio o quito mi foto de perfil.</summary>
+    [HttpPut("perfil/foto")]
+    public async Task<ActionResult<MiPerfilDto>> ActualizarFoto(ActualizarFotoDto dto, CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.ActualizarFotoAsync(userId, dto.FotoUrl, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>GET api/portal/raquetas — mis raquetas.</summary>
+    [HttpGet("raquetas")]
+    public async Task<ActionResult<IReadOnlyList<RaquetaDto>>> MisRaquetas(CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.MisRaquetasAsync(userId, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>POST api/portal/raquetas — agrego una raqueta.</summary>
+    [HttpPost("raquetas")]
+    public async Task<ActionResult<RaquetaDto>> AgregarRaqueta(GuardarRaquetaDto dto, CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.AgregarRaquetaAsync(userId, dto, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>PUT api/portal/raquetas/{id} — edito una raqueta mía.</summary>
+    [HttpPut("raquetas/{raquetaId:guid}")]
+    public async Task<ActionResult<RaquetaDto>> EditarRaqueta(Guid raquetaId, GuardarRaquetaDto dto, CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.EditarRaquetaAsync(userId, raquetaId, dto, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>DELETE api/portal/raquetas/{id} — borro una raqueta mía.</summary>
+    [HttpDelete("raquetas/{raquetaId:guid}")]
+    public async Task<IActionResult> BorrarRaqueta(Guid raquetaId, CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            await _portal.BorrarRaquetaAsync(userId, raquetaId, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     /// <summary>POST api/portal/mis-turnos/{id}/cancelar — aviso que no vengo (mi cargo queda).</summary>
     [HttpPost("mis-turnos/{turnoId:guid}/cancelar")]
     public async Task<IActionResult> CancelarMiTurno(
