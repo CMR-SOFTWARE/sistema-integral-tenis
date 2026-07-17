@@ -22,6 +22,7 @@ import PortalLayout from './features/portal/PortalLayout';
 import InicioPage from './features/portal/InicioPage';
 import MisTurnosPage from './features/portal/MisTurnosPage';
 import MiCuotaPage from './features/portal/MiCuotaPage';
+import ServiciosPage from './features/portal/ServiciosPage';
 import PerfilPage from './features/portal/PerfilPage';
 import BuscarClubPage from './features/portal/BuscarClubPage';
 
@@ -94,6 +95,7 @@ export default function App() {
             <Route index element={<InicioPage />} />
             <Route path="turnos" element={<MisTurnosPage />} />
             <Route path="cuota" element={<MiCuotaPage />} />
+            <Route path="servicios" element={<ServiciosPage />} />
             <Route path="perfil" element={<PerfilPage />} />
             <Route path="club" element={<BuscarClubPage />} />
           </Route>

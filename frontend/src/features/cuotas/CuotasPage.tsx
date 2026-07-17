@@ -3,6 +3,7 @@ import { useCuotas } from './useCuotas';
 import MedioModal from './MedioModal';
 import NuevoCargoModal from './NuevoCargoModal';
 import PanelMorosos from './PanelMorosos';
+import PanelPedidos from './PanelPedidos';
 import { ESTADO_LIQ_UI, MESES } from './types';
 import type { EstadoLiquidacion } from './types';
 import type { Liquidacion, Medio } from './types';
@@ -71,6 +72,7 @@ export default function CuotasPage() {
         </div>
       </div>
 
+      <PanelPedidos onCambio={() => void recargar()} />
       <PanelMorosos onCambio={() => void recargar()} />
 
       {error && (
