@@ -60,6 +60,65 @@ function PreciosCard() {
   );
 }
 
+interface DatosPagoConfig {
+  aliasCbu: string | null;
+  titularPago: string | null;
+}
+
+/** Card de datos de transferencia: lo que ve el alumno al informar un pago. */
+function DatosPagoCard() {
+  const [alias, setAlias] = useState('');
+  const [titular, setTitular] = useState('');
+  const [guardado, setGuardado] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void api.get<DatosPagoConfig>('/configuracion/datos-pago').then((d) => {
+      setAlias(d.aliasCbu ?? '');
+      setTitular(d.titularPago ?? '');
+    });
+  }, []);
+
+  const guardar = async () => {
+    setError(null);
+    setGuardado(false);
+    try {
+      await api.put<DatosPagoConfig>('/configuracion/datos-pago', {
+        aliasCbu: alias.trim() === '' ? null : alias.trim(),
+        titularPago: titular.trim() === '' ? null : titular.trim(),
+      });
+      setGuardado(true);
+      setTimeout(() => setGuardado(false), 2500);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'No se pudieron guardar los datos.');
+    }
+  };
+
+  return (
+    <div className={s.tarjeta}>
+      <h3 className={s.titulo}>Datos de transferencia</h3>
+      <p className={s.bajada}>
+        A dónde te transfieren tus alumnos. El portal se los muestra cuando avisan que
+        pagaron, así vos solo confirmás que te llegó.
+      </p>
+      {error && <div className={s.error}>{error}</div>}
+      <div className={s.precios}>
+        <label className={s.precio}>
+          <span>Alias o CBU</span>
+          <input value={alias} onChange={(e) => setAlias(e.target.value)} placeholder="juan.perez.mp" maxLength={120} />
+        </label>
+        <label className={s.precio}>
+          <span>Titular de la cuenta</span>
+          <input value={titular} onChange={(e) => setTitular(e.target.value)} placeholder="Juan Pérez" maxLength={120} />
+        </label>
+        <button className={s.btnPrimario} onClick={() => void guardar()}>
+          {guardado ? '✓ Guardado' : 'Guardar datos'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /** Configuración del tenant. Por ahora: sedes y canchas (donde trabaja el profe). */
 export default function ConfiguracionPage() {
   const { sedes, cargando, crearSede, agregarCancha, desactivarSede, reactivarSede } = useSedes();
@@ -115,6 +174,7 @@ export default function ConfiguracionPage() {
   return (
     <div className={s.contenedor}>
       <PreciosCard />
+      <DatosPagoCard />
       <div className={s.tarjeta}>
         <h3 className={s.titulo}>Sedes y canchas</h3>
         <p className={s.bajada}>

@@ -72,6 +72,31 @@ posible. Por eso el orden de construcción es:
 - ~~Alumno que falta: ¿paga igual?~~ → paga igual, siempre. El divisor son
   los asignados, no los presentes (ver §2).
 
+**RESUELTO (17/07/2026, pago informado desde el portal — M2):**
+
+- ~~¿Cómo paga el alumno desde el portal sin Mercado Pago?~~ → **Informa la
+  transferencia y el profe confirma.** El alumno transfiere y toca "Ya
+  transferí" (el mes completo o un cargo puntual); el cargo pasa a un estado
+  intermedio **informado** (`Cargo.PagoInformadoEl`), que NO es pagado: la
+  plata sigue impaga hasta que el profe la ve. El profe **confirma** (= pagar,
+  `PagadoEl`) o **rechaza** ("no me llegó" → vuelve a impago sin informar). La
+  verdad de la plata la sigue poniendo el profe, nunca el cliente — y deja el
+  terreno listo para que, con MP real, la confirmación sea un webhook.
+- **Estado "Informado"** (calculado, nunca guardado): una liquidación con
+  saldo cuyos impagos están TODOS informados muestra "Informado" (tapa a
+  "Vencida": ya no es un moroso silencioso, hay una acción del profe
+  pendiente). Convive con Pagada/Pendiente/Vencida. **La morosidad
+  (`TieneDeudaVencida`, `DebeSuspenderse`) sigue midiéndose por `PagadoEl`**:
+  informar no descuenta deuda hasta que el profe confirme.
+- **Datos de transferencia** (`Tenant.AliasCbu` + `TitularPago`, en
+  Configuración): el portal se los muestra al alumno en el modal de "Ya
+  transferí" para que sepa a dónde mandar la plata.
+- **Fuera de alcance (queda para M4)**: que el alumno se **auto-agregue** un
+  servicio (encordado, tubo) desde un catálogo con precios precargados del
+  profe. M2 solo permite informar el pago de cargos que YA existen (la clase,
+  el mes, o un producto que el profe cargó a mano). M4 reusa esta misma
+  maquinaria informar→confirmar.
+
 **RESUELTO (16/07/2026, estado del alumno ↔ calendario):**
 
 - ~~¿Qué pasa con los turnos de un alumno pausado o dado de baja?~~ → **El

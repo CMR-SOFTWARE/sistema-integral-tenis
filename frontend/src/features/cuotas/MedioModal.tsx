@@ -9,11 +9,13 @@ interface Props {
   subtitulo: string;
   onClose: () => void;
   onConfirmar: (medio: Medio) => Promise<void>;
+  /** Medio preseleccionado (ej: Transferencia al confirmar un pago informado). */
+  medioInicial?: Medio;
 }
 
 /** Elegir el medio de pago al confirmar (Efectivo / Transferencia / Otro). */
-export default function MedioModal({ titulo, subtitulo, onClose, onConfirmar }: Props) {
-  const [medio, setMedio] = useState<Medio>('Efectivo');
+export default function MedioModal({ titulo, subtitulo, onClose, onConfirmar, medioInicial = 'Efectivo' }: Props) {
+  const [medio, setMedio] = useState<Medio>(medioInicial);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

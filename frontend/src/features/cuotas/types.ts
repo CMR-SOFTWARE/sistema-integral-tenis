@@ -2,7 +2,7 @@
 
 export type TipoCargo = 'Clase' | 'Producto' | 'Ajuste';
 export type Medio = 'Efectivo' | 'Transferencia' | 'Otro';
-export type EstadoLiquidacion = 'Pagada' | 'Pendiente' | 'Vencida';
+export type EstadoLiquidacion = 'Pagada' | 'Informado' | 'Pendiente' | 'Vencida';
 
 export interface CargoLinea {
   id: string;
@@ -13,6 +13,9 @@ export interface CargoLinea {
   pagado: boolean;
   pagadoEl: string | null;
   medioPago: string | null;
+  /** El alumno avisó que transfirió; el profe todavía no confirmó. */
+  pagoInformado: boolean;
+  pagoInformadoEl: string | null;
 }
 
 export interface Liquidacion {
@@ -50,6 +53,7 @@ export const MESES = [
 /** Chips de estado calcados del mockup (pagado/pendiente/vencido). */
 export const ESTADO_LIQ_UI: Record<EstadoLiquidacion, { bg: string; fg: string }> = {
   Pagada: { bg: '#e7f6ec', fg: '#0e6b3c' },
+  Informado: { bg: '#e8f0fe', fg: '#1a56db' }, // avisó, esperando confirmación
   Pendiente: { bg: '#fef6e7', fg: '#b7791f' },
   Vencida: { bg: '#fdeaea', fg: '#b91c1c' },
 };
