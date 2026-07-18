@@ -21,6 +21,7 @@ import ReportesPage from './features/reportes/ReportesPage';
 import PortalLayout from './features/portal/PortalLayout';
 import InicioPage from './features/portal/InicioPage';
 import MisTurnosPage from './features/portal/MisTurnosPage';
+import ReservarPage from './features/portal/ReservarPage';
 import MiCuotaPage from './features/portal/MiCuotaPage';
 import ServiciosPage from './features/portal/ServiciosPage';
 import PerfilPage from './features/portal/PerfilPage';
@@ -94,6 +95,7 @@ export default function App() {
           <Route path="/portal" element={<PortalLayout />}>
             <Route index element={<InicioPage />} />
             <Route path="turnos" element={<MisTurnosPage />} />
+            <Route path="reservar" element={<ReservarPage />} />
             <Route path="cuota" element={<MiCuotaPage />} />
             <Route path="servicios" element={<ServiciosPage />} />
             <Route path="perfil" element={<PerfilPage />} />

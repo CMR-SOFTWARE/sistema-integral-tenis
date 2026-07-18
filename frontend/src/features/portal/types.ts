@@ -53,6 +53,36 @@ export interface Raqueta {
   marcaEncordado: string | null;
 }
 
+export interface HorarioDisponible {
+  dia: string; // "Tuesday"
+  horaInicio: string; // "18:00:00"
+  duracionMinutos: number;
+  sede: string;
+  cancha: string;
+  precioEstimado: number | null;
+}
+
+export interface GrupoDisponible {
+  grupoId: string;
+  nombre: string;
+  categoria: string | null;
+  miembrosActivos: number;
+  cupoMaximo: number | null;
+  horarios: HorarioDisponible[];
+  solicitudPendiente: boolean;
+}
+
+export interface SolicitudGrupo {
+  id: string;
+  alumnoId: string;
+  alumnoNombre: string;
+  grupoId: string;
+  grupoNombre: string;
+  estado: 'Pendiente' | 'Aceptada' | 'Rechazada';
+  creadoEl: string;
+  resueltoEl: string | null;
+}
+
 export interface MiPerfil {
   nombre: string;
   apellido: string;

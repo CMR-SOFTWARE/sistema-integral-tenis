@@ -1,0 +1,274 @@
+/* ── Toolbar de semana (como el calendario del profe) ── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.nav {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 10px;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.nav:hover { border-color: var(--color-primary); }
+
+.rango {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.hoy {
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+/* ── Grilla de la semana ── */
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 10px;
+}
+
+.columna {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 13px;
+  padding: 10px;
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.columnaHoy {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.columnaTitulo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+  text-align: center;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.libre {
+  text-align: center;
+  color: var(--color-border);
+  padding: 10px 0;
+}
+
+/* ── Tarjeta de un grupo con cupo (slot reservable) ── */
+.slot {
+  border: 1px solid #c7dbfa;
+  border-radius: 10px;
+  padding: 9px 10px;
+  text-align: left;
+  background: #f5f9ff;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.slot:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(23, 138, 76, 0.12);
+}
+
+.slotPendiente {
+  cursor: default;
+  background: var(--color-surface);
+  opacity: 0.8;
+}
+
+.slotHora {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.slotTitulo {
+  font-weight: 700;
+  font-size: 13px;
+  margin: 2px 0;
+}
+
+.slotDetalle {
+  color: var(--color-text-faint);
+  font-size: 11px;
+}
+
+.slotPrecio {
+  margin-top: 4px;
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--color-primary-dark, #0e6b3c);
+}
+
+.slotBadge {
+  margin-top: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #1a56db;
+}
+
+/* ── Mis solicitudes + próximamente ── */
+.seccion {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17px;
+  margin: 22px 0 12px;
+}
+
+.tarjeta {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 6px 16px;
+}
+
+.solFila,
+.prox {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+}
+
+.solFila:last-child,
+.prox:last-child { border-bottom: none; }
+
+.prox { color: var(--color-text-muted); font-size: 13px; }
+.solNombre { font-weight: 700; }
+
+/* ── Chips ── */
+.chip {
+  display: inline-block;
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chipVerde { background: #e7f6ec; color: #0e6b3c; }
+.chipAzul  { background: #e8f0fe; color: #1a56db; }
+.chipRojo  { background: #fdeaea; color: #b91c1c; }
+.chipGris  { background: #f3f4f6; color: #6b7280; }
+
+/* ── Estados varios ── */
+.error {
+  background: #fdeaea;
+  color: #b91c1c;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.toast {
+  background: #e8f0fe;
+  border: 1px solid #c7dbfa;
+  color: #1a3d7c;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.vacio { color: var(--color-text-muted); padding: 20px; text-align: center; }
+
+.vacioCard {
+  background: var(--color-surface);
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 28px 20px;
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+/* ── Modal de confirmación ── */
+.resumen {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.resumenFila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.resumenFila span { color: var(--color-text-muted); }
+
+.nota {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: var(--color-text-faint);
+}
+
+.btnCancelar {
+  padding: 9px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: var(--font-display);
+}
+
+.btnConfirmar {
+  padding: 9px 16px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-primary-dark, #0e6b3c);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: var(--font-display);
+}
+
+.btnConfirmar:disabled { opacity: 0.6; cursor: default; }
+
+/* ── Mobile: la semana pasa a scroll horizontal (mantiene el formato calendario) ── */
+@media (max-width: 760px) {
+  .grilla {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 74%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 6px;
+  }
+  .columna { scroll-snap-align: start; }
+}

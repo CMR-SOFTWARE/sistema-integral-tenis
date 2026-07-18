@@ -1,0 +1,78 @@
+.panel {
+  background: #e8f0fe;
+  border: 1px solid #c7dbfa;
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-bottom: 16px;
+}
+
+.titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  color: #1a3d7c;
+  font-size: 15px;
+  margin-bottom: 10px;
+}
+
+.badge {
+  background: #1a56db;
+  color: #fff;
+  border-radius: 999px;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 8px 0;
+  border-top: 1px solid #d3e2fb;
+}
+
+.texto { font-size: 14px; color: #1a3d7c; }
+
+.acciones { display: flex; gap: 8px; }
+
+.btnAceptar {
+  border: none;
+  background: var(--color-primary-dark, #0e6b3c);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: var(--font-display);
+}
+
+.btnAceptar:disabled { opacity: 0.6; cursor: default; }
+
+.btnRechazar {
+  border: 1px solid #e3b7b7;
+  background: #fff;
+  color: #b91c1c;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: var(--font-display);
+}
+
+.error {
+  color: #b91c1c;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
