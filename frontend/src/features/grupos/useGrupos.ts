@@ -40,5 +40,5 @@ export function useGrupos() {
     await cargar();
   };
 
-  return { grupos, cargando, error, crear, asignar, quitar };
+  return { grupos, cargando, error, crear, asignar, quitar, recargar: cargar };
 }

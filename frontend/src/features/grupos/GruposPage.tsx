@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { useGrupos } from './useGrupos';
 import NuevoGrupoModal from './NuevoGrupoModal';
 import AsignarAlumnoModal from './AsignarAlumnoModal';
+import PanelSolicitudes from './PanelSolicitudes';
 import { CAT_COLOR, CAT_LABEL } from '../alumnos/types';
 import type { Grupo } from './types';
 import s from './GruposPage.module.css';
 
 export default function GruposPage() {
-  const { grupos, cargando, error, crear, asignar, quitar } = useGrupos();
+  const { grupos, cargando, error, crear, asignar, quitar, recargar } = useGrupos();
   const [modalNuevo, setModalNuevo] = useState(false);
   const [grupoAsignar, setGrupoAsignar] = useState<Grupo | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -35,6 +36,8 @@ export default function GruposPage() {
           Nuevo grupo
         </button>
       </div>
+
+      <PanelSolicitudes onCambio={() => void recargar()} />
 
       {error && <div className={s.error}>{error} — ¿está corriendo la API? (dotnet run)</div>}
       {cargando && !error && <div className={s.vacio}>Cargando…</div>}

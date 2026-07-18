@@ -56,6 +56,35 @@ Un horario apunta a un **grupo** (clase grupal) **o** a un **alumno**
 ## 4. Qué NO entra en esta vertical
 
 - Recuperaciones (decisión del profe — llega con Cuotas o después).
-- Reservas por parte del alumno (portal alumno, fase futura).
+- ~~Reservas por parte del alumno~~ → **resuelto en M5** (ver §5).
 - Asignar qué profe dicta cada turno (Staff, ADR-0007).
 - Bloqueos de agenda y la pantalla Cancelaciones del mockup (vertical propia).
+
+## 5. Reservar clases desde el portal (M5, 17/07/2026)
+
+El alumno pide clases desde el portal. Hay **3 tipos de clase**:
+
+| Tipo | Qué es | Recurrencia | Pago |
+|---|---|---|---|
+| **1. Grupal fija** | Se suma a un **grupo** existente | Semanal | Mensual, `valorHora ÷ asignados` |
+| **2. Individual fija** | **Horario propio** (él solo) en un día/hora | Semanal | Mensual, `valorClaseIndividual` |
+| **3. Clase suelta** | **UNA** clase (probar/esporádico) | No | Paga en el momento, cada vez |
+
+**M5a — Grupal fija (implementado):**
+
+- El alumno ve los **grupos disponibles**: activos, **con cupo**, y de **su
+  categoría** (grupo sin categoría asignada = abierto a todos; con categoría =
+  debe coincidir — la regla que estaba pendiente, ahora sí aplica al
+  auto-pedido). Cada horario muestra su **precio estimado por clase** =
+  `valorHoraGrupal × (duración/60) ÷ (miembros + el alumno)`, así ve cuánto
+  pagaría ya contándose (÷2/3/4).
+- Pide sumarse → `SolicitudGrupo` **Pendiente**. El profe la ve en un panel en
+  **Grupos** y la **acepta** (lo suma vía `AsignarAlumnoAsync`, que reconcilia
+  el calendario) o la **rechaza**. El profe mantiene el control de quién entra.
+- La categoría del grupo filtra el **auto-pedido del alumno**, NO la asignación
+  manual del profe (el profe sigue armando sus grupos libre).
+
+**M5b (individual fija) y M5c (clase suelta): pendientes.** La pantalla
+"Reservar" del portal ya deja el lugar para las dos (como "próximamente"). La
+clase suelta (tipo 3) es el único turno que no cuelga de un horario recurrente
+— se resolverá al construirla.

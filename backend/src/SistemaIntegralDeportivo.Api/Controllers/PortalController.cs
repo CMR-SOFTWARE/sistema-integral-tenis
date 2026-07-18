@@ -178,6 +178,51 @@ public class PortalController : ControllerBase
         }
     }
 
+    /// <summary>GET api/portal/grupos-disponibles — grupos a los que me podría sumar (cupo + mi categoría).</summary>
+    [HttpGet("grupos-disponibles")]
+    public async Task<ActionResult<IReadOnlyList<GrupoDisponibleDto>>> GruposDisponibles(CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.GruposDisponiblesAsync(userId, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>POST api/portal/solicitudes-grupo — pido sumarme a un grupo (pendiente del profe).</summary>
+    [HttpPost("solicitudes-grupo")]
+    public async Task<ActionResult<SolicitudGrupoDto>> SolicitarGrupo(SolicitarGrupoDto dto, CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.SolicitarGrupoAsync(userId, dto.GrupoId, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>GET api/portal/solicitudes-grupo — mis solicitudes de grupo con su estado.</summary>
+    [HttpGet("solicitudes-grupo")]
+    public async Task<ActionResult<IReadOnlyList<SolicitudGrupoDto>>> MisSolicitudesGrupo(CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.MisSolicitudesGrupoAsync(userId, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     /// <summary>GET api/portal/perfil — mi ficha, como me ve el club.</summary>
     [HttpGet("perfil")]
     public async Task<ActionResult<MiPerfilDto>> Perfil(CancellationToken ct)
