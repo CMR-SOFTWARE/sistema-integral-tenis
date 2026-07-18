@@ -38,6 +38,7 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
     public DbSet<Servicio> Servicios => Set<Servicio>();
     public DbSet<Pedido> Pedidos => Set<Pedido>();
     public DbSet<Raqueta> Raquetas => Set<Raqueta>();
+    public DbSet<SolicitudGrupo> SolicitudesGrupo => Set<SolicitudGrupo>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -193,6 +194,18 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
             .OnDelete(DeleteBehavior.Cascade); // si se borrara el alumno, se van sus raquetas
         modelBuilder.Entity<Raqueta>()
             .HasIndex(r => r.AlumnoId); // "las raquetas de este alumno"
+
+        // ── Solicitudes de sumarse a un grupo (M5a) ──
+
+        modelBuilder.Entity<SolicitudGrupo>().Property(s => s.Estado).HasConversion<string>();
+        modelBuilder.Entity<SolicitudGrupo>()
+            .HasIndex(s => new { s.TenantId, s.Estado }); // "solicitudes pendientes del profe"
+        modelBuilder.Entity<SolicitudGrupo>()
+            .HasOne(s => s.Alumno).WithMany().HasForeignKey(s => s.AlumnoId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<SolicitudGrupo>()
+            .HasOne(s => s.Grupo).WithMany().HasForeignKey(s => s.GrupoId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // ── Bloqueos de agenda ──
 

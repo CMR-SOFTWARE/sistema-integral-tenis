@@ -119,6 +119,14 @@ public enum EstadoPedido
     Rechazado
 }
 
+/// <summary>Ciclo de una solicitud de sumarse a un grupo (M5a).</summary>
+public enum EstadoSolicitudGrupo
+{
+    Pendiente,
+    Aceptada,
+    Rechazada
+}
+
 /// <summary>Cómo liquida el alumno: el mes entero (vence el 10) o cargo por cargo.</summary>
 public enum ModalidadPago
 {
