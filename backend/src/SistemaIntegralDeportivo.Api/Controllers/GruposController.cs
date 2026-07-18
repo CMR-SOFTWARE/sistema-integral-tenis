@@ -12,10 +12,12 @@ namespace SistemaIntegralDeportivo.Api.Controllers;
 public class GruposController : ControllerBase
 {
     private readonly IGrupoService _service;
+    private readonly ISolicitudGrupoService _solicitudes;
 
-    public GruposController(IGrupoService service)
+    public GruposController(IGrupoService service, ISolicitudGrupoService solicitudes)
     {
         _service = service;
+        _solicitudes = solicitudes;
     }
 
     [HttpGet]
@@ -58,6 +60,43 @@ public class GruposController : ControllerBase
         try
         {
             await _service.QuitarAlumnoAsync(id, alumnoId, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    // ── Solicitudes de alumnos para sumarse a un grupo (M5a) ──
+
+    /// <summary>GET api/grupos/solicitudes — solicitudes pendientes de sumarse a un grupo.</summary>
+    [HttpGet("solicitudes")]
+    public async Task<ActionResult<IReadOnlyList<SolicitudGrupoDto>>> Solicitudes(CancellationToken ct) =>
+        Ok(await _solicitudes.ListarPendientesAsync(ct));
+
+    /// <summary>POST api/grupos/solicitudes/{id}/aceptar — acepto: sumo al alumno al grupo.</summary>
+    [HttpPost("solicitudes/{id:guid}/aceptar")]
+    public async Task<IActionResult> AceptarSolicitud(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            await _solicitudes.AceptarAsync(id, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>POST api/grupos/solicitudes/{id}/rechazar — rechazo la solicitud.</summary>
+    [HttpPost("solicitudes/{id:guid}/rechazar")]
+    public async Task<IActionResult> RechazarSolicitud(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            await _solicitudes.RechazarAsync(id, ct);
             return NoContent();
         }
         catch (ReglaDeNegocioException ex)

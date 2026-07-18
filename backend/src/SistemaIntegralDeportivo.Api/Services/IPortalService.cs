@@ -56,6 +56,16 @@ public interface IPortalService
     /// <exception cref="Common.ReglaDeNegocioException">Sin ficha, no es imagen o muy pesada.</exception>
     Task<MiPerfilDto> ActualizarFotoAsync(Guid userId, string? fotoUrl, CancellationToken ct = default);
 
+    /// <summary>Grupos a los que me podría sumar (cupo + mi categoría), con precio estimado.</summary>
+    Task<IReadOnlyList<GrupoDisponibleDto>> GruposDisponiblesAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>Pido sumarme a un grupo (queda pendiente de que el profe lo apruebe).</summary>
+    /// <exception cref="Common.ReglaDeNegocioException">Sin ficha, grupo lleno/de otra categoría, ya miembro o ya solicitado.</exception>
+    Task<SolicitudGrupoDto> SolicitarGrupoAsync(Guid userId, Guid grupoId, CancellationToken ct = default);
+
+    /// <summary>Mis solicitudes de grupo con su estado.</summary>
+    Task<IReadOnlyList<SolicitudGrupoDto>> MisSolicitudesGrupoAsync(Guid userId, CancellationToken ct = default);
+
     /// <summary>Mis raquetas.</summary>
     Task<IReadOnlyList<RaquetaDto>> MisRaquetasAsync(Guid userId, CancellationToken ct = default);
 

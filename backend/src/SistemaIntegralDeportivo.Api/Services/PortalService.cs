@@ -14,13 +14,15 @@ public class PortalService : IPortalService
     private readonly IServicioService _servicios;
     private readonly IPedidoService _pedidos;
     private readonly IRaquetaService _raquetas;
+    private readonly ISolicitudGrupoService _solicitudesGrupo;
     private readonly ITenantActual _tenantActual;
 
     public PortalService(
         IAlumnoRepository alumnos, ITurnoRepository turnos,
         ITurnoService turnoService, ICuotaService cuotas,
         IServicioService servicios, IPedidoService pedidos,
-        IRaquetaService raquetas, ITenantActual tenantActual)
+        IRaquetaService raquetas, ISolicitudGrupoService solicitudesGrupo,
+        ITenantActual tenantActual)
     {
         _alumnos = alumnos;
         _turnos = turnos;
@@ -29,6 +31,7 @@ public class PortalService : IPortalService
         _servicios = servicios;
         _pedidos = pedidos;
         _raquetas = raquetas;
+        _solicitudesGrupo = solicitudesGrupo;
         _tenantActual = tenantActual;
     }
 
@@ -182,6 +185,29 @@ public class PortalService : IPortalService
         ficha.ActualizadoEl = DateTime.UtcNow;
         await _alumnos.GuardarCambiosAsync(ct);
         return await MiPerfilAsync(userId, ct);
+    }
+
+    // ── Reservar horario fijo grupal (M5a) ──
+
+    public async Task<IReadOnlyList<GrupoDisponibleDto>> GruposDisponiblesAsync(
+        Guid userId, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+        return await _solicitudesGrupo.DisponiblesParaAlumnoAsync(ficha.Id, ct);
+    }
+
+    public async Task<SolicitudGrupoDto> SolicitarGrupoAsync(
+        Guid userId, Guid grupoId, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+        return await _solicitudesGrupo.SolicitarAsync(ficha.Id, grupoId, ct);
+    }
+
+    public async Task<IReadOnlyList<SolicitudGrupoDto>> MisSolicitudesGrupoAsync(
+        Guid userId, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+        return await _solicitudesGrupo.MisAsync(ficha.Id, ct);
     }
 
     public async Task<IReadOnlyList<RaquetaDto>> MisRaquetasAsync(Guid userId, CancellationToken ct = default)
