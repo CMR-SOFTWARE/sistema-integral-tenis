@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SistemaIntegralDeportivo.Api.Data;
 
@@ -10,9 +11,11 @@ using SistemaIntegralDeportivo.Api.Data;
 namespace SistemaIntegralDeportivo.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260718135412_SolicitudesHorario")]
+    partial class SolicitudesHorario
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
@@ -644,9 +647,6 @@ namespace SistemaIntegralDeportivo.Api.Migrations
                     b.Property<DateTime?>("ResueltoEl")
                         .HasColumnType("TEXT");
 
-                    b.Property<Guid>("SedeId")
-                        .HasColumnType("TEXT");
-
                     b.Property<Guid>("TenantId")
                         .HasColumnType("TEXT");
 
@@ -657,8 +657,6 @@ namespace SistemaIntegralDeportivo.Api.Migrations
                     b.HasIndex("CanchaId");
 
                     b.HasIndex("HorarioId");
-
-                    b.HasIndex("SedeId");
 
                     b.HasIndex("TenantId", "Estado");
 
@@ -1232,12 +1230,6 @@ namespace SistemaIntegralDeportivo.Api.Migrations
                         .HasForeignKey("HorarioId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("SistemaIntegralDeportivo.Api.Models.Sede", "Sede")
-                        .WithMany()
-                        .HasForeignKey("SedeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("SistemaIntegralDeportivo.Api.Models.Tenant", "Tenant")
                         .WithMany()
                         .HasForeignKey("TenantId")
@@ -1249,8 +1241,6 @@ namespace SistemaIntegralDeportivo.Api.Migrations
                     b.Navigation("Cancha");
 
                     b.Navigation("Horario");
-
-                    b.Navigation("Sede");
 
                     b.Navigation("Tenant");
                 });

@@ -127,6 +127,14 @@ public enum EstadoSolicitudGrupo
     Rechazada
 }
 
+/// <summary>Ciclo de una solicitud de clase individual fija (M5b).</summary>
+public enum EstadoSolicitudHorario
+{
+    Pendiente,
+    Aceptada,
+    Rechazada
+}
+
 /// <summary>Cómo liquida el alumno: el mes entero (vence el 10) o cargo por cargo.</summary>
 public enum ModalidadPago
 {
