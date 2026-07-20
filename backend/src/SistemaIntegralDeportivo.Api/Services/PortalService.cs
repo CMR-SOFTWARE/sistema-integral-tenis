@@ -17,6 +17,7 @@ public class PortalService : IPortalService
     private readonly ISolicitudGrupoService _solicitudesGrupo;
     private readonly ISolicitudHorarioService _solicitudesHorario;
     private readonly IClaseSueltaService _clasesSueltas;
+    private readonly IPublicidadService _publicidad;
     private readonly ISedeRepository _sedes;
     private readonly ITenantActual _tenantActual;
 
@@ -26,7 +27,7 @@ public class PortalService : IPortalService
         IServicioService servicios, IPedidoService pedidos,
         IRaquetaService raquetas, ISolicitudGrupoService solicitudesGrupo,
         ISolicitudHorarioService solicitudesHorario, IClaseSueltaService clasesSueltas,
-        ISedeRepository sedes, ITenantActual tenantActual)
+        IPublicidadService publicidad, ISedeRepository sedes, ITenantActual tenantActual)
     {
         _alumnos = alumnos;
         _turnos = turnos;
@@ -38,6 +39,7 @@ public class PortalService : IPortalService
         _solicitudesGrupo = solicitudesGrupo;
         _solicitudesHorario = solicitudesHorario;
         _clasesSueltas = clasesSueltas;
+        _publicidad = publicidad;
         _sedes = sedes;
         _tenantActual = tenantActual;
     }
@@ -253,6 +255,12 @@ public class PortalService : IPortalService
         await FichaDeAsync(userId, ct);
         var libres = await _clasesSueltas.CanchasLibresAsync(sedeId, fecha, hora, duracionMinutos, ct);
         return new DisponibilidadDto { HayLugar = libres.Count > 0, CanchasLibres = libres.Count };
+    }
+
+    public async Task<IReadOnlyList<PublicidadDto>> PublicidadAsync(Guid userId, CancellationToken ct = default)
+    {
+        await FichaDeAsync(userId, ct); // establece el tenant del club → sus banners
+        return await _publicidad.ListarAsync(soloActivas: true, ct);
     }
 
     public async Task<IReadOnlyList<SedeReservaDto>> SedesAsync(Guid userId, CancellationToken ct = default)

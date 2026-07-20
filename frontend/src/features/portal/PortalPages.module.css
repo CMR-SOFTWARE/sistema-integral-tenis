@@ -767,3 +767,73 @@
 }
 
 .btnMiniPortal:hover { border-color: var(--color-primary); }
+
+/* ── Publicidad (M6): banner en Inicio, no invasivo ── */
+.bannerCard {
+  position: relative;
+  grid-column: 1 / -1; /* full width de la grilla de Inicio */
+  width: 100%;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  line-height: 0;
+}
+
+/* Track del carrusel: desliza al costado al rotar */
+.bannerTrack {
+  display: flex;
+  transition: transform 0.55s ease;
+}
+
+.bannerSlide {
+  position: relative;
+  flex: 0 0 100%;
+  height: 150px;
+  overflow: hidden;
+}
+
+/* Fondo: la MISMA imagen, borrosa y agrandada, rellena los costados */
+.bannerBg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(22px) brightness(0.85);
+  transform: scale(1.2);
+}
+
+.bannerLink {
+  position: relative;
+  z-index: 1;
+  display: block;
+  height: 100%;
+}
+
+/* La imagen real, completa (sin recortar), centrada sobre el fondo */
+.bannerImg {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+@media (max-width: 760px) {
+  .bannerSlide { height: 110px; }
+}
+
+.bannerLabel {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  line-height: 1.4;
+}

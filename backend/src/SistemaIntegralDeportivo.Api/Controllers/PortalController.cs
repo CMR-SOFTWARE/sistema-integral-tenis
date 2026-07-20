@@ -350,6 +350,21 @@ public class PortalController : ControllerBase
         }
     }
 
+    /// <summary>GET api/portal/publicidad — banners activos del club (se ven en Inicio).</summary>
+    [HttpGet("publicidad")]
+    public async Task<ActionResult<IReadOnlyList<PublicidadDto>>> Publicidad(CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.PublicidadAsync(userId, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     /// <summary>GET api/portal/perfil — mi ficha, como me ve el club.</summary>
     [HttpGet("perfil")]
     public async Task<ActionResult<MiPerfilDto>> Perfil(CancellationToken ct)

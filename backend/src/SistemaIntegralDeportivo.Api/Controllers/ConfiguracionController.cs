@@ -13,11 +13,13 @@ public class ConfiguracionController : ControllerBase
 {
     private readonly IConfigService _service;
     private readonly IServicioService _servicios;
+    private readonly IPublicidadService _publicidad;
 
-    public ConfiguracionController(IConfigService service, IServicioService servicios)
+    public ConfiguracionController(IConfigService service, IServicioService servicios, IPublicidadService publicidad)
     {
         _service = service;
         _servicios = servicios;
+        _publicidad = publicidad;
     }
 
     [HttpGet("precios")]
@@ -78,6 +80,53 @@ public class ConfiguracionController : ControllerBase
         try
         {
             return Ok(await _servicios.CambiarActivoAsync(id, dto.Activo, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    // ── Publicidad: los banners del club (M6) ──
+
+    /// <summary>Todos los banners (activos e inactivos).</summary>
+    [HttpGet("publicidad")]
+    public async Task<ActionResult<IReadOnlyList<PublicidadDto>>> Publicidad(CancellationToken ct) =>
+        Ok(await _publicidad.ListarAsync(soloActivas: false, ct));
+
+    [HttpPost("publicidad")]
+    public async Task<ActionResult<PublicidadDto>> CrearPublicidad(GuardarPublicidadDto dto, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await _publicidad.CrearAsync(dto, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    [HttpPatch("publicidad/{id:guid}/activo")]
+    public async Task<ActionResult<PublicidadDto>> CambiarActivoPublicidad(Guid id, CambiarActivoPublicidadDto dto, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await _publicidad.CambiarActivoAsync(id, dto.Activo, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    [HttpDelete("publicidad/{id:guid}")]
+    public async Task<IActionResult> BorrarPublicidad(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            await _publicidad.EliminarAsync(id, ct);
+            return NoContent();
         }
         catch (ReglaDeNegocioException ex)
         {

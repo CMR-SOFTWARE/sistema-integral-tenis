@@ -28,3 +28,29 @@ export function comprimirImagen(file: File, lado = 256, calidad = 0.8): Promise<
     img.src = url;
   });
 }
+
+/**
+ * Comprime una imagen para un BANNER: la lleva a un ancho máximo conservando
+ * su proporción (no recorta como la foto de perfil), y la devuelve como data
+ * URL JPEG. Para banners de publicidad livianos que se guardan en la base.
+ */
+export function comprimirBanner(file: File, maxAncho = 1000, calidad = 0.82): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const escala = Math.min(1, maxAncho / img.width);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * escala);
+      canvas.height = Math.round(img.height * escala);
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { reject(new Error('No se pudo procesar la imagen.')); return; }
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL('image/jpeg', calidad));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('No se pudo leer la imagen.')); };
+    img.src = url;
+  });
+}
