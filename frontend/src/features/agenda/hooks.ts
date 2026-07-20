@@ -74,7 +74,7 @@ export function useHorarios() {
     await cargar();
   };
 
-  return { horarios, cargando, error, crear, desactivar };
+  return { horarios, cargando, error, crear, desactivar, recargar: cargar };
 }
 
 export function useSemana(lunes: string) {

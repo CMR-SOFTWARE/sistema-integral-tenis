@@ -84,7 +84,26 @@ El alumno pide clases desde el portal. Hay **3 tipos de clase**:
 - La categoría del grupo filtra el **auto-pedido del alumno**, NO la asignación
   manual del profe (el profe sigue armando sus grupos libre).
 
-**M5b (individual fija) y M5c (clase suelta): pendientes.** La pantalla
-"Reservar" del portal ya deja el lugar para las dos (como "próximamente"). La
-clase suelta (tipo 3) es el único turno que no cuelga de un horario recurrente
-— se resolverá al construirla.
+**M5b — Individual fija (implementado):**
+
+- El alumno **elige la SEDE** (el lugar) + propone día + hora + duración (no
+  elige cancha). El sistema valida: alumno activo, sin deuda vencida, **al menos
+  una cancha libre EN ESA SEDE** a esa hora (reusa `ListarPorCanchaYDiaAsync`), y
+  no duplicar un pedido igual pendiente. Crea `SolicitudHorario` **Pendiente**
+  (con `SedeId`).
+- El **profe** ve las solicitudes en un panel en **Horarios** (con la sede que
+  pidió el alumno), elige una **cancha libre de esa sede** (dropdown de
+  `CanchasLibresParaSolicitudAsync`) y **acepta**: se crea el `Horario`
+  individual vía `HorarioService.CrearAsync`. O **rechaza**.
+- La **sede en el pedido** resuelve la confusión de clubes con varias sedes: el
+  chequeo de disponibilidad ("✓ Hay lugar en {sede}") es **por sede**, así el
+  alumno sabe exactamente dónde pide. (Nota de fondo: hoy el tenant es la
+  academia/profe y las sedes cuelgan de él; a futuro habría que revisar el
+  modelo club↔academia — ver la memoria del proyecto.)
+- En el portal, la validación en vivo es del lado del server (por si dos piden
+  el mismo hueco); ya no se muestra el calendario de "ocupación" (confundía con
+  varias sedes/canchas).
+
+**M5c (clase suelta): pendiente.** Es el único turno que no cuelga de un horario
+recurrente (una fecha puntual) + pago en el momento — se resuelve al construirlo.
+La pantalla "Reservar" ya la deja como "próximamente".
