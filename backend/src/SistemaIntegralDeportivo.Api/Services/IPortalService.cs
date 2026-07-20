@@ -66,6 +66,21 @@ public interface IPortalService
     /// <summary>Mis solicitudes de grupo con su estado.</summary>
     Task<IReadOnlyList<SolicitudGrupoDto>> MisSolicitudesGrupoAsync(Guid userId, CancellationToken ct = default);
 
+    /// <summary>Las sedes del club (para elegir dónde quiero la clase individual).</summary>
+    Task<IReadOnlyList<SedeReservaDto>> SedesAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>Propongo una clase individual fija (sede + día/hora/duración); el profe elige la cancha.</summary>
+    /// <exception cref="Common.ReglaDeNegocioException">Sin ficha, no activo, deuda vencida, sin canchas libres o ya pedido.</exception>
+    Task<SolicitudHorarioDto> SolicitarHorarioAsync(
+        Guid userId, Guid sedeId, DayOfWeek dia, TimeOnly hora, int duracionMinutos, CancellationToken ct = default);
+
+    /// <summary>Mis solicitudes de clase individual con su estado.</summary>
+    Task<IReadOnlyList<SolicitudHorarioDto>> MisSolicitudesHorarioAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>¿Hay cancha libre en esa SEDE para una clase individual a ese día/hora?</summary>
+    Task<DisponibilidadDto> DisponibilidadHorarioAsync(
+        Guid userId, Guid sedeId, DayOfWeek dia, TimeOnly hora, int duracionMinutos, CancellationToken ct = default);
+
     /// <summary>Mis raquetas.</summary>
     Task<IReadOnlyList<RaquetaDto>> MisRaquetasAsync(Guid userId, CancellationToken ct = default);
 

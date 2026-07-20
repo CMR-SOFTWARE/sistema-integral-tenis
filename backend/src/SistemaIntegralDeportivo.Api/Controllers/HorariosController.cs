@@ -12,10 +12,12 @@ namespace SistemaIntegralDeportivo.Api.Controllers;
 public class HorariosController : ControllerBase
 {
     private readonly IHorarioService _service;
+    private readonly ISolicitudHorarioService _solicitudes;
 
-    public HorariosController(IHorarioService service)
+    public HorariosController(IHorarioService service, ISolicitudHorarioService solicitudes)
     {
         _service = service;
+        _solicitudes = solicitudes;
     }
 
     [HttpGet]
@@ -42,6 +44,48 @@ public class HorariosController : ControllerBase
         try
         {
             await _service.DesactivarAsync(id, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    // ── Solicitudes de clase individual fija de los alumnos (M5b) ──
+
+    /// <summary>GET api/horarios/solicitudes — solicitudes de clase individual pendientes.</summary>
+    [HttpGet("solicitudes")]
+    public async Task<ActionResult<IReadOnlyList<SolicitudHorarioDto>>> Solicitudes(CancellationToken ct) =>
+        Ok(await _solicitudes.ListarPendientesAsync(ct));
+
+    /// <summary>GET api/horarios/solicitudes/{id}/canchas-libres — canchas libres de la SEDE que pidió el alumno.</summary>
+    [HttpGet("solicitudes/{id:guid}/canchas-libres")]
+    public async Task<ActionResult<IReadOnlyList<CanchaLibreDto>>> CanchasLibres(Guid id, CancellationToken ct) =>
+        Ok(await _solicitudes.CanchasLibresParaSolicitudAsync(id, ct));
+
+    /// <summary>POST api/horarios/solicitudes/{id}/aceptar — acepto eligiendo una cancha: crea el horario.</summary>
+    [HttpPost("solicitudes/{id:guid}/aceptar")]
+    public async Task<IActionResult> AceptarSolicitud(Guid id, AceptarHorarioDto dto, CancellationToken ct)
+    {
+        try
+        {
+            await _solicitudes.AceptarAsync(id, dto.CanchaId, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>POST api/horarios/solicitudes/{id}/rechazar — rechazo la solicitud.</summary>
+    [HttpPost("solicitudes/{id:guid}/rechazar")]
+    public async Task<IActionResult> RechazarSolicitud(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            await _solicitudes.RechazarAsync(id, ct);
             return NoContent();
         }
         catch (ReglaDeNegocioException ex)

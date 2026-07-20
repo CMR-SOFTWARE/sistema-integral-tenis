@@ -223,6 +223,69 @@ public class PortalController : ControllerBase
         }
     }
 
+    /// <summary>GET api/portal/sedes — las sedes del club (para elegir dónde quiero la clase).</summary>
+    [HttpGet("sedes")]
+    public async Task<ActionResult<IReadOnlyList<SedeReservaDto>>> Sedes(CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.SedesAsync(userId, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>GET api/portal/hay-lugar?sede={id}&amp;dia=Tuesday&amp;hora=18:00&amp;duracion=60 — ¿hay cancha libre en esa sede?</summary>
+    [HttpGet("hay-lugar")]
+    public async Task<ActionResult<DisponibilidadDto>> HayLugar(
+        Guid sede, string dia, string hora, int duracion, CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        if (!Enum.TryParse<DayOfWeek>(dia, out var diaSemana) || !TimeOnly.TryParse(hora, out var horaInicio))
+            return BadRequest();
+        try
+        {
+            return Ok(await _portal.DisponibilidadHorarioAsync(userId, sede, diaSemana, horaInicio, duracion, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>POST api/portal/solicitudes-horario — propongo una clase individual fija.</summary>
+    [HttpPost("solicitudes-horario")]
+    public async Task<ActionResult<SolicitudHorarioDto>> SolicitarHorario(SolicitarHorarioDto dto, CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.SolicitarHorarioAsync(userId, dto.SedeId, dto.Dia, dto.HoraInicio, dto.DuracionMinutos, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>GET api/portal/solicitudes-horario — mis solicitudes de clase individual.</summary>
+    [HttpGet("solicitudes-horario")]
+    public async Task<ActionResult<IReadOnlyList<SolicitudHorarioDto>>> MisSolicitudesHorario(CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.MisSolicitudesHorarioAsync(userId, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     /// <summary>GET api/portal/perfil — mi ficha, como me ve el club.</summary>
     [HttpGet("perfil")]
     public async Task<ActionResult<MiPerfilDto>> Perfil(CancellationToken ct)
