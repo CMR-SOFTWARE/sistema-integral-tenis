@@ -105,6 +105,42 @@ public class SolicitudGrupoServiceTests
     }
 
     [Fact]
+    public async Task Disponibles_IncluyeCategoriaAdyacente_ExcluyeLasLejanas()
+    {
+        // Alumno Cuarta: ve Tercera (una arriba), Cuarta (la suya) y Quinta (una
+        // abajo); NO ve Segunda (2 arriba) ni Sexta (2 abajo).
+        var tercera = Grupo(CategoriaAlumno.Tercera, 4, (Guid.NewGuid(), true));
+        var cuarta = Grupo(CategoriaAlumno.Cuarta, 4, (Guid.NewGuid(), true));
+        var quinta = Grupo(CategoriaAlumno.Quinta, 4, (Guid.NewGuid(), true));
+        var segunda = Grupo(CategoriaAlumno.Segunda, 4, (Guid.NewGuid(), true));
+        var sexta = Grupo(CategoriaAlumno.Sexta, 4, (Guid.NewGuid(), true));
+        ConGrupos(tercera, cuarta, quinta, segunda, sexta);
+
+        var res = await _service.DisponiblesParaAlumnoAsync(AlumnoId);
+
+        var ids = res.Select(g => g.GrupoId).ToHashSet();
+        Assert.Equal(3, ids.Count);
+        Assert.Contains(tercera.Id, ids);
+        Assert.Contains(cuarta.Id, ids);
+        Assert.Contains(quinta.Id, ids);
+    }
+
+    [Fact]
+    public async Task Disponibles_AlumnoSinCategoria_SoloVeGruposAbiertos()
+    {
+        _alumnos.Setup(a => a.ObtenerAsync(AlumnoId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(AlumnoDe(CategoriaAlumno.SinCategoria));
+        var abierto = Grupo(null, 4, (Guid.NewGuid(), true));
+        var septima = Grupo(CategoriaAlumno.Septima, 4, (Guid.NewGuid(), true));
+        ConGrupos(abierto, septima);
+
+        var res = await _service.DisponiblesParaAlumnoAsync(AlumnoId);
+
+        var g = Assert.Single(res);
+        Assert.Equal(abierto.Id, g.GrupoId);
+    }
+
+    [Fact]
     public async Task Disponibles_MarcaLosQueYaSolicito()
     {
         var g = Grupo(CategoriaAlumno.Cuarta, 4, (Guid.NewGuid(), true));
@@ -146,8 +182,21 @@ public class SolicitudGrupoServiceTests
     }
 
     [Fact]
-    public async Task Solicitar_OtraCategoria_Lanza()
+    public async Task Solicitar_CategoriaAdyacente_CreaPendiente()
     {
+        // Alumno Cuarta pide un grupo de Tercera (una categoría más): permitido.
+        var g = Grupo(CategoriaAlumno.Tercera, 4, (Guid.NewGuid(), true));
+        _grupos.Setup(x => x.ObtenerAsync(g.Id, It.IsAny<CancellationToken>())).ReturnsAsync(g);
+
+        var dto = await _service.SolicitarAsync(AlumnoId, g.Id);
+
+        Assert.Equal("Pendiente", dto.Estado);
+    }
+
+    [Fact]
+    public async Task Solicitar_CategoriaLejana_Lanza()
+    {
+        // Primera está a 3 categorías de Cuarta: fuera del alcance (±1).
         var g = Grupo(CategoriaAlumno.Primera, 4, (Guid.NewGuid(), true));
         _grupos.Setup(x => x.ObtenerAsync(g.Id, It.IsAny<CancellationToken>())).ReturnsAsync(g);
 
