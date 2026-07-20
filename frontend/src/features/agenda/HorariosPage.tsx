@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useHorarios, useSedes } from './hooks';
 import NuevoHorarioModal from './NuevoHorarioModal';
+import PanelSolicitudesHorario from './PanelSolicitudesHorario';
 import SelectSede from './SelectSede';
 import { DIAS, horaCorta } from './types';
 import { CAT_COLOR, CAT_LABEL } from '../alumnos/types';
@@ -9,7 +10,7 @@ import s from './HorariosPage.module.css';
 
 /** Grilla semanal de PLANTILLAS (horarios recurrentes de la temporada). */
 export default function HorariosPage() {
-  const { horarios, cargando, error, crear, desactivar } = useHorarios();
+  const { horarios, cargando, error, crear, desactivar, recargar } = useHorarios();
   const { sedes } = useSedes();
   const [modal, setModal] = useState(false);
   const [sede, setSede] = useState(''); // '' = todas
@@ -42,6 +43,8 @@ export default function HorariosPage() {
           + Nuevo horario
         </button>
       </div>
+
+      <PanelSolicitudesHorario onCambio={() => void recargar()} />
 
       {error && <div className={s.error}>{error} — ¿está corriendo la API?</div>}
       {sinCanchas && !cargando && (

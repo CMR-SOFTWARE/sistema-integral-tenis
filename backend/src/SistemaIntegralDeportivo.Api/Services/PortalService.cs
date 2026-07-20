@@ -15,6 +15,8 @@ public class PortalService : IPortalService
     private readonly IPedidoService _pedidos;
     private readonly IRaquetaService _raquetas;
     private readonly ISolicitudGrupoService _solicitudesGrupo;
+    private readonly ISolicitudHorarioService _solicitudesHorario;
+    private readonly ISedeRepository _sedes;
     private readonly ITenantActual _tenantActual;
 
     public PortalService(
@@ -22,6 +24,7 @@ public class PortalService : IPortalService
         ITurnoService turnoService, ICuotaService cuotas,
         IServicioService servicios, IPedidoService pedidos,
         IRaquetaService raquetas, ISolicitudGrupoService solicitudesGrupo,
+        ISolicitudHorarioService solicitudesHorario, ISedeRepository sedes,
         ITenantActual tenantActual)
     {
         _alumnos = alumnos;
@@ -32,6 +35,8 @@ public class PortalService : IPortalService
         _pedidos = pedidos;
         _raquetas = raquetas;
         _solicitudesGrupo = solicitudesGrupo;
+        _solicitudesHorario = solicitudesHorario;
+        _sedes = sedes;
         _tenantActual = tenantActual;
     }
 
@@ -208,6 +213,40 @@ public class PortalService : IPortalService
     {
         var ficha = await FichaDeAsync(userId, ct);
         return await _solicitudesGrupo.MisAsync(ficha.Id, ct);
+    }
+
+    // ── Clase individual fija (M5b) ──
+
+    public async Task<SolicitudHorarioDto> SolicitarHorarioAsync(
+        Guid userId, Guid sedeId, DayOfWeek dia, TimeOnly hora, int duracionMinutos, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+        return await _solicitudesHorario.SolicitarAsync(ficha.Id, sedeId, dia, hora, duracionMinutos, ct);
+    }
+
+    public async Task<IReadOnlyList<SedeReservaDto>> SedesAsync(Guid userId, CancellationToken ct = default)
+    {
+        await FichaDeAsync(userId, ct); // establece el tenant del club
+        var sedes = await _sedes.ListarAsync(ct);
+        return sedes
+            .Where(x => x.Activo)
+            .Select(x => new SedeReservaDto { Id = x.Id, Nombre = x.Nombre })
+            .ToList();
+    }
+
+    public async Task<IReadOnlyList<SolicitudHorarioDto>> MisSolicitudesHorarioAsync(
+        Guid userId, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+        return await _solicitudesHorario.MisAsync(ficha.Id, ct);
+    }
+
+    public async Task<DisponibilidadDto> DisponibilidadHorarioAsync(
+        Guid userId, Guid sedeId, DayOfWeek dia, TimeOnly hora, int duracionMinutos, CancellationToken ct = default)
+    {
+        await FichaDeAsync(userId, ct); // establece el tenant del club
+        var libres = await _solicitudesHorario.CanchasLibresAsync(sedeId, dia, hora, duracionMinutos, ct);
+        return new DisponibilidadDto { HayLugar = libres.Count > 0, CanchasLibres = libres.Count };
     }
 
     public async Task<IReadOnlyList<RaquetaDto>> MisRaquetasAsync(Guid userId, CancellationToken ct = default)

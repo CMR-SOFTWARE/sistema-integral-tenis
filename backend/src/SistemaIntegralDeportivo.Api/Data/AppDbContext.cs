@@ -39,6 +39,7 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
     public DbSet<Pedido> Pedidos => Set<Pedido>();
     public DbSet<Raqueta> Raquetas => Set<Raqueta>();
     public DbSet<SolicitudGrupo> SolicitudesGrupo => Set<SolicitudGrupo>();
+    public DbSet<SolicitudHorario> SolicitudesHorario => Set<SolicitudHorario>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -206,6 +207,27 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
         modelBuilder.Entity<SolicitudGrupo>()
             .HasOne(s => s.Grupo).WithMany().HasForeignKey(s => s.GrupoId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        // ── Solicitudes de clase individual fija (M5b) ──
+
+        modelBuilder.Entity<SolicitudHorario>().Property(s => s.Estado).HasConversion<string>();
+        modelBuilder.Entity<SolicitudHorario>().Property(s => s.Dia).HasConversion<string>();
+        modelBuilder.Entity<SolicitudHorario>()
+            .HasIndex(s => new { s.TenantId, s.Estado }); // "solicitudes individuales pendientes del profe"
+        modelBuilder.Entity<SolicitudHorario>()
+            .HasOne(s => s.Alumno).WithMany().HasForeignKey(s => s.AlumnoId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<SolicitudHorario>()
+            .HasOne(s => s.Sede).WithMany().HasForeignKey(s => s.SedeId)
+            .OnDelete(DeleteBehavior.Restrict);
+        // La cancha y el horario se completan al aceptar; si se borraran, la
+        // solicitud (historia) no se rompe
+        modelBuilder.Entity<SolicitudHorario>()
+            .HasOne(s => s.Cancha).WithMany().HasForeignKey(s => s.CanchaId)
+            .OnDelete(DeleteBehavior.SetNull);
+        modelBuilder.Entity<SolicitudHorario>()
+            .HasOne(s => s.Horario).WithMany().HasForeignKey(s => s.HorarioId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // ── Bloqueos de agenda ──
 

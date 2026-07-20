@@ -83,6 +83,31 @@ export interface SolicitudGrupo {
   resueltoEl: string | null;
 }
 
+/** Espejo de DisponibilidadDto: ¿hay cancha libre en esa sede a ese día/hora? */
+export interface Disponibilidad {
+  hayLugar: boolean;
+  canchasLibres: number;
+}
+
+/** Espejo de SedeReservaDto: una sede del club (para elegir dónde). */
+export interface SedeReserva {
+  id: string;
+  nombre: string;
+}
+
+/** Espejo de SolicitudHorarioDto: mi pedido de clase individual fija. */
+export interface SolicitudHorario {
+  id: string;
+  dia: string; // "Tuesday"
+  horaInicio: string;
+  duracionMinutos: number;
+  sede: string;
+  estado: 'Pendiente' | 'Aceptada' | 'Rechazada';
+  cancha: string | null;
+  creadoEl: string;
+  resueltoEl: string | null;
+}
+
 export interface MiPerfil {
   nombre: string;
   apellido: string;
