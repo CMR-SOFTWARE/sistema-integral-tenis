@@ -24,8 +24,8 @@ public class TurnoRepository : ITurnoRepository
         await _db.Turnos
             .AsNoTracking()
             .Include(t => t.Cancha).ThenInclude(c => c.Sede)
-            .Include(t => t.Horario).ThenInclude(h => h.Grupo)
-            .Include(t => t.Horario).ThenInclude(h => h.Alumno)
+            .Include(t => t.Horario).ThenInclude(h => h!.Grupo)
+            .Include(t => t.Horario).ThenInclude(h => h!.Alumno)
             .Include(t => t.Participantes).ThenInclude(p => p.Alumno)
             .Where(t => t.TenantId == TenantId && t.Fecha >= desde && t.Fecha <= hasta)
             .ToListAsync(ct);
@@ -47,7 +47,7 @@ public class TurnoRepository : ITurnoRepository
         await _db.Turnos
             .AsNoTracking()
             .Include(t => t.Cancha).ThenInclude(c => c.Sede)
-            .Include(t => t.Horario).ThenInclude(h => h.Grupo)
+            .Include(t => t.Horario).ThenInclude(h => h!.Grupo)
             .Include(t => t.Participantes).ThenInclude(p => p.Alumno) // compañeros
             .Where(t => t.Fecha >= desde && t.Fecha <= hasta &&
                         t.Participantes.Any(p => p.AlumnoId == alumnoId))
@@ -58,8 +58,8 @@ public class TurnoRepository : ITurnoRepository
         await _db.Turnos
             .AsNoTracking()
             .Include(t => t.Cancha)
-            .Include(t => t.Horario).ThenInclude(h => h.Grupo)
-            .Include(t => t.Horario).ThenInclude(h => h.Alumno)
+            .Include(t => t.Horario).ThenInclude(h => h!.Grupo)
+            .Include(t => t.Horario).ThenInclude(h => h!.Alumno)
             .Where(t => t.TenantId == TenantId && t.Estado == EstadoTurno.Cancelado)
             .OrderByDescending(t => t.CanceladoEl)
             .Take(cantidad)
@@ -70,8 +70,8 @@ public class TurnoRepository : ITurnoRepository
         await _db.TurnoParticipantes
             .AsNoTracking()
             .Include(p => p.Alumno)
-            .Include(p => p.Turno).ThenInclude(t => t.Horario).ThenInclude(h => h.Grupo)
-            .Include(p => p.Turno).ThenInclude(t => t.Horario).ThenInclude(h => h.Alumno)
+            .Include(p => p.Turno).ThenInclude(t => t.Horario).ThenInclude(h => h!.Grupo)
+            .Include(p => p.Turno).ThenInclude(t => t.Horario).ThenInclude(h => h!.Alumno)
             .Where(p => p.Turno.TenantId == TenantId && p.CanceloEl != null)
             .OrderByDescending(p => p.CanceloEl)
             .Take(cantidad)
@@ -81,8 +81,8 @@ public class TurnoRepository : ITurnoRepository
         DateOnly desde, Guid? canchaId, CancellationToken ct = default) =>
         await _db.Turnos
             .Include(t => t.Cancha)
-            .Include(t => t.Horario).ThenInclude(h => h.Grupo)
-            .Include(t => t.Horario).ThenInclude(h => h.Alumno)
+            .Include(t => t.Horario).ThenInclude(h => h!.Grupo)
+            .Include(t => t.Horario).ThenInclude(h => h!.Alumno)
             .Include(t => t.Participantes).ThenInclude(p => p.Alumno)
             .Where(t => t.TenantId == TenantId && t.Estado == EstadoTurno.Programado &&
                         t.Fecha >= desde &&

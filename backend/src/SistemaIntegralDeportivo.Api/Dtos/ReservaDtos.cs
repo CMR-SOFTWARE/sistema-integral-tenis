@@ -116,3 +116,50 @@ public class DisponibilidadDto
     public bool HayLugar { get; set; }
     public int CanchasLibres { get; set; }
 }
+
+// ── Clase suelta (M5c) ──
+
+/// <summary>El alumno reserva una clase suelta (individual, una fecha puntual).</summary>
+public class SolicitarClaseSueltaDto
+{
+    [Required]
+    public Guid SedeId { get; set; }
+
+    [Required]
+    public DateOnly Fecha { get; set; }
+
+    [Required]
+    public TimeOnly HoraInicio { get; set; }
+
+    [Range(30, 180)]
+    public int DuracionMinutos { get; set; } = 60;
+}
+
+/// <summary>El profe confirma una clase suelta eligiendo una cancha libre.</summary>
+public class ConfirmarClaseSueltaDto
+{
+    [Required]
+    public Guid CanchaId { get; set; }
+}
+
+/// <summary>Una clase suelta (vista por el profe o el alumno).</summary>
+public class ClaseSueltaDto
+{
+    public Guid Id { get; set; }
+    public Guid AlumnoId { get; set; }
+    public string AlumnoNombre { get; set; } = string.Empty;
+    public string Sede { get; set; } = string.Empty;
+    public DateOnly Fecha { get; set; }
+    public TimeOnly HoraInicio { get; set; }
+    public int DuracionMinutos { get; set; }
+    public decimal Monto { get; set; }
+    /// <summary>Pendiente | Confirmada | Rechazada.</summary>
+    public string Estado { get; set; } = string.Empty;
+    /// <summary>El alumno avisó que pagó (pendiente de que el profe confirme).</summary>
+    public bool PagoInformado { get; set; }
+    public bool Pagado { get; set; }
+    /// <summary>Cancha asignada (solo si Confirmada).</summary>
+    public string? Cancha { get; set; }
+    public DateTime CreadoEl { get; set; }
+    public DateTime? ResueltoEl { get; set; }
+}

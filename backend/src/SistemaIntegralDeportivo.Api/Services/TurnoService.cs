@@ -195,7 +195,9 @@ public class TurnoService : ITurnoService
         Titulo = t.Horario?.Grupo?.Nombre
             ?? (t.Horario?.Alumno is not null
                 ? $"{t.Horario.Alumno.Nombre} {t.Horario.Alumno.Apellido} (individual)"
-                : string.Empty),
+                : t.Participantes.FirstOrDefault()?.Alumno is { } suelto
+                    ? $"{suelto.Nombre} {suelto.Apellido} (suelta)" // turno suelto (M5c)
+                    : "Clase suelta"),
         Cancha = t.Cancha?.Nombre ?? string.Empty,
         Sede = t.Cancha?.Sede?.Nombre ?? string.Empty,
         Participantes = t.Participantes.Select(p => new ParticipanteTurnoDto

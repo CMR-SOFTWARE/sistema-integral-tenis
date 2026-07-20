@@ -55,6 +55,9 @@ public class CuotaService : ICuotaService
             // Cancelado = la clase no ocurrió → nadie paga
             if (turno.Estado == EstadoTurno.Cancelado) continue;
             if (turno.Participantes.Count == 0) continue;
+            // Turno SUELTO (clase suelta, M5c): su cargo ya nació al confirmarse
+            // (precio individual). La liquidación no lo re-cobra.
+            if (turno.HorarioId is null) continue;
 
             // La fórmula (modelo-precios.md): ambos precios son POR HORA y se
             // prorratean por la duración del turno; grupal además se divide

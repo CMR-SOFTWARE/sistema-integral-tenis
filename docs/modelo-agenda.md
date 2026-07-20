@@ -104,6 +104,25 @@ El alumno pide clases desde el portal. Hay **3 tipos de clase**:
   el mismo hueco); ya no se muestra el calendario de "ocupación" (confundía con
   varias sedes/canchas).
 
-**M5c (clase suelta): pendiente.** Es el único turno que no cuelga de un horario
-recurrente (una fecha puntual) + pago en el momento — se resuelve al construirlo.
-La pantalla "Reservar" ya la deja como "próximamente".
+**M5c — Clase suelta (implementado):**
+
+- Una clase individual en una **fecha puntual** (probar/esporádico). Es el
+  primer turno que **no cuelga de un horario recurrente**: `Turno.HorarioId`
+  pasó a ser **opcional** (null = suelto). La generación perezosa y la
+  liquidación **saltean** los sueltos (su cargo nace en la confirmación).
+- **Flujo (pago primero, después se habilita):**
+  1. El alumno reserva: sede + **fecha** + hora + duración. Se valida cancha
+     libre en esa sede ESA fecha (recurrentes del día de la semana **+** otros
+     sueltos de esa fecha). Nace la `ClaseSuelta` **Pendiente** + un **Cargo**
+     (precio individual, impago).
+  2. El alumno **informa el pago** del cargo (reusa M2).
+  3. El **profe confirma** desde un panel en **Calendario**: elige una cancha
+     libre → nace el **turno suelto** (con el alumno), se marca **pagado** el
+     cargo → **Confirmada** (clase habilitada). O **rechaza** (se borra el
+     cargo; la clase queda como historia con `CargoId` null).
+- El turno suelto aparece en el calendario del profe ("Nombre (suelta)") y en
+  "Mis turnos" del alumno. `ClaseSuelta.CargoId` es nullable justo para poder
+  rechazar sin arrastrar la clase.
+
+**M5 completo** (grupal fija, individual fija, clase suelta). Falta MP real
+(el pago hoy es informar→confirmar) — futuro.

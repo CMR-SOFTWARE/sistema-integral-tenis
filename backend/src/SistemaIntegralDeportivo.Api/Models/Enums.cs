@@ -135,6 +135,14 @@ public enum EstadoSolicitudHorario
     Rechazada
 }
 
+/// <summary>Ciclo de una clase suelta (M5c): pedida → confirmada (pagada) o rechazada.</summary>
+public enum EstadoClaseSuelta
+{
+    Pendiente,
+    Confirmada,
+    Rechazada
+}
+
 /// <summary>Cómo liquida el alumno: el mes entero (vence el 10) o cargo por cargo.</summary>
 public enum ModalidadPago
 {

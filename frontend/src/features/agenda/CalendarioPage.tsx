@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useSedes, useSemana } from './hooks';
 import TurnoModal from './TurnoModal';
+import PanelClasesSueltas from './PanelClasesSueltas';
 import SelectSede from './SelectSede';
 import { aISO, fechaCorta, horaCorta, lunesDe, rangoSemana, sumarDias } from './types';
 import type { Turno } from './types';
@@ -11,7 +12,7 @@ import s from './CalendarioPage.module.css';
 /** Calendario semanal: los turnos CONCRETOS (la semana se genera sola al pedirla). */
 export default function CalendarioPage() {
   const [lunes, setLunes] = useState(() => lunesDe(new Date()));
-  const { turnos, cargando, error, marcarAsistencia, cancelar } = useSemana(lunes);
+  const { turnos, cargando, error, marcarAsistencia, cancelar, recargar } = useSemana(lunes);
   const { bloqueos } = useBloqueos();
   const { sedes } = useSedes();
   const [sede, setSede] = useState(''); // '' = todas
@@ -47,6 +48,8 @@ export default function CalendarioPage() {
         <span className={s.leyendaItem}><i className={s.puntoCancelado} /> Cancelado</span>
         <span className={s.leyendaItem}><i className={s.puntoBloqueado} /> Bloqueado</span>
       </div>
+
+      <PanelClasesSueltas onCambio={() => void recargar()} />
 
       {error && <div className={s.error}>{error} — ¿está corriendo la API?</div>}
       {cargando && <div className={s.vacio}>Cargando la semana…</div>}

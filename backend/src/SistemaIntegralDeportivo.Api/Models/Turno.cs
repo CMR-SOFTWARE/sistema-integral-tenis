@@ -13,8 +13,10 @@ public class Turno
     public Guid TenantId { get; set; }
     public Tenant Tenant { get; set; } = null!;
 
-    public Guid HorarioId { get; set; }
-    public Horario Horario { get; set; } = null!;
+    // Nace de un horario recurrente (lo normal) o es SUELTO (clase individual
+    // de una fecha, M5c): null = suelto, no cuelga de ninguna plantilla.
+    public Guid? HorarioId { get; set; }
+    public Horario? Horario { get; set; }
 
     // Denormalizados del horario al momento de generar (el horario puede
     // cambiar después; el turno ya jugado es historia intocable)
