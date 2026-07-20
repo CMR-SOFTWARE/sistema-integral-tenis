@@ -108,5 +108,5 @@ export function useSemana(lunes: string) {
     await cargar();
   };
 
-  return { turnos, cargando, error, marcarAsistencia, cancelar };
+  return { turnos, cargando, error, marcarAsistencia, cancelar, recargar: cargar };
 }

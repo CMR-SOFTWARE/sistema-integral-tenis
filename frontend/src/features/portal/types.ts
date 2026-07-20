@@ -95,6 +95,20 @@ export interface SedeReserva {
   nombre: string;
 }
 
+/** Espejo de ClaseSueltaDto: mi clase suelta (una fecha, pago informado). */
+export interface ClaseSuelta {
+  id: string;
+  sede: string;
+  fecha: string; // "2026-07-25"
+  horaInicio: string;
+  duracionMinutos: number;
+  monto: number;
+  estado: 'Pendiente' | 'Confirmada' | 'Rechazada';
+  pagoInformado: boolean;
+  pagado: boolean;
+  cancha: string | null;
+}
+
 /** Espejo de SolicitudHorarioDto: mi pedido de clase individual fija. */
 export interface SolicitudHorario {
   id: string;
