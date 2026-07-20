@@ -16,6 +16,7 @@ public class PortalService : IPortalService
     private readonly IRaquetaService _raquetas;
     private readonly ISolicitudGrupoService _solicitudesGrupo;
     private readonly ISolicitudHorarioService _solicitudesHorario;
+    private readonly IClaseSueltaService _clasesSueltas;
     private readonly ISedeRepository _sedes;
     private readonly ITenantActual _tenantActual;
 
@@ -24,8 +25,8 @@ public class PortalService : IPortalService
         ITurnoService turnoService, ICuotaService cuotas,
         IServicioService servicios, IPedidoService pedidos,
         IRaquetaService raquetas, ISolicitudGrupoService solicitudesGrupo,
-        ISolicitudHorarioService solicitudesHorario, ISedeRepository sedes,
-        ITenantActual tenantActual)
+        ISolicitudHorarioService solicitudesHorario, IClaseSueltaService clasesSueltas,
+        ISedeRepository sedes, ITenantActual tenantActual)
     {
         _alumnos = alumnos;
         _turnos = turnos;
@@ -36,6 +37,7 @@ public class PortalService : IPortalService
         _raquetas = raquetas;
         _solicitudesGrupo = solicitudesGrupo;
         _solicitudesHorario = solicitudesHorario;
+        _clasesSueltas = clasesSueltas;
         _sedes = sedes;
         _tenantActual = tenantActual;
     }
@@ -222,6 +224,35 @@ public class PortalService : IPortalService
     {
         var ficha = await FichaDeAsync(userId, ct);
         return await _solicitudesHorario.SolicitarAsync(ficha.Id, sedeId, dia, hora, duracionMinutos, ct);
+    }
+
+    // ── Clase suelta (M5c) ──
+
+    public async Task<ClaseSueltaDto> SolicitarClaseSueltaAsync(
+        Guid userId, Guid sedeId, DateOnly fecha, TimeOnly hora, int duracionMinutos, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+        return await _clasesSueltas.SolicitarAsync(ficha.Id, sedeId, fecha, hora, duracionMinutos, ct);
+    }
+
+    public async Task<IReadOnlyList<ClaseSueltaDto>> MisClasesSueltasAsync(Guid userId, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+        return await _clasesSueltas.MisAsync(ficha.Id, ct);
+    }
+
+    public async Task InformarPagoClaseSueltaAsync(Guid userId, Guid claseId, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+        await _clasesSueltas.InformarPagoAsync(ficha.Id, claseId, ct);
+    }
+
+    public async Task<DisponibilidadDto> DisponibilidadClaseSueltaAsync(
+        Guid userId, Guid sedeId, DateOnly fecha, TimeOnly hora, int duracionMinutos, CancellationToken ct = default)
+    {
+        await FichaDeAsync(userId, ct);
+        var libres = await _clasesSueltas.CanchasLibresAsync(sedeId, fecha, hora, duracionMinutos, ct);
+        return new DisponibilidadDto { HayLugar = libres.Count > 0, CanchasLibres = libres.Count };
     }
 
     public async Task<IReadOnlyList<SedeReservaDto>> SedesAsync(Guid userId, CancellationToken ct = default)

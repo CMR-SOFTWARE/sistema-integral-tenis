@@ -69,6 +69,23 @@ public interface IPortalService
     /// <summary>Las sedes del club (para elegir dónde quiero la clase individual).</summary>
     Task<IReadOnlyList<SedeReservaDto>> SedesAsync(Guid userId, CancellationToken ct = default);
 
+    // ── Clase suelta (M5c) ──
+
+    /// <summary>Reservo una clase suelta (individual, una fecha puntual); nace su cargo a pagar.</summary>
+    /// <exception cref="Common.ReglaDeNegocioException">Sin ficha, no activo, deuda, fecha pasada, sin cancha o sin precio.</exception>
+    Task<ClaseSueltaDto> SolicitarClaseSueltaAsync(
+        Guid userId, Guid sedeId, DateOnly fecha, TimeOnly hora, int duracionMinutos, CancellationToken ct = default);
+
+    /// <summary>Mis clases sueltas con su estado y pago.</summary>
+    Task<IReadOnlyList<ClaseSueltaDto>> MisClasesSueltasAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>Aviso que pagué mi clase suelta (informa el pago del cargo).</summary>
+    Task InformarPagoClaseSueltaAsync(Guid userId, Guid claseId, CancellationToken ct = default);
+
+    /// <summary>¿Hay cancha libre en esa sede para una clase suelta ESA fecha/hora?</summary>
+    Task<DisponibilidadDto> DisponibilidadClaseSueltaAsync(
+        Guid userId, Guid sedeId, DateOnly fecha, TimeOnly hora, int duracionMinutos, CancellationToken ct = default);
+
     /// <summary>Propongo una clase individual fija (sede + día/hora/duración); el profe elige la cancha.</summary>
     /// <exception cref="Common.ReglaDeNegocioException">Sin ficha, no activo, deuda vencida, sin canchas libres o ya pedido.</exception>
     Task<SolicitudHorarioDto> SolicitarHorarioAsync(

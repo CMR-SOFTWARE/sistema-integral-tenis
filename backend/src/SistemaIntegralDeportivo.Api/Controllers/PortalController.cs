@@ -286,6 +286,70 @@ public class PortalController : ControllerBase
         }
     }
 
+    /// <summary>GET api/portal/hay-lugar-suelta?sede={id}&amp;fecha=2026-07-25&amp;hora=18:00&amp;duracion=60 — ¿hay cancha para una clase suelta?</summary>
+    [HttpGet("hay-lugar-suelta")]
+    public async Task<ActionResult<DisponibilidadDto>> HayLugarSuelta(
+        Guid sede, string fecha, string hora, int duracion, CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        if (!DateOnly.TryParse(fecha, out var f) || !TimeOnly.TryParse(hora, out var h))
+            return BadRequest();
+        try
+        {
+            return Ok(await _portal.DisponibilidadClaseSueltaAsync(userId, sede, f, h, duracion, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>POST api/portal/clases-sueltas — reservo una clase suelta (nace su cargo a pagar).</summary>
+    [HttpPost("clases-sueltas")]
+    public async Task<ActionResult<ClaseSueltaDto>> SolicitarClaseSuelta(SolicitarClaseSueltaDto dto, CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.SolicitarClaseSueltaAsync(userId, dto.SedeId, dto.Fecha, dto.HoraInicio, dto.DuracionMinutos, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>GET api/portal/clases-sueltas — mis clases sueltas con su estado y pago.</summary>
+    [HttpGet("clases-sueltas")]
+    public async Task<ActionResult<IReadOnlyList<ClaseSueltaDto>>> MisClasesSueltas(CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.MisClasesSueltasAsync(userId, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>POST api/portal/clases-sueltas/{id}/informar-pago — aviso que pagué la clase suelta.</summary>
+    [HttpPost("clases-sueltas/{claseId:guid}/informar-pago")]
+    public async Task<IActionResult> InformarPagoClaseSuelta(Guid claseId, CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            await _portal.InformarPagoClaseSueltaAsync(userId, claseId, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     /// <summary>GET api/portal/perfil — mi ficha, como me ve el club.</summary>
     [HttpGet("perfil")]
     public async Task<ActionResult<MiPerfilDto>> Perfil(CancellationToken ct)
