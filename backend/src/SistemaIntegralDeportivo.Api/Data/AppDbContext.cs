@@ -40,6 +40,7 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
     public DbSet<Raqueta> Raquetas => Set<Raqueta>();
     public DbSet<SolicitudGrupo> SolicitudesGrupo => Set<SolicitudGrupo>();
     public DbSet<SolicitudHorario> SolicitudesHorario => Set<SolicitudHorario>();
+    public DbSet<ClaseSuelta> ClasesSueltas => Set<ClaseSuelta>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -227,6 +228,30 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
             .OnDelete(DeleteBehavior.SetNull);
         modelBuilder.Entity<SolicitudHorario>()
             .HasOne(s => s.Horario).WithMany().HasForeignKey(s => s.HorarioId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // ── Clases sueltas (M5c) ──
+
+        modelBuilder.Entity<ClaseSuelta>().Property(c => c.Estado).HasConversion<string>();
+        modelBuilder.Entity<ClaseSuelta>()
+            .HasIndex(c => new { c.TenantId, c.Estado }); // "clases sueltas pendientes del profe"
+        modelBuilder.Entity<ClaseSuelta>()
+            .HasOne(c => c.Alumno).WithMany().HasForeignKey(c => c.AlumnoId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<ClaseSuelta>()
+            .HasOne(c => c.Sede).WithMany().HasForeignKey(c => c.SedeId)
+            .OnDelete(DeleteBehavior.Restrict);
+        // El cargo (plata) es la ancla del pago; al rechazar se borra el cargo y
+        // la clase queda como historia con CargoId en null
+        modelBuilder.Entity<ClaseSuelta>()
+            .HasOne(c => c.Cargo).WithMany().HasForeignKey(c => c.CargoId)
+            .OnDelete(DeleteBehavior.SetNull);
+        // Cancha y turno se completan al confirmar; si se borraran, no rompen la historia
+        modelBuilder.Entity<ClaseSuelta>()
+            .HasOne(c => c.Cancha).WithMany().HasForeignKey(c => c.CanchaId)
+            .OnDelete(DeleteBehavior.SetNull);
+        modelBuilder.Entity<ClaseSuelta>()
+            .HasOne(c => c.Turno).WithMany().HasForeignKey(c => c.TurnoId)
             .OnDelete(DeleteBehavior.SetNull);
 
         // ── Bloqueos de agenda ──
