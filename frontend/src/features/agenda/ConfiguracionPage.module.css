@@ -237,3 +237,100 @@
   font-weight: 600;
   margin-bottom: 14px;
 }
+
+/* ── Publicidad (M6) ── */
+.bannerAlta {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.bannerPreview {
+  width: 200px;
+  max-height: 90px;
+  object-fit: contain;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #f7f8f9;
+}
+
+.bannerSubir {
+  width: 200px;
+  height: 90px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.bannerSubir:hover { border-color: var(--color-primary); }
+
+.bannerCampos {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bannerCampos input {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+}
+
+.bannerAccionesAlta {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.bannerLista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bannerFila,
+.bannerFilaInactiva {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.bannerFilaInactiva { opacity: 0.55; }
+
+.bannerThumb {
+  width: 100px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.bannerInfo {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bannerNombre { font-weight: 700; font-size: 14px; }
+
+.bannerEnlace {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

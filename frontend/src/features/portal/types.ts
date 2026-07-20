@@ -39,6 +39,14 @@ export interface MiLiquidacion {
   cargos: CargoLinea[];
 }
 
+/** Espejo de PublicidadDto: un banner de publicidad del club. */
+export interface Publicidad {
+  id: string;
+  nombre: string;
+  imagenUrl: string;
+  enlace: string | null;
+}
+
 /** Espejo de DatosPagoDto: a dónde transfiero (para el modal de informar pago). */
 export interface DatosPago {
   club: string;

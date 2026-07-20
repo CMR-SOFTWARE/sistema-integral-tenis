@@ -6,7 +6,7 @@ import SinClub from './SinClub';
 import { formatoPlata } from '../alumnos/types';
 import { ESTADO_LIQ_UI, MESES } from '../cuotas/types';
 import { fechaCorta, horaCorta, DIAS } from '../agenda/types';
-import type { MiLiquidacion, MisTurnos, MiTurno } from './types';
+import type { MiLiquidacion, MisTurnos, MiTurno, Publicidad } from './types';
 import s from './PortalPages.module.css';
 
 /** "2026-07-14" → "MAR" (para la columna de horarios asignados). */
@@ -26,6 +26,8 @@ export default function InicioPage() {
   const [turnos, setTurnos] = useState<MisTurnos | null>(null);
   const [cuota, setCuota] = useState<MiLiquidacion | null | undefined>(undefined); // undefined = cargando
   const [error, setError] = useState<string | null>(null);
+  const [banners, setBanners] = useState<Publicidad[]>([]);
+  const [bannerIdx, setBannerIdx] = useState(0);
 
   useEffect(() => {
     if (!conClub) return; // sin ficha no hay nada que pedir
@@ -35,8 +37,16 @@ export default function InicioPage() {
     api.get<MiLiquidacion | undefined>(`/portal/mi-cuota/${hoy.getFullYear()}/${hoy.getMonth() + 1}`)
       .then((c) => setCuota(c ?? null))
       .catch(() => setCuota(null));
+    api.get<Publicidad[]>('/portal/publicidad').then(setBanners).catch(() => setBanners([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conClub]);
+
+  // Rotación de banners (si hay más de uno) cada 6s
+  useEffect(() => {
+    if (banners.length < 2) return;
+    const t = setInterval(() => setBannerIdx((i) => (i + 1) % banners.length), 6000);
+    return () => clearInterval(t);
+  }, [banners.length]);
 
   if (!conClub) return <SinClub />;
   if (error) return <div className={s.error}>{error}</div>;
@@ -116,6 +126,30 @@ export default function InicioPage() {
           Los avisos del profe llegan en una próxima versión.
         </div>
       </div>
+
+      {/* ── Publicidad (M6): carrusel de banners del club (desliza al costado) ── */}
+      {banners.length > 0 && (
+        <div className={s.bannerCard}>
+          <span className={s.bannerLabel}>Publicidad</span>
+          <div
+            className={s.bannerTrack}
+            style={{ transform: `translateX(-${(bannerIdx % banners.length) * 100}%)` }}
+          >
+            {banners.map((b) => {
+              const img = <img src={b.imagenUrl} alt={b.nombre} className={s.bannerImg} />;
+              return (
+                <div key={b.id} className={s.bannerSlide}>
+                  {/* fondo: la misma imagen borrosa rellena los costados */}
+                  <div className={s.bannerBg} style={{ backgroundImage: `url("${b.imagenUrl}")` }} />
+                  {b.enlace
+                    ? <a href={b.enlace} target="_blank" rel="noreferrer noopener" className={s.bannerLink}>{img}</a>
+                    : img}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

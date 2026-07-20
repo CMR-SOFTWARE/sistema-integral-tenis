@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api, ApiError } from '../../lib/api';
+import { comprimirBanner } from '../portal/comprimirImagen';
 import { useSedes } from './hooks';
 import { formatoPlata } from '../alumnos/types';
 import type { Precios, Servicio } from '../cuotas/types';
@@ -245,6 +246,116 @@ function ServiciosCard() {
   );
 }
 
+interface Banner {
+  id: string;
+  nombre: string;
+  imagenUrl: string;
+  enlace: string | null;
+  activo: boolean;
+}
+
+/** Card de publicidad: banners de sponsors que ven los alumnos en el portal. */
+function PublicidadCard() {
+  const [banners, setBanners] = useState<Banner[]>([]);
+  const [nombre, setNombre] = useState('');
+  const [enlace, setEnlace] = useState('');
+  const [imagen, setImagen] = useState<string | null>(null);
+  const [subiendo, setSubiendo] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const cargar = () => {
+    void api.get<Banner[]>('/configuracion/publicidad').then(setBanners).catch(() => setBanners([]));
+  };
+  useEffect(() => { cargar(); }, []);
+
+  const elegirImagen = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setError(null);
+    try {
+      setImagen(await comprimirBanner(file));
+    } catch {
+      setError('No se pudo leer la imagen.');
+    }
+  };
+
+  const agregar = async () => {
+    if (nombre.trim() === '' || !imagen) return;
+    setSubiendo(true);
+    setError(null);
+    try {
+      await api.post('/configuracion/publicidad', {
+        nombre: nombre.trim(),
+        imagenUrl: imagen,
+        enlace: enlace.trim() || null,
+      });
+      setNombre(''); setEnlace(''); setImagen(null);
+      cargar();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'No se pudo cargar el banner.');
+    } finally {
+      setSubiendo(false);
+    }
+  };
+
+  const cambiarActivo = async (b: Banner) => {
+    await api.patch(`/configuracion/publicidad/${b.id}/activo`, { activo: !b.activo });
+    cargar();
+  };
+
+  const borrar = async (b: Banner) => {
+    if (!window.confirm(`¿Borrar el banner "${b.nombre}"?`)) return;
+    await api.delete(`/configuracion/publicidad/${b.id}`);
+    cargar();
+  };
+
+  return (
+    <div className={s.tarjeta}>
+      <h3 className={s.titulo}>Publicidad</h3>
+      <p className={s.bajada}>
+        Banners de sponsors que ven tus alumnos en el <b>Inicio</b> de su portal. Subí una
+        imagen (se comprime sola), poné un nombre y, si querés, un link. Si hay varios, rotan.
+      </p>
+      {error && <div className={s.error}>{error}</div>}
+
+      <div className={s.bannerAlta}>
+        {imagen
+          ? <img src={imagen} alt="Vista previa" className={s.bannerPreview} />
+          : <button className={s.bannerSubir} onClick={() => fileInput.current?.click()}>Elegir imagen</button>}
+        <input ref={fileInput} type="file" accept="image/*" hidden onChange={(e) => void elegirImagen(e)} />
+        <div className={s.bannerCampos}>
+          <input value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre (ej: Deportes García)" maxLength={80} />
+          <input value={enlace} onChange={(e) => setEnlace(e.target.value)} placeholder="Link (opcional)" maxLength={300} />
+          <div className={s.bannerAccionesAlta}>
+            {imagen && <button className={s.btnMiniGris} onClick={() => setImagen(null)}>Cambiar imagen</button>}
+            <button className={s.btnPrimario} disabled={subiendo || nombre.trim() === '' || !imagen} onClick={() => void agregar()}>
+              {subiendo ? 'Subiendo…' : 'Agregar banner'}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className={s.bannerLista}>
+        {banners.length === 0 && <div className={s.vacio}>Todavía no cargaste ningún banner.</div>}
+        {banners.map((b) => (
+          <div key={b.id} className={b.activo ? s.bannerFila : s.bannerFilaInactiva}>
+            <img src={b.imagenUrl} alt={b.nombre} className={s.bannerThumb} />
+            <div className={s.bannerInfo}>
+              <span className={s.bannerNombre}>{b.nombre}</span>
+              {b.enlace && <span className={s.bannerEnlace}>{b.enlace}</span>}
+              {!b.activo && <span className={s.chipInactiva}>Apagado</span>}
+            </div>
+            <button className={s.btnMiniGris} onClick={() => void cambiarActivo(b)}>{b.activo ? 'Apagar' : 'Prender'}</button>
+            <button className={s.btnMiniGris} onClick={() => void borrar(b)}>Borrar</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /** Configuración del tenant. Por ahora: sedes y canchas (donde trabaja el profe). */
 export default function ConfiguracionPage() {
   const { sedes, cargando, crearSede, agregarCancha, desactivarSede, reactivarSede } = useSedes();
@@ -302,6 +413,7 @@ export default function ConfiguracionPage() {
       <PreciosCard />
       <DatosPagoCard />
       <ServiciosCard />
+      <PublicidadCard />
       <div className={s.tarjeta}>
         <h3 className={s.titulo}>Sedes y canchas</h3>
         <p className={s.bajada}>
