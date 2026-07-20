@@ -129,6 +129,23 @@
   margin: 2px 0;
 }
 
+.slotCat {
+  display: inline-block;
+  margin-bottom: 3px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  background: var(--color-surface-2, #eef1ef);
+  color: var(--color-text-faint);
+}
+
+/* La categoría propia del alumno se resalta para que la ubique de un vistazo. */
+.slotCatMia {
+  background: rgba(23, 138, 76, 0.14);
+  color: var(--color-primary-dark, #0e6b3c);
+}
+
 .slotDetalle {
   color: var(--color-text-faint);
   font-size: 11px;

@@ -42,6 +42,7 @@ interface SlotGrupo {
 /** Reservar: calendario semanal con grupos con cupo + pedir clase individual (M5a/M5b). */
 export default function ReservarPage() {
   const conClub = obtenerSesion()?.alumno != null;
+  const miCategoria = obtenerSesion()?.categoria ?? null; // para marcar "tu categoría" en el calendario
   const [lunes, setLunes] = useState(() => lunesDe(new Date()));
   const [grupos, setGrupos] = useState<GrupoDisponible[]>([]);
   const [solGrupo, setSolGrupo] = useState<SolicitudGrupo[]>([]);
@@ -245,6 +246,14 @@ export default function ReservarPage() {
                   >
                     <div className={s.slotHora}>{horaCorta(sl.horaInicio)}</div>
                     <div className={s.slotTitulo}>{sl.grupoNombre}</div>
+                    {sl.categoria && sl.categoria !== 'SinCategoria' && (
+                      <div
+                        className={`${s.slotCat} ${sl.categoria === miCategoria ? s.slotCatMia : ''}`}
+                      >
+                        {CAT_LABEL[sl.categoria as Categoria] ?? sl.categoria}
+                        {sl.categoria === miCategoria && ' · tu cat.'}
+                      </div>
+                    )}
                     <div className={s.slotDetalle}>
                       {sl.miembros}{sl.cupo ? `/${sl.cupo}` : ''} · {sl.cancha || 'cancha'}
                     </div>

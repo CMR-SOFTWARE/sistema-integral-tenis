@@ -180,11 +180,19 @@ public class SolicitudGrupoService : ISolicitudGrupoService
     }
 
     /// <summary>
-    /// El grupo sin categoría asignada (null o SinCategoria) es ABIERTO a
-    /// todos; si tiene una categoría, la del alumno tiene que coincidir.
+    /// Un alumno puede pedir un grupo de su categoría o de una ADYACENTE (una
+    /// arriba o una abajo): p.ej. un Cuarta llega a Tercera, Cuarta y Quinta.
+    /// El enum va de mejor a peor (Primera=0 … Septima=6), así que "adyacente"
+    /// es diferencia de índice ≤ 1. El grupo sin categoría (null o SinCategoria)
+    /// es ABIERTO a todos; y el alumno todavía sin evaluar (SinCategoria) solo
+    /// puede pedir esos grupos abiertos (no se cuela por cercanía con Séptima).
     /// </summary>
-    private static bool CategoriaCompatible(CategoriaAlumno? grupo, CategoriaAlumno alumno) =>
-        grupo is null || grupo == CategoriaAlumno.SinCategoria || grupo == alumno;
+    private static bool CategoriaCompatible(CategoriaAlumno? grupo, CategoriaAlumno alumno)
+    {
+        if (grupo is null || grupo == CategoriaAlumno.SinCategoria) return true;
+        if (alumno == CategoriaAlumno.SinCategoria) return false;
+        return Math.Abs((int)grupo.Value - (int)alumno) <= 1;
+    }
 
     private static SolicitudGrupoDto Mapear(SolicitudGrupo s) => new()
     {
