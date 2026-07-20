@@ -41,6 +41,7 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
     public DbSet<SolicitudGrupo> SolicitudesGrupo => Set<SolicitudGrupo>();
     public DbSet<SolicitudHorario> SolicitudesHorario => Set<SolicitudHorario>();
     public DbSet<ClaseSuelta> ClasesSueltas => Set<ClaseSuelta>();
+    public DbSet<Publicidad> Publicidades => Set<Publicidad>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -253,6 +254,11 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
         modelBuilder.Entity<ClaseSuelta>()
             .HasOne(c => c.Turno).WithMany().HasForeignKey(c => c.TurnoId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        // ── Publicidad (M6): banners por tenant ──
+
+        modelBuilder.Entity<Publicidad>()
+            .HasIndex(p => p.TenantId); // "los banners de este club"
 
         // ── Bloqueos de agenda ──
 
