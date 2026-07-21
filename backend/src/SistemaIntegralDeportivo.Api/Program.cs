@@ -21,6 +21,7 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 // El tenant del request (ADR-0010): claim "tenant" del JWT u override del portal
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITenantActual, TenantActual>();
+builder.Services.AddScoped<IUsuarioActual, UsuarioActual>();
 
 // DI del módulo Alumnos: las capas se consumen por interfaz (ADR-0002)
 builder.Services.AddScoped<IAlumnoRepository, AlumnoRepository>();

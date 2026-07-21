@@ -14,11 +14,12 @@ public class AlumnoService : IAlumnoService
     private readonly IGrupoRepository _grupos;
     private readonly IHorarioRepository _horarios;
     private readonly IStaffService _staff;
+    private readonly IUsuarioActual _usuario;
 
     public AlumnoService(
         IAlumnoRepository repo, ICargoRepository cargos, ICredencialesService credenciales,
         ITurnoRepository turnos, IGrupoRepository grupos, IHorarioRepository horarios,
-        IStaffService staff)
+        IStaffService staff, IUsuarioActual usuario)
     {
         _repo = repo;
         _cargos = cargos;
@@ -27,6 +28,7 @@ public class AlumnoService : IAlumnoService
         _grupos = grupos;
         _horarios = horarios;
         _staff = staff;
+        _usuario = usuario;
     }
 
     public async Task<AlumnoCreadoDto> CrearAsync(CreateAlumnoDto dto, CancellationToken ct = default)
@@ -163,6 +165,11 @@ public class AlumnoService : IAlumnoService
         CategoriaAlumno? categoria, EstadoAlumno? estado, CancellationToken ct = default)
     {
         var alumnos = await _repo.ListarAsync(categoria, estado, ct);
+
+        // El profe EMPLEADO ve solo SUS alumnos (los que tiene de cabecera); el dueño todos.
+        if (_usuario.EsStaff)
+            alumnos = alumnos.Where(a => a.ProfesorUserId == _usuario.UserId).ToList();
+
         var deudores = await DeudoresDeAsync(alumnos.Select(a => a.Id).ToList(), ct);
         return alumnos.Select(a => Mapear(a, deudores.Contains(a.Id))).ToList();
     }

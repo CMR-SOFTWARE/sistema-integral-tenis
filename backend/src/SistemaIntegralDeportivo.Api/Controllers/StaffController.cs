@@ -44,6 +44,22 @@ public class StaffController : ControllerBase
         }
     }
 
+    /// <summary>POST api/staff/desvincularme — el propio profe empleado se va del club.</summary>
+    [HttpPost("desvincularme")]
+    [Authorize(Policy = "Profesor")] // lo hace el staff sobre sí mismo, no el dueño
+    public async Task<IActionResult> Desvincularme(CancellationToken ct)
+    {
+        try
+        {
+            await _staff.DesvincularmeAsync(ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     [HttpPatch("{id:guid}/activo")]
     public async Task<IActionResult> CambiarActivo(Guid id, CambiarActivoStaffDto dto, CancellationToken ct)
     {

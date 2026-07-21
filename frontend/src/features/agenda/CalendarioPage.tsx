@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { obtenerSesion } from '../auth/sesion';
 import { useSedes, useSemana } from './hooks';
 import TurnoModal from './TurnoModal';
 import PanelClasesSueltas from './PanelClasesSueltas';
@@ -17,6 +18,7 @@ export default function CalendarioPage() {
   const { sedes } = useSedes();
   const [sede, setSede] = useState(''); // '' = todas
   const [abierto, setAbierto] = useState<string | null>(null); // turnoId
+  const esOwner = obtenerSesion()?.rol === 'owner'; // el staff ve su agenda, sin gestión de clases sueltas
 
   const visibles = turnos.filter((t) => sede === '' || t.sede === sede);
 
@@ -49,7 +51,7 @@ export default function CalendarioPage() {
         <span className={s.leyendaItem}><i className={s.puntoBloqueado} /> Bloqueado</span>
       </div>
 
-      <PanelClasesSueltas onCambio={() => void recargar()} />
+      {esOwner && <PanelClasesSueltas onCambio={() => void recargar()} />}
 
       {error && <div className={s.error}>{error} — ¿está corriendo la API?</div>}
       {cargando && <div className={s.vacio}>Cargando la semana…</div>}

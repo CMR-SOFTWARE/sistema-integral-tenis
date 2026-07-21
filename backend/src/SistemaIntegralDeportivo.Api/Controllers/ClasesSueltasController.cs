@@ -8,7 +8,7 @@ namespace SistemaIntegralDeportivo.Api.Controllers;
 
 /// <summary>Las clases sueltas de los alumnos que el profe resuelve (M5c).</summary>
 [ApiController]
-[Authorize(Policy = "Profesor")]
+[Authorize(Policy = "Owner")]
 [Route("api/clases-sueltas")]
 public class ClasesSueltasController : ControllerBase
 {

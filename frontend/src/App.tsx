@@ -11,6 +11,7 @@ import CambiarPasswordPage from './features/auth/CambiarPasswordPage';
 import SolicitudesPage from './features/solicitudes/SolicitudesPage';
 import { obtenerSesion, obtenerToken } from './features/auth/sesion';
 import DashboardPage from './features/dashboard/DashboardPage';
+import StaffDashboardPage from './features/staff/StaffDashboardPage';
 import GruposPage from './features/grupos/GruposPage';
 import ProfesoresPage from './features/profesores/ProfesoresPage';
 import CalendarioPage from './features/agenda/CalendarioPage';
@@ -62,6 +63,16 @@ function RequiereLogueado() {
   return obtenerToken() ? <Outlet /> : <Navigate to="/login" replace />;
 }
 
+/** Landing del panel de gestión: siempre /dashboard (que se adapta al rol). */
+function InicioProfesor() {
+  return <Navigate to="/dashboard" replace />;
+}
+
+/** El dashboard se adapta al rol: el dueño ve el del negocio; el staff, el suyo (su semana). */
+function Dashboard() {
+  return obtenerSesion()?.rol === 'staff' ? <StaffDashboardPage /> : <DashboardPage />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -80,8 +91,8 @@ export default function App() {
 
         <Route element={<RequiereProfesor />}>
           <Route element={<AppLayout />}>
-            <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route index element={<InicioProfesor />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/alumnos" element={<AlumnosPage />} />
             <Route path="/calendario" element={<CalendarioPage />} />
             <Route path="/grupos" element={<GruposPage />} />

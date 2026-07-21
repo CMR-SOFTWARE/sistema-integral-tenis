@@ -6,7 +6,7 @@ using SistemaIntegralDeportivo.Api.Services;
 namespace SistemaIntegralDeportivo.Api.Controllers;
 
 [ApiController]
-[Authorize(Policy = "Profesor")]
+[Authorize(Policy = "Owner")]
 [Route("api/cancelaciones")]
 public class CancelacionesController : ControllerBase
 {

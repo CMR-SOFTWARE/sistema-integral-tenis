@@ -18,15 +18,20 @@ public class SedesController : ControllerBase
         _service = service;
     }
 
+    // GET queda abierto a Profesor: el calendario del staff necesita las sedes
+    // (para el filtro por sede). La gestión de sedes/canchas es dueño-only.
+
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<SedeResponseDto>>> Listar(CancellationToken ct) =>
         Ok(await _service.ListarAsync(ct));
 
     [HttpPost]
+    [Authorize(Policy = "Owner")]
     public async Task<ActionResult<SedeResponseDto>> Crear(CreateSedeDto dto, CancellationToken ct) =>
         Ok(await _service.CrearAsync(dto, ct));
 
     [HttpPost("{id:guid}/canchas")]
+    [Authorize(Policy = "Owner")]
     public async Task<ActionResult<CanchaResponseDto>> AgregarCancha(
         Guid id, CreateCanchaDto dto, CancellationToken ct)
     {
@@ -42,6 +47,7 @@ public class SedesController : ControllerBase
 
     /// <summary>DELETE api/sedes/{id} — baja LÓGICA (deja de ofrecerse; la historia queda).</summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "Owner")]
     public async Task<IActionResult> Desactivar(Guid id, CancellationToken ct)
     {
         try
@@ -57,6 +63,7 @@ public class SedesController : ControllerBase
 
     /// <summary>POST api/sedes/{id}/reactivar — vuelve a habilitarla.</summary>
     [HttpPost("{id:guid}/reactivar")]
+    [Authorize(Policy = "Owner")]
     public async Task<IActionResult> Reactivar(Guid id, CancellationToken ct)
     {
         try

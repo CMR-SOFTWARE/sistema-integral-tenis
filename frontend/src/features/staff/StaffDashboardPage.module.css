@@ -1,0 +1,189 @@
+.grilla {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.vacio {
+  padding: 18px 4px;
+  color: var(--color-text-faint);
+  font-size: 14px;
+}
+
+/* ── Hero (mismo look que el Inicio del alumno) ── */
+.hero {
+  grid-column: 1 / -1;
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: radial-gradient(circle at 82% 85%, #1ea35a 0%, #137a43 52%, #0d5e34 100%);
+  color: #fff;
+  padding: 30px 30px 44px;
+  min-height: 200px;
+}
+
+.heroPelota {
+  position: absolute;
+  right: -50px;
+  bottom: -70px;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #d8fb5b, #b6e83a);
+  opacity: 0.9;
+}
+
+.heroEyebrow {
+  position: relative;
+  font: 700 12px/1 var(--font-display);
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #cdf57f;
+  margin-bottom: 16px;
+}
+
+.heroFecha {
+  position: relative;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 46px;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  margin-bottom: 10px;
+}
+
+.heroDetalle {
+  position: relative;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.heroLugar {
+  position: relative;
+  margin-top: 10px;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* ── Tarjetas ── */
+.tarjeta {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+}
+
+.tarjetaTitulo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  margin: 0 0 14px;
+}
+
+.metricas {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.metrica {
+  flex: 1;
+  text-align: center;
+  background: var(--color-surface-subtle, #f5f7f5);
+  border-radius: var(--radius-md);
+  padding: 12px 6px;
+}
+
+.metricaNumero {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 24px;
+  color: var(--color-primary-dark, #0e6b3c);
+}
+
+.metricaLabel {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.btnPrimario {
+  display: inline-block;
+  background: var(--color-primary-dark);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 9px 16px;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+}
+
+/* ── Lista de próximas clases ── */
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fila {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+}
+
+.filaDia {
+  text-align: center;
+  min-width: 52px;
+}
+
+.filaFecha {
+  font-size: 11px;
+  color: var(--color-text-faint);
+  text-transform: uppercase;
+}
+
+.filaHora {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.filaInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.filaTitulo {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.filaLugar {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 1px;
+}
+
+@media (max-width: 760px) {
+  .grilla {
+    grid-template-columns: 1fr;
+  }
+  .hero {
+    padding: 24px 20px 32px;
+    min-height: 0;
+  }
+  .heroFecha {
+    font-size: 34px;
+  }
+  .heroPelota {
+    width: 140px;
+    height: 140px;
+    right: -40px;
+    bottom: -50px;
+  }
+}
