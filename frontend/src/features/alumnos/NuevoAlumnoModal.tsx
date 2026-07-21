@@ -3,6 +3,7 @@ import Modal from '../../components/Modal';
 import { ApiError } from '../../lib/api';
 import { CATEGORIAS, CAT_LABEL, edad } from './types';
 import type { AlumnoCreado, Categoria, CreateAlumno, RelacionTutor } from './types';
+import { useProfesores } from '../profesores/useProfesores';
 import s from './NuevoAlumnoModal.module.css';
 
 interface Props {
@@ -21,6 +22,7 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
   const [form, setForm] = useState({
     nombre: '', apellido: '', dni: '', telefono: '', email: '',
     fechaNacimiento: '', categoria: 'SinCategoria' as Categoria,
+    profesorId: '',
     notas: '',
     consentimientoWhatsapp: false, consentimientoDatos: false,
     tutorNombre: '', tutorApellido: '', tutorDni: '', tutorTelefono: '',
@@ -28,6 +30,7 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
   });
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { profes } = useProfesores();
 
   const esMenor = form.fechaNacimiento !== '' && edad(form.fechaNacimiento) < 18;
 
@@ -46,6 +49,7 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
         email: form.email.trim(),
         fechaNacimiento: form.fechaNacimiento,
         categoria: form.categoria,
+        profesorUserId: form.profesorId || undefined,
         // Arancel ya no se carga acá: el monto real sale de los cargos (ADR-0009)
         notas: form.notas.trim() || undefined,
         consentimientoWhatsapp: form.consentimientoWhatsapp,
@@ -117,6 +121,15 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
           <select value={form.categoria} onChange={(e) => set('categoria', e.target.value)}>
             {CATEGORIAS.map((c) => (
               <option key={c} value={c}>{c === 'SinCategoria' ? 'Sin categoría' : CAT_LABEL[c]}</option>
+            ))}
+          </select>
+        </label>
+        <label className={s.campo}>
+          <span>Profe de cabecera (opcional)</span>
+          <select value={form.profesorId} onChange={(e) => set('profesorId', e.target.value)}>
+            <option value="">Sin asignar</option>
+            {profes.map((p) => (
+              <option key={p.userId} value={p.userId}>{p.nombre}{p.esDueño ? ' (vos)' : ''}</option>
             ))}
           </select>
         </label>

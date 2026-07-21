@@ -34,8 +34,30 @@ public class GruposController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<GrupoResponseDto>> Crear(CreateGrupoDto dto, CancellationToken ct)
     {
-        var creado = await _service.CrearAsync(dto, ct);
-        return CreatedAtAction(nameof(Obtener), new { id = creado.Id }, creado);
+        try
+        {
+            var creado = await _service.CrearAsync(dto, ct);
+            return CreatedAtAction(nameof(Obtener), new { id = creado.Id }, creado);
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>PATCH api/grupos/{id}/profesor — (re)asigna el profe a cargo del grupo.</summary>
+    [HttpPatch("{id:guid}/profesor")]
+    public async Task<ActionResult<GrupoResponseDto>> AsignarProfesor(
+        Guid id, AsignarProfesorDto dto, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await _service.AsignarProfesorAsync(id, dto.ProfesorUserId, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
     }
 
     /// <summary>POST api/grupos/{id}/alumnos — asignar un alumno al grupo.</summary>

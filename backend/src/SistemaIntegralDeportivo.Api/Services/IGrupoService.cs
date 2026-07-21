@@ -11,6 +11,9 @@ public interface IGrupoService
 
     Task<GrupoResponseDto?> ObtenerAsync(Guid id, CancellationToken ct = default);
 
+    /// <summary>(Re)asigna el profe a cargo del grupo (null = sin asignar). Valida que sea del club.</summary>
+    Task<GrupoResponseDto> AsignarProfesorAsync(Guid grupoId, Guid? profesorUserId, CancellationToken ct = default);
+
     /// <summary>
     /// Asigna un alumno al grupo. Reglas: grupo existente y con cupo,
     /// alumno Activo, sin membresía activa duplicada; si tuvo una baja

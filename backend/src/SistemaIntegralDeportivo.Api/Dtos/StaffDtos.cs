@@ -46,3 +46,17 @@ public class CambiarActivoStaffDto
 {
     public bool Activo { get; set; }
 }
+
+/// <summary>Un profe al que el dueño le puede asignar horarios/grupos/alumnos (dueño + staff activos).</summary>
+public class ProfesorAsignableDto
+{
+    public Guid UserId { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public bool EsDueño { get; set; }
+}
+
+/// <summary>Body para (re)asignar el profe de un horario o grupo (null = sacar la asignación).</summary>
+public class AsignarProfesorDto
+{
+    public Guid? ProfesorUserId { get; set; }
+}

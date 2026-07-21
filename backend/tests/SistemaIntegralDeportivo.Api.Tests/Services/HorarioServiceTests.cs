@@ -21,6 +21,7 @@ public class HorarioServiceTests
     private readonly Mock<IHorarioRepository> _repo;
     private readonly Mock<ITurnoRepository> _turnos;
     private readonly Mock<ICargoRepository> _cargos;
+    private readonly Mock<IStaffService> _staff;
     private readonly HorarioService _service;
 
     public HorarioServiceTests()
@@ -28,7 +29,13 @@ public class HorarioServiceTests
         _repo = new Mock<IHorarioRepository>();
         _turnos = new Mock<ITurnoRepository>();
         _cargos = new Mock<ICargoRepository>();
-        _service = new HorarioService(_repo.Object, _turnos.Object, _cargos.Object);
+        _staff = new Mock<IStaffService>();
+        _service = new HorarioService(_repo.Object, _turnos.Object, _cargos.Object, _staff.Object);
+
+        // Por defecto: cualquier profe asignado es válido (los tests que prueban la
+        // regla lo pisan con false)
+        _staff.Setup(s => s.EsAsignableAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+              .ReturnsAsync(true);
 
         // Por defecto: nadie debe nada
         _cargos.Setup(c => c.ListarImpagosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
@@ -79,6 +86,32 @@ public class HorarioServiceTests
         await _service.CrearAsync(dto);
 
         _repo.Verify(r => r.AgregarAsync(It.IsAny<Horario>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Crear_ConProfeAjenoAlClub_Lanza()
+    {
+        _staff.Setup(s => s.EsAsignableAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
+        var dto = Dto(Cancha2, new TimeOnly(10, 0));
+        dto.ProfesorUserId = Guid.NewGuid();
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.CrearAsync(dto));
+        _repo.Verify(r => r.AgregarAsync(It.IsAny<Horario>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Crear_ConProfeDelClub_GuardaLaAsignacion()
+    {
+        var profe = Guid.NewGuid();
+        var dto = Dto(Cancha2, new TimeOnly(10, 0));
+        dto.ProfesorUserId = profe;
+        Horario? creado = null;
+        _repo.Setup(r => r.AgregarAsync(It.IsAny<Horario>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync((Horario h, CancellationToken _) => { creado = h; return h; });
+
+        await _service.CrearAsync(dto);
+
+        Assert.Equal(profe, creado!.ProfesorUserId);
     }
 
     [Fact]

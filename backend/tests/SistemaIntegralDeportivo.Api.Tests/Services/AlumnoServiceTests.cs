@@ -22,6 +22,7 @@ public class AlumnoServiceTests
     private readonly Mock<ITurnoRepository> _turnos;
     private readonly Mock<IGrupoRepository> _grupos;
     private readonly Mock<IHorarioRepository> _horarios;
+    private readonly Mock<IStaffService> _staff;
     private readonly AlumnoService _service;
 
     public AlumnoServiceTests()
@@ -32,6 +33,8 @@ public class AlumnoServiceTests
         _turnos = new Mock<ITurnoRepository>();
         _grupos = new Mock<IGrupoRepository>();
         _horarios = new Mock<IHorarioRepository>();
+        _staff = new Mock<IStaffService>();
+        _staff.Setup(s => s.EsAsignableAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
 
         // Por defecto: sin turnos futuros, sin grupos ni horarios individuales
         _turnos.Setup(t => t.ListarFuturosDeAlumnoAsync(It.IsAny<Guid>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
@@ -65,7 +68,7 @@ public class AlumnoServiceTests
 
         _service = new AlumnoService(
             _repo.Object, _cargos.Object, _credenciales.Object,
-            _turnos.Object, _grupos.Object, _horarios.Object);
+            _turnos.Object, _grupos.Object, _horarios.Object, _staff.Object);
     }
 
     /// <summary>DTO válido de un alumno MAYOR de edad (base de los tests).</summary>

@@ -50,6 +50,10 @@ public class Alumno
     public Guid? SedeId { get; set; }
     public Sede? Sede { get; set; }
 
+    // ── Profe de cabecera: el profe (dueño o staff) responsable del alumno.
+    //    null = sin asignar. Sin nav, como UserId (apunta a un Usuario). ──
+    public Guid? ProfesorUserId { get; set; }
+
     // ── Futuro login (no se usa todavía) ──
     public Guid? UserId { get; set; }
 

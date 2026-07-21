@@ -37,6 +37,21 @@ public class HorariosController : ControllerBase
         }
     }
 
+    /// <summary>PATCH api/horarios/{id}/profesor — (re)asigna el profe de la clase.</summary>
+    [HttpPatch("{id:guid}/profesor")]
+    public async Task<ActionResult<HorarioResponseDto>> AsignarProfesor(
+        Guid id, AsignarProfesorDto dto, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await _service.AsignarProfesorAsync(id, dto.ProfesorUserId, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     /// <summary>DELETE api/horarios/{id} — desactiva la plantilla (turnos generados intactos).</summary>
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Desactivar(Guid id, CancellationToken ct)

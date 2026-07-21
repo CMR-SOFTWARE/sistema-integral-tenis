@@ -13,6 +13,11 @@ public interface IStaffService
     Task<StaffCreadoDto> AgregarAsync(AgregarStaffDto dto, CancellationToken ct = default);
     /// <summary>Baja/reactivación del profe empleado.</summary>
     Task CambiarActivoAsync(Guid id, bool activo, CancellationToken ct = default);
+
+    /// <summary>Los profes a los que el dueño puede asignar clases: el dueño + los staff ACTIVOS.</summary>
+    Task<IReadOnlyList<ProfesorAsignableDto>> ListarAsignablesAsync(CancellationToken ct = default);
+    /// <summary>¿Ese usuario es asignable en este club? (el dueño o un staff activo).</summary>
+    Task<bool> EsAsignableAsync(Guid userId, CancellationToken ct = default);
 }
 
 public class StaffService : IStaffService
@@ -91,6 +96,46 @@ public class StaffService : IStaffService
 
         membresia.Activo = activo;
         await _membresias.GuardarCambiosAsync(ct);
+    }
+
+    public async Task<IReadOnlyList<ProfesorAsignableDto>> ListarAsignablesAsync(CancellationToken ct = default)
+    {
+        var tenant = await _tenants.ObtenerActualAsync(ct);
+        var lista = new List<ProfesorAsignableDto>();
+
+        // El dueño primero (es un profe más a la hora de asignar clases)
+        if (tenant.OwnerUserId is { } ownerId &&
+            await _membresias.ObtenerUsuarioAsync(ownerId, ct) is { } dueño)
+        {
+            lista.Add(new ProfesorAsignableDto
+            {
+                UserId = dueño.Id,
+                Nombre = $"{dueño.Nombre} {dueño.Apellido}",
+                EsDueño = true,
+            });
+        }
+
+        // Los staff ACTIVOS
+        foreach (var (m, u) in await _membresias.ListarConUsuarioAsync(ct))
+        {
+            if (!m.Activo) continue;
+            lista.Add(new ProfesorAsignableDto
+            {
+                UserId = u.Id,
+                Nombre = $"{u.Nombre} {u.Apellido}",
+                EsDueño = false,
+            });
+        }
+
+        return lista;
+    }
+
+    public async Task<bool> EsAsignableAsync(Guid userId, CancellationToken ct = default)
+    {
+        var tenant = await _tenants.ObtenerActualAsync(ct);
+        if (tenant.OwnerUserId == userId) return true;
+        var membresia = await _membresias.ObtenerPorUserIdAsync(userId, ct);
+        return membresia is { Activo: true };
     }
 
     private static StaffDto Mapear(MembresiaTenant m, Usuario u) => new()

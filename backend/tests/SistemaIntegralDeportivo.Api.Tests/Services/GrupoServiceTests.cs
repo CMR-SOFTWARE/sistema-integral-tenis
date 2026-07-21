@@ -17,6 +17,7 @@ public class GrupoServiceTests
     private readonly Mock<IAlumnoRepository> _alumnos;
     private readonly Mock<ICargoRepository> _cargos;
     private readonly Mock<IAlumnoService> _alumnoService;
+    private readonly Mock<IStaffService> _staff;
     private readonly GrupoService _service;
 
     private static readonly Guid GrupoId = Guid.NewGuid();
@@ -28,7 +29,10 @@ public class GrupoServiceTests
         _alumnos = new Mock<IAlumnoRepository>();
         _cargos = new Mock<ICargoRepository>();
         _alumnoService = new Mock<IAlumnoService>();
-        _service = new GrupoService(_grupos.Object, _alumnos.Object, _cargos.Object, _alumnoService.Object);
+        _staff = new Mock<IStaffService>();
+        _staff.Setup(s => s.EsAsignableAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _service = new GrupoService(
+            _grupos.Object, _alumnos.Object, _cargos.Object, _alumnoService.Object, _staff.Object);
 
         // Por defecto: nadie debe nada
         _cargos.Setup(c => c.ListarImpagosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))

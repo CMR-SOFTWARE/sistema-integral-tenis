@@ -31,6 +31,9 @@ public class AlumnoResponseDto
 
     /// <summary>Foto de perfil (data URL) que cargó el alumno, o null.</summary>
     public string? FotoUrl { get; set; }
+
+    /// <summary>Profe de cabecera (dueño o staff); null = sin asignar. El front mapea el nombre.</summary>
+    public Guid? ProfesorUserId { get; set; }
 }
 
 /// <summary>

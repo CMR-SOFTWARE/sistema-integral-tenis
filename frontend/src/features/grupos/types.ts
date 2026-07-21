@@ -17,6 +17,7 @@ export interface Grupo {
   cupoMaximo: number | null;
   activo: boolean;
   miembrosActivos: number;
+  profesorUserId: string | null;
   miembros: MiembroGrupo[];
 }
 
@@ -25,4 +26,5 @@ export interface CreateGrupo {
   nombre: string;
   categoria?: Categoria;
   cupoMaximo?: number;
+  profesorUserId?: string;
 }

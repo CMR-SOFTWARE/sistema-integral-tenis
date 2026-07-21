@@ -15,6 +15,9 @@ public class CreateGrupoDto
     /// <summary>Null = sin límite de integrantes.</summary>
     [Range(1, 50)]
     public int? CupoMaximo { get; set; }
+
+    /// <summary>Profe a cargo del grupo (dueño o staff); opcional.</summary>
+    public Guid? ProfesorUserId { get; set; }
 }
 
 /// <summary>Miembro activo de un grupo (para la tarjeta del mockup).</summary>
@@ -36,6 +39,8 @@ public class GrupoResponseDto
     public int? CupoMaximo { get; set; }
     public bool Activo { get; set; }
     public int MiembrosActivos { get; set; }
+    /// <summary>Profe a cargo (dueño o staff); null = sin asignar. El front mapea el nombre.</summary>
+    public Guid? ProfesorUserId { get; set; }
     public List<MiembroGrupoDto> Miembros { get; set; } = [];
 }
 

@@ -123,6 +123,19 @@
   font-size: 11px;
 }
 
+.slotProfe {
+  margin-top: 6px;
+  width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm, 6px);
+  padding: 3px 6px;
+  font-size: 11px;
+  font-family: inherit;
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
 .slotBaja {
   position: absolute;
   top: 6px;

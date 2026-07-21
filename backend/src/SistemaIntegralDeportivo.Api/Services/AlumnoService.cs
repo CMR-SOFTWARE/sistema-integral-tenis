@@ -13,10 +13,12 @@ public class AlumnoService : IAlumnoService
     private readonly ITurnoRepository _turnos;
     private readonly IGrupoRepository _grupos;
     private readonly IHorarioRepository _horarios;
+    private readonly IStaffService _staff;
 
     public AlumnoService(
         IAlumnoRepository repo, ICargoRepository cargos, ICredencialesService credenciales,
-        ITurnoRepository turnos, IGrupoRepository grupos, IHorarioRepository horarios)
+        ITurnoRepository turnos, IGrupoRepository grupos, IHorarioRepository horarios,
+        IStaffService staff)
     {
         _repo = repo;
         _cargos = cargos;
@@ -24,6 +26,7 @@ public class AlumnoService : IAlumnoService
         _turnos = turnos;
         _grupos = grupos;
         _horarios = horarios;
+        _staff = staff;
     }
 
     public async Task<AlumnoCreadoDto> CrearAsync(CreateAlumnoDto dto, CancellationToken ct = default)
@@ -33,6 +36,8 @@ public class AlumnoService : IAlumnoService
         if (await _repo.ExisteDniAsync(dto.Dni, ct))
             throw new ReglaDeNegocioException($"Ya existe un alumno con DNI {dto.Dni}.");
         ValidarMenor(dto);
+        if (dto.ProfesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))
+            throw new ReglaDeNegocioException("Ese profe no es de tu club.");
 
         // Plan v2: el registro es UNA sola vez — el profe crea usuario + ficha
         // juntos; la temporal se muestra una vez y el alumno la cambia al entrar
@@ -135,6 +140,9 @@ public class AlumnoService : IAlumnoService
             throw new ReglaDeNegocioException(
                 "Con esa fecha el alumno es menor: necesita un tutor cargado.");
 
+        if (dto.ProfesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))
+            throw new ReglaDeNegocioException("Ese profe no es de tu club.");
+
         alumno.Nombre = dto.Nombre;
         alumno.Apellido = dto.Apellido;
         alumno.Dni = dto.Dni;
@@ -143,6 +151,7 @@ public class AlumnoService : IAlumnoService
         alumno.FechaNacimiento = dto.FechaNacimiento;
         alumno.Categoria = dto.Categoria;
         alumno.Modalidad = dto.Modalidad;
+        alumno.ProfesorUserId = dto.ProfesorUserId;
         alumno.Notas = string.IsNullOrWhiteSpace(dto.Notas) ? null : dto.Notas;
         alumno.ActualizadoEl = DateTime.UtcNow;
 
@@ -374,6 +383,7 @@ public class AlumnoService : IAlumnoService
             FechaNacimiento = dto.FechaNacimiento,
             Categoria = dto.Categoria,
             Arancel = dto.Arancel,
+            ProfesorUserId = dto.ProfesorUserId,
             Notas = dto.Notas,
             ConsentimientoWhatsapp = dto.ConsentimientoWhatsapp,
             ConsentimientoWhatsappEl = dto.ConsentimientoWhatsapp ? ahora : null,
@@ -436,5 +446,6 @@ public class AlumnoService : IAlumnoService
         DeudaVencida = deudaVencida,
         TieneUsuario = a.UserId is not null,
         FotoUrl = a.FotoUrl,
+        ProfesorUserId = a.ProfesorUserId,
     };
 }

@@ -17,6 +17,9 @@ public class Grupo
     public int? CupoMaximo { get; set; }            // null = sin límite
     public bool Activo { get; set; } = true;
 
+    /// <summary>El profe a cargo del grupo (dueño o staff); null = sin asignar. Sin nav, como UserId.</summary>
+    public Guid? ProfesorUserId { get; set; }
+
     public DateTime CreadoEl { get; set; } = DateTime.UtcNow;
 
     public ICollection<AlumnoGrupo> Alumnos { get; set; } = new List<AlumnoGrupo>();
