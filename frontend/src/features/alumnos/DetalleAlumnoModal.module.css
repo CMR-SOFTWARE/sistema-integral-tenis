@@ -104,6 +104,12 @@
   cursor: pointer;
 }
 
+.seguimiento {
+  margin-top: 22px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-surface-hover);
+}
+
 /* ── Móvil: las dos columnas de la ficha se apilan ── */
 @media (max-width: 760px) {
   .columnas {
