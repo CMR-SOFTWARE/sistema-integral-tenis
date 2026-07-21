@@ -1,11 +1,12 @@
 // Cliente HTTP mínimo hacia la API .NET.
-// Las rutas son relativas a /api: el proxy de Vite (vite.config.ts) las
-// reenvía a Kestrel (localhost:5223) en desarrollo, así el navegador ve
-// un solo origen y no hay fricción de CORS en dev.
-
+// En desarrollo, las rutas son relativas a /api: el proxy de Vite
+// (vite.config.ts) las reenvía a Kestrel (localhost:5223), así el navegador
+// ve un solo origen y no hay fricción de CORS. En producción (Vercel), VITE_API_URL
+// apunta a la API real (Railway) y acá se arma la URL absoluta; el CORS de
+// la API debe permitir el dominio del front (Cors:AllowedOrigins).
 import { cerrarSesion, obtenerToken } from '../features/auth/sesion';
 
-const BASE = '/api';
+const BASE = `${import.meta.env.VITE_API_URL ?? ''}/api`;
 
 export class ApiError extends Error {
   status: number;
