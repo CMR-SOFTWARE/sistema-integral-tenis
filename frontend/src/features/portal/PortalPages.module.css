@@ -39,6 +39,41 @@
   font-size: 14px;
 }
 
+/* ── Avisos del profe (Inicio del portal) ── */
+.avisosLista {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.avisoItem {
+  border-left: 3px solid var(--color-primary);
+  padding: 4px 0 4px 12px;
+}
+
+.avisoTitulo {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.avisoMensaje {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+  white-space: pre-wrap;
+}
+
+.notaItem {
+  border-left: 3px solid var(--color-accent, #ca8a04);
+  padding: 4px 0 4px 12px;
+}
+
+.notaFecha {
+  font-size: 11px;
+  color: var(--color-text-faint);
+  margin-top: 3px;
+}
+
 .error {
   background: var(--color-danger-soft);
   border: 1px solid var(--color-danger-border);

@@ -16,6 +16,7 @@ import CalendarioPage from './features/agenda/CalendarioPage';
 import HorariosPage from './features/agenda/HorariosPage';
 import ConfiguracionPage from './features/agenda/ConfiguracionPage';
 import CuotasPage from './features/cuotas/CuotasPage';
+import AvisosPage from './features/avisos/AvisosPage';
 import BloqueosPage from './features/bloqueos/BloqueosPage';
 import CancelacionesPage from './features/cancelaciones/CancelacionesPage';
 import ReportesPage from './features/reportes/ReportesPage';
@@ -85,6 +86,7 @@ export default function App() {
             <Route path="/grupos" element={<GruposPage />} />
             <Route path="/horarios" element={<HorariosPage />} />
             <Route path="/cuotas" element={<CuotasPage />} />
+            <Route path="/avisos" element={<AvisosPage />} />
             <Route path="/bloqueos" element={<BloqueosPage />} />
             <Route path="/cancelaciones" element={<CancelacionesPage />} />
             <Route path="/solicitudes" element={<SolicitudesPage />} />

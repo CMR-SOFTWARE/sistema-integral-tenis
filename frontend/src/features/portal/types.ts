@@ -47,6 +47,24 @@ export interface Publicidad {
   enlace: string | null;
 }
 
+/** Espejo de AvisoDto: un aviso general del club. */
+export interface Aviso {
+  id: string;
+  titulo: string;
+  mensaje: string;
+  venceEl: string | null; // "2026-07-25"
+  activo: boolean;
+  creadoEl: string;
+}
+
+/** Espejo de NotaAlumnoDto: una nota que el profe me compartió. */
+export interface NotaProfe {
+  id: string;
+  texto: string;
+  compartida: boolean;
+  creadoEl: string;
+}
+
 /** Espejo de DatosPagoDto: a dónde transfiero (para el modal de informar pago). */
 export interface DatosPago {
   club: string;
