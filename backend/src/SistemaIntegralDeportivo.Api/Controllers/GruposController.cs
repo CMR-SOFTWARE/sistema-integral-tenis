@@ -7,7 +7,7 @@ using SistemaIntegralDeportivo.Api.Services;
 namespace SistemaIntegralDeportivo.Api.Controllers;
 
 [ApiController]
-[Authorize(Policy = "Profesor")]
+[Authorize(Policy = "Owner")]
 [Route("api/grupos")]
 public class GruposController : ControllerBase
 {

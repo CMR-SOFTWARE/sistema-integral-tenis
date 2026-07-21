@@ -8,7 +8,7 @@ namespace SistemaIntegralDeportivo.Api.Controllers;
 
 /// <summary>Los pedidos de servicios que el profe resuelve (M4).</summary>
 [ApiController]
-[Authorize(Policy = "Profesor")]
+[Authorize(Policy = "Owner")]
 [Route("api/pedidos")]
 public class PedidosController : ControllerBase
 {

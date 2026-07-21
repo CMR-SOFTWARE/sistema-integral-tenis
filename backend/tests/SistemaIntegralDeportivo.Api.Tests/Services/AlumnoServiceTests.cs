@@ -23,6 +23,7 @@ public class AlumnoServiceTests
     private readonly Mock<IGrupoRepository> _grupos;
     private readonly Mock<IHorarioRepository> _horarios;
     private readonly Mock<IStaffService> _staff;
+    private readonly Mock<IUsuarioActual> _usuario;
     private readonly AlumnoService _service;
 
     public AlumnoServiceTests()
@@ -35,6 +36,7 @@ public class AlumnoServiceTests
         _horarios = new Mock<IHorarioRepository>();
         _staff = new Mock<IStaffService>();
         _staff.Setup(s => s.EsAsignableAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _usuario = new Mock<IUsuarioActual>(); // por defecto: no es staff → no filtra (ve todo)
 
         // Por defecto: sin turnos futuros, sin grupos ni horarios individuales
         _turnos.Setup(t => t.ListarFuturosDeAlumnoAsync(It.IsAny<Guid>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
@@ -68,7 +70,7 @@ public class AlumnoServiceTests
 
         _service = new AlumnoService(
             _repo.Object, _cargos.Object, _credenciales.Object,
-            _turnos.Object, _grupos.Object, _horarios.Object, _staff.Object);
+            _turnos.Object, _grupos.Object, _horarios.Object, _staff.Object, _usuario.Object);
     }
 
     /// <summary>DTO válido de un alumno MAYOR de edad (base de los tests).</summary>
@@ -104,6 +106,35 @@ public class AlumnoServiceTests
         Telefono = "+5491144443333",
         Relacion = RelacionTutor.Madre,
     };
+
+    // ─────────────────────────────────────────────
+    // Vista del profe empleado: solo SUS alumnos (V3)
+    // ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task Listar_Staff_SoloVeSusAlumnosDeCabecera()
+    {
+        var yo = Guid.NewGuid();
+        _usuario.Setup(u => u.EsStaff).Returns(true);
+        _usuario.Setup(u => u.UserId).Returns(yo);
+        var mio = new Alumno
+        {
+            Nombre = "Mío", Apellido = "A", Dni = "1", Telefono = "1",
+            FechaNacimiento = DateTime.UtcNow.AddYears(-20), ProfesorUserId = yo,
+        };
+        var ajeno = new Alumno
+        {
+            Nombre = "Ajeno", Apellido = "B", Dni = "2", Telefono = "2",
+            FechaNacimiento = DateTime.UtcNow.AddYears(-20), ProfesorUserId = Guid.NewGuid(),
+        };
+        _repo.Setup(r => r.ListarAsync(It.IsAny<CategoriaAlumno?>(), It.IsAny<EstadoAlumno?>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync([mio, ajeno]);
+
+        var res = await _service.ListarAsync(null, null);
+
+        var unico = Assert.Single(res);
+        Assert.Equal(mio.Id, unico.Id);
+    }
 
     // ─────────────────────────────────────────────
     // Regla del menor (modelo-alumnos.md §3.2, Ley 25.326)

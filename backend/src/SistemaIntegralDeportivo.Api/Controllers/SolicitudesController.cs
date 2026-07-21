@@ -8,7 +8,7 @@ namespace SistemaIntegralDeportivo.Api.Controllers;
 
 /// <summary>Lado PROFE de las solicitudes: ver pendientes, aprobar, rechazar.</summary>
 [ApiController]
-[Authorize(Policy = "Profesor")]
+[Authorize(Policy = "Owner")]
 [Route("api/solicitudes")]
 public class SolicitudesController : ControllerBase
 {

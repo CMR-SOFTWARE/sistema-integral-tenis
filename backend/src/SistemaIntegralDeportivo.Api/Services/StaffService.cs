@@ -18,6 +18,8 @@ public interface IStaffService
     Task<IReadOnlyList<ProfesorAsignableDto>> ListarAsignablesAsync(CancellationToken ct = default);
     /// <summary>¿Ese usuario es asignable en este club? (el dueño o un staff activo).</summary>
     Task<bool> EsAsignableAsync(Guid userId, CancellationToken ct = default);
+    /// <summary>El propio profe empleado se da de baja del club (pasa a ser un usuario normal).</summary>
+    Task DesvincularmeAsync(CancellationToken ct = default);
 }
 
 public class StaffService : IStaffService
@@ -25,14 +27,16 @@ public class StaffService : IStaffService
     private readonly IMembresiaTenantRepository _membresias;
     private readonly ITenantRepository _tenants;
     private readonly ICredencialesService _credenciales;
+    private readonly IUsuarioActual _usuario;
 
     public StaffService(
         IMembresiaTenantRepository membresias, ITenantRepository tenants,
-        ICredencialesService credenciales)
+        ICredencialesService credenciales, IUsuarioActual usuario)
     {
         _membresias = membresias;
         _tenants = tenants;
         _credenciales = credenciales;
+        _usuario = usuario;
     }
 
     public async Task<IReadOnlyList<StaffDto>> ListarAsync(CancellationToken ct = default)
@@ -136,6 +140,19 @@ public class StaffService : IStaffService
         if (tenant.OwnerUserId == userId) return true;
         var membresia = await _membresias.ObtenerPorUserIdAsync(userId, ct);
         return membresia is { Activo: true };
+    }
+
+    public async Task DesvincularmeAsync(CancellationToken ct = default)
+    {
+        var userId = _usuario.UserId
+            ?? throw new ReglaDeNegocioException("No hay usuario en el contexto.");
+        var membresia = await _membresias.ObtenerPorUserIdAsync(userId, ct);
+        if (membresia is null || !membresia.Activo)
+            throw new ReglaDeNegocioException("No sos parte de este club.");
+
+        // Baja lógica: pasa a ser un usuario normal (el dueño lo puede reactivar).
+        membresia.Activo = false;
+        await _membresias.GuardarCambiosAsync(ct);
     }
 
     private static StaffDto Mapear(MembresiaTenant m, Usuario u) => new()

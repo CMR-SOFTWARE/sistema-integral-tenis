@@ -12,16 +12,18 @@ public class TurnoService : ITurnoService
     private readonly IGrupoRepository _grupos;
     private readonly ICargoRepository _cargos;
     private readonly IBloqueoRepository _bloqueos;
+    private readonly IUsuarioActual _usuario;
 
     public TurnoService(
         ITurnoRepository turnos, IHorarioRepository horarios, IGrupoRepository grupos,
-        ICargoRepository cargos, IBloqueoRepository bloqueos)
+        ICargoRepository cargos, IBloqueoRepository bloqueos, IUsuarioActual usuario)
     {
         _turnos = turnos;
         _horarios = horarios;
         _grupos = grupos;
         _cargos = cargos;
         _bloqueos = bloqueos;
+        _usuario = usuario;
     }
 
     public async Task<IReadOnlyList<TurnoResponseDto>> ObtenerSemanaAsync(
@@ -34,6 +36,14 @@ public class TurnoService : ITurnoService
             await _turnos.GuardarCambiosAsync(ct);
 
         var turnosSemana = await _turnos.ListarEntreAsync(lunes, domingo, ct);
+
+        // El profe EMPLEADO ve solo SUS clases (las de horarios que tiene asignados);
+        // el dueño ve todas. Los turnos sin horario (clases sueltas) no son de nadie.
+        if (_usuario.EsStaff)
+            turnosSemana = turnosSemana
+                .Where(t => t.Horario?.ProfesorUserId == _usuario.UserId)
+                .ToList();
+
         var deudores = await DeudoresDeAsync(turnosSemana, ct);
         return turnosSemana
             .OrderBy(t => t.Fecha).ThenBy(t => t.HoraInicio)

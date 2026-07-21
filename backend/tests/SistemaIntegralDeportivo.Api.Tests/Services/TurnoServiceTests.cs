@@ -24,6 +24,7 @@ public class TurnoServiceTests
     private readonly Mock<IGrupoRepository> _grupos;
     private readonly Mock<ICargoRepository> _cargos;
     private readonly Mock<IBloqueoRepository> _bloqueos;
+    private readonly Mock<IUsuarioActual> _usuario;
     private readonly TurnoService _service;
 
     public TurnoServiceTests()
@@ -33,8 +34,9 @@ public class TurnoServiceTests
         _grupos = new Mock<IGrupoRepository>();
         _cargos = new Mock<ICargoRepository>();
         _bloqueos = new Mock<IBloqueoRepository>();
+        _usuario = new Mock<IUsuarioActual>(); // por defecto: no es staff → no filtra
         _service = new TurnoService(
-            _turnos.Object, _horarios.Object, _grupos.Object, _cargos.Object, _bloqueos.Object);
+            _turnos.Object, _horarios.Object, _grupos.Object, _cargos.Object, _bloqueos.Object, _usuario.Object);
 
         // Por defecto: nadie debe nada, sin cargos generados y sin bloqueos
         _cargos.Setup(c => c.ListarImpagosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))

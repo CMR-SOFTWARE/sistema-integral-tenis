@@ -38,6 +38,7 @@ public class AlumnosController : ControllerBase
     /// (el profe decide si los saca del calendario; nunca es automático).
     /// </summary>
     [HttpGet("morosos")]
+    [Authorize(Policy = "Owner")] // morosidad es plata: solo el dueño
     public async Task<ActionResult<IReadOnlyList<MorosoDto>>> Morosos(CancellationToken ct) =>
         Ok(await _service.ListarMorososAsync(ct));
 
@@ -50,6 +51,7 @@ public class AlumnosController : ControllerBase
 
     /// <summary>POST api/alumnos — alta CON credenciales (la temporal viaja una sola vez).</summary>
     [HttpPost]
+    [Authorize(Policy = "Owner")]
     public async Task<ActionResult<AlumnoCreadoDto>> Crear(CreateAlumnoDto dto, CancellationToken ct)
     {
         try
@@ -66,6 +68,7 @@ public class AlumnosController : ControllerBase
 
     /// <summary>POST api/alumnos/{id}/acceso — credenciales para una ficha vieja sin usuario.</summary>
     [HttpPost("{id:guid}/acceso")]
+    [Authorize(Policy = "Owner")]
     public async Task<ActionResult<AccesoCreadoDto>> CrearAcceso(
         Guid id, CrearAccesoDto dto, CancellationToken ct)
     {
@@ -81,6 +84,7 @@ public class AlumnosController : ControllerBase
 
     /// <summary>PUT api/alumnos/{id} — el profe corrige los datos de la ficha.</summary>
     [HttpPut("{id:guid}")]
+    [Authorize(Policy = "Owner")]
     public async Task<ActionResult<AlumnoResponseDto>> Editar(
         Guid id, UpdateAlumnoDto dto, CancellationToken ct)
     {
@@ -96,6 +100,7 @@ public class AlumnosController : ControllerBase
 
     /// <summary>PATCH api/alumnos/{id}/estado — pausar (Suspendido) / reactivar (Activo).</summary>
     [HttpPatch("{id:guid}/estado")]
+    [Authorize(Policy = "Owner")]
     public async Task<ActionResult<AlumnoResponseDto>> CambiarEstado(
         Guid id, UpdateEstadoDto dto, CancellationToken ct)
     {
@@ -105,6 +110,7 @@ public class AlumnosController : ControllerBase
 
     /// <summary>DELETE api/alumnos/{id} — baja LÓGICA (estado → Inactivo).</summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "Owner")]
     public async Task<IActionResult> DarDeBaja(Guid id, CancellationToken ct) =>
         await _service.DarDeBajaAsync(id, ct) ? NoContent() : NotFound();
 

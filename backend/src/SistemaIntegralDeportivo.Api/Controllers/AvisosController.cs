@@ -8,7 +8,7 @@ namespace SistemaIntegralDeportivo.Api.Controllers;
 
 /// <summary>Avisos generales del club (tablón). Los administra el profe.</summary>
 [ApiController]
-[Authorize(Policy = "Profesor")]
+[Authorize(Policy = "Owner")]
 [Route("api/avisos")]
 public class AvisosController : ControllerBase
 {

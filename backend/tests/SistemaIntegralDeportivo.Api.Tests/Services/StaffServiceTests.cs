@@ -20,6 +20,7 @@ public class StaffServiceTests
     private readonly Mock<IMembresiaTenantRepository> _repo;
     private readonly Mock<ITenantRepository> _tenants;
     private readonly Mock<ICredencialesService> _credenciales;
+    private readonly Mock<IUsuarioActual> _usuario;
     private readonly StaffService _service;
 
     public StaffServiceTests()
@@ -27,7 +28,8 @@ public class StaffServiceTests
         _repo = new Mock<IMembresiaTenantRepository>();
         _tenants = new Mock<ITenantRepository>();
         _credenciales = new Mock<ICredencialesService>();
-        _service = new StaffService(_repo.Object, _tenants.Object, _credenciales.Object);
+        _usuario = new Mock<IUsuarioActual>();
+        _service = new StaffService(_repo.Object, _tenants.Object, _credenciales.Object, _usuario.Object);
 
         _tenants.Setup(t => t.ObtenerActualAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new Tenant { Subdominio = "d", Nombre = "Academia", OwnerUserId = OwnerId });
@@ -166,6 +168,30 @@ public class StaffServiceTests
         Assert.Contains(res, p => p.UserId == OwnerId && p.EsDueño);
         Assert.Contains(res, p => p.UserId == activo.Id && !p.EsDueño);
         Assert.DoesNotContain(res, p => p.UserId == inactivoU.Id);
+    }
+
+    [Fact]
+    public async Task Desvincularme_DesactivaMiMembresia()
+    {
+        var yo = Guid.NewGuid();
+        _usuario.Setup(u => u.UserId).Returns(yo);
+        var mia = new MembresiaTenant { UserId = yo, Activo = true };
+        _repo.Setup(r => r.ObtenerPorUserIdAsync(yo, It.IsAny<CancellationToken>())).ReturnsAsync(mia);
+
+        await _service.DesvincularmeAsync();
+
+        Assert.False(mia.Activo);
+        _repo.Verify(r => r.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Desvincularme_SinMembresia_Lanza()
+    {
+        _usuario.Setup(u => u.UserId).Returns(Guid.NewGuid());
+        _repo.Setup(r => r.ObtenerPorUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync((MembresiaTenant?)null);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.DesvincularmeAsync());
     }
 
     [Fact]
