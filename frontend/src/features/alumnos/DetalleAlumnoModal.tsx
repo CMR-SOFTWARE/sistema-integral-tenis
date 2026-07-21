@@ -3,6 +3,7 @@ import Avatar from '../../components/Avatar';
 import NotasAlumnoSection from './NotasAlumnoSection';
 import { CAT_COLOR, CAT_LABEL, ESTADO_UI, formatoPlata } from './types';
 import type { Alumno } from './types';
+import { useProfesores } from '../profesores/useProfesores';
 import s from './DetalleAlumnoModal.module.css';
 
 interface Props {
@@ -16,6 +17,7 @@ interface Props {
 export default function DetalleAlumnoModal({ alumno, onClose, onCrearAcceso }: Props) {
   const cat = CAT_COLOR[alumno.categoria];
   const estado = ESTADO_UI[alumno.estado];
+  const { nombreDe } = useProfesores();
 
   const datos: [string, string][] = [
     ['DNI', alumno.dni],
@@ -23,6 +25,7 @@ export default function DetalleAlumnoModal({ alumno, onClose, onCrearAcceso }: P
     ['Email', alumno.email ?? '—'],
     ['Nacimiento', new Date(alumno.fechaNacimiento).toLocaleDateString('es-AR')],
     ['Es menor', alumno.esMenor ? 'Sí (tutor registrado)' : 'No'],
+    ['Profe de cabecera', nombreDe(alumno.profesorUserId) ?? 'Sin asignar'],
     ['Cuota mensual', formatoPlata(alumno.arancel)],
     ['Alta en el sistema', new Date(alumno.creadoEl).toLocaleDateString('es-AR')],
   ];

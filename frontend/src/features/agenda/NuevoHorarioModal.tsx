@@ -6,6 +6,7 @@ import type { Alumno } from '../alumnos/types';
 import type { Grupo } from '../grupos/types';
 import { DIAS } from './types';
 import type { CreateHorario, DiaSemana, Sede } from './types';
+import { useProfesores } from '../profesores/useProfesores';
 import s from '../alumnos/NuevoAlumnoModal.module.css';
 
 interface Props {
@@ -24,6 +25,8 @@ export default function NuevoHorarioModal({ sedes, onClose, onCrear }: Props) {
   const [dia, setDia] = useState<DiaSemana>('Monday');
   const [hora, setHora] = useState('18:00');
   const [duracion, setDuracion] = useState(60);
+  const [profesorId, setProfesorId] = useState('');
+  const { profes } = useProfesores();
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [alumnos, setAlumnos] = useState<Alumno[]>([]);
   const [enviando, setEnviando] = useState(false);
@@ -51,6 +54,7 @@ export default function NuevoHorarioModal({ sedes, onClose, onCrear }: Props) {
         canchaId,
         grupoId: tipo === 'grupo' ? grupoId : undefined,
         alumnoId: tipo === 'individual' ? alumnoId : undefined,
+        profesorUserId: profesorId || undefined,
         dia,
         horaInicio: hora, // "18:00" — TimeOnly lo parsea
         duracionMinutos: duracion,
@@ -135,6 +139,15 @@ export default function NuevoHorarioModal({ sedes, onClose, onCrear }: Props) {
           <span>Duración (minutos)</span>
           <select value={duracion} onChange={(e) => setDuracion(Number(e.target.value))}>
             {[30, 45, 60, 90, 120].map((m) => <option key={m} value={m}>{m}'</option>)}
+          </select>
+        </label>
+        <label className={s.campo}>
+          <span>Profe (opcional)</span>
+          <select value={profesorId} onChange={(e) => setProfesorId(e.target.value)}>
+            <option value="">Sin asignar</option>
+            {profes.map((p) => (
+              <option key={p.userId} value={p.userId}>{p.nombre}{p.esDueño ? ' (vos)' : ''}</option>
+            ))}
           </select>
         </label>
 

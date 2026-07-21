@@ -3,6 +3,7 @@ import Modal from '../../components/Modal';
 import { ApiError } from '../../lib/api';
 import { CATEGORIAS, CAT_LABEL, edad } from './types';
 import type { Alumno, Categoria, Modalidad, UpdateAlumno } from './types';
+import { useProfesores } from '../profesores/useProfesores';
 import s from './NuevoAlumnoModal.module.css';
 
 interface Props {
@@ -25,12 +26,14 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
     fechaNacimiento: alumno.fechaNacimiento.slice(0, 10),
     categoria: alumno.categoria,
     modalidad: alumno.modalidad ?? 'Mensual',
+    profesorId: alumno.profesorUserId ?? '',
     notas: alumno.notas ?? '',
   });
   const set = (campo: keyof typeof form, valor: string) =>
     setForm((f) => ({ ...f, [campo]: valor }));
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { profes } = useProfesores();
 
   const esMenor = form.fechaNacimiento !== '' && edad(form.fechaNacimiento) < 18;
 
@@ -47,6 +50,7 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
         fechaNacimiento: form.fechaNacimiento,
         categoria: form.categoria as Categoria,
         modalidad: form.modalidad as Modalidad,
+        profesorUserId: form.profesorId || undefined,
         notas: form.notas.trim() || undefined,
       });
       onClose();
@@ -112,6 +116,15 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
           <select value={form.modalidad} onChange={(e) => set('modalidad', e.target.value)}>
             <option value="Mensual">Mensual (vence el 10)</option>
             <option value="PorClase">Por clase</option>
+          </select>
+        </label>
+        <label className={s.campo}>
+          <span>Profe de cabecera</span>
+          <select value={form.profesorId} onChange={(e) => set('profesorId', e.target.value)}>
+            <option value="">Sin asignar</option>
+            {profes.map((p) => (
+              <option key={p.userId} value={p.userId}>{p.nombre}{p.esDueño ? ' (vos)' : ''}</option>
+            ))}
           </select>
         </label>
         <label className={`${s.campo} ${s.span2}`}>

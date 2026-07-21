@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { api } from '../../lib/api';
 import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
+import { useProfesores } from '../profesores/useProfesores';
 import { useGrupos } from './useGrupos';
 import NuevoGrupoModal from './NuevoGrupoModal';
 import AsignarAlumnoModal from './AsignarAlumnoModal';
@@ -14,10 +16,16 @@ export default function GruposPage() {
   const [grupoAsignar, setGrupoAsignar] = useState<Grupo | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const confirmar = useConfirmar();
+  const { profes } = useProfesores();
 
   const avisar = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2600);
+  };
+
+  const reasignarProfe = async (grupoId: string, profesorUserId: string) => {
+    await api.patch(`/grupos/${grupoId}/profesor`, { profesorUserId: profesorUserId || null });
+    void recargar();
   };
 
   const quitarMiembro = async (grupo: Grupo, alumnoId: string, nombre: string) => {
@@ -99,6 +107,18 @@ export default function GruposPage() {
               </div>
 
               <div className={s.tarjetaPie}>
+                <label className={s.profeSelect}>
+                  <span>Profe</span>
+                  <select
+                    value={g.profesorUserId ?? ''}
+                    onChange={(e) => void reasignarProfe(g.id, e.target.value)}
+                  >
+                    <option value="">Sin asignar</option>
+                    {profes.map((p) => (
+                      <option key={p.userId} value={p.userId}>{p.nombre}{p.esDueño ? ' (vos)' : ''}</option>
+                    ))}
+                  </select>
+                </label>
                 <button
                   className={s.btnAsignar}
                   disabled={lleno}

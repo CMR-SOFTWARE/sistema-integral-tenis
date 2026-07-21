@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { api } from '../../lib/api';
 import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
+import { useProfesores } from '../profesores/useProfesores';
 import { useHorarios, useSedes } from './hooks';
 import NuevoHorarioModal from './NuevoHorarioModal';
 import PanelSolicitudesHorario from './PanelSolicitudesHorario';
@@ -16,6 +18,12 @@ export default function HorariosPage() {
   const [modal, setModal] = useState(false);
   const [sede, setSede] = useState(''); // '' = todas
   const confirmar = useConfirmar();
+  const { profes } = useProfesores();
+
+  const reasignarProfe = async (id: string, profesorUserId: string) => {
+    await api.patch(`/horarios/${id}/profesor`, { profesorUserId: profesorUserId || null });
+    void recargar();
+  };
 
   // Para dar de alta solo se ofrecen las sedes habilitadas; el filtro de
   // arriba sí muestra todas (puede haber horarios de una sede dada de baja)
@@ -85,6 +93,17 @@ export default function HorariosPage() {
                       {h.titulo}
                     </div>
                     <div className={s.slotLugar}>{h.sede} · {h.cancha}</div>
+                    <select
+                      className={s.slotProfe}
+                      value={h.profesorUserId ?? ''}
+                      onChange={(e) => void reasignarProfe(h.id, e.target.value)}
+                      title="Profe a cargo"
+                    >
+                      <option value="">Sin profe</option>
+                      {profes.map((p) => (
+                        <option key={p.userId} value={p.userId}>{p.nombre}{p.esDueño ? ' (vos)' : ''}</option>
+                      ))}
+                    </select>
                     <button
                       className={s.slotBaja}
                       title="Desactivar horario"

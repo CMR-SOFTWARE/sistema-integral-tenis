@@ -29,12 +29,14 @@ export interface Horario {
   horaInicio: string; // "18:00:00"
   duracionMinutos: number;
   activo: boolean;
+  profesorUserId: string | null;
 }
 
 export interface CreateHorario {
   canchaId: string;
   grupoId?: string;
   alumnoId?: string;
+  profesorUserId?: string;
   dia: DiaSemana;
   horaInicio: string;
   duracionMinutos: number;

@@ -35,6 +35,8 @@ export interface Alumno {
   tieneUsuario: boolean;
   /** Foto de perfil (data URL) que cargó el alumno, o null. */
   fotoUrl: string | null;
+  /** Profe de cabecera (dueño o staff); null = sin asignar. */
+  profesorUserId: string | null;
 }
 
 /** Espejo de CreateAlumnoDto. */
@@ -48,6 +50,7 @@ export interface CreateAlumno {
   fechaNacimiento: string;
   categoria: Categoria;
   arancel?: number;
+  profesorUserId?: string;
   notas?: string;
   consentimientoWhatsapp: boolean;
   consentimientoDatos: boolean;
@@ -70,6 +73,7 @@ export interface UpdateAlumno {
   fechaNacimiento: string;
   categoria: Categoria;
   modalidad: Modalidad;
+  profesorUserId?: string;
   notas?: string;
 }
 
