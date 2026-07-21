@@ -12,6 +12,7 @@ import SolicitudesPage from './features/solicitudes/SolicitudesPage';
 import { obtenerSesion, obtenerToken } from './features/auth/sesion';
 import DashboardPage from './features/dashboard/DashboardPage';
 import GruposPage from './features/grupos/GruposPage';
+import ProfesoresPage from './features/profesores/ProfesoresPage';
 import CalendarioPage from './features/agenda/CalendarioPage';
 import HorariosPage from './features/agenda/HorariosPage';
 import ConfiguracionPage from './features/agenda/ConfiguracionPage';
@@ -84,6 +85,7 @@ export default function App() {
             <Route path="/alumnos" element={<AlumnosPage />} />
             <Route path="/calendario" element={<CalendarioPage />} />
             <Route path="/grupos" element={<GruposPage />} />
+            <Route path="/profesores" element={<ProfesoresPage />} />
             <Route path="/horarios" element={<HorariosPage />} />
             <Route path="/cuotas" element={<CuotasPage />} />
             <Route path="/avisos" element={<AvisosPage />} />

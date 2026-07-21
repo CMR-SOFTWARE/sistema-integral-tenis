@@ -14,6 +14,8 @@ export interface Sesion {
   apellido: string;
   email: string;
   esProfesor: boolean;
+  /** "owner" (dueño/head pro) o "staff" (profe empleado); null si no es profe. */
+  rol: 'owner' | 'staff' | null;
   /** Estado del club propio; "PendientePago" manda al checkout. */
   estadoTenant: 'PendientePago' | 'Activo' | 'Suspendido' | null;
   /** Nació con contraseña inicial del profe (informativo). */

@@ -5,6 +5,8 @@ export interface NavItem {
   to: string;
   label: string;
   icon: string;
+  /** Solo lo ve el dueño (head pro), no el profe empleado (staff). */
+  soloOwner?: boolean;
 }
 
 export const profNav: NavItem[] = [
@@ -23,6 +25,12 @@ export const profNav: NavItem[] = [
     to: '/grupos',
     label: 'Grupos',
     icon: 'M18 21a6 6 0 0 0-12 0M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM21 10h-4M19 8v4',
+  },
+  {
+    to: '/profesores',
+    label: 'Profesores',
+    icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+    soloOwner: true,
   },
   { to: '/horarios', label: 'Horarios', icon: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 3' },
   {
