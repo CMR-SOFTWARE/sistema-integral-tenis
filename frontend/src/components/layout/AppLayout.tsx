@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { cerrarSesion, obtenerSesion } from '../../features/auth/sesion';
 import BotonMenu from './BotonMenu';
+import { useConfirmar } from '../confirmar/ConfirmarProvider';
 import { profNav, pageTitles } from './nav';
 import s from './AppLayout.module.css';
 
@@ -25,6 +26,7 @@ function fechaDeHoy(): string {
 export default function AppLayout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const confirmar = useConfirmar();
   const title = pageTitles[pathname] ?? 'CourtSet';
   const sesion = obtenerSesion();
   const [pendientes, setPendientes] = useState(0);
@@ -42,7 +44,13 @@ export default function AppLayout() {
     setMenuAbierto(false);
   }, [pathname]);
 
-  const salir = () => {
+  const salir = async () => {
+    const ok = await confirmar({
+      titulo: '¿Cerrar sesión?',
+      mensaje: 'Vas a volver a la pantalla de inicio de sesión.',
+      confirmar: 'Cerrar sesión',
+    });
+    if (!ok) return;
     cerrarSesion();
     navigate('/login');
   };

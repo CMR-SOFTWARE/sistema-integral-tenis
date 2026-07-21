@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { api, ApiError } from '../../lib/api';
+import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import type { Raqueta } from './types';
 import s from './PortalPages.module.css';
 
@@ -17,6 +18,7 @@ export default function RaquetasSection({ raquetas, onCambio }: Props) {
   const [editId, setEditId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState(VACIA);
   const [error, setError] = useState<string | null>(null);
+  const confirmar = useConfirmar();
 
   const cuerpo = (f: typeof VACIA) => ({
     marca: f.marca.trim(),
@@ -47,7 +49,12 @@ export default function RaquetasSection({ raquetas, onCambio }: Props) {
   };
 
   const borrar = async (r: Raqueta) => {
-    if (!window.confirm(`¿Borrar la raqueta "${r.marca}"?`)) return;
+    if (!(await confirmar({
+      titulo: 'Borrar raqueta',
+      mensaje: `¿Borrar la raqueta "${r.marca}"?`,
+      confirmar: 'Borrar',
+      peligro: true,
+    }))) return;
     setError(null);
     try {
       await api.delete(`/portal/raquetas/${r.id}`);

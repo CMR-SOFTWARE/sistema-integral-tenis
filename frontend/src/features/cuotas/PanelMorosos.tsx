@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '../../lib/api';
+import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { formatoPlata } from '../alumnos/types';
 import s from './PanelMorosos.module.css';
 
@@ -23,6 +24,7 @@ export default function PanelMorosos({ onCambio }: { onCambio?: () => void }) {
   const [abierto, setAbierto] = useState(false);
   const [pausando, setPausando] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const confirmar = useConfirmar();
 
   const cargar = useCallback(() => {
     api.get<Moroso[]>('/alumnos/morosos').then(setMorosos).catch(() => setMorosos([]));
@@ -33,9 +35,11 @@ export default function PanelMorosos({ onCambio }: { onCambio?: () => void }) {
   }, [cargar]);
 
   const pausar = async (m: Moroso) => {
-    if (!window.confirm(
-      `¿Sacar a ${m.nombre} ${m.apellido} del calendario? Queda pausado y se liberan sus turnos futuros (sus cargos impagos se borran). Cuando pague, lo reactivás y vuelve solo.`,
-    )) return;
+    if (!(await confirmar({
+      titulo: `Sacar a ${m.nombre} ${m.apellido} del calendario`,
+      mensaje: 'Queda pausado y se liberan sus turnos futuros (sus cargos impagos se borran). Cuando pague, lo reactivás y vuelve solo.',
+      confirmar: 'Pausar',
+    }))) return;
 
     setError(null);
     setPausando(m.id);

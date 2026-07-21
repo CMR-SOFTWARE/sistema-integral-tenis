@@ -6,6 +6,7 @@ import DetalleAlumnoModal from './DetalleAlumnoModal';
 import AccesoCreadoModal from './AccesoCreadoModal';
 import { ApiError } from '../../lib/api';
 import Avatar from '../../components/Avatar';
+import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { CATEGORIAS, CAT_COLOR, CAT_LABEL, ESTADO_UI } from './types';
 import type { Alumno, Categoria, Estado } from './types';
 import s from './AlumnosPage.module.css';
@@ -26,6 +27,7 @@ export default function AlumnosPage() {
   const [detalle, setDetalle] = useState<Alumno | null>(null);
   const [credenciales, setCredenciales] = useState<Credenciales | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const confirmar = useConfirmar();
 
   const avisar = (msg: string) => {
     setToast(msg);
@@ -50,9 +52,11 @@ export default function AlumnosPage() {
 
   const pausarOReactivar = async (a: Alumno) => {
     const pausar = a.estado === 'Activo';
-    if (pausar && !window.confirm(
-      `¿Pausar a ${a.nombre} ${a.apellido}? Sale de sus turnos futuros y deja de pagarlos, pero le guardamos su lugar: al reactivarlo vuelve solo.`,
-    )) return;
+    if (pausar && !(await confirmar({
+      titulo: `Pausar a ${a.nombre} ${a.apellido}`,
+      mensaje: 'Sale de sus turnos futuros y deja de pagarlos, pero le guardamos su lugar: al reactivarlo vuelve solo.',
+      confirmar: 'Pausar',
+    }))) return;
 
     await cambiarEstado(a.id, pausar ? 'Suspendido' : 'Activo');
     avisar(pausar
@@ -61,9 +65,12 @@ export default function AlumnosPage() {
   };
 
   const baja = async (a: Alumno) => {
-    if (!window.confirm(
-      `¿Dar de baja a ${a.nombre} ${a.apellido}? Sale del calendario, de sus grupos (se libera el cupo) y se desactivan sus horarios individuales. El historial se conserva.`,
-    )) return;
+    if (!(await confirmar({
+      titulo: `Dar de baja a ${a.nombre} ${a.apellido}`,
+      mensaje: 'Sale del calendario, de sus grupos (se libera el cupo) y se desactivan sus horarios individuales. El historial se conserva.',
+      confirmar: 'Dar de baja',
+      peligro: true,
+    }))) return;
     await darDeBaja(a.id);
     avisar(`${a.nombre} dado de baja y fuera del calendario`);
   };

@@ -5,6 +5,7 @@ import { cerrarSesion, guardarSesion, obtenerSesion } from '../auth/sesion';
 import type { Sesion } from '../auth/sesion';
 import BotonMenu from '../../components/layout/BotonMenu';
 import Avatar from '../../components/Avatar';
+import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { alumnoNav, portalTitles } from '../../components/layout/nav';
 import { CAT_LABEL } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
@@ -30,6 +31,7 @@ function fechaDeHoy(): string {
 export default function PortalLayout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const confirmar = useConfirmar();
   const [sesion, setSesion] = useState<Sesion | null>(obtenerSesion());
   const [perfil, setPerfil] = useState<MiPerfil | null>(null);
   const [menuAbierto, setMenuAbierto] = useState(false);
@@ -54,7 +56,13 @@ export default function PortalLayout() {
       .catch(() => {}); // sin red: seguimos con la sesión guardada
   }, []);
 
-  const salir = () => {
+  const salir = async () => {
+    const ok = await confirmar({
+      titulo: '¿Cerrar sesión?',
+      mensaje: 'Vas a volver a la pantalla de inicio de sesión.',
+      confirmar: 'Cerrar sesión',
+    });
+    if (!ok) return;
     cerrarSesion();
     navigate('/login');
   };
