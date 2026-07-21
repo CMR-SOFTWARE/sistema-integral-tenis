@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using SistemaIntegralDeportivo.Api.Data;
 
@@ -10,9 +11,11 @@ using SistemaIntegralDeportivo.Api.Data;
 namespace SistemaIntegralDeportivo.Api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260721140353_Avisos")]
+    partial class Avisos
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "10.0.9");
@@ -485,37 +488,6 @@ namespace SistemaIntegralDeportivo.Api.Migrations
                     b.HasIndex("TenantId", "Activo");
 
                     b.ToTable("Horarios");
-                });
-
-            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.NotaAlumno", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("AlumnoId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<bool>("Compartida")
-                        .HasColumnType("INTEGER");
-
-                    b.Property<DateTime>("CreadoEl")
-                        .HasColumnType("TEXT");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("TEXT");
-
-                    b.Property<string>("Texto")
-                        .IsRequired()
-                        .HasColumnType("TEXT");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AlumnoId");
-
-                    b.HasIndex("TenantId");
-
-                    b.ToTable("NotasAlumno");
                 });
 
             modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.Pedido", b =>
@@ -1313,25 +1285,6 @@ namespace SistemaIntegralDeportivo.Api.Migrations
                     b.Navigation("Cancha");
 
                     b.Navigation("Grupo");
-
-                    b.Navigation("Tenant");
-                });
-
-            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.NotaAlumno", b =>
-                {
-                    b.HasOne("SistemaIntegralDeportivo.Api.Models.Alumno", "Alumno")
-                        .WithMany()
-                        .HasForeignKey("AlumnoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("SistemaIntegralDeportivo.Api.Models.Tenant", "Tenant")
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Alumno");
 
                     b.Navigation("Tenant");
                 });

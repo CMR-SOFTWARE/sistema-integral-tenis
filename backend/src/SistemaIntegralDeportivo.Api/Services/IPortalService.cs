@@ -69,6 +69,12 @@ public interface IPortalService
     /// <summary>Los banners de publicidad activos del club (para el Inicio del portal).</summary>
     Task<IReadOnlyList<PublicidadDto>> PublicidadAsync(Guid userId, CancellationToken ct = default);
 
+    /// <summary>Los avisos generales vigentes del club (para el Inicio del portal).</summary>
+    Task<IReadOnlyList<AvisoDto>> AvisosAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>Las notas que el profe me compartió (para el Inicio del portal).</summary>
+    Task<IReadOnlyList<NotaAlumnoDto>> NotasAsync(Guid userId, CancellationToken ct = default);
+
     /// <summary>Las sedes del club (para elegir dónde quiero la clase individual).</summary>
     Task<IReadOnlyList<SedeReservaDto>> SedesAsync(Guid userId, CancellationToken ct = default);
 
