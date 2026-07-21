@@ -32,6 +32,10 @@ public class TokenService : ITokenService
             claims.Add(new Claim("rol", rol == RolTenant.Dueño ? "owner" : "staff"));
         }
 
+        // Admin de plataforma (cross-tenant): habilita el panel "Plataforma"
+        if (usuario.EsAdminPlataforma)
+            claims.Add(new Claim("admin", "true"));
+
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]
             ?? throw new InvalidOperationException("Falta Jwt:Key en la configuración.")));
 

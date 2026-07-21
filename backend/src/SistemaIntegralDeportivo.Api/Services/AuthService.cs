@@ -78,6 +78,7 @@ public class AuthService : IAuthService
                 RolTenant.Staff => "staff",
                 _ => null,
             },
+            EsAdmin = usuario.EsAdminPlataforma,
             EstadoTenant = estadoTenant,
             DebeCambiarPassword = usuario.DebeCambiarPassword,
             Dni = usuario.Dni,

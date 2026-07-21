@@ -14,6 +14,7 @@ import DashboardPage from './features/dashboard/DashboardPage';
 import StaffDashboardPage from './features/staff/StaffDashboardPage';
 import GruposPage from './features/grupos/GruposPage';
 import ProfesoresPage from './features/profesores/ProfesoresPage';
+import PlataformaPage from './features/admin/PlataformaPage';
 import CalendarioPage from './features/agenda/CalendarioPage';
 import HorariosPage from './features/agenda/HorariosPage';
 import ConfiguracionPage from './features/agenda/ConfiguracionPage';
@@ -105,6 +106,7 @@ export default function App() {
             <Route path="/solicitudes" element={<SolicitudesPage />} />
             <Route path="/reportes" element={<ReportesPage />} />
             <Route path="/configuracion" element={<ConfiguracionPage />} />
+            <Route path="/plataforma" element={<PlataformaPage />} />
           </Route>
         </Route>
 

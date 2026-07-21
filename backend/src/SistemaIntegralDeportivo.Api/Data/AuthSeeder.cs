@@ -29,12 +29,19 @@ public static class AuthSeeder
                 Email = EmailProfe,
                 Nombre = "Profe",
                 Apellido = "Demo",
+                EsAdminPlataforma = true, // el profe demo es también el admin de la app
             };
             var resultado = await userManager.CreateAsync(profe, PasswordProfe);
             if (!resultado.Succeeded)
                 throw new InvalidOperationException(
                     "No se pudo sembrar el profe demo: " +
                     string.Join("; ", resultado.Errors.Select(e => e.Description)));
+        }
+        else if (!profe.EsAdminPlataforma)
+        {
+            // Cuenta ya sembrada antes de este campo: la marcamos admin
+            profe.EsAdminPlataforma = true;
+            await userManager.UpdateAsync(profe);
         }
 
         // La membresía mínima del ADR-0007: el profe es dueño del tenant demo

@@ -69,6 +69,8 @@ builder.Services.AddScoped<INotaAlumnoRepository, NotaAlumnoRepository>();
 builder.Services.AddScoped<INotaAlumnoService, NotaAlumnoService>();
 builder.Services.AddScoped<IMembresiaTenantRepository, MembresiaTenantRepository>();
 builder.Services.AddScoped<IStaffService, StaffService>();
+builder.Services.AddScoped<IAdminRepository, AdminRepository>();
+builder.Services.AddScoped<IAdminService, AdminService>();
 
 // Base de datos: EF Core sobre SQLite (la connection string vive en appsettings.json)
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -119,6 +121,8 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("Profesor", p => p.RequireClaim("profesor", "true"));
     // Owner: solo el dueño del club (cuotas, config, gestión de profes, etc.)
     options.AddPolicy("Owner", p => p.RequireClaim("rol", "owner"));
+    // Admin: el dueño de la app (panel de plataforma, cross-tenant)
+    options.AddPolicy("Admin", p => p.RequireClaim("admin", "true"));
 });
 
 // CORS: el front (Vite, puerto 5173) corre en otro origen que esta API,

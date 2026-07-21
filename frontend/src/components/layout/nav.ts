@@ -7,6 +7,8 @@ export interface NavItem {
   icon: string;
   /** Solo lo ve el dueño (head pro), no el profe empleado (staff). */
   soloOwner?: boolean;
+  /** Solo lo ve el admin de plataforma (dueño de la app). */
+  soloAdmin?: boolean;
 }
 
 export const profNav: NavItem[] = [
@@ -66,6 +68,12 @@ export const profNav: NavItem[] = [
     label: 'Configuración',
     icon: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
     soloOwner: true,
+  },
+  {
+    to: '/plataforma',
+    label: 'Plataforma',
+    icon: 'M2 3h20v14H2zM8 21h8M12 17v4',
+    soloAdmin: true,
   },
 ];
 
