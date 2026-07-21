@@ -16,6 +16,7 @@ public interface IMembresiaTenantRepository
 
     // ── NO scopeadas: corren sin tenant en contexto (login, búsqueda por email) ──
     Task<Usuario?> BuscarUsuarioPorEmailAsync(string email, CancellationToken ct = default);
+    Task<Usuario?> ObtenerUsuarioAsync(Guid userId, CancellationToken ct = default);
     /// <summary>La membresía staff ACTIVA del usuario (para resolver su tenant al loguearse).</summary>
     Task<MembresiaTenant?> ObtenerActivaPorUserIdAsync(Guid userId, CancellationToken ct = default);
 }
@@ -66,6 +67,9 @@ public class MembresiaTenantRepository : IMembresiaTenantRepository
         var normalizado = email.Trim().ToUpperInvariant(); // Identity guarda NormalizedEmail en mayúsculas
         return _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizado, ct);
     }
+
+    public Task<Usuario?> ObtenerUsuarioAsync(Guid userId, CancellationToken ct = default) =>
+        _db.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
 
     public Task<MembresiaTenant?> ObtenerActivaPorUserIdAsync(Guid userId, CancellationToken ct = default) =>
         _db.MembresiasTenant.FirstOrDefaultAsync(m => m.UserId == userId && m.Activo, ct);

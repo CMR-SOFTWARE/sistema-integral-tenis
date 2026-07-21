@@ -16,6 +16,9 @@ public class Horario
     public Guid CanchaId { get; set; }
     public Cancha Cancha { get; set; } = null!; // la sede se deriva de la cancha
 
+    /// <summary>El profe que da esta clase (dueño o staff); null = sin asignar. Sin nav, como UserId.</summary>
+    public Guid? ProfesorUserId { get; set; }
+
     // ── Grupal XOR individual ──
     public Guid? GrupoId { get; set; }
     public Grupo? Grupo { get; set; }

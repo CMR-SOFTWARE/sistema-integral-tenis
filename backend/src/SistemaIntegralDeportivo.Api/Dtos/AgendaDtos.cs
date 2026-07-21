@@ -11,6 +11,9 @@ public class CreateHorarioDto
     public Guid? GrupoId { get; set; }
     public Guid? AlumnoId { get; set; }
 
+    /// <summary>Profe que da la clase (dueño o staff); opcional.</summary>
+    public Guid? ProfesorUserId { get; set; }
+
     [Required]
     public DayOfWeek Dia { get; set; }
 
@@ -35,6 +38,8 @@ public class HorarioResponseDto
     public TimeOnly HoraInicio { get; set; }
     public int DuracionMinutos { get; set; }
     public bool Activo { get; set; }
+    /// <summary>Profe asignado (dueño o staff); null = sin asignar. El front mapea el nombre.</summary>
+    public Guid? ProfesorUserId { get; set; }
 }
 
 /// <summary>Participante del roster de un turno + asistencia.</summary>

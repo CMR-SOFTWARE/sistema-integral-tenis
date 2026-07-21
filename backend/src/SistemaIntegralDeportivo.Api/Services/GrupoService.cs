@@ -11,29 +11,49 @@ public class GrupoService : IGrupoService
     private readonly IAlumnoRepository _alumnos;
     private readonly ICargoRepository _cargos;
     private readonly IAlumnoService _alumnoService;
+    private readonly IStaffService _staff;
 
     public GrupoService(
         IGrupoRepository grupos, IAlumnoRepository alumnos, ICargoRepository cargos,
-        IAlumnoService alumnoService)
+        IAlumnoService alumnoService, IStaffService staff)
     {
         _grupos = grupos;
         _alumnos = alumnos;
         _cargos = cargos;
         _alumnoService = alumnoService;
+        _staff = staff;
     }
 
     public async Task<GrupoResponseDto> CrearAsync(CreateGrupoDto dto, CancellationToken ct = default)
     {
+        if (dto.ProfesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))
+            throw new ReglaDeNegocioException("Ese profe no es de tu club.");
+
         var grupo = new Grupo
         {
             Nombre = dto.Nombre,
             Categoria = dto.Categoria,
             CupoMaximo = dto.CupoMaximo,
+            ProfesorUserId = dto.ProfesorUserId,
             // TenantId lo asigna el repositorio (dueño del scoping)
         };
 
         var creado = await _grupos.AgregarAsync(grupo, ct);
         return Mapear(creado);
+    }
+
+    public async Task<GrupoResponseDto> AsignarProfesorAsync(
+        Guid grupoId, Guid? profesorUserId, CancellationToken ct = default)
+    {
+        var grupo = await _grupos.ObtenerAsync(grupoId, ct)
+            ?? throw new ReglaDeNegocioException("El grupo no existe.");
+
+        if (profesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))
+            throw new ReglaDeNegocioException("Ese profe no es de tu club.");
+
+        grupo.ProfesorUserId = profesorUserId;
+        await _grupos.GuardarCambiosAsync(ct);
+        return Mapear(grupo);
     }
 
     public async Task<IReadOnlyList<GrupoResponseDto>> ListarAsync(CancellationToken ct = default)
@@ -138,6 +158,7 @@ public class GrupoService : IGrupoService
             Categoria = g.Categoria?.ToString(),
             CupoMaximo = g.CupoMaximo,
             Activo = g.Activo,
+            ProfesorUserId = g.ProfesorUserId,
             MiembrosActivos = activos.Count,
             Miembros = activos
                 .Where(m => m.Alumno is not null)

@@ -26,6 +26,11 @@ public class StaffController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<StaffDto>>> Listar(CancellationToken ct) =>
         Ok(await _staff.ListarAsync(ct));
 
+    /// <summary>Profes a los que asignar horarios/grupos/alumnos: el dueño + los staff activos.</summary>
+    [HttpGet("asignables")]
+    public async Task<ActionResult<IReadOnlyList<ProfesorAsignableDto>>> Asignables(CancellationToken ct) =>
+        Ok(await _staff.ListarAsignablesAsync(ct));
+
     [HttpPost]
     public async Task<ActionResult<StaffCreadoDto>> Agregar(AgregarStaffDto dto, CancellationToken ct)
     {

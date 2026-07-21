@@ -52,6 +52,9 @@ public class CreateAlumnoDto
     [Range(0, 99_999_999)]
     public decimal? Arancel { get; set; }
 
+    /// <summary>Profe de cabecera (dueño o staff); opcional.</summary>
+    public Guid? ProfesorUserId { get; set; }
+
     [StringLength(500)]
     public string? Notas { get; set; }
 
@@ -91,6 +94,9 @@ public class UpdateAlumnoDto
     public CategoriaAlumno Categoria { get; set; } = CategoriaAlumno.SinCategoria;
 
     public ModalidadPago Modalidad { get; set; } = ModalidadPago.Mensual;
+
+    /// <summary>Profe de cabecera (dueño o staff); opcional.</summary>
+    public Guid? ProfesorUserId { get; set; }
 
     [StringLength(500)]
     public string? Notas { get; set; }

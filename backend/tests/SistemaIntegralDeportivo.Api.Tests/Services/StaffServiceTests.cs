@@ -143,4 +143,44 @@ public class StaffServiceTests
     {
         await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.CambiarActivoAsync(Guid.NewGuid(), false));
     }
+
+    // ── Profes asignables (dueño + staff activos) ──
+
+    [Fact]
+    public async Task ListarAsignables_IncluyeAlDueñoYSoloStaffActivos()
+    {
+        _repo.Setup(r => r.ObtenerUsuarioAsync(OwnerId, It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new Usuario { Id = OwnerId, Nombre = "Juan", Apellido = "Head" });
+        var activo = Usuario(Guid.NewGuid());
+        var inactivoU = Usuario(Guid.NewGuid());
+        _repo.Setup(r => r.ListarConUsuarioAsync(It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new[]
+             {
+                 (new MembresiaTenant { UserId = activo.Id, Activo = true }, activo),
+                 (new MembresiaTenant { UserId = inactivoU.Id, Activo = false }, inactivoU),
+             });
+
+        var res = await _service.ListarAsignablesAsync();
+
+        Assert.Equal(2, res.Count); // dueño + 1 staff activo (el inactivo no)
+        Assert.Contains(res, p => p.UserId == OwnerId && p.EsDueño);
+        Assert.Contains(res, p => p.UserId == activo.Id && !p.EsDueño);
+        Assert.DoesNotContain(res, p => p.UserId == inactivoU.Id);
+    }
+
+    [Fact]
+    public async Task EsAsignable_DueñoYStaffActivo_True_OtroFalse()
+    {
+        var activo = Guid.NewGuid();
+        _repo.Setup(r => r.ObtenerPorUserIdAsync(activo, It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new MembresiaTenant { UserId = activo, Activo = true });
+        var inactivo = Guid.NewGuid();
+        _repo.Setup(r => r.ObtenerPorUserIdAsync(inactivo, It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new MembresiaTenant { UserId = inactivo, Activo = false });
+
+        Assert.True(await _service.EsAsignableAsync(OwnerId));
+        Assert.True(await _service.EsAsignableAsync(activo));
+        Assert.False(await _service.EsAsignableAsync(inactivo));
+        Assert.False(await _service.EsAsignableAsync(Guid.NewGuid())); // desconocido
+    }
 }

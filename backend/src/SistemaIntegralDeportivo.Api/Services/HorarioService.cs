@@ -10,12 +10,15 @@ public class HorarioService : IHorarioService
     private readonly IHorarioRepository _horarios;
     private readonly ITurnoRepository _turnos;
     private readonly ICargoRepository _cargos;
+    private readonly IStaffService _staff;
 
-    public HorarioService(IHorarioRepository horarios, ITurnoRepository turnos, ICargoRepository cargos)
+    public HorarioService(
+        IHorarioRepository horarios, ITurnoRepository turnos, ICargoRepository cargos, IStaffService staff)
     {
         _horarios = horarios;
         _turnos = turnos;
         _cargos = cargos;
+        _staff = staff;
     }
 
     public async Task<HorarioResponseDto> CrearAsync(CreateHorarioDto dto, CancellationToken ct = default)
@@ -45,11 +48,16 @@ public class HorarioService : IHorarioService
             throw new ReglaDeNegocioException(
                 $"Se superpone con otro horario de esa cancha ({pisado.HoraInicio:HH\\:mm}, {pisado.DuracionMinutos}').");
 
+        // Regla: si se asigna un profe, tiene que ser del club (dueño o staff activo)
+        if (dto.ProfesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))
+            throw new ReglaDeNegocioException("Ese profe no es de tu club.");
+
         var horario = new Horario
         {
             CanchaId = dto.CanchaId,
             GrupoId = dto.GrupoId,
             AlumnoId = dto.AlumnoId,
+            ProfesorUserId = dto.ProfesorUserId,
             Dia = dto.Dia,
             HoraInicio = dto.HoraInicio,
             DuracionMinutos = dto.DuracionMinutos,
@@ -58,6 +66,20 @@ public class HorarioService : IHorarioService
 
         var creado = await _horarios.AgregarAsync(horario, ct);
         return Mapear(creado);
+    }
+
+    public async Task<HorarioResponseDto> AsignarProfesorAsync(
+        Guid id, Guid? profesorUserId, CancellationToken ct = default)
+    {
+        var horario = await _horarios.ObtenerAsync(id, ct)
+            ?? throw new ReglaDeNegocioException("El horario no existe.");
+
+        if (profesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))
+            throw new ReglaDeNegocioException("Ese profe no es de tu club.");
+
+        horario.ProfesorUserId = profesorUserId;
+        await _horarios.GuardarCambiosAsync(ct);
+        return Mapear(horario);
     }
 
     public async Task<IReadOnlyList<HorarioResponseDto>> ListarAsync(CancellationToken ct = default)
@@ -109,5 +131,6 @@ public class HorarioService : IHorarioService
         HoraInicio = h.HoraInicio,
         DuracionMinutos = h.DuracionMinutos,
         Activo = h.Activo,
+        ProfesorUserId = h.ProfesorUserId,
     };
 }
