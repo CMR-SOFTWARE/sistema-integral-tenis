@@ -142,6 +142,9 @@ public class SesionDto
     /// <summary>"owner" (head pro) o "staff" (profe empleado); null si no es profe. El front arma el menú con esto.</summary>
     public string? Rol { get; set; }
 
+    /// <summary>Admin de plataforma (dueño de la app): habilita la sección "Plataforma".</summary>
+    public bool EsAdmin { get; set; }
+
     /// <summary>Estado del club propio ("PendientePago" manda al checkout); null si no tiene.</summary>
     public string? EstadoTenant { get; set; }
 

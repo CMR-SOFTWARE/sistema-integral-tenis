@@ -28,5 +28,11 @@ public class Usuario : IdentityUser<Guid>
     /// </summary>
     public bool DebeCambiarPassword { get; set; }
 
+    /// <summary>
+    /// Admin de PLATAFORMA (el dueño de la app): ve métricas globales y gestiona
+    /// todos los clubes. Es un rol cross-tenant, aparte de su membresía de profe.
+    /// </summary>
+    public bool EsAdminPlataforma { get; set; }
+
     public DateTime CreadoEl { get; set; } = DateTime.UtcNow;
 }
