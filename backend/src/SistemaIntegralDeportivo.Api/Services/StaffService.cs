@@ -1,0 +1,105 @@
+using SistemaIntegralDeportivo.Api.Common;
+using SistemaIntegralDeportivo.Api.Dtos;
+using SistemaIntegralDeportivo.Api.Models;
+using SistemaIntegralDeportivo.Api.Repositories;
+
+namespace SistemaIntegralDeportivo.Api.Services;
+
+/// <summary>Profes empleados (Staff) del club: los administra el DUEÑO del tenant.</summary>
+public interface IStaffService
+{
+    Task<IReadOnlyList<StaffDto>> ListarAsync(CancellationToken ct = default);
+    /// <summary>El dueño le crea la cuenta al profe (como a un alumno) y lo suma como Staff.</summary>
+    Task<StaffCreadoDto> AgregarAsync(AgregarStaffDto dto, CancellationToken ct = default);
+    /// <summary>Baja/reactivación del profe empleado.</summary>
+    Task CambiarActivoAsync(Guid id, bool activo, CancellationToken ct = default);
+}
+
+public class StaffService : IStaffService
+{
+    private readonly IMembresiaTenantRepository _membresias;
+    private readonly ITenantRepository _tenants;
+    private readonly ICredencialesService _credenciales;
+
+    public StaffService(
+        IMembresiaTenantRepository membresias, ITenantRepository tenants,
+        ICredencialesService credenciales)
+    {
+        _membresias = membresias;
+        _tenants = tenants;
+        _credenciales = credenciales;
+    }
+
+    public async Task<IReadOnlyList<StaffDto>> ListarAsync(CancellationToken ct = default)
+    {
+        var lista = await _membresias.ListarConUsuarioAsync(ct);
+        return lista.Select(x => Mapear(x.Membresia, x.Usuario)).ToList();
+    }
+
+    public async Task<StaffCreadoDto> AgregarAsync(AgregarStaffDto dto, CancellationToken ct = default)
+    {
+        var email = dto.Email.Trim();
+        var tenant = await _tenants.ObtenerActualAsync(ct);
+
+        // ¿Ya hay una cuenta con ese email? (el dueño, un ex-staff, u otro usuario)
+        var existente = await _membresias.BuscarUsuarioPorEmailAsync(email, ct);
+        if (existente is not null)
+        {
+            if (existente.Id == tenant.OwnerUserId)
+                throw new ReglaDeNegocioException("Ese email es el tuyo, el dueño de la academia.");
+
+            var membresia = await _membresias.ObtenerPorUserIdAsync(existente.Id, ct);
+            if (membresia is not null)
+            {
+                if (membresia.Activo)
+                    throw new ReglaDeNegocioException("Ese profe ya está en tu equipo.");
+                // Ya tuvo cuenta de profe acá y quedó inactivo: se reactiva (sin recrear ni nueva clave)
+                membresia.Activo = true;
+                await _membresias.GuardarCambiosAsync(ct);
+                return new StaffCreadoDto { Staff = Mapear(membresia, existente), PasswordTemporal = null };
+            }
+
+            // Existe una cuenta con ese email pero no es (ni fue) profe acá: no la pisamos
+            throw new ReglaDeNegocioException(
+                $"El email {email} ya tiene una cuenta en la plataforma. Creá el profe con un email nuevo, así tiene su cuenta propia de profesor.");
+        }
+
+        // No existe: le creamos la cuenta con clave temporal (el teléfono), como a un alumno
+        var cred = await _credenciales.CrearConTemporalAsync(
+            email, dto.Nombre, dto.Apellido, dni: null, telefono: dto.Telefono, ct);
+
+        var nueva = new MembresiaTenant { UserId = cred.UserId, Rol = RolTenant.Staff };
+        await _membresias.AgregarAsync(nueva, ct);
+        await _membresias.GuardarCambiosAsync(ct);
+
+        var staff = new StaffDto
+        {
+            Id = nueva.Id,
+            UserId = cred.UserId,
+            Nombre = dto.Nombre.Trim(),
+            Apellido = dto.Apellido.Trim(),
+            Email = email,
+            Activo = true,
+        };
+        return new StaffCreadoDto { Staff = staff, PasswordTemporal = cred.PasswordTemporal };
+    }
+
+    public async Task CambiarActivoAsync(Guid id, bool activo, CancellationToken ct = default)
+    {
+        var membresia = await _membresias.ObtenerAsync(id, ct)
+            ?? throw new ReglaDeNegocioException("Ese profe no está en tu equipo.");
+
+        membresia.Activo = activo;
+        await _membresias.GuardarCambiosAsync(ct);
+    }
+
+    private static StaffDto Mapear(MembresiaTenant m, Usuario u) => new()
+    {
+        Id = m.Id,
+        UserId = m.UserId,
+        Nombre = u.Nombre,
+        Apellido = u.Apellido,
+        Email = u.Email ?? string.Empty,
+        Activo = m.Activo,
+    };
+}

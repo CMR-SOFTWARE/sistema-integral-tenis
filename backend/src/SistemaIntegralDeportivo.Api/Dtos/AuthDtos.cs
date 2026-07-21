@@ -136,8 +136,11 @@ public class SesionDto
     public string Apellido { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
 
-    /// <summary>Dueño de un tenant ACTIVO (membresía Profesor, ADR-0007).</summary>
+    /// <summary>Trabaja en un tenant ACTIVO (dueño o staff): habilita el panel de gestión.</summary>
     public bool EsProfesor { get; set; }
+
+    /// <summary>"owner" (head pro) o "staff" (profe empleado); null si no es profe. El front arma el menú con esto.</summary>
+    public string? Rol { get; set; }
 
     /// <summary>Estado del club propio ("PendientePago" manda al checkout); null si no tiene.</summary>
     public string? EstadoTenant { get; set; }

@@ -15,7 +15,7 @@ public class TokenService : ITokenService
         _config = config;
     }
 
-    public string Generar(Usuario usuario, Tenant? tenantPropio)
+    public string Generar(Usuario usuario, Tenant? tenant, RolTenant? rol)
     {
         var claims = new List<Claim>
         {
@@ -23,11 +23,13 @@ public class TokenService : ITokenService
             new(JwtRegisteredClaimNames.Email, usuario.Email ?? string.Empty),
             new("nombre", $"{usuario.Nombre} {usuario.Apellido}"),
         };
-        if (tenantPropio is not null)
+        if (tenant is not null)
         {
             claims.Add(new Claim("profesor", "true"));
-            // El club que administra: los repos de gestión operan este tenant (ADR-0010)
-            claims.Add(new Claim("tenant", tenantPropio.Id.ToString()));
+            // El club en el que trabaja: los repos de gestión operan este tenant (ADR-0010)
+            claims.Add(new Claim("tenant", tenant.Id.ToString()));
+            // Dueño (head pro) vs Staff (profe empleado): el front y las policies lo usan
+            claims.Add(new Claim("rol", rol == RolTenant.Dueño ? "owner" : "staff"));
         }
 
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]
