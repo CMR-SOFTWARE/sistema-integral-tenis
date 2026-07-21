@@ -1,5 +1,6 @@
 import Modal from '../../components/Modal';
 import Avatar from '../../components/Avatar';
+import NotasAlumnoSection from './NotasAlumnoSection';
 import { CAT_COLOR, CAT_LABEL, ESTADO_UI, formatoPlata } from './types';
 import type { Alumno } from './types';
 import s from './DetalleAlumnoModal.module.css';
@@ -75,6 +76,10 @@ export default function DetalleAlumnoModal({ alumno, onClose, onCrearAcceso }: P
           <div className={s.seccion} style={{ marginTop: 18 }}>Pagos realizados</div>
           <div className={s.placeholder}>Llega con la vertical de Cuotas.</div>
         </div>
+      </div>
+
+      <div className={s.seguimiento}>
+        <NotasAlumnoSection alumnoId={alumno.id} />
       </div>
     </Modal>
   );

@@ -18,6 +18,8 @@ public class PortalService : IPortalService
     private readonly ISolicitudHorarioService _solicitudesHorario;
     private readonly IClaseSueltaService _clasesSueltas;
     private readonly IPublicidadService _publicidad;
+    private readonly IAvisoService _avisos;
+    private readonly INotaAlumnoService _notas;
     private readonly ISedeRepository _sedes;
     private readonly ITenantActual _tenantActual;
 
@@ -27,7 +29,8 @@ public class PortalService : IPortalService
         IServicioService servicios, IPedidoService pedidos,
         IRaquetaService raquetas, ISolicitudGrupoService solicitudesGrupo,
         ISolicitudHorarioService solicitudesHorario, IClaseSueltaService clasesSueltas,
-        IPublicidadService publicidad, ISedeRepository sedes, ITenantActual tenantActual)
+        IPublicidadService publicidad, IAvisoService avisos, INotaAlumnoService notas,
+        ISedeRepository sedes, ITenantActual tenantActual)
     {
         _alumnos = alumnos;
         _turnos = turnos;
@@ -40,6 +43,8 @@ public class PortalService : IPortalService
         _solicitudesHorario = solicitudesHorario;
         _clasesSueltas = clasesSueltas;
         _publicidad = publicidad;
+        _avisos = avisos;
+        _notas = notas;
         _sedes = sedes;
         _tenantActual = tenantActual;
     }
@@ -261,6 +266,18 @@ public class PortalService : IPortalService
     {
         await FichaDeAsync(userId, ct); // establece el tenant del club → sus banners
         return await _publicidad.ListarAsync(soloActivas: true, ct);
+    }
+
+    public async Task<IReadOnlyList<AvisoDto>> AvisosAsync(Guid userId, CancellationToken ct = default)
+    {
+        await FichaDeAsync(userId, ct); // establece el tenant del club → sus avisos
+        return await _avisos.ListarAsync(soloVigentes: true, ct); // solo activos y no vencidos
+    }
+
+    public async Task<IReadOnlyList<NotaAlumnoDto>> NotasAsync(Guid userId, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct); // establece el tenant y me da mi ficha
+        return await _notas.ListarAsync(ficha.Id, soloCompartidas: true, ct); // solo lo que el profe compartió
     }
 
     public async Task<IReadOnlyList<SedeReservaDto>> SedesAsync(Guid userId, CancellationToken ct = default)

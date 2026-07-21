@@ -17,10 +17,12 @@ namespace SistemaIntegralDeportivo.Api.Controllers;
 public class AlumnosController : ControllerBase
 {
     private readonly IAlumnoService _service;
+    private readonly INotaAlumnoService _notas;
 
-    public AlumnosController(IAlumnoService service)
+    public AlumnosController(IAlumnoService service, INotaAlumnoService notas)
     {
         _service = service;
+        _notas = notas;
     }
 
     /// <summary>GET api/alumnos?categoria=Cuarta&amp;estado=Activo</summary>
@@ -105,4 +107,38 @@ public class AlumnosController : ControllerBase
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DarDeBaja(Guid id, CancellationToken ct) =>
         await _service.DarDeBajaAsync(id, ct) ? NoContent() : NotFound();
+
+    // ── Notas de seguimiento del profe sobre el alumno ──
+
+    /// <summary>GET api/alumnos/{id}/notas — todas las notas (privadas y compartidas).</summary>
+    [HttpGet("{id:guid}/notas")]
+    public async Task<ActionResult<IReadOnlyList<NotaAlumnoDto>>> Notas(Guid id, CancellationToken ct) =>
+        Ok(await _notas.ListarAsync(id, soloCompartidas: false, ct));
+
+    [HttpPost("{id:guid}/notas")]
+    public async Task<ActionResult<NotaAlumnoDto>> CrearNota(Guid id, CrearNotaAlumnoDto dto, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await _notas.CrearAsync(id, dto, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    [HttpDelete("{id:guid}/notas/{notaId:guid}")]
+    public async Task<IActionResult> BorrarNota(Guid id, Guid notaId, CancellationToken ct)
+    {
+        try
+        {
+            await _notas.EliminarAsync(notaId, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
 }

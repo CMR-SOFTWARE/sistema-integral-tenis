@@ -6,7 +6,7 @@ import SinClub from './SinClub';
 import { formatoPlata } from '../alumnos/types';
 import { ESTADO_LIQ_UI, MESES } from '../cuotas/types';
 import { fechaCorta, horaCorta, DIAS } from '../agenda/types';
-import type { MiLiquidacion, MisTurnos, MiTurno, Publicidad } from './types';
+import type { MiLiquidacion, MisTurnos, MiTurno, Publicidad, Aviso, NotaProfe } from './types';
 import s from './PortalPages.module.css';
 
 /** "2026-07-14" → "MAR" (para la columna de horarios asignados). */
@@ -28,6 +28,8 @@ export default function InicioPage() {
   const [error, setError] = useState<string | null>(null);
   const [banners, setBanners] = useState<Publicidad[]>([]);
   const [bannerIdx, setBannerIdx] = useState(0);
+  const [avisos, setAvisos] = useState<Aviso[]>([]);
+  const [notas, setNotas] = useState<NotaProfe[]>([]);
 
   useEffect(() => {
     if (!conClub) return; // sin ficha no hay nada que pedir
@@ -38,6 +40,8 @@ export default function InicioPage() {
       .then((c) => setCuota(c ?? null))
       .catch(() => setCuota(null));
     api.get<Publicidad[]>('/portal/publicidad').then(setBanners).catch(() => setBanners([]));
+    api.get<Aviso[]>('/portal/avisos').then(setAvisos).catch(() => setAvisos([]));
+    api.get<NotaProfe[]>('/portal/notas').then(setNotas).catch(() => setNotas([]));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conClub]);
 
@@ -119,13 +123,39 @@ export default function InicioPage() {
         </div>
       </div>
 
-      {/* ── Avisos del profe (backend en una próxima versión) ── */}
+      {/* ── Avisos del profe ── */}
       <div className={s.tarjeta}>
         <h3 className={s.tarjetaTitulo}>Avisos del profe</h3>
-        <div className={s.vacio}>
-          Los avisos del profe llegan en una próxima versión.
-        </div>
+        {avisos.length === 0 ? (
+          <div className={s.vacio}>No hay avisos por ahora.</div>
+        ) : (
+          <div className={s.avisosLista}>
+            {avisos.map((a) => (
+              <div key={a.id} className={s.avisoItem}>
+                <div className={s.avisoTitulo}>{a.titulo}</div>
+                <div className={s.avisoMensaje}>{a.mensaje}</div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* ── Notas de tu profe (seguimiento compartido) ── */}
+      {notas.length > 0 && (
+        <div className={s.tarjeta}>
+          <h3 className={s.tarjetaTitulo}>Notas de tu profe</h3>
+          <div className={s.avisosLista}>
+            {notas.map((n) => (
+              <div key={n.id} className={s.notaItem}>
+                <div className={s.avisoMensaje}>{n.texto}</div>
+                <div className={s.notaFecha}>
+                  {new Date(n.creadoEl).toLocaleDateString('es-AR', { day: 'numeric', month: 'long' })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Publicidad (M6): carrusel de banners del club (desliza al costado) ── */}
       {banners.length > 0 && (

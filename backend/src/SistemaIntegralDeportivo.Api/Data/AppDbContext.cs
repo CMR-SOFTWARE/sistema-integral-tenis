@@ -42,6 +42,8 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
     public DbSet<SolicitudHorario> SolicitudesHorario => Set<SolicitudHorario>();
     public DbSet<ClaseSuelta> ClasesSueltas => Set<ClaseSuelta>();
     public DbSet<Publicidad> Publicidades => Set<Publicidad>();
+    public DbSet<Aviso> Avisos => Set<Aviso>();
+    public DbSet<NotaAlumno> NotasAlumno => Set<NotaAlumno>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -259,6 +261,21 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
 
         modelBuilder.Entity<Publicidad>()
             .HasIndex(p => p.TenantId); // "los banners de este club"
+
+        // ── Avisos: tablón general del profe por tenant ──
+
+        modelBuilder.Entity<Aviso>()
+            .HasIndex(a => a.TenantId); // "los avisos de este club"
+
+        // ── Notas por alumno: seguimiento privado/compartido del profe ──
+
+        modelBuilder.Entity<NotaAlumno>()
+            .HasIndex(n => n.AlumnoId); // "las notas de este alumno"
+
+        // Si se borrara el alumno, se van sus notas (hoy la baja es lógica).
+        modelBuilder.Entity<NotaAlumno>()
+            .HasOne(n => n.Alumno).WithMany().HasForeignKey(n => n.AlumnoId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // ── Bloqueos de agenda ──
 

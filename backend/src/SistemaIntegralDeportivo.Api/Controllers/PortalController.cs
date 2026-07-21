@@ -365,6 +365,36 @@ public class PortalController : ControllerBase
         }
     }
 
+    /// <summary>GET api/portal/avisos — avisos generales vigentes del club (se ven en Inicio).</summary>
+    [HttpGet("avisos")]
+    public async Task<ActionResult<IReadOnlyList<AvisoDto>>> Avisos(CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.AvisosAsync(userId, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>GET api/portal/notas — las notas que mi profe compartió conmigo (se ven en Inicio).</summary>
+    [HttpGet("notas")]
+    public async Task<ActionResult<IReadOnlyList<NotaAlumnoDto>>> Notas(CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.NotasAsync(userId, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     /// <summary>GET api/portal/perfil — mi ficha, como me ve el club.</summary>
     [HttpGet("perfil")]
     public async Task<ActionResult<MiPerfilDto>> Perfil(CancellationToken ct)
