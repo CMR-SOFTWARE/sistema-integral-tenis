@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { useHorarios, useSedes } from './hooks';
 import NuevoHorarioModal from './NuevoHorarioModal';
 import PanelSolicitudesHorario from './PanelSolicitudesHorario';
@@ -14,6 +15,7 @@ export default function HorariosPage() {
   const { sedes } = useSedes();
   const [modal, setModal] = useState(false);
   const [sede, setSede] = useState(''); // '' = todas
+  const confirmar = useConfirmar();
 
   // Para dar de alta solo se ofrecen las sedes habilitadas; el filtro de
   // arriba sí muestra todas (puede haber horarios de una sede dada de baja)
@@ -22,9 +24,12 @@ export default function HorariosPage() {
   const visibles = horarios.filter((h) => sede === '' || h.sede === sede);
 
   const baja = async (id: string, titulo: string) => {
-    if (!window.confirm(
-      `¿Desactivar el horario de "${titulo}"? Los turnos ya generados se conservan; no se generan nuevos.`,
-    )) return;
+    if (!(await confirmar({
+      titulo: `Desactivar el horario de "${titulo}"`,
+      mensaje: 'Los turnos ya generados se conservan; no se generan nuevos.',
+      confirmar: 'Desactivar',
+      peligro: true,
+    }))) return;
     await desactivar(id);
   };
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { useGrupos } from './useGrupos';
 import NuevoGrupoModal from './NuevoGrupoModal';
 import AsignarAlumnoModal from './AsignarAlumnoModal';
@@ -12,6 +13,7 @@ export default function GruposPage() {
   const [modalNuevo, setModalNuevo] = useState(false);
   const [grupoAsignar, setGrupoAsignar] = useState<Grupo | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const confirmar = useConfirmar();
 
   const avisar = (msg: string) => {
     setToast(msg);
@@ -19,7 +21,12 @@ export default function GruposPage() {
   };
 
   const quitarMiembro = async (grupo: Grupo, alumnoId: string, nombre: string) => {
-    if (!window.confirm(`¿Quitar a ${nombre} de "${grupo.nombre}"? Su historia en el grupo se conserva.`)) return;
+    if (!(await confirmar({
+      titulo: 'Quitar del grupo',
+      mensaje: `¿Quitar a ${nombre} de "${grupo.nombre}"? Su historia en el grupo se conserva.`,
+      confirmar: 'Quitar',
+      peligro: true,
+    }))) return;
     await quitar(grupo.id, alumnoId);
     avisar(`${nombre} quitado del grupo`);
   };

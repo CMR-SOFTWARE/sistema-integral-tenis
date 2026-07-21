@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { useCuotas } from './useCuotas';
 import MedioModal from './MedioModal';
 import NuevoCargoModal from './NuevoCargoModal';
@@ -22,6 +23,7 @@ export default function CuotasPage() {
   const [pagandoMes, setPagandoMes] = useState<Liquidacion | null>(null);
   const [pagandoCargo, setPagandoCargo] = useState<{ id: string; concepto: string } | null>(null);
   const [cargoPara, setCargoPara] = useState<Liquidacion | null>(null);
+  const confirmar = useConfirmar();
 
   const mesAnterior = () => {
     if (mes === 1) { setMes(12); setAnio(anio - 1); } else setMes(mes - 1);
@@ -38,9 +40,12 @@ export default function CuotasPage() {
   };
 
   const rechazar = async (l: Liquidacion) => {
-    if (!window.confirm(
-      `¿Rechazar el pago que informó ${l.nombre} ${l.apellido}? Volvés su cuota a "pendiente" y el alumno podrá volver a informar.`,
-    )) return;
+    if (!(await confirmar({
+      titulo: `Rechazar el pago de ${l.nombre} ${l.apellido}`,
+      mensaje: 'Volvés su cuota a "pendiente" y el alumno podrá volver a informar.',
+      confirmar: 'Rechazar pago',
+      peligro: true,
+    }))) return;
     await rechazarMes(l.alumnoId);
   };
 

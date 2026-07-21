@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { api, ApiError } from '../../lib/api';
+import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { comprimirBanner } from '../portal/comprimirImagen';
 import { useSedes } from './hooks';
 import { formatoPlata } from '../alumnos/types';
@@ -263,6 +264,7 @@ function PublicidadCard() {
   const [subiendo, setSubiendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const confirmar = useConfirmar();
 
   const cargar = () => {
     void api.get<Banner[]>('/configuracion/publicidad').then(setBanners).catch(() => setBanners([]));
@@ -306,7 +308,12 @@ function PublicidadCard() {
   };
 
   const borrar = async (b: Banner) => {
-    if (!window.confirm(`¿Borrar el banner "${b.nombre}"?`)) return;
+    if (!(await confirmar({
+      titulo: 'Borrar banner',
+      mensaje: `¿Borrar el banner "${b.nombre}"?`,
+      confirmar: 'Borrar',
+      peligro: true,
+    }))) return;
     await api.delete(`/configuracion/publicidad/${b.id}`);
     cargar();
   };
@@ -363,6 +370,7 @@ export default function ConfiguracionPage() {
   const [canchaEn, setCanchaEn] = useState<string | null>(null); // sedeId con input abierto
   const [nombreCancha, setNombreCancha] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const confirmar = useConfirmar();
 
   const altaSede = async () => {
     if (nombreSede.trim() === '') return;
@@ -376,9 +384,12 @@ export default function ConfiguracionPage() {
   };
 
   const bajaSede = async (sedeId: string, nombre: string) => {
-    if (!window.confirm(
-      `¿Deshabilitar "${nombre}"? Deja de ofrecerse para horarios nuevos; los turnos ya generados se conservan.`,
-    )) return;
+    if (!(await confirmar({
+      titulo: `Deshabilitar "${nombre}"`,
+      mensaje: 'Deja de ofrecerse para horarios nuevos; los turnos ya generados se conservan.',
+      confirmar: 'Deshabilitar',
+      peligro: true,
+    }))) return;
     setError(null);
     try {
       await desactivarSede(sedeId);

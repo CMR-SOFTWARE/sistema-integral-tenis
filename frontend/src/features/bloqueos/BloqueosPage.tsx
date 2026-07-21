@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { useBloqueos } from './useBloqueos';
 import NuevoBloqueoModal from './NuevoBloqueoModal';
 import ImpactoModal from './ImpactoModal';
@@ -19,6 +20,7 @@ export default function BloqueosPage() {
   const [modalNuevo, setModalNuevo] = useState(false);
   const [pendiente, setPendiente] = useState<Pendiente | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const pedirConfirmacion = useConfirmar();
 
   const avisar = (msg: string) => {
     setToast(msg);
@@ -41,7 +43,12 @@ export default function BloqueosPage() {
   };
 
   const borrar = async (id: string) => {
-    if (!window.confirm('¿Eliminar este bloqueo? Los turnos futuros de la franja vuelven a generarse.')) return;
+    if (!(await pedirConfirmacion({
+      titulo: 'Eliminar bloqueo',
+      mensaje: 'Los turnos futuros de la franja vuelven a generarse.',
+      confirmar: 'Eliminar',
+      peligro: true,
+    }))) return;
     await eliminar(id);
     avisar('Bloqueo eliminado.');
   };
