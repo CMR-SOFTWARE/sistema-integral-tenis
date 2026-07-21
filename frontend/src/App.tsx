@@ -1,4 +1,5 @@
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
+import { ConfirmarProvider } from './components/confirmar/ConfirmarProvider';
 import AppLayout from './components/layout/AppLayout';
 import AlumnosPage from './features/alumnos/AlumnosPage';
 import LoginPage from './features/auth/LoginPage';
@@ -62,7 +63,8 @@ function RequiereLogueado() {
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
+      <ConfirmarProvider>
+        <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/registro" element={<RegistroPage />} />
         <Route path="/registro/jugador" element={<RegistroJugadorPage />} />
@@ -103,8 +105,9 @@ export default function App() {
           </Route>
         </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </ConfirmarProvider>
     </BrowserRouter>
   );
 }
