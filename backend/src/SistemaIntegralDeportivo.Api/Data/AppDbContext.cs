@@ -317,7 +317,7 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
         modelBuilder.Entity<Solicitud>()
             .HasIndex(s => new { s.UserId, s.TenantId })
             .IsUnique()
-            .HasFilter("Estado = 'Pendiente'");
+            .HasFilter("\"Estado\" = 'Pendiente'"); // Postgres es case-sensitive: la columna necesita comillas
 
         // El listado del profe: pendientes de SU club
         modelBuilder.Entity<Solicitud>()

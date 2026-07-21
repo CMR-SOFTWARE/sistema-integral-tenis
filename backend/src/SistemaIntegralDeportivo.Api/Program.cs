@@ -72,9 +72,11 @@ builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<IAdminRepository, AdminRepository>();
 builder.Services.AddScoped<IAdminService, AdminService>();
 
-// Base de datos: EF Core sobre SQLite (la connection string vive en appsettings.json)
+// Base de datos: EF Core sobre PostgreSQL (Supabase). La connection string real
+// vive en user-secrets en desarrollo, y en la variable de entorno ConnectionStrings__Default
+// en producción (Railway) — nunca en appsettings.json.
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("Default")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
 
 // ── Auth (ADR-0007) ──
 // Identity CORE (sin roles de Identity: los roles son membresías por tenant).
