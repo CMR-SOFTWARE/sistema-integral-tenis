@@ -127,13 +127,17 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("Admin", p => p.RequireClaim("admin", "true"));
 });
 
-// CORS: el front (Vite, puerto 5173) corre en otro origen que esta API,
-// y el navegador bloquea esas llamadas salvo que las permitamos explícitamente.
-// Solo en desarrollo; la política de producción se define al desplegar.
+// CORS: el front corre en otro origen que esta API, y el navegador bloquea esas
+// llamadas salvo que las permitamos explícitamente. Los orígenes salen de config
+// (Cors:AllowedOrigins, separados por coma) — en local, appsettings.json trae
+// localhost:5173; en producción (Railway) se agrega la URL de Vercel por variable
+// de entorno (Cors__AllowedOrigins), sin tocar código.
+var origenesPermitidos = (builder.Configuration["Cors:AllowedOrigins"] ?? "http://localhost:5173")
+    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
-        policy.WithOrigins("http://localhost:5173")
+        policy.WithOrigins(origenesPermitidos)
               .AllowAnyHeader()
               .AllowAnyMethod());
 });
@@ -157,8 +161,14 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Seed de auth: el profe dueño del tenant demo (idempotente)
+// Migraciones + seed al arrancar: idempotente (Migrate() solo aplica lo que
+// falte), así el contenedor de producción siempre queda con el schema al día
+// sin correr "dotnet ef" a mano contra la base real.
 using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
     await AuthSeeder.SeedAsync(scope.ServiceProvider);
+}
 
 app.Run();
