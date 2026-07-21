@@ -55,6 +55,23 @@ export default function AppLayout() {
     navigate('/login');
   };
 
+  const desvincularme = async () => {
+    const ok = await confirmar({
+      titulo: '¿Desvincularte del club?',
+      mensaje: 'Vas a dejar de trabajar en esta academia y volvés a ser un usuario normal. El dueño puede sumarte de nuevo más adelante.',
+      confirmar: 'Desvincularme',
+      peligro: true,
+    });
+    if (!ok) return;
+    try {
+      await api.post('/staff/desvincularme', {});
+    } catch {
+      // si algo falla igual cerramos sesión: al re-loguear ya no será staff
+    }
+    cerrarSesion();
+    navigate('/login');
+  };
+
   return (
     <div className={s.shell}>
       {menuAbierto && (
@@ -101,7 +118,7 @@ export default function AppLayout() {
             </div>
             <div className={s.userInfo}>
               <div className={s.userName}>{sesion ? `${sesion.nombre} ${sesion.apellido}` : 'Club Demo'}</div>
-              <div className={s.userRole}>Profesor</div>
+              <div className={s.userRole}>{sesion?.rol === 'staff' ? 'Profe empleado' : 'Profesor'}</div>
             </div>
             <button className={s.logout} title="Salir" onClick={salir}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -109,6 +126,11 @@ export default function AppLayout() {
               </svg>
             </button>
           </div>
+          {sesion?.rol === 'staff' && (
+            <button className={s.desvincular} onClick={desvincularme}>
+              Desvincularme del club
+            </button>
+          )}
         </div>
       </aside>
 

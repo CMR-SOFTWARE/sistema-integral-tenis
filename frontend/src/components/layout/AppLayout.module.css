@@ -90,6 +90,23 @@
   border-top: 1px solid var(--color-border-subtle);
 }
 
+.desvincular {
+  width: 100%;
+  margin-top: 8px;
+  border: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 7px 10px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.desvincular:hover {
+  color: var(--color-danger);
+  border-color: var(--color-danger-border);
+}
+
 .userCard {
   display: flex;
   align-items: center;
