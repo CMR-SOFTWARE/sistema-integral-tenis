@@ -93,7 +93,7 @@ export default function AppLayout() {
 
         <nav className={s.nav}>
           {profNav
-            .filter((item) => !item.soloOwner || sesion?.rol === 'owner')
+            .filter((item) => (!item.soloOwner || sesion?.rol === 'owner') && (!item.soloAdmin || sesion?.esAdmin))
             .map((item) => (
             <NavLink
               key={item.to}

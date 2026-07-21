@@ -1,0 +1,148 @@
+.vacio {
+  padding: 40px;
+  text-align: center;
+  color: var(--color-text-faint);
+  font-size: 14px;
+}
+
+/* ── Métricas ── */
+.metricas {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.stat {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+}
+
+.statPlata {
+  background: linear-gradient(135deg, var(--color-primary-dark, #0e6b3c), var(--color-primary, #178a4c));
+  border: none;
+  color: #fff;
+}
+
+.statNumero {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.statLabel {
+  font-weight: 700;
+  font-size: 14px;
+  margin-top: 8px;
+}
+
+.statDetalle {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+.statPlata .statDetalle {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* ── Tabla de clubes ── */
+.seccion {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 18px;
+  margin: 0 0 12px;
+}
+
+.tarjeta {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabla th {
+  text-align: left;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-faint);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.thAcciones {
+  text-align: right;
+}
+
+.tabla td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border-subtle, #eef1ef);
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.tabla tr:last-child td {
+  border-bottom: none;
+}
+
+.nombre {
+  font-weight: 700;
+}
+
+.sub {
+  font-size: 12px;
+  color: var(--color-text-faint);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+}
+.chipVerde { background: #e7f6ec; color: #0e6b3c; }
+.chipAmarillo { background: #fdf4e3; color: #b7791f; }
+.chipRojo { background: #fdeaea; color: #b91c1c; }
+
+.acciones {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.btnRojo,
+.btnVerde {
+  border: 1px solid transparent;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 7px 14px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+.btnRojo {
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger-border);
+  color: var(--color-danger);
+}
+.btnVerde {
+  background: #e7f6ec;
+  border-color: #bfe6cd;
+  color: #0e6b3c;
+}
+
+@media (max-width: 760px) {
+  .metricas {
+    grid-template-columns: 1fr 1fr;
+  }
+}
