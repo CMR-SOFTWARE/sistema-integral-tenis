@@ -12,38 +12,73 @@ public class AuthService : IAuthService
     private readonly ITokenService _tokens;
     private readonly ISedeRepository _sedes;
     private readonly ITenantActual _tenantActual;
+    private readonly IMembresiaTenantRepository _membresias;
 
     public AuthService(
         IAlumnoRepository alumnos, ITenantRepository tenants, ITokenService tokens,
-        ISedeRepository sedes, ITenantActual tenantActual)
+        ISedeRepository sedes, ITenantActual tenantActual, IMembresiaTenantRepository membresias)
     {
         _alumnos = alumnos;
         _tenants = tenants;
         _tokens = tokens;
         _sedes = sedes;
         _tenantActual = tenantActual;
+        _membresias = membresias;
     }
 
     public async Task<SesionDto> ArmarSesionAsync(
         Usuario usuario, bool incluirToken, CancellationToken ct = default)
     {
-        // El tenant que administra (si es dueño Y está ACTIVO) viaja en el
-        // token: los repos de gestión operan ESE club (ADR-0010). Un tenant
-        // pendiente de pago NO habilita la gestión: primero el checkout.
+        // El tenant en el que trabaja (dueño o staff) viaja en el token: los repos
+        // de gestión operan ESE club (ADR-0010). Prioridad: dueño → staff → jugador.
+        // Un tenant pendiente de pago NO habilita la gestión: primero el checkout.
         var tenantPropio = await _tenants.ObtenerPorOwnerAsync(usuario.Id, ct);
-        var esProfesor = tenantPropio?.Estado == EstadoTenant.Activo;
+
+        Tenant? tenantDeTrabajo = null;
+        RolTenant? rol = null;
+        var estadoTenant = tenantPropio?.Estado.ToString();
+
+        if (tenantPropio?.Estado == EstadoTenant.Activo)
+        {
+            // Dueño (head pro) de un club activo
+            tenantDeTrabajo = tenantPropio;
+            rol = RolTenant.Dueño;
+        }
+        else if (tenantPropio is null)
+        {
+            // No es dueño: ¿es profe EMPLEADO (Staff) de alguna academia activa?
+            var membresia = await _membresias.ObtenerActivaPorUserIdAsync(usuario.Id, ct);
+            if (membresia is not null)
+            {
+                var academia = await _tenants.ObtenerPorIdAsync(membresia.TenantId, ct);
+                if (academia?.Estado == EstadoTenant.Activo)
+                {
+                    tenantDeTrabajo = academia;
+                    rol = RolTenant.Staff;
+                    estadoTenant = academia.Estado.ToString();
+                }
+            }
+        }
+
+        var esProfesor = tenantDeTrabajo is not null;
 
         // Una ficha por usuario en el prototipo (multi-membresía: fase futura)
         var vinculada = await _alumnos.ObtenerPorUserIdAsync(usuario.Id, ct);
 
         return new SesionDto
         {
-            Token = incluirToken ? _tokens.Generar(usuario, esProfesor ? tenantPropio : null) : null,
+            Token = incluirToken ? _tokens.Generar(usuario, tenantDeTrabajo, rol) : null,
             Nombre = usuario.Nombre,
             Apellido = usuario.Apellido,
             Email = usuario.Email ?? string.Empty,
             EsProfesor = esProfesor,
-            EstadoTenant = tenantPropio?.Estado.ToString(),
+            Rol = rol switch
+            {
+                RolTenant.Dueño => "owner",
+                RolTenant.Staff => "staff",
+                _ => null,
+            },
+            EstadoTenant = estadoTenant,
             DebeCambiarPassword = usuario.DebeCambiarPassword,
             Dni = usuario.Dni,
             Telefono = usuario.PhoneNumber,

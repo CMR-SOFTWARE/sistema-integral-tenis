@@ -20,6 +20,7 @@ public class AuthServiceTests
     private readonly Mock<ITokenService> _tokens;
     private readonly Mock<ISedeRepository> _sedes;
     private readonly Mock<ITenantActual> _tenantActual;
+    private readonly Mock<IMembresiaTenantRepository> _membresias;
     private readonly AuthService _service;
 
     public AuthServiceTests()
@@ -29,17 +30,21 @@ public class AuthServiceTests
         _tokens = new Mock<ITokenService>();
         _sedes = new Mock<ISedeRepository>();
         _tenantActual = new Mock<ITenantActual>();
+        _membresias = new Mock<IMembresiaTenantRepository>();
         _service = new AuthService(
-            _alumnos.Object, _tenants.Object, _tokens.Object, _sedes.Object, _tenantActual.Object);
+            _alumnos.Object, _tenants.Object, _tokens.Object, _sedes.Object,
+            _tenantActual.Object, _membresias.Object);
         _sedes.Setup(s => s.AgregarAsync(It.IsAny<Sede>(), It.IsAny<CancellationToken>()))
               .ReturnsAsync((Sede s, CancellationToken _) => s);
 
-        // Por defecto: no es dueño de tenants y sin ficha vinculada
+        // Por defecto: no es dueño de tenants, no es staff, y sin ficha vinculada
         _tenants.Setup(t => t.ObtenerPorOwnerAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((Tenant?)null);
+        _membresias.Setup(m => m.ObtenerActivaPorUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                   .ReturnsAsync((MembresiaTenant?)null);
         _alumnos.Setup(a => a.ObtenerPorUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((Alumno?)null);
-        _tokens.Setup(t => t.Generar(It.IsAny<Usuario>(), It.IsAny<Tenant?>()))
+        _tokens.Setup(t => t.Generar(It.IsAny<Usuario>(), It.IsAny<Tenant?>(), It.IsAny<RolTenant?>()))
                .Returns("jwt-de-prueba");
     }
 
@@ -84,9 +89,10 @@ public class AuthServiceTests
         var sesion = await _service.ArmarSesionAsync(profe, incluirToken: true);
 
         Assert.True(sesion.EsProfesor);
+        Assert.Equal("owner", sesion.Rol);
         Assert.Equal("Activo", sesion.EstadoTenant);
         Assert.Equal("jwt-de-prueba", sesion.Token);
-        _tokens.Verify(t => t.Generar(profe, suClub), Times.Once); // el claim tenant sale de acá
+        _tokens.Verify(t => t.Generar(profe, suClub, RolTenant.Dueño), Times.Once); // el claim tenant+rol sale de acá
     }
 
     [Fact]
@@ -105,8 +111,49 @@ public class AuthServiceTests
         var sesion = await _service.ArmarSesionAsync(profe, incluirToken: true);
 
         Assert.False(sesion.EsProfesor);
+        Assert.Null(sesion.Rol);
         Assert.Equal("PendientePago", sesion.EstadoTenant);
-        _tokens.Verify(t => t.Generar(profe, null), Times.Once);
+        _tokens.Verify(t => t.Generar(profe, null, null), Times.Once);
+    }
+
+    [Fact]
+    public async Task Sesion_StaffDeAcademiaActiva_EsProfesor_RolStaff_TokenLlevaLaAcademia()
+    {
+        // No es dueño de ningún tenant, pero es profe EMPLEADO de una academia activa
+        var profe = Jugador();
+        var academiaId = Guid.NewGuid();
+        _membresias.Setup(m => m.ObtenerActivaPorUserIdAsync(UserId, It.IsAny<CancellationToken>()))
+                   .ReturnsAsync(new MembresiaTenant { TenantId = academiaId, UserId = UserId, Rol = RolTenant.Staff });
+        var academia = new Tenant
+        {
+            Id = academiaId, Subdominio = "academia", Nombre = "Academia",
+            OwnerUserId = Guid.NewGuid(), Estado = EstadoTenant.Activo,
+        };
+        _tenants.Setup(t => t.ObtenerPorIdAsync(academiaId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(academia);
+
+        var sesion = await _service.ArmarSesionAsync(profe, incluirToken: true);
+
+        Assert.True(sesion.EsProfesor);
+        Assert.Equal("staff", sesion.Rol);
+        _tokens.Verify(t => t.Generar(profe, academia, RolTenant.Staff), Times.Once);
+    }
+
+    [Fact]
+    public async Task Sesion_StaffPeroAcademiaNoActiva_NoEsProfesor()
+    {
+        var profe = Jugador();
+        var academiaId = Guid.NewGuid();
+        _membresias.Setup(m => m.ObtenerActivaPorUserIdAsync(UserId, It.IsAny<CancellationToken>()))
+                   .ReturnsAsync(new MembresiaTenant { TenantId = academiaId, UserId = UserId, Rol = RolTenant.Staff });
+        _tenants.Setup(t => t.ObtenerPorIdAsync(academiaId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Tenant { Id = academiaId, Subdominio = "a", Nombre = "A", Estado = EstadoTenant.Suspendido });
+
+        var sesion = await _service.ArmarSesionAsync(profe, incluirToken: true);
+
+        Assert.False(sesion.EsProfesor);
+        Assert.Null(sesion.Rol);
+        _tokens.Verify(t => t.Generar(profe, null, null), Times.Once);
     }
 
     // ─────────────────────────────────────────────
@@ -242,7 +289,8 @@ public class AuthServiceTests
         var sesion = await _service.ArmarSesionAsync(Jugador(), incluirToken: true);
 
         Assert.False(sesion.EsProfesor);
-        _tokens.Verify(t => t.Generar(It.IsAny<Usuario>(), null), Times.Once);
+        Assert.Null(sesion.Rol);
+        _tokens.Verify(t => t.Generar(It.IsAny<Usuario>(), null, null), Times.Once);
     }
 
     [Fact]
@@ -251,7 +299,7 @@ public class AuthServiceTests
         var sesion = await _service.ArmarSesionAsync(Jugador(), incluirToken: false);
 
         Assert.Null(sesion.Token);
-        _tokens.Verify(t => t.Generar(It.IsAny<Usuario>(), It.IsAny<Tenant?>()), Times.Never);
+        _tokens.Verify(t => t.Generar(It.IsAny<Usuario>(), It.IsAny<Tenant?>(), It.IsAny<RolTenant?>()), Times.Never);
     }
 
     [Fact]

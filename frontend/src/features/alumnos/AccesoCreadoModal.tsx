@@ -49,7 +49,7 @@ export default function AccesoCreadoModal({ nombre, email, passwordTemporal, onC
         </div>
       </div>
       <p className={s.credAviso}>
-        El alumno puede cambiarla cuando quiera desde su perfil en el portal.
+        Puede cambiarla cuando quiera desde su perfil.
       </p>
     </Modal>
   );

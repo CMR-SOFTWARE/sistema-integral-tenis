@@ -66,6 +66,8 @@ builder.Services.AddScoped<IAvisoRepository, AvisoRepository>();
 builder.Services.AddScoped<IAvisoService, AvisoService>();
 builder.Services.AddScoped<INotaAlumnoRepository, NotaAlumnoRepository>();
 builder.Services.AddScoped<INotaAlumnoService, NotaAlumnoService>();
+builder.Services.AddScoped<IMembresiaTenantRepository, MembresiaTenantRepository>();
+builder.Services.AddScoped<IStaffService, StaffService>();
 
 // Base de datos: EF Core sobre SQLite (la connection string vive en appsettings.json)
 builder.Services.AddDbContext<AppDbContext>(options =>
@@ -111,7 +113,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 // Policy "Profesor": el claim lo emite TokenService si es dueño de un tenant
 builder.Services.AddAuthorization(options =>
-    options.AddPolicy("Profesor", p => p.RequireClaim("profesor", "true")));
+{
+    // Profesor: dueño O staff (ambos entran al panel de gestión)
+    options.AddPolicy("Profesor", p => p.RequireClaim("profesor", "true"));
+    // Owner: solo el dueño del club (cuotas, config, gestión de profes, etc.)
+    options.AddPolicy("Owner", p => p.RequireClaim("rol", "owner"));
+});
 
 // CORS: el front (Vite, puerto 5173) corre en otro origen que esta API,
 // y el navegador bloquea esas llamadas salvo que las permitamos explícitamente.

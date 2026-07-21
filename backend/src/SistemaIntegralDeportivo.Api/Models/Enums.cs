@@ -12,6 +12,17 @@ public enum TipoTenant
 }
 
 /// <summary>
+/// Rol de una persona DENTRO de un tenant (modelo-identidad-roles §5). El Dueño
+/// (head pro) tiene todo; el Staff es un profe empleado con vista reducida
+/// (su agenda, sus alumnos, asistencia y notas; sin cuotas ni config).
+/// </summary>
+public enum RolTenant
+{
+    Dueño,
+    Staff
+}
+
+/// <summary>
 /// Ciclo de vida del negocio: nace PendientePago al registrarse el profesor
 /// y pasa a Activo cuando paga la suscripción (hoy simulado; Mercado Pago al
 /// desplegar). Suspendido: dejó de pagar (fase futura).

@@ -44,6 +44,7 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
     public DbSet<Publicidad> Publicidades => Set<Publicidad>();
     public DbSet<Aviso> Avisos => Set<Aviso>();
     public DbSet<NotaAlumno> NotasAlumno => Set<NotaAlumno>();
+    public DbSet<MembresiaTenant> MembresiasTenant => Set<MembresiaTenant>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -58,6 +59,7 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
         modelBuilder.Entity<Alumno>().Property(a => a.Estado).HasConversion<string>();
         modelBuilder.Entity<Tutor>().Property(t => t.Relacion).HasConversion<string>();
         modelBuilder.Entity<Grupo>().Property(g => g.Categoria).HasConversion<string>();
+        modelBuilder.Entity<MembresiaTenant>().Property(m => m.Rol).HasConversion<string>();
 
         // ── Tenant: subdominio único ──
         modelBuilder.Entity<Tenant>()
@@ -266,6 +268,20 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
 
         modelBuilder.Entity<Aviso>()
             .HasIndex(a => a.TenantId); // "los avisos de este club"
+
+        // ── Membresías Staff: el profe empleado dentro del tenant del head pro ──
+
+        modelBuilder.Entity<MembresiaTenant>()
+            .HasIndex(m => m.TenantId); // "los profes de este club"
+
+        // Una persona no se agrega dos veces al mismo club.
+        modelBuilder.Entity<MembresiaTenant>()
+            .HasIndex(m => new { m.TenantId, m.UserId })
+            .IsUnique();
+
+        // Resolver rápido "¿de qué clubes es staff este usuario?" al armar la sesión.
+        modelBuilder.Entity<MembresiaTenant>()
+            .HasIndex(m => m.UserId);
 
         // ── Notas por alumno: seguimiento privado/compartido del profe ──
 
