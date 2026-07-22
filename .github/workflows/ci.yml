@@ -1,0 +1,66 @@
+name: CI
+
+# Se dispara en cada PR hacia main y en cada push a main.
+# Si un job bloqueante falla, el PR queda en rojo y no se puede mergear.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  # ── Backend .NET: compila la API y corre los tests de los services (xUnit) ──
+  backend:
+    name: Backend (.NET) · build + tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar .NET SDK 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      # dotnet test restaura, compila la API (referenciada) y corre los tests.
+      # Los tests son unitarios (Moq), no necesitan base de datos.
+      - name: Tests
+        run: dotnet test tests/SistemaIntegralDeportivo.Api.Tests/SistemaIntegralDeportivo.Api.Tests.csproj --configuration Release
+
+  # ── Frontend React: build (tsc + vite) bloqueante · lint informativo ──
+  frontend:
+    name: Frontend (React) · build + lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      # pnpm tiene que instalarse antes que setup-node para poder cachear su store.
+      - name: Instalar pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Instalar Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Instalar dependencias
+        run: pnpm install --frozen-lockfile
+
+      # Bloqueante: tsc (chequeo de tipos) + vite build.
+      - name: Build
+        run: pnpm build
+
+      # Informativo por ahora: hay estilos preexistentes (setState-in-effect).
+      # Cuando se limpien, sacar el continue-on-error para hacerlo bloqueante.
+      - name: Lint (informativo)
+        run: pnpm lint
+        continue-on-error: true
