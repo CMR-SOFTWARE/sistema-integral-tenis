@@ -327,6 +327,21 @@
 
 .bannerNombre { font-weight: 700; font-size: 14px; }
 
+/* ── Móvil: las filas de alta (input + input + botón) se apilan en vez de
+   desbordar hacia la derecha ── */
+@media (max-width: 620px) {
+  .precios,
+  .altaSede,
+  .sedeHeader {
+    flex-wrap: wrap;
+  }
+
+  .precios > *,
+  .altaSede > * {
+    flex: 1 1 100%;
+  }
+}
+
 .bannerEnlace {
   font-size: 12px;
   color: var(--color-text-muted);

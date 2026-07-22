@@ -64,8 +64,13 @@
   overflow: hidden;
 }
 
+.tablaWrap {
+  overflow-x: auto;
+}
+
 .tabla {
   width: 100%;
+  min-width: 560px;
   border-collapse: collapse;
 }
 

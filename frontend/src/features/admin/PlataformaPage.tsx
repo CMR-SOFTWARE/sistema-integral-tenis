@@ -108,6 +108,7 @@ export default function PlataformaPage() {
 
       <h2 className={s.seccion}>Clubes</h2>
       <div className={s.tarjeta}>
+        <div className={s.tablaWrap}>
         <table className={s.tabla}>
           <thead>
             <tr>
@@ -152,6 +153,7 @@ export default function PlataformaPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
