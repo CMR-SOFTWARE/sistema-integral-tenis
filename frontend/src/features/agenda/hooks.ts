@@ -1,112 +1,99 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import type { CreateHorario, Horario, Sede, Turno } from './types';
 
 export function useSedes() {
-  const [sedes, setSedes] = useState<Sede[]>([]);
-  const [cargando, setCargando] = useState(true);
-
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    try {
-      setSedes(await api.get<Sede[]>('/sedes'));
-    } finally {
-      setCargando(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void cargar();
-  }, [cargar]);
+  const qc = useQueryClient();
+  const query = useQuery({
+    queryKey: ['sedes'],
+    queryFn: () => api.get<Sede[]>('/sedes'),
+  });
+  const invalidar = () => qc.invalidateQueries({ queryKey: ['sedes'] });
 
   const crearSede = async (nombre: string) => {
     await api.post<Sede>('/sedes', { nombre });
-    await cargar();
+    await invalidar();
   };
 
   const agregarCancha = async (sedeId: string, nombre: string) => {
     await api.post(`/sedes/${sedeId}/canchas`, { nombre });
-    await cargar();
+    await invalidar();
   };
 
   /** Baja lógica: deja de ofrecerse para horarios nuevos (la historia queda). */
   const desactivarSede = async (sedeId: string) => {
     await api.delete(`/sedes/${sedeId}`);
-    await cargar();
+    await invalidar();
   };
 
   const reactivarSede = async (sedeId: string) => {
     await api.post(`/sedes/${sedeId}/reactivar`, {});
-    await cargar();
+    await invalidar();
   };
 
-  return { sedes, cargando, crearSede, agregarCancha, desactivarSede, reactivarSede };
+  return {
+    sedes: query.data ?? [],
+    cargando: query.isLoading,
+    crearSede, agregarCancha, desactivarSede, reactivarSede,
+  };
 }
 
 export function useHorarios() {
-  const [horarios, setHorarios] = useState<Horario[]>([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const qc = useQueryClient();
+  const query = useQuery({
+    queryKey: ['horarios'],
+    queryFn: () => api.get<Horario[]>('/horarios'),
+  });
 
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    setError(null);
-    try {
-      setHorarios(await api.get<Horario[]>('/horarios'));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando horarios');
-    } finally {
-      setCargando(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void cargar();
-  }, [cargar]);
+  // Los horarios generan los turnos del calendario: al crear/desactivar uno,
+  // también invalidamos la semana para que el calendario refleje el cambio.
+  const invalidar = async () => {
+    await qc.invalidateQueries({ queryKey: ['horarios'] });
+    await qc.invalidateQueries({ queryKey: ['turnos-semana'] });
+  };
 
   const crear = async (dto: CreateHorario) => {
     await api.post<Horario>('/horarios', dto);
-    await cargar();
+    await invalidar();
   };
 
   const desactivar = async (id: string) => {
     await api.delete(`/horarios/${id}`);
-    await cargar();
+    await invalidar();
   };
 
-  return { horarios, cargando, error, crear, desactivar, recargar: cargar };
+  return {
+    horarios: query.data ?? [],
+    cargando: query.isLoading,
+    error: query.error ? (query.error.message || 'Error cargando horarios') : null,
+    crear, desactivar,
+    recargar: () => qc.invalidateQueries({ queryKey: ['horarios'] }),
+  };
 }
 
 export function useSemana(lunes: string) {
-  const [turnos, setTurnos] = useState<Turno[]>([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    setError(null);
-    try {
-      setTurnos(await api.get<Turno[]>(`/turnos/semana?lunes=${lunes}`));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando la semana');
-    } finally {
-      setCargando(false);
-    }
-  }, [lunes]);
-
-  useEffect(() => {
-    void cargar();
-  }, [cargar]);
+  const qc = useQueryClient();
+  const query = useQuery({
+    queryKey: ['turnos-semana', lunes],
+    queryFn: () => api.get<Turno[]>(`/turnos/semana?lunes=${lunes}`),
+  });
+  const invalidar = () => qc.invalidateQueries({ queryKey: ['turnos-semana'] });
 
   const marcarAsistencia = async (turnoId: string, alumnoId: string, presente: boolean) => {
     await api.patch(`/turnos/${turnoId}/asistencia`, { alumnoId, presente });
-    await cargar();
+    await invalidar();
   };
 
   const cancelar = async (turnoId: string, motivo: string) => {
     await api.post(`/turnos/${turnoId}/cancelar`, { motivo });
-    await cargar();
+    await invalidar();
   };
 
-  return { turnos, cargando, error, marcarAsistencia, cancelar, recargar: cargar };
+  return {
+    turnos: query.data ?? [],
+    cargando: query.isLoading,
+    error: query.error ? (query.error.message || 'Error cargando la semana') : null,
+    marcarAsistencia, cancelar,
+    recargar: invalidar,
+  };
 }

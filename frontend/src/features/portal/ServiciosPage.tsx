@@ -1,9 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '../../lib/api';
 import { obtenerSesion } from '../auth/sesion';
 import SinClub from './SinClub';
 import { formatoPlata } from '../alumnos/types';
 import type { Servicio, Pedido } from '../cuotas/types';
+import { useServiciosYPedidos } from './hooks';
 import s from './PortalPages.module.css';
 
 const ESTADO_PEDIDO_UI: Record<Pedido['estado'], { label: string; clase: string }> = {
@@ -15,27 +17,17 @@ const ESTADO_PEDIDO_UI: Record<Pedido['estado'], { label: string; clase: string 
 /** Servicios del club: el alumno ve el catálogo, pide, y sigue sus pedidos. */
 export default function ServiciosPage() {
   const conClub = obtenerSesion()?.alumno != null;
-  const [servicios, setServicios] = useState<Servicio[]>([]);
-  const [pedidos, setPedidos] = useState<Pedido[]>([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const qc = useQueryClient();
+  const query = useServiciosYPedidos();
+  const servicios: Servicio[] = query.data?.servicios ?? [];
+  const pedidos: Pedido[] = query.data?.pedidos ?? [];
+  const cargando = query.isLoading;
+  const [error, setError] = useState<string | null>(null); // errores de "Pedir"
   const [pidiendo, setPidiendo] = useState<string | null>(null); // servicioId en curso
   const [aviso, setAviso] = useState<string | null>(null);
 
-  const cargar = useCallback(() => {
-    if (!conClub) return;
-    setCargando(true);
-    setError(null);
-    Promise.all([
-      api.get<Servicio[]>('/portal/servicios'),
-      api.get<Pedido[]>('/portal/pedidos'),
-    ])
-      .then(([svc, ped]) => { setServicios(svc); setPedidos(ped); })
-      .catch((e) => setError(e instanceof Error ? e.message : 'Error cargando los servicios'))
-      .finally(() => setCargando(false));
-  }, [conClub]);
-
-  useEffect(() => { cargar(); }, [cargar]);
+  const errorMostrado =
+    error ?? (query.error ? (query.error.message || 'Error cargando los servicios') : null);
 
   if (!conClub) return <SinClub mensaje="Cuando estés en un club, acá vas a ver los servicios que ofrece (encordados, pelotas y más)." />;
 
@@ -46,7 +38,7 @@ export default function ServiciosPage() {
       await api.post('/portal/pedidos', { servicioId: servicio.id });
       setAviso(`Pediste "${servicio.nombre}". Tu profe lo va a confirmar.`);
       setTimeout(() => setAviso(null), 3500);
-      cargar();
+      await qc.invalidateQueries({ queryKey: ['portal-servicios'] });
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo enviar el pedido.');
     } finally {
@@ -56,7 +48,7 @@ export default function ServiciosPage() {
 
   return (
     <div>
-      {error && <div className={s.error}>{error}</div>}
+      {errorMostrado && <div className={s.error}>{errorMostrado}</div>}
       {aviso && <div className={s.avisoOk}>{aviso}</div>}
       {cargando && <div className={s.vacio}>Cargando…</div>}
 

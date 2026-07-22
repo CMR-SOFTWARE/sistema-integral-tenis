@@ -1,32 +1,23 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../../lib/api';
 import { obtenerSesion } from '../auth/sesion';
 import { aISO, fechaCorta, horaCorta, lunesDe } from '../agenda/types';
-import type { Turno } from '../agenda/types';
-import type { Alumno } from '../alumnos/types';
+import { useSemana } from '../agenda/hooks';
+import { useAlumnos } from '../alumnos/useAlumnos';
 import s from './StaffDashboardPage.module.css';
 
 /**
  * Inicio del profe EMPLEADO: un resumen de su semana (clases a dar, horas,
- * sus alumnos) + sus próximas clases. Se arma con los endpoints que el staff
- * sí puede ver (/turnos/semana y /alumnos, ya filtrados a lo suyo).
+ * sus alumnos) + sus próximas clases. Reusa los hooks del profe (/turnos/semana
+ * y /alumnos, ya filtrados a lo suyo) → comparte caché con Calendario y Alumnos.
  */
 export default function StaffDashboardPage() {
   const nombre = obtenerSesion()?.nombre ?? '';
-  const [turnos, setTurnos] = useState<Turno[]>([]);
-  const [alumnos, setAlumnos] = useState<Alumno[]>([]);
-  const [cargando, setCargando] = useState(true);
-
-  useEffect(() => {
-    const lunes = lunesDe(new Date());
-    Promise.all([
-      api.get<Turno[]>(`/turnos/semana?lunes=${lunes}`).catch(() => [] as Turno[]),
-      api.get<Alumno[]>('/alumnos').catch(() => [] as Alumno[]),
-    ])
-      .then(([t, a]) => { setTurnos(t); setAlumnos(a); })
-      .finally(() => setCargando(false));
-  }, []);
+  const lunes = useMemo(() => lunesDe(new Date()), []);
+  const semana = useSemana(lunes);
+  const { alumnos, cargando: cargandoAlumnos } = useAlumnos('todas', 'todos');
+  const turnos = semana.turnos;
+  const cargando = semana.cargando || cargandoAlumnos;
 
   const programados = useMemo(() => turnos.filter((t) => t.estado === 'Programado'), [turnos]);
 

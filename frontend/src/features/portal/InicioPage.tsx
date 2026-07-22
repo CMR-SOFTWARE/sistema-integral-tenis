@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../../lib/api';
 import { obtenerSesion } from '../auth/sesion';
 import SinClub from './SinClub';
 import { formatoPlata } from '../alumnos/types';
 import { ESTADO_LIQ_UI, MESES } from '../cuotas/types';
 import { fechaCorta, horaCorta, DIAS } from '../agenda/types';
-import type { MiLiquidacion, MisTurnos, MiTurno, Publicidad, Aviso, NotaProfe } from './types';
+import { useMisTurnos, useMiCuota, usePublicidad, useAvisos, useNotas } from './hooks';
+import type { MiTurno } from './types';
 import s from './PortalPages.module.css';
 
 /** "2026-07-14" → "MAR" (para la columna de horarios asignados). */
@@ -23,27 +23,12 @@ function diaCorto(iso: string): string {
 export default function InicioPage() {
   const hoy = new Date();
   const conClub = obtenerSesion()?.alumno != null;
-  const [turnos, setTurnos] = useState<MisTurnos | null>(null);
-  const [cuota, setCuota] = useState<MiLiquidacion | null | undefined>(undefined); // undefined = cargando
-  const [error, setError] = useState<string | null>(null);
-  const [banners, setBanners] = useState<Publicidad[]>([]);
+  const turnosQuery = useMisTurnos();
+  const cuotaQuery = useMiCuota(hoy.getFullYear(), hoy.getMonth() + 1);
+  const { data: banners = [] } = usePublicidad();
+  const { data: avisos = [] } = useAvisos();
+  const { data: notas = [] } = useNotas();
   const [bannerIdx, setBannerIdx] = useState(0);
-  const [avisos, setAvisos] = useState<Aviso[]>([]);
-  const [notas, setNotas] = useState<NotaProfe[]>([]);
-
-  useEffect(() => {
-    if (!conClub) return; // sin ficha no hay nada que pedir
-    api.get<MisTurnos>('/portal/mis-turnos')
-      .then(setTurnos)
-      .catch((e) => setError(e instanceof Error ? e.message : 'Error cargando tus clases'));
-    api.get<MiLiquidacion | undefined>(`/portal/mi-cuota/${hoy.getFullYear()}/${hoy.getMonth() + 1}`)
-      .then((c) => setCuota(c ?? null))
-      .catch(() => setCuota(null));
-    api.get<Publicidad[]>('/portal/publicidad').then(setBanners).catch(() => setBanners([]));
-    api.get<Aviso[]>('/portal/avisos').then(setAvisos).catch(() => setAvisos([]));
-    api.get<NotaProfe[]>('/portal/notas').then(setNotas).catch(() => setNotas([]));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [conClub]);
 
   // Rotación de banners (si hay más de uno) cada 6s
   useEffect(() => {
@@ -53,9 +38,15 @@ export default function InicioPage() {
   }, [banners.length]);
 
   if (!conClub) return <SinClub />;
-  if (error) return <div className={s.error}>{error}</div>;
-  if (!turnos || cuota === undefined) return <div className={s.vacio}>Cargando…</div>;
+  if (turnosQuery.error) {
+    return <div className={s.error}>{turnosQuery.error.message || 'Error cargando tus clases'}</div>;
+  }
+  const turnos = turnosQuery.data;
+  if (!turnos) return <div className={s.vacio}>Cargando…</div>;
 
+  // La cuota es secundaria en el inicio: si aún no llegó (o falló), mostramos
+  // "sin movimientos" en vez de bloquear la pantalla.
+  const cuota = cuotaQuery.data ?? null;
   const proxima: MiTurno | undefined = turnos.proximos.find((t) => t.estado !== 'Cancelado');
   const estadoCuota = cuota ? ESTADO_LIQ_UI[cuota.estado] : null;
 

@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { obtenerSesion } from '../auth/sesion';
 import SinClub from './SinClub';
 import InformarPagoModal from './InformarPagoModal';
 import { formatoPlata } from '../alumnos/types';
 import { ESTADO_LIQ_UI, MESES } from '../cuotas/types';
-import type { MiLiquidacion } from './types';
+import { useMiCuota } from './hooks';
 import s from './PortalPages.module.css';
 
 /** El objeto de pago a informar: el mes entero o un cargo puntual. */
@@ -17,25 +18,15 @@ type AInformar =
 export default function MiCuotaPage() {
   const hoy = new Date();
   const conClub = obtenerSesion()?.alumno != null;
+  const qc = useQueryClient();
   const [anio, setAnio] = useState(hoy.getFullYear());
   const [mes, setMes] = useState(hoy.getMonth() + 1);
-  const [cuota, setCuota] = useState<MiLiquidacion | null>(null);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const cuotaQuery = useMiCuota(anio, mes);
+  const cuota = cuotaQuery.data ?? null;
+  const cargando = cuotaQuery.isLoading;
+  const error = cuotaQuery.error ? (cuotaQuery.error.message || 'Error cargando tu cuota') : null;
   const [informar, setInformar] = useState<AInformar | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
-
-  const cargar = useCallback(() => {
-    if (!conClub) return;
-    setCargando(true);
-    setError(null);
-    api.get<MiLiquidacion | undefined>(`/portal/mi-cuota/${anio}/${mes}`)
-      .then((c) => setCuota(c ?? null)) // 204 = sin movimientos
-      .catch((e) => setError(e instanceof Error ? e.message : 'Error cargando tu cuota'))
-      .finally(() => setCargando(false));
-  }, [anio, mes, conClub]);
-
-  useEffect(() => { cargar(); }, [cargar]);
 
   if (!conClub) return <SinClub mensaje="Cuando estés en un club, acá vas a ver tu cuota mensual y tus pagos." />;
 
@@ -55,7 +46,7 @@ export default function MiCuotaPage() {
     }
     setAviso('¡Aviso enviado! Tu profe va a confirmar el pago.');
     setTimeout(() => setAviso(null), 3500);
-    cargar();
+    await qc.invalidateQueries({ queryKey: ['portal-mi-cuota'] });
   };
 
   const estado = cuota ? ESTADO_LIQ_UI[cuota.estado] : null;
