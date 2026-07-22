@@ -15,7 +15,8 @@
   flex-direction: column;
   position: sticky;
   top: 0;
-  height: 100vh;
+  height: 100vh; /* fallback para navegadores sin soporte de dvh */
+  height: 100dvh; /* altura real visible: descuenta la barra del navegador mobile */
 }
 
 .brand {
