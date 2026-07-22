@@ -115,3 +115,20 @@
   font-size: 13px;
   color: var(--color-text-muted);
 }
+
+/* ── Móvil: la fila apila el botón de WhatsApp abajo, a lo ancho ── */
+@media (max-width: 760px) {
+  .fila {
+    flex-wrap: wrap;
+  }
+
+  .filaTitulo {
+    flex-wrap: wrap;
+  }
+
+  .btnWhatsapp {
+    flex: 1 1 100%;
+    text-align: center;
+    padding: 9px 12px;
+  }
+}

@@ -44,6 +44,13 @@ export default function AppLayout() {
     setMenuAbierto(false);
   }, [pathname]);
 
+  // Con el drawer abierto en mobile, bloqueamos el scroll del fondo para que el
+  // gesto de scroll dentro del menú no arrastre la página de atrás.
+  useEffect(() => {
+    document.body.style.overflow = menuAbierto ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menuAbierto]);
+
   const salir = async () => {
     const ok = await confirmar({
       titulo: '¿Cerrar sesión?',

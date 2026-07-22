@@ -328,17 +328,24 @@
 .bannerNombre { font-weight: 700; font-size: 14px; }
 
 /* ── Móvil: las filas de alta (input + input + botón) se apilan en vez de
-   desbordar hacia la derecha ── */
+   desbordar. Usamos flex-direction: column (un solo eje) en vez de flex-wrap
+   porque WebKit mobile no siempre recalcula el wrap al insertar una fila nueva
+   (el botón quedaba cortado hasta remontar la página). ── */
 @media (max-width: 620px) {
   .precios,
-  .altaSede,
-  .sedeHeader {
-    flex-wrap: wrap;
+  .altaSede {
+    flex-direction: column;
+    align-items: stretch;
   }
 
   .precios > *,
   .altaSede > * {
-    flex: 1 1 100%;
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
+  .sedeHeader {
+    flex-wrap: wrap;
   }
 }
 

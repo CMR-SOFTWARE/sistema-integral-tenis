@@ -42,6 +42,13 @@ export default function PortalLayout() {
     setMenuAbierto(false);
   }, [pathname]);
 
+  // Con el drawer abierto en mobile, bloqueamos el scroll del fondo para que el
+  // gesto de scroll dentro del menú no arrastre la página de atrás.
+  useEffect(() => {
+    document.body.style.overflow = menuAbierto ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [menuAbierto]);
+
   useEffect(() => {
     // Refrescar la sesión al entrar: si reclamó ficha en otra pestaña o el
     // profe lo cargó después, acá se entera sin re-loguear
