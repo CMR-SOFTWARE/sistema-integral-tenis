@@ -59,6 +59,13 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
         modelBuilder.Entity<Alumno>().Property(a => a.Estado).HasConversion<string>();
         modelBuilder.Entity<Tutor>().Property(t => t.Relacion).HasConversion<string>();
         modelBuilder.Entity<Grupo>().Property(g => g.Categoria).HasConversion<string>();
+
+        // FechaNacimiento es una FECHA, no un instante: el front manda "2000-01-01"
+        // sin zona horaria (DateTime.Kind=Unspecified). Npgsql por default mapea
+        // DateTime a "timestamp with time zone" y EXIGE Kind=Utc, así que sin esto
+        // el alta de alumno explota con un 500 en Postgres (no pasaba en SQLite).
+        modelBuilder.Entity<Alumno>().Property(a => a.FechaNacimiento).HasColumnType("timestamp without time zone");
+        modelBuilder.Entity<Usuario>().Property(u => u.FechaNacimiento).HasColumnType("timestamp without time zone");
         modelBuilder.Entity<MembresiaTenant>().Property(m => m.Rol).HasConversion<string>();
 
         // ── Tenant: subdominio único ──
