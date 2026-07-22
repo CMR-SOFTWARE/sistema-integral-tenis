@@ -415,4 +415,14 @@
     padding-bottom: 6px;
   }
   .columna { scroll-snap-align: start; }
+
+  /* El navegador de semana queda arriba y el botón de pedir clase, abajo a lo ancho */
+  .toolbar {
+    flex-wrap: wrap;
+  }
+  .btnIndividual {
+    flex: 1 1 100%;
+    text-align: center;
+    padding: 11px 14px;
+  }
 }

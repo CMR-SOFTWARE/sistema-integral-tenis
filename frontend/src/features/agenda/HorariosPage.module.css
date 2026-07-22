@@ -175,6 +175,18 @@
   }
 }
 
+/* ── Móvil: el toolbar apila el texto arriba y deja el selector + botón abajo,
+   en vez de amontonarse y desbordar ── */
+@media (max-width: 760px) {
+  .toolbar {
+    flex-wrap: wrap;
+  }
+
+  .hint {
+    flex: 1 1 100%;
+  }
+}
+
 /* Filtro por sede (compartido con el Calendario vía SelectSede) */
 .selectSede {
   padding: 9px 12px;
