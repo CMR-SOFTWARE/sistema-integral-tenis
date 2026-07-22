@@ -1,42 +1,35 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import type { LiquidacionMes, Medio, TipoCargo } from './types';
 
 export function useCuotas(anio: number, mes: number) {
-  const [datos, setDatos] = useState<LiquidacionMes | null>(null);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const qc = useQueryClient();
 
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    setError(null);
-    try {
-      setDatos(await api.get<LiquidacionMes>(`/cuotas/${anio}/${mes}`));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando el mes');
-    } finally {
-      setCargando(false);
-    }
-  }, [anio, mes]);
+  const query = useQuery({
+    queryKey: ['cuotas', anio, mes],
+    queryFn: () => api.get<LiquidacionMes>(`/cuotas/${anio}/${mes}`),
+  });
 
-  useEffect(() => {
-    void cargar();
-  }, [cargar]);
+  // Mover plata cambia las cuotas Y la señal de deuda de la lista de alumnos.
+  const invalidar = async () => {
+    await qc.invalidateQueries({ queryKey: ['cuotas'] });
+    await qc.invalidateQueries({ queryKey: ['alumnos'] });
+  };
 
   const pagarMes = async (alumnoId: string, medio: Medio) => {
     await api.post(`/cuotas/${anio}/${mes}/pagar`, { alumnoId, medio });
-    await cargar();
+    await invalidar();
   };
 
   const pagarCargo = async (cargoId: string, medio: Medio) => {
     await api.post(`/cuotas/cargos/${cargoId}/pagar`, { medio });
-    await cargar();
+    await invalidar();
   };
 
   /** Rechaza el pago informado del mes de un alumno ("no me llegó"). */
   const rechazarMes = async (alumnoId: string) => {
     await api.post(`/cuotas/${anio}/${mes}/rechazar`, { alumnoId });
-    await cargar();
+    await invalidar();
   };
 
   const agregarCargo = async (dto: {
@@ -46,8 +39,14 @@ export function useCuotas(anio: number, mes: number) {
     monto: number;
   }) => {
     await api.post('/cuotas/cargos', dto);
-    await cargar();
+    await invalidar();
   };
 
-  return { datos, cargando, error, pagarMes, pagarCargo, rechazarMes, agregarCargo, recargar: cargar };
+  return {
+    datos: query.data ?? null,
+    cargando: query.isLoading,
+    error: query.error ? (query.error.message || 'Error cargando el mes') : null,
+    pagarMes, pagarCargo, rechazarMes, agregarCargo,
+    recargar: () => qc.invalidateQueries({ queryKey: ['cuotas', anio, mes] }),
+  };
 }

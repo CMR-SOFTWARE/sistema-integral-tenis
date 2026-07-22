@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '../../lib/api';
 import Modal from '../../components/Modal';
 import HoraSelect from '../../components/HoraSelect';
@@ -7,7 +8,8 @@ import SinClub from './SinClub';
 import { formatoPlata, CAT_LABEL } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import { aISO, fechaCorta, horaCorta, lunesDe, rangoSemana, sumarDias } from '../agenda/types';
-import type { ClaseSuelta, DatosPago, Disponibilidad, GrupoDisponible, SedeReserva, SolicitudGrupo, SolicitudHorario } from './types';
+import { useReservarData, usePortalSedes } from './hooks';
+import type { ClaseSuelta, DatosPago, Disponibilidad } from './types';
 import s from './ReservarPage.module.css';
 
 const DIA_IDX: Record<string, number> = {
@@ -43,20 +45,23 @@ interface SlotGrupo {
 export default function ReservarPage() {
   const conClub = obtenerSesion()?.alumno != null;
   const miCategoria = obtenerSesion()?.categoria ?? null; // para marcar "tu categoría" en el calendario
+  const qc = useQueryClient();
   const [lunes, setLunes] = useState(() => lunesDe(new Date()));
-  const [grupos, setGrupos] = useState<GrupoDisponible[]>([]);
-  const [solGrupo, setSolGrupo] = useState<SolicitudGrupo[]>([]);
-  const [solHorario, setSolHorario] = useState<SolicitudHorario[]>([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  // Lista principal (grupos + solicitudes + clases sueltas) cacheada por React Query.
+  const reservarQuery = useReservarData();
+  const { grupos, solGrupo, solHorario, clasesSueltas } =
+    reservarQuery.data ?? { grupos: [], solGrupo: [], solHorario: [], clasesSueltas: [] };
+  const cargando = reservarQuery.isLoading;
+
+  const [error, setError] = useState<string | null>(null); // errores de acciones
   const [confirmar, setConfirmar] = useState<SlotGrupo | null>(null);
   const [pidiendoIndividual, setPidiendoIndividual] = useState(false);
-  const [sedes, setSedes] = useState<SedeReserva[]>([]);
+  const { data: sedes = [] } = usePortalSedes();
   const [formInd, setFormInd] = useState({ sedeId: '', dia: 'Monday', hora: '18:00', duracion: 60 });
   const [disp, setDisp] = useState<Disponibilidad | null>(null);
   const [chequeando, setChequeando] = useState(false);
   // Clase suelta (M5c)
-  const [clasesSueltas, setClasesSueltas] = useState<ClaseSuelta[]>([]);
   const [pidiendoSuelta, setPidiendoSuelta] = useState(false);
   const [formSuelta, setFormSuelta] = useState({ sedeId: '', fecha: '', hora: '18:00', duracion: 60 });
   const [dispSuelta, setDispSuelta] = useState<Disponibilidad | null>(null);
@@ -65,36 +70,18 @@ export default function ReservarPage() {
   const [enviando, setEnviando] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
-  const cargar = useCallback(() => {
-    if (!conClub) return;
-    setCargando(true);
-    setError(null);
-    Promise.all([
-      api.get<GrupoDisponible[]>('/portal/grupos-disponibles'),
-      api.get<SolicitudGrupo[]>('/portal/solicitudes-grupo'),
-      api.get<SolicitudHorario[]>('/portal/solicitudes-horario'),
-      api.get<ClaseSuelta[]>('/portal/clases-sueltas'),
-    ])
-      .then(([g, sg, sh, cs]) => { setGrupos(g); setSolGrupo(sg); setSolHorario(sh); setClasesSueltas(cs); })
-      .catch((e) => setError(e instanceof Error ? e.message : 'Error cargando la agenda'))
-      .finally(() => setCargando(false));
-  }, [conClub]);
+  // Revalida la lista tras cada pedido (mismo efecto que el viejo cargar()).
+  const recargar = () => qc.invalidateQueries({ queryKey: ['portal-reservar'] });
 
-  useEffect(() => { cargar(); }, [cargar]);
+  const errorMostrado =
+    error ?? (reservarQuery.error ? (reservarQuery.error.message || 'Error cargando la agenda') : null);
 
-  // Las sedes del club (para elegir dónde); preselecciona la primera
+  // Cuando llegan las sedes, preseleccionamos la primera en ambos formularios.
   useEffect(() => {
-    if (!conClub) return;
-    api.get<SedeReserva[]>('/portal/sedes')
-      .then((ss) => {
-        setSedes(ss);
-        if (ss.length > 0) {
-          setFormInd((f) => ({ ...f, sedeId: f.sedeId || ss[0].id }));
-          setFormSuelta((f) => ({ ...f, sedeId: f.sedeId || ss[0].id }));
-        }
-      })
-      .catch(() => setSedes([]));
-  }, [conClub]);
+    if (sedes.length === 0) return;
+    setFormInd((f) => ({ ...f, sedeId: f.sedeId || sedes[0].id }));
+    setFormSuelta((f) => ({ ...f, sedeId: f.sedeId || sedes[0].id }));
+  }, [sedes]);
 
   // Chequeo en vivo de disponibilidad mientras se arma la clase individual
   useEffect(() => {
@@ -155,7 +142,7 @@ export default function ReservarPage() {
       await api.post('/portal/solicitudes-grupo', { grupoId: confirmar.grupoId });
       setToast(`Pediste sumarte a ${confirmar.grupoNombre}. Tu profe lo va a aprobar.`);
       setTimeout(() => setToast(null), 3500);
-      setConfirmar(null); cargar();
+      setConfirmar(null); recargar();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo enviar la solicitud.');
     } finally { setEnviando(false); }
@@ -172,7 +159,7 @@ export default function ReservarPage() {
       });
       setToast('Pediste tu clase individual. Tu profe la va a aprobar y asignar cancha.');
       setTimeout(() => setToast(null), 3500);
-      setPidiendoIndividual(false); cargar();
+      setPidiendoIndividual(false); recargar();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo enviar el pedido.');
     } finally { setEnviando(false); }
@@ -189,7 +176,7 @@ export default function ReservarPage() {
       });
       setToast('¡Clase suelta reservada! Transferí y avisá el pago desde "Mis clases".');
       setTimeout(() => setToast(null), 4000);
-      setPidiendoSuelta(false); cargar();
+      setPidiendoSuelta(false); recargar();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo reservar la clase.');
     } finally { setEnviando(false); }
@@ -201,7 +188,7 @@ export default function ReservarPage() {
       await api.post(`/portal/clases-sueltas/${clase.id}/informar-pago`, {});
       setToast('Aviso enviado. Tu profe va a confirmar el pago y habilitar la clase.');
       setTimeout(() => setToast(null), 3500);
-      cargar();
+      recargar();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo avisar el pago.');
     }
@@ -222,7 +209,7 @@ export default function ReservarPage() {
         </button>
       </div>
 
-      {error && <div className={s.error}>{error}</div>}
+      {errorMostrado && <div className={s.error}>{errorMostrado}</div>}
       {toast && <div className={s.toast}>{toast}</div>}
       {cargando && <div className={s.vacio}>Cargando la agenda…</div>}
 

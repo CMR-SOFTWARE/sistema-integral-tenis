@@ -1,44 +1,44 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import type { CreateGrupo, Grupo } from './types';
 
 /** Estado y operaciones de la pantalla Grupos contra la API .NET. */
 export function useGrupos() {
-  const [grupos, setGrupos] = useState<Grupo[]>([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const qc = useQueryClient();
 
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    setError(null);
-    try {
-      setGrupos(await api.get<Grupo[]>('/grupos'));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando grupos');
-    } finally {
-      setCargando(false);
-    }
-  }, []);
+  const query = useQuery({
+    queryKey: ['grupos'],
+    queryFn: () => api.get<Grupo[]>('/grupos'),
+  });
 
-  useEffect(() => {
-    void cargar();
-  }, [cargar]);
+  // Sumar/quitar a un grupo repone o saca al alumno de los turnos futuros:
+  // invalidamos también el calendario para que se vea el cambio.
+  const invalidar = async () => {
+    await qc.invalidateQueries({ queryKey: ['grupos'] });
+    await qc.invalidateQueries({ queryKey: ['turnos-semana'] });
+  };
 
   const crear = async (dto: CreateGrupo) => {
     const creado = await api.post<Grupo>('/grupos', dto);
-    await cargar();
+    await qc.invalidateQueries({ queryKey: ['grupos'] });
     return creado;
   };
 
   const asignar = async (grupoId: string, alumnoId: string) => {
     await api.post<void>(`/grupos/${grupoId}/alumnos`, { alumnoId });
-    await cargar();
+    await invalidar();
   };
 
   const quitar = async (grupoId: string, alumnoId: string) => {
     await api.delete<void>(`/grupos/${grupoId}/alumnos/${alumnoId}`);
-    await cargar();
+    await invalidar();
   };
 
-  return { grupos, cargando, error, crear, asignar, quitar, recargar: cargar };
+  return {
+    grupos: query.data ?? [],
+    cargando: query.isLoading,
+    error: query.error ? (query.error.message || 'Error cargando grupos') : null,
+    crear, asignar, quitar,
+    recargar: () => qc.invalidateQueries({ queryKey: ['grupos'] }),
+  };
 }

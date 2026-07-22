@@ -1,27 +1,19 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import type { Bloqueo, CreateBloqueo, Impacto } from './types';
 
 export function useBloqueos() {
-  const [bloqueos, setBloqueos] = useState<Bloqueo[]>([]);
-  const [cargando, setCargando] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const qc = useQueryClient();
+  const query = useQuery({
+    queryKey: ['bloqueos'],
+    queryFn: () => api.get<Bloqueo[]>('/bloqueos'),
+  });
 
-  const cargar = useCallback(async () => {
-    setCargando(true);
-    setError(null);
-    try {
-      setBloqueos(await api.get<Bloqueo[]>('/bloqueos'));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error cargando bloqueos');
-    } finally {
-      setCargando(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void cargar();
-  }, [cargar]);
+  // Un bloqueo cancela/repone turnos futuros: invalidamos también el calendario.
+  const invalidar = async () => {
+    await qc.invalidateQueries({ queryKey: ['bloqueos'] });
+    await qc.invalidateQueries({ queryKey: ['turnos-semana'] });
+  };
 
   /** Preview del impacto: NO persiste nada (alimenta el modal Impacto). */
   const previsualizar = (dto: CreateBloqueo) =>
@@ -29,13 +21,18 @@ export function useBloqueos() {
 
   const crear = async (dto: CreateBloqueo) => {
     await api.post('/bloqueos', dto);
-    await cargar();
+    await invalidar();
   };
 
   const eliminar = async (id: string) => {
     await api.delete(`/bloqueos/${id}`);
-    await cargar();
+    await invalidar();
   };
 
-  return { bloqueos, cargando, error, previsualizar, crear, eliminar };
+  return {
+    bloqueos: query.data ?? [],
+    cargando: query.isLoading,
+    error: query.error ? (query.error.message || 'Error cargando bloqueos') : null,
+    previsualizar, crear, eliminar,
+  };
 }

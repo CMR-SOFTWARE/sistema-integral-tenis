@@ -1,12 +1,14 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { obtenerSesion } from '../auth/sesion';
 import SinClub from './SinClub';
 import { CAT_COLOR, CAT_LABEL } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import { fechaCorta, horaCorta, DIAS } from '../agenda/types';
+import { useMisTurnos } from './hooks';
 import CancelarTurnoModal from './CancelarTurnoModal';
-import type { MisTurnos, MiTurno } from './types';
+import type { MiTurno } from './types';
 import s from './PortalPages.module.css';
 
 function diaCorto(iso: string): string {
@@ -28,29 +30,18 @@ function ChipCategoria({ categoria }: { categoria: string | null }) {
  *  y el historial reciente. */
 export default function MisTurnosPage() {
   const conClub = obtenerSesion()?.alumno != null;
-  const [turnos, setTurnos] = useState<MisTurnos | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const qc = useQueryClient();
+  const { data: turnos, error } = useMisTurnos();
   const [aCancelar, setACancelar] = useState<MiTurno | null>(null);
-
-  const cargar = useCallback(() => {
-    if (!conClub) return;
-    api.get<MisTurnos>('/portal/mis-turnos')
-      .then(setTurnos)
-      .catch((e) => setError(e instanceof Error ? e.message : 'Error cargando tus turnos'));
-  }, [conClub]);
-
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
 
   if (!conClub) return <SinClub mensaje="Cuando estés en un club, acá vas a ver tus próximas clases y tu historial." />;
 
   const cancelar = async (turnoId: string, motivo: string) => {
     await api.post(`/portal/mis-turnos/${turnoId}/cancelar`, { motivo });
-    cargar();
+    await qc.invalidateQueries({ queryKey: ['portal-mis-turnos'] });
   };
 
-  if (error) return <div className={s.error}>{error}</div>;
+  if (error) return <div className={s.error}>{error.message || 'Error cargando tus turnos'}</div>;
   if (!turnos) return <div className={s.vacio}>Cargando tus clases…</div>;
 
   const estadoHistorial = (t: MiTurno) =>

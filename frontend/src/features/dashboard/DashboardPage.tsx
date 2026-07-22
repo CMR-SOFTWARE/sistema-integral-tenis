@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { CAT_COLOR, CAT_LABEL, formatoPlata } from '../alumnos/types';
@@ -51,20 +51,20 @@ interface Resumen {
 /** Dashboard del profesor: métricas, clases de hoy, cuotas y cancelaciones,
  *  todo con datos REALES del tenant. */
 export default function DashboardPage() {
-  const [resumen, setResumen] = useState<Resumen | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [pedidosPend, setPedidosPend] = useState(0);
+  const resumenQuery = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: () => api.get<Resumen>('/dashboard'),
+  });
+  const { data: pedidosPend = 0 } = useQuery({
+    queryKey: ['pedidos-pendientes-cuenta'],
+    queryFn: () => api.get<number>('/pedidos/pendientes/cuenta'),
+  });
 
-  useEffect(() => {
-    api.get<Resumen>('/dashboard')
-      .then(setResumen)
-      .catch((e) => setError(e instanceof Error ? e.message : 'Error cargando el dashboard'));
-    api.get<number>('/pedidos/pendientes/cuenta').then(setPedidosPend).catch(() => setPedidosPend(0));
-  }, []);
-
-  if (error) {
-    return <div className={s.error}>{error} — ¿está corriendo la API? (dotnet run)</div>;
+  if (resumenQuery.error) {
+    const msg = resumenQuery.error.message || 'Error cargando el dashboard';
+    return <div className={s.error}>{msg} — ¿está corriendo la API? (dotnet run)</div>;
   }
+  const resumen = resumenQuery.data;
   if (!resumen) {
     return <div className={s.cargando}>Cargando…</div>;
   }
