@@ -74,7 +74,7 @@ public class AlumnosController : ControllerBase
     {
         try
         {
-            return Ok(await _service.CrearAccesoAsync(id, dto.Email, ct));
+            return Ok(await _service.CrearAccesoAsync(id, dto.Telefono, ct));
         }
         catch (ReglaDeNegocioException ex)
         {

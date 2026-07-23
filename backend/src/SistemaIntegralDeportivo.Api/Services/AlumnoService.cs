@@ -33,18 +33,24 @@ public class AlumnoService : IAlumnoService
 
     public async Task<AlumnoCreadoDto> CrearAsync(CreateAlumnoDto dto, CancellationToken ct = default)
     {
-        // Orden anti-huérfanos: TODAS las reglas de la ficha se validan ANTES
-        // de tocar Identity (si algo falla acá, no nace ningún usuario)
-        if (await _repo.ExisteDniAsync(dto.Dni, ct))
+        // Reglas de la ficha ANTES de tocar Identity (si algo falla acá, no nace usuario)
+        if (!string.IsNullOrWhiteSpace(dto.Dni) && await _repo.ExisteDniAsync(dto.Dni, ct))
             throw new ReglaDeNegocioException($"Ya existe un alumno con DNI {dto.Dni}.");
         ValidarMenor(dto);
         if (dto.ProfesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))
             throw new ReglaDeNegocioException("Ese profe no es de tu club.");
 
-        // Plan v2: el registro es UNA sola vez — el profe crea usuario + ficha
-        // juntos; la temporal se muestra una vez y el alumno la cambia al entrar
+        // El celular es el usuario del portal. Si ya tiene cuenta (ej. hermano con el
+        // celu del tutor), la ficha se crea IGUAL pero sin login; el acceso se da
+        // después con otro dato. Si está libre, creamos usuario + ficha juntos.
+        if (await _credenciales.TelefonoTieneCuentaAsync(dto.Telefono, ct))
+        {
+            var fichaSinLogin = await _repo.AgregarAsync(Construir(dto), ct);
+            return new AlumnoCreadoDto { Alumno = Mapear(fichaSinLogin), AccesoCreado = false };
+        }
+
         var cred = await _credenciales.CrearConTemporalAsync(
-            dto.Email, dto.Nombre, dto.Apellido, dto.Dni, dto.Telefono, ct);
+            dto.Telefono, dto.Nombre, dto.Apellido, dto.Dni, dto.Email, ct);
 
         try
         {
@@ -54,7 +60,8 @@ public class AlumnoService : IAlumnoService
             return new AlumnoCreadoDto
             {
                 Alumno = Mapear(creado),
-                Email = dto.Email.Trim(),
+                AccesoCreado = true,
+                Usuario = cred.PasswordTemporal,       // el celular (dígitos)
                 PasswordTemporal = cred.PasswordTemporal,
             };
         }
@@ -68,7 +75,7 @@ public class AlumnoService : IAlumnoService
     }
 
     public async Task<AccesoCreadoDto> CrearAccesoAsync(
-        Guid alumnoId, string? email, CancellationToken ct = default)
+        Guid alumnoId, string? telefonoAlternativo, CancellationToken ct = default)
     {
         var ficha = await _repo.ObtenerAsync(alumnoId, ct)
             ?? throw new ReglaDeNegocioException("El alumno no existe.");
@@ -76,21 +83,20 @@ public class AlumnoService : IAlumnoService
         if (ficha.UserId is not null)
             throw new ReglaDeNegocioException("Este alumno ya tiene acceso al portal.");
 
-        string mail;
-        if (!string.IsNullOrWhiteSpace(email)) mail = email.Trim();
-        else if (!string.IsNullOrWhiteSpace(ficha.Email)) mail = ficha.Email;
-        else throw new ReglaDeNegocioException(
-            "La ficha no tiene email: indicá uno para crear el acceso.");
+        // Usuario = celular de la ficha; si ese ya está usado (hermano con el mismo
+        // número), el profe pasa un teléfono alternativo.
+        var telefono = string.IsNullOrWhiteSpace(telefonoAlternativo)
+            ? ficha.Telefono
+            : telefonoAlternativo.Trim();
 
         var cred = await _credenciales.CrearConTemporalAsync(
-            mail, ficha.Nombre, ficha.Apellido, ficha.Dni, ficha.Telefono, ct);
+            telefono, ficha.Nombre, ficha.Apellido, ficha.Dni, ficha.Email, ct);
 
         ficha.UserId = cred.UserId;
-        ficha.Email = mail;
         ficha.ActualizadoEl = DateTime.UtcNow;
         await _repo.GuardarCambiosAsync(ct);
 
-        return new AccesoCreadoDto { Email = mail, PasswordTemporal = cred.PasswordTemporal };
+        return new AccesoCreadoDto { Usuario = cred.PasswordTemporal, PasswordTemporal = cred.PasswordTemporal };
     }
 
     public async Task<AlumnoResponseDto> CrearVinculadoAsync(
@@ -99,7 +105,9 @@ public class AlumnoService : IAlumnoService
         // Aprobación de solicitud: el usuario YA existe — nada de credenciales.
         // Si el profe ya lo tenía cargado (mismo DNI, ficha libre), se vincula
         // ESA ficha en vez de duplicar: el reemplazo elegante del reclamo.
-        var existente = await _repo.ObtenerPorDniAsync(dto.Dni, ct);
+        var existente = string.IsNullOrWhiteSpace(dto.Dni)
+            ? null
+            : await _repo.ObtenerPorDniAsync(dto.Dni, ct);
         if (existente is not null)
         {
             // Ya vinculada a ESTE usuario: idempotente (re-aprobar no rompe)
@@ -129,28 +137,29 @@ public class AlumnoService : IAlumnoService
         var alumno = await _repo.ObtenerAsync(id, ct)
             ?? throw new ReglaDeNegocioException("El alumno no existe.");
 
-        // DNI único por tenant, pero sin chocar contra uno mismo
-        if (dto.Dni != alumno.Dni)
+        // DNI único por tenant (cuando está cargado), sin chocar contra uno mismo
+        if (!string.IsNullOrWhiteSpace(dto.Dni) && dto.Dni != alumno.Dni)
         {
             var dueño = await _repo.ObtenerPorDniAsync(dto.Dni, ct);
             if (dueño is not null && dueño.Id != alumno.Id)
                 throw new ReglaDeNegocioException($"Ya existe un alumno con DNI {dto.Dni}.");
         }
 
-        // Corregir la fecha no puede dejar un menor sin tutor (Ley 25.326)
-        if (CalcularEdad(dto.FechaNacimiento) < 18 && alumno.TutorId is null && alumno.Tutor is null)
+        // Marcarlo menor no puede dejarlo sin tutor (Ley 25.326)
+        if (dto.EsMenor && alumno.TutorId is null && alumno.Tutor is null)
             throw new ReglaDeNegocioException(
-                "Con esa fecha el alumno es menor: necesita un tutor cargado.");
+                "Marcado como menor: necesita un tutor cargado.");
 
         if (dto.ProfesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))
             throw new ReglaDeNegocioException("Ese profe no es de tu club.");
 
         alumno.Nombre = dto.Nombre;
         alumno.Apellido = dto.Apellido;
-        alumno.Dni = dto.Dni;
+        alumno.Dni = string.IsNullOrWhiteSpace(dto.Dni) ? null : dto.Dni.Trim();
         alumno.Telefono = dto.Telefono;
         alumno.Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
         alumno.FechaNacimiento = dto.FechaNacimiento;
+        alumno.EsMenor = dto.EsMenor;
         alumno.Categoria = dto.Categoria;
         alumno.Modalidad = dto.Modalidad;
         alumno.ProfesorUserId = dto.ProfesorUserId;
@@ -364,10 +373,14 @@ public class AlumnoService : IAlumnoService
             horario.Activo = false;
     }
 
-    /// <summary>Regla del menor (Ley 25.326): tutor + consentimiento obligatorios.</summary>
+    /// <summary>
+    /// Regla del menor (Ley 25.326): tutor + consentimiento obligatorios. La
+    /// condición de menor la marca el profe con un checkbox (antes se derivaba de
+    /// la fecha, ahora opcional).
+    /// </summary>
     private static void ValidarMenor(CreateAlumnoDto dto)
     {
-        if (CalcularEdad(dto.FechaNacimiento) >= 18) return;
+        if (!dto.EsMenor) return;
 
         if (dto.Tutor is null)
             throw new ReglaDeNegocioException("Un alumno menor de edad requiere un tutor.");
@@ -384,10 +397,11 @@ public class AlumnoService : IAlumnoService
         {
             Nombre = dto.Nombre,
             Apellido = dto.Apellido,
-            Dni = dto.Dni,
+            Dni = string.IsNullOrWhiteSpace(dto.Dni) ? null : dto.Dni.Trim(),
             Telefono = dto.Telefono,
-            Email = dto.Email,
+            Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim(),
             FechaNacimiento = dto.FechaNacimiento,
+            EsMenor = dto.EsMenor,
             Categoria = dto.Categoria,
             Arancel = dto.Arancel,
             ProfesorUserId = dto.ProfesorUserId,
@@ -424,15 +438,6 @@ public class AlumnoService : IAlumnoService
             .ToHashSet();
     }
 
-    /// <summary>Edad en años cumplidos a hoy (esMenor nunca se guarda: se calcula).</summary>
-    private static int CalcularEdad(DateTime nacimiento)
-    {
-        var hoy = DateTime.UtcNow.Date;
-        var edad = hoy.Year - nacimiento.Year;
-        if (nacimiento.Date > hoy.AddYears(-edad)) edad--;
-        return edad;
-    }
-
     private static AlumnoResponseDto Mapear(Alumno a, bool deudaVencida = false) => new()
     {
         Id = a.Id,
@@ -442,7 +447,7 @@ public class AlumnoService : IAlumnoService
         Telefono = a.Telefono,
         Email = a.Email,
         FechaNacimiento = a.FechaNacimiento,
-        EsMenor = CalcularEdad(a.FechaNacimiento) < 18,
+        EsMenor = a.EsMenor,
         Categoria = a.Categoria.ToString(),
         Estado = a.Estado.ToString(),
         Modalidad = a.Modalidad.ToString(),

@@ -14,41 +14,43 @@ public class CredencialesService : ICredencialesService
     }
 
     public async Task<CredencialesCreadas> CrearConTemporalAsync(
-        string email, string nombre, string apellido,
-        string? dni, string? telefono, CancellationToken ct = default)
+        string telefono, string nombre, string apellido,
+        string? dni, string? email, CancellationToken ct = default)
     {
-        var normalizado = email.Trim();
-        if (await _userManager.FindByEmailAsync(normalizado) is not null)
+        // El TELÉFONO es el usuario (UserName) y la contraseña inicial. Solo dígitos,
+        // así el alumno entra escribiendo su celular sin acordarse de formatos.
+        var usuario = SoloDigitos(telefono);
+        if (usuario.Length < 8)
             throw new ReglaDeNegocioException(
-                $"El email {normalizado} ya tiene una cuenta en la plataforma. " +
-                "Pedile al alumno que te envíe una solicitud desde su portal (Mi club) y aprobala desde Solicitudes.");
+                "El teléfono es el usuario y la contraseña inicial: necesita al menos 8 dígitos.");
 
-        // Decisión de producto: la contraseña inicial es el TELÉFONO del
-        // alumno (fácil de comunicar); cambiarla es opcional, desde su perfil
-        var passwordInicial = new string((telefono ?? string.Empty)
-            .Where(char.IsAsciiLetterOrDigit).ToArray());
-        if (passwordInicial.Length < 8)
+        if (await _userManager.FindByNameAsync(usuario) is not null)
             throw new ReglaDeNegocioException(
-                "El teléfono es la contraseña inicial del alumno: necesita al menos 8 dígitos.");
+                $"El celular {telefono} ya tiene una cuenta en la plataforma. Si es la misma " +
+                "persona, pedile que te mande una solicitud desde su portal (Mi club) y aprobala desde Solicitudes.");
 
-        var usuario = new Usuario
+        var nuevo = new Usuario
         {
-            UserName = normalizado,
-            Email = normalizado,
+            UserName = usuario,
+            Email = string.IsNullOrWhiteSpace(email) ? null : email.Trim(),
             Nombre = nombre.Trim(),
             Apellido = apellido.Trim(),
             Dni = string.IsNullOrWhiteSpace(dni) ? null : dni.Trim(),
-            PhoneNumber = string.IsNullOrWhiteSpace(telefono) ? null : telefono.Trim(),
+            PhoneNumber = telefono.Trim(),
             DebeCambiarPassword = false, // el cambio es opcional (decisión de Lucas)
         };
 
-        var resultado = await _userManager.CreateAsync(usuario, passwordInicial);
+        // La contraseña inicial es el mismo teléfono (dígitos)
+        var resultado = await _userManager.CreateAsync(nuevo, usuario);
         if (!resultado.Succeeded)
             throw new ReglaDeNegocioException(
                 string.Join(" ", resultado.Errors.Select(e => e.Description).Distinct()));
 
-        return new CredencialesCreadas(usuario.Id, passwordInicial);
+        return new CredencialesCreadas(nuevo.Id, usuario);
     }
+
+    public async Task<bool> TelefonoTieneCuentaAsync(string telefono, CancellationToken ct = default) =>
+        await _userManager.FindByNameAsync(SoloDigitos(telefono)) is not null;
 
     public async Task EliminarAsync(Guid userId, CancellationToken ct = default)
     {
@@ -56,4 +58,8 @@ public class CredencialesService : ICredencialesService
         if (usuario is not null)
             await _userManager.DeleteAsync(usuario);
     }
+
+    /// <summary>Deja solo los dígitos (el UserName y la clave son el celular sin formato).</summary>
+    private static string SoloDigitos(string? s) =>
+        new((s ?? string.Empty).Where(char.IsAsciiDigit).ToArray());
 }

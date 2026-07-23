@@ -47,15 +47,16 @@ public class StaffService : IStaffService
 
     public async Task<StaffCreadoDto> AgregarAsync(AgregarStaffDto dto, CancellationToken ct = default)
     {
-        var email = dto.Email.Trim();
+        var telefono = dto.Telefono.Trim();
+        var email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
         var tenant = await _tenants.ObtenerActualAsync(ct);
 
-        // ¿Ya hay una cuenta con ese email? (el dueño, un ex-staff, u otro usuario)
-        var existente = await _membresias.BuscarUsuarioPorEmailAsync(email, ct);
+        // ¿Ya hay una cuenta con ese celular? (el dueño, un ex-staff, u otro usuario)
+        var existente = await _membresias.BuscarUsuarioPorTelefonoAsync(telefono, ct);
         if (existente is not null)
         {
             if (existente.Id == tenant.OwnerUserId)
-                throw new ReglaDeNegocioException("Ese email es el tuyo, el dueño de la academia.");
+                throw new ReglaDeNegocioException("Ese celular es el tuyo, el dueño de la academia.");
 
             var membresia = await _membresias.ObtenerPorUserIdAsync(existente.Id, ct);
             if (membresia is not null)
@@ -65,17 +66,17 @@ public class StaffService : IStaffService
                 // Ya tuvo cuenta de profe acá y quedó inactivo: se reactiva (sin recrear ni nueva clave)
                 membresia.Activo = true;
                 await _membresias.GuardarCambiosAsync(ct);
-                return new StaffCreadoDto { Staff = Mapear(membresia, existente), PasswordTemporal = null };
+                return new StaffCreadoDto { Staff = Mapear(membresia, existente), Usuario = null, PasswordTemporal = null };
             }
 
-            // Existe una cuenta con ese email pero no es (ni fue) profe acá: no la pisamos
+            // Existe una cuenta con ese celular pero no es (ni fue) profe acá: no la pisamos
             throw new ReglaDeNegocioException(
-                $"El email {email} ya tiene una cuenta en la plataforma. Creá el profe con un email nuevo, así tiene su cuenta propia de profesor.");
+                $"El celular {telefono} ya tiene una cuenta en la plataforma. Creá el profe con otro número, así tiene su cuenta propia de profesor.");
         }
 
-        // No existe: le creamos la cuenta con clave temporal (el teléfono), como a un alumno
+        // No existe: le creamos la cuenta con el celular como usuario y clave temporal
         var cred = await _credenciales.CrearConTemporalAsync(
-            email, dto.Nombre, dto.Apellido, dni: null, telefono: dto.Telefono, ct);
+            telefono, dto.Nombre, dto.Apellido, dni: null, email: email, ct);
 
         var nueva = new MembresiaTenant { UserId = cred.UserId, Rol = RolTenant.Staff };
         await _membresias.AgregarAsync(nueva, ct);
@@ -87,10 +88,10 @@ public class StaffService : IStaffService
             UserId = cred.UserId,
             Nombre = dto.Nombre.Trim(),
             Apellido = dto.Apellido.Trim(),
-            Email = email,
+            Email = email ?? string.Empty,
             Activo = true,
         };
-        return new StaffCreadoDto { Staff = staff, PasswordTemporal = cred.PasswordTemporal };
+        return new StaffCreadoDto { Staff = staff, Usuario = cred.PasswordTemporal, PasswordTemporal = cred.PasswordTemporal };
     }
 
     public async Task CambiarActivoAsync(Guid id, bool activo, CancellationToken ct = default)

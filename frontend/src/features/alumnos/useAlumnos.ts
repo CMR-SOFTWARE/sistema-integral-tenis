@@ -33,8 +33,8 @@ export function useAlumnos(categoria: Categoria | 'todas', estado: Estado | 'tod
     return creado;
   };
 
-  const crearAcceso = async (id: string, email?: string) => {
-    const acceso = await api.post<AccesoCreado>(`/alumnos/${id}/acceso`, { email });
+  const crearAcceso = async (id: string, telefono?: string) => {
+    const acceso = await api.post<AccesoCreado>(`/alumnos/${id}/acceso`, { telefono });
     await invalidar();
     return acceso;
   };

@@ -4,21 +4,20 @@ namespace SistemaIntegralDeportivo.Api.Common;
 
 /// <summary>
 /// Los errores de Identity que puede ver el usuario final, en español.
-/// Como UserName == Email en este sistema, DuplicateUserName y
-/// DuplicateEmail dicen lo mismo (el controller deduplica).
+/// El UserName es el celular; el email es opcional (ya no es la llave).
 /// </summary>
 public class IdentityErroresEnEspanol : IdentityErrorDescriber
 {
     public override IdentityError DuplicateUserName(string userName) => new()
     {
         Code = nameof(DuplicateUserName),
-        Description = $"Ya existe una cuenta con el email {userName}. Iniciá sesión.",
+        Description = $"Ya existe una cuenta con el celular {userName}. Iniciá sesión.",
     };
 
     public override IdentityError DuplicateEmail(string email) => new()
     {
         Code = nameof(DuplicateEmail),
-        Description = $"Ya existe una cuenta con el email {email}. Iniciá sesión.",
+        Description = $"Ya existe una cuenta con el email {email}.",
     };
 
     public override IdentityError InvalidEmail(string? email) => new()
@@ -30,7 +29,7 @@ public class IdentityErroresEnEspanol : IdentityErrorDescriber
     public override IdentityError InvalidUserName(string? userName) => new()
     {
         Code = nameof(InvalidUserName),
-        Description = $"El email '{userName}' no es válido.",
+        Description = $"El celular '{userName}' no es válido.",
     };
 
     public override IdentityError PasswordTooShort(int length) => new()

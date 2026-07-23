@@ -34,18 +34,24 @@ public class CreateAlumnoDto
     [Required, StringLength(80)]
     public string Apellido { get; set; } = string.Empty;
 
-    [Required, StringLength(15)]
-    public string Dni { get; set; } = string.Empty;
+    /// <summary>Opcional: el profe no siempre tiene el DNI. Único por tenant cuando está.</summary>
+    [StringLength(15)]
+    public string? Dni { get; set; }
 
-    [Required, StringLength(25)]
+    /// <summary>Obligatorio: es el USUARIO de login y la contraseña inicial del alumno.</summary>
+    [Required(ErrorMessage = "El teléfono es obligatorio: es el usuario y la contraseña inicial del alumno."),
+     StringLength(25)]
     public string Telefono { get; set; } = string.Empty;
 
-    /// <summary>Obligatorio: el alta crea TAMBIÉN el usuario del portal (plan v2).</summary>
-    [Required(ErrorMessage = "El email es obligatorio: con él se crea el acceso del alumno."), EmailAddress]
-    public string Email { get; set; } = string.Empty;
+    /// <summary>Opcional: si el alumno tiene email, se guarda (no es la llave de login).</summary>
+    [EmailAddress]
+    public string? Email { get; set; }
 
-    [Required]
-    public DateTime FechaNacimiento { get; set; }
+    /// <summary>Opcional (el profe no siempre la tiene). La condición de menor va en EsMenor.</summary>
+    public DateTime? FechaNacimiento { get; set; }
+
+    /// <summary>Lo marca el profe con un checkbox: si es true, exige tutor + consentimiento.</summary>
+    public bool EsMenor { get; set; }
 
     public CategoriaAlumno Categoria { get; set; } = CategoriaAlumno.SinCategoria;
 
@@ -79,8 +85,8 @@ public class UpdateAlumnoDto
     [Required, StringLength(80)]
     public string Apellido { get; set; } = string.Empty;
 
-    [Required, StringLength(15)]
-    public string Dni { get; set; } = string.Empty;
+    [StringLength(15)]
+    public string? Dni { get; set; }
 
     [Required, StringLength(25)]
     public string Telefono { get; set; } = string.Empty;
@@ -88,8 +94,10 @@ public class UpdateAlumnoDto
     [EmailAddress]
     public string? Email { get; set; }
 
-    [Required]
-    public DateTime FechaNacimiento { get; set; }
+    public DateTime? FechaNacimiento { get; set; }
+
+    /// <summary>Menor de edad (Ley 25.326): dispara la regla de tutor.</summary>
+    public bool EsMenor { get; set; }
 
     public CategoriaAlumno Categoria { get; set; } = CategoriaAlumno.SinCategoria;
 
@@ -103,26 +111,37 @@ public class UpdateAlumnoDto
 }
 
 /// <summary>
-/// Respuesta del ALTA: la ficha + las credenciales del portal. La temporal
-/// se muestra UNA sola vez (no se persiste ni vuelve a aparecer).
+/// Respuesta del ALTA: la ficha + (si se pudo) las credenciales del portal. La
+/// temporal se muestra UNA sola vez (no se persiste ni vuelve a aparecer). Si el
+/// celular ya tenía cuenta, la ficha se crea igual pero SIN acceso.
 /// </summary>
 public class AlumnoCreadoDto
 {
     public required AlumnoResponseDto Alumno { get; set; }
-    public required string Email { get; set; }
-    public required string PasswordTemporal { get; set; }
+
+    /// <summary>¿Se creó el acceso al portal? false si ese celular ya tenía cuenta.</summary>
+    public bool AccesoCreado { get; set; }
+
+    /// <summary>Usuario (el celular) para pasarle al alumno; null si no se creó acceso.</summary>
+    public string? Usuario { get; set; }
+
+    /// <summary>Contraseña inicial (el mismo celular); null si no se creó acceso.</summary>
+    public string? PasswordTemporal { get; set; }
 }
 
-/// <summary>Body de "Crear acceso" (fichas viejas): email solo si la ficha no tiene.</summary>
+/// <summary>
+/// Body de "Crear acceso" (fichas sin login): teléfono ALTERNATIVO, solo si el de
+/// la ficha ya está usado por otra cuenta (ej. hermano con el mismo celu).
+/// </summary>
 public class CrearAccesoDto
 {
-    [EmailAddress]
-    public string? Email { get; set; }
+    [StringLength(25)]
+    public string? Telefono { get; set; }
 }
 
 /// <summary>Respuesta de "Crear acceso": credenciales para pasarle al alumno.</summary>
 public class AccesoCreadoDto
 {
-    public required string Email { get; set; }
+    public required string Usuario { get; set; }
     public required string PasswordTemporal { get; set; }
 }

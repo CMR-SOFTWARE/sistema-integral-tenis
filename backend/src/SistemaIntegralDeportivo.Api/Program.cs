@@ -91,7 +91,9 @@ builder.Services.AddIdentityCore<Usuario>(options =>
     options.Password.RequireUppercase = false;
     options.Password.RequireLowercase = false;
     options.Password.RequireDigit = false;
-    options.User.RequireUniqueEmail = true;
+    // El email dejó de ser la llave (puede faltar o repetirse null); la unicidad
+    // la da el UserName = celular, que Identity ya exige único.
+    options.User.RequireUniqueEmail = false;
 })
 .AddErrorDescriber<SistemaIntegralDeportivo.Api.Common.IdentityErroresEnEspanol>()
 .AddEntityFrameworkStores<AppDbContext>();

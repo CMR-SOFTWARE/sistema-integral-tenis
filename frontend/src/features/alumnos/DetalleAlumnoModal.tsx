@@ -20,10 +20,12 @@ export default function DetalleAlumnoModal({ alumno, onClose, onCrearAcceso }: P
   const { nombreDe } = useProfesores();
 
   const datos: [string, string][] = [
-    ['DNI', alumno.dni],
+    ['DNI', alumno.dni ?? '—'],
     ['Teléfono', alumno.telefono],
     ['Email', alumno.email ?? '—'],
-    ['Nacimiento', new Date(alumno.fechaNacimiento).toLocaleDateString('es-AR')],
+    ['Nacimiento', alumno.fechaNacimiento
+      ? new Date(alumno.fechaNacimiento).toLocaleDateString('es-AR')
+      : '—'],
     ['Es menor', alumno.esMenor ? 'Sí (tutor registrado)' : 'No'],
     ['Profe de cabecera', nombreDe(alumno.profesorUserId) ?? 'Sin asignar'],
     ['Cuota mensual', formatoPlata(alumno.arancel)],

@@ -14,8 +14,8 @@ public interface IMembresiaTenantRepository
     Task AgregarAsync(MembresiaTenant membresia, CancellationToken ct = default);
     Task GuardarCambiosAsync(CancellationToken ct = default);
 
-    // ── NO scopeadas: corren sin tenant en contexto (login, búsqueda por email) ──
-    Task<Usuario?> BuscarUsuarioPorEmailAsync(string email, CancellationToken ct = default);
+    // ── NO scopeadas: corren sin tenant en contexto (login, búsqueda por celular) ──
+    Task<Usuario?> BuscarUsuarioPorTelefonoAsync(string telefono, CancellationToken ct = default);
     Task<Usuario?> ObtenerUsuarioAsync(Guid userId, CancellationToken ct = default);
     /// <summary>La membresía staff ACTIVA del usuario (para resolver su tenant al loguearse).</summary>
     Task<MembresiaTenant?> ObtenerActivaPorUserIdAsync(Guid userId, CancellationToken ct = default);
@@ -62,10 +62,11 @@ public class MembresiaTenantRepository : IMembresiaTenantRepository
     public Task GuardarCambiosAsync(CancellationToken ct = default) =>
         _db.SaveChangesAsync(ct);
 
-    public Task<Usuario?> BuscarUsuarioPorEmailAsync(string email, CancellationToken ct = default)
+    public Task<Usuario?> BuscarUsuarioPorTelefonoAsync(string telefono, CancellationToken ct = default)
     {
-        var normalizado = email.Trim().ToUpperInvariant(); // Identity guarda NormalizedEmail en mayúsculas
-        return _db.Users.FirstOrDefaultAsync(u => u.NormalizedEmail == normalizado, ct);
+        // El UserName es el celular (solo dígitos); Identity lo guarda normalizado (dígitos = dígitos)
+        var usuario = new string((telefono ?? string.Empty).Where(char.IsAsciiDigit).ToArray());
+        return _db.Users.FirstOrDefaultAsync(u => u.NormalizedUserName == usuario, ct);
     }
 
     public Task<Usuario?> ObtenerUsuarioAsync(Guid userId, CancellationToken ct = default) =>

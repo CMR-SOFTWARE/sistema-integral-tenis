@@ -151,8 +151,8 @@ export interface SolicitudHorario {
 export interface MiPerfil {
   nombre: string;
   apellido: string;
-  fechaNacimiento: string;
-  dni: string;
+  fechaNacimiento: string | null;
+  dni: string | null;
   telefono: string;
   email: string | null;
   categoria: string;

@@ -104,9 +104,11 @@ export default function PerfilPage() {
   const cat = CAT_LABEL[perfil.categoria as Categoria] ?? perfil.categoria;
 
   const datosFijos: [string, string][] = [
-    ['DNI', perfil.dni],
-    ['Fecha de nacimiento', new Date(perfil.fechaNacimiento).toLocaleDateString('es-AR')],
-    ['Cuenta', sesion?.email ?? '—'],
+    ['DNI', perfil.dni ?? '—'],
+    ['Fecha de nacimiento', perfil.fechaNacimiento
+      ? new Date(perfil.fechaNacimiento).toLocaleDateString('es-AR')
+      : '—'],
+    ['Cuenta', sesion?.telefono ?? sesion?.email ?? '—'],
     ['Modalidad de pago', perfil.modalidad === 'PorClase' ? 'Por clase' : 'Mensual'],
     ['Club', perfil.club],
   ];
@@ -216,8 +218,8 @@ export default function PerfilPage() {
       <div className={s.tarjeta}>
         <h3 className={s.tarjetaTitulo}>Mi cuenta</h3>
         <div className={s.perfilDato}>
-          <span className={s.perfilLabel}>Email de acceso</span>
-          <span className={s.perfilValor}>{sesion?.email}</span>
+          <span className={s.perfilLabel}>Usuario de acceso</span>
+          <span className={s.perfilValor}>{sesion?.telefono ?? sesion?.email ?? '—'}</span>
         </div>
         <div className={s.perfilAcciones}>
           <Link to="/cambiar-password" className={s.btnEditar}>Cambiar contraseña</Link>

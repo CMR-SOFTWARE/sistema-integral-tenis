@@ -15,9 +15,9 @@ public interface IAlumnoService
     /// <exception cref="Common.ReglaDeNegocioException">Si viola una regla.</exception>
     Task<AlumnoCreadoDto> CrearAsync(CreateAlumnoDto dto, CancellationToken ct = default);
 
-    /// <summary>Acceso al portal para una ficha vieja SIN usuario (genera la temporal).</summary>
-    /// <exception cref="Common.ReglaDeNegocioException">Ya tiene acceso, o falta email.</exception>
-    Task<AccesoCreadoDto> CrearAccesoAsync(Guid alumnoId, string? email, CancellationToken ct = default);
+    /// <summary>Acceso al portal para una ficha SIN usuario (usa su celular, o uno alternativo).</summary>
+    /// <exception cref="Common.ReglaDeNegocioException">Ya tiene acceso, o el celular ya está usado.</exception>
+    Task<AccesoCreadoDto> CrearAccesoAsync(Guid alumnoId, string? telefonoAlternativo, CancellationToken ct = default);
 
     /// <summary>
     /// Ficha para un usuario que YA existe (aprobación de solicitud): si hay

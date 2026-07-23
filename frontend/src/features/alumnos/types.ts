@@ -17,10 +17,10 @@ export interface Alumno {
   id: string;
   nombre: string;
   apellido: string;
-  dni: string;
+  dni: string | null;
   telefono: string;
   email: string | null;
-  fechaNacimiento: string;
+  fechaNacimiento: string | null;
   esMenor: boolean;
   categoria: Categoria;
   estado: Estado;
@@ -39,15 +39,20 @@ export interface Alumno {
   profesorUserId: string | null;
 }
 
-/** Espejo de CreateAlumnoDto. */
+/** Espejo de CreateAlumnoDto. Mínimo: nombre, apellido y teléfono (el usuario). */
 export interface CreateAlumno {
   nombre: string;
   apellido: string;
-  dni: string;
+  /** Obligatorio: es el usuario de login y la contraseña inicial. */
   telefono: string;
-  /** Obligatorio: el alta crea también el usuario del portal. */
-  email: string;
-  fechaNacimiento: string;
+  /** Opcional. */
+  dni?: string;
+  /** Opcional. */
+  email?: string;
+  /** Opcional. */
+  fechaNacimiento?: string;
+  /** Lo marca el profe: dispara la regla del tutor. */
+  esMenor: boolean;
   categoria: Categoria;
   arancel?: number;
   profesorUserId?: string;
@@ -67,26 +72,29 @@ export interface CreateAlumno {
 export interface UpdateAlumno {
   nombre: string;
   apellido: string;
-  dni: string;
+  dni?: string;
   telefono: string;
   email?: string;
-  fechaNacimiento: string;
+  fechaNacimiento?: string;
+  esMenor: boolean;
   categoria: Categoria;
   modalidad: Modalidad;
   profesorUserId?: string;
   notas?: string;
 }
 
-/** Espejo de AlumnoCreadoDto: la temporal se muestra UNA sola vez. */
+/** Espejo de AlumnoCreadoDto: usuario/temporal se muestran UNA sola vez. */
 export interface AlumnoCreado {
   alumno: Alumno;
-  email: string;
-  passwordTemporal: string;
+  /** false si el celular ya tenía cuenta → la ficha se creó sin acceso. */
+  accesoCreado: boolean;
+  usuario: string | null;
+  passwordTemporal: string | null;
 }
 
-/** Espejo de AccesoCreadoDto (botón "Crear acceso" en fichas viejas). */
+/** Espejo de AccesoCreadoDto (botón "Crear acceso" en fichas sin login). */
 export interface AccesoCreado {
-  email: string;
+  usuario: string;
   passwordTemporal: string;
 }
 

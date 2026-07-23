@@ -4,21 +4,21 @@ import s from './NuevoAlumnoModal.module.css';
 
 interface Props {
   nombre: string;
-  email: string;
+  usuario: string;
   passwordTemporal: string;
   onClose: () => void;
 }
 
 /**
- * Credenciales del alumno recién creado: entra con su email y su número de
- * teléfono como contraseña (después puede cambiarla desde su perfil).
+ * Credenciales del alumno recién creado: entra con su número de celular como
+ * usuario y también como contraseña (después puede cambiarla desde su perfil).
  */
-export default function AccesoCreadoModal({ nombre, email, passwordTemporal, onClose }: Props) {
+export default function AccesoCreadoModal({ nombre, usuario, passwordTemporal, onClose }: Props) {
   const [copiado, setCopiado] = useState(false);
 
   const copiar = async () => {
     await navigator.clipboard.writeText(
-      `Acceso a CourtSet\nEmail: ${email}\nContraseña: ${passwordTemporal} (tu número de teléfono)\nDespués podés cambiarla desde tu perfil.`,
+      `Acceso a Sistema Integral Deportivo\nUsuario: ${usuario} (tu celular)\nContraseña: ${passwordTemporal} (tu celular)\nDespués podés cambiarla desde tu perfil.`,
     );
     setCopiado(true);
     setTimeout(() => setCopiado(false), 2000);
@@ -27,7 +27,7 @@ export default function AccesoCreadoModal({ nombre, email, passwordTemporal, onC
   return (
     <Modal
       titulo={`Acceso creado para ${nombre}`}
-      subtitulo="Su contraseña inicial es su número de teléfono (solo dígitos)."
+      subtitulo="Entra con su celular como usuario y como contraseña inicial."
       onClose={onClose}
       footer={
         <>
@@ -40,11 +40,11 @@ export default function AccesoCreadoModal({ nombre, email, passwordTemporal, onC
     >
       <div className={s.credenciales}>
         <div className={s.credFila}>
-          <span className={s.credLabel}>Email</span>
-          <code className={s.credValor}>{email}</code>
+          <span className={s.credLabel}>Usuario (su celular)</span>
+          <code className={s.credValor}>{usuario}</code>
         </div>
         <div className={s.credFila}>
-          <span className={s.credLabel}>Contraseña (su teléfono)</span>
+          <span className={s.credLabel}>Contraseña (su celular)</span>
           <code className={s.credValor}>{passwordTemporal}</code>
         </div>
       </div>

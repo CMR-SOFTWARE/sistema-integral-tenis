@@ -14,8 +14,9 @@ public class StaffDto
 }
 
 /// <summary>
-/// Alta de un profe empleado: el dueño le crea la cuenta (como a un alumno). La
-/// contraseña inicial es su teléfono; se muestra una vez en <see cref="StaffCreadoDto"/>.
+/// Alta de un profe empleado: el dueño le crea la cuenta (como a un alumno). El
+/// teléfono es el USUARIO y la contraseña inicial; se muestran una vez en
+/// <see cref="StaffCreadoDto"/>. El email es opcional.
 /// </summary>
 public class AgregarStaffDto
 {
@@ -25,19 +26,22 @@ public class AgregarStaffDto
     [Required, StringLength(80)]
     public string Apellido { get; set; } = string.Empty;
 
-    [Required, EmailAddress(ErrorMessage = "El email no tiene un formato válido.")]
-    public string Email { get; set; } = string.Empty;
+    /// <summary>Opcional: si lo tenés, se guarda (no es la llave de login).</summary>
+    [EmailAddress(ErrorMessage = "El email no tiene un formato válido.")]
+    public string? Email { get; set; }
 
-    [Required(ErrorMessage = "El teléfono es obligatorio (es la contraseña inicial del profe)."),
+    [Required(ErrorMessage = "El teléfono es obligatorio (es el usuario y la contraseña inicial del profe)."),
      RegularExpression(FormatosAuth.Telefono, ErrorMessage = FormatosAuth.TelefonoMensaje)]
     public string Telefono { get; set; } = string.Empty;
 }
 
-/// <summary>Respuesta del alta: el profe + su clave temporal (null si se reactivó una cuenta ya existente).</summary>
+/// <summary>Respuesta del alta: el profe + su usuario/clave temporal (null si se reactivó una cuenta existente).</summary>
 public class StaffCreadoDto
 {
     public StaffDto Staff { get; set; } = new();
-    /// <summary>La contraseña inicial (el teléfono) para pasarle al profe; null si ya tenía cuenta.</summary>
+    /// <summary>El usuario (el celular) para pasarle al profe; null si ya tenía cuenta.</summary>
+    public string? Usuario { get; set; }
+    /// <summary>La contraseña inicial (el mismo celular); null si ya tenía cuenta.</summary>
     public string? PasswordTemporal { get; set; }
 }
 

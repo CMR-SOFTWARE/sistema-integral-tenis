@@ -35,11 +35,11 @@ public class AuthController : ControllerBase
     {
         var usuario = new Usuario
         {
-            UserName = dto.Email.Trim(),
-            Email = dto.Email.Trim(),
+            UserName = SoloDigitos(dto.Telefono), // el teléfono es el usuario de login
+            Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim(),
             Nombre = dto.Nombre.Trim(),
             Apellido = dto.Apellido.Trim(),
-            Dni = dto.Dni.Trim(),
+            Dni = string.IsNullOrWhiteSpace(dto.Dni) ? null : dto.Dni.Trim(),
             PhoneNumber = dto.Telefono.Trim(),
             FechaNacimiento = dto.FechaNacimiento,
             Categoria = dto.Categoria,
@@ -48,7 +48,6 @@ public class AuthController : ControllerBase
         var resultado = await _userManager.CreateAsync(usuario, dto.Password);
         if (!resultado.Succeeded)
             return Problem(
-                // Distinct: UserName == Email, y los duplicados dicen lo mismo
                 detail: string.Join(" ", resultado.Errors.Select(e => e.Description).Distinct()),
                 statusCode: StatusCodes.Status400BadRequest);
 
@@ -65,12 +64,12 @@ public class AuthController : ControllerBase
     {
         var usuario = new Usuario
         {
-            UserName = dto.Email.Trim(),
-            Email = dto.Email.Trim(),
+            UserName = SoloDigitos(dto.Telefono), // el teléfono es el usuario de login
+            Email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim(),
             Nombre = dto.Nombre.Trim(),
             Apellido = dto.Apellido.Trim(),
             Dni = string.IsNullOrWhiteSpace(dto.Dni) ? null : dto.Dni.Trim(),
-            PhoneNumber = string.IsNullOrWhiteSpace(dto.Telefono) ? null : dto.Telefono.Trim(),
+            PhoneNumber = dto.Telefono.Trim(),
         };
 
         var resultado = await _userManager.CreateAsync(usuario, dto.Password);
@@ -130,18 +129,34 @@ public class AuthController : ControllerBase
         }).ToList());
     }
 
-    /// <summary>POST api/auth/login — email + contraseña → JWT + membresías.</summary>
+    /// <summary>
+    /// POST api/auth/login — identificador (celular o email) + contraseña → JWT.
+    /// Resuelve por celular (UserName de cuentas nuevas), por UserName textual
+    /// (cuentas viejas con email de usuario) y por email, en ese orden.
+    /// </summary>
     [HttpPost("login")]
     public async Task<ActionResult<SesionDto>> Login(LoginDto dto, CancellationToken ct)
     {
-        var usuario = await _userManager.FindByEmailAsync(dto.Email.Trim());
+        var id = dto.Identificador.Trim();
+        var digitos = SoloDigitos(id);
+
+        Usuario? usuario = null;
+        if (digitos.Length >= 8)
+            usuario = await _userManager.FindByNameAsync(digitos); // celular (cuentas nuevas)
+        usuario ??= await _userManager.FindByNameAsync(id);        // UserName viejo (= email)
+        usuario ??= await _userManager.FindByEmailAsync(id);       // campo email
+
         if (usuario is null || !await _userManager.CheckPasswordAsync(usuario, dto.Password))
             return Problem(
-                detail: "Email o contraseña incorrectos.",
+                detail: "Usuario o contraseña incorrectos.",
                 statusCode: StatusCodes.Status401Unauthorized);
 
         return Ok(await _auth.ArmarSesionAsync(usuario, incluirToken: true, ct));
     }
+
+    /// <summary>Deja solo los dígitos: el celular es el usuario/clave sin formato.</summary>
+    private static string SoloDigitos(string? s) =>
+        new((s ?? string.Empty).Where(char.IsAsciiDigit).ToArray());
 
     /// <summary>GET api/auth/yo — la sesión del token, con las membresías al día.</summary>
     [Authorize]

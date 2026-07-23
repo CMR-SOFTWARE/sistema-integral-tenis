@@ -21,20 +21,18 @@ export default function RegistroJugadorPage() {
   const [error, setError] = useState<string | null>(null);
 
   const validar = (): string | null => {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim()))
+    if (f.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim()))
       return 'El email no tiene un formato válido.';
-    if (!/^\d{7,9}$/.test(f.dni.trim()))
+    if (f.dni.trim() && !/^\d{7,9}$/.test(f.dni.trim()))
       return 'El DNI debe tener solo números (7 a 9 dígitos), sin puntos.';
     if (!/^\+?[0-9 -]{8,20}$/.test(f.telefono.trim()))
-      return 'El teléfono debe tener entre 8 y 20 dígitos (podés incluir el +54).';
-    if (f.fechaNacimiento === '') return 'La fecha de nacimiento es obligatoria.';
+      return 'El celular debe tener entre 8 y 20 dígitos (podés incluir el +54).';
     if (f.password.length < 8) return 'La contraseña necesita al menos 8 caracteres.';
     return null;
   };
 
   const incompleto =
-    !f.nombre.trim() || !f.apellido.trim() || !f.email.trim() || !f.dni.trim() ||
-    !f.telefono.trim() || f.fechaNacimiento === '' || f.password.length < 8;
+    !f.nombre.trim() || !f.apellido.trim() || !f.telefono.trim() || f.password.length < 8;
 
   const registrar = async () => {
     const invalido = validar();
@@ -48,11 +46,11 @@ export default function RegistroJugadorPage() {
       const sesion = await api.post<Sesion>('/auth/registro', {
         nombre: f.nombre.trim(),
         apellido: f.apellido.trim(),
-        email: f.email.trim(),
-        password: f.password,
-        dni: f.dni.trim(),
         telefono: f.telefono.trim(),
-        fechaNacimiento: f.fechaNacimiento,
+        email: f.email.trim() || undefined,
+        password: f.password,
+        dni: f.dni.trim() || undefined,
+        fechaNacimiento: f.fechaNacimiento || undefined,
         categoria: f.categoria,
       });
       entrarConSesion(sesion, navigate); // → portal (elige su profe desde Mi club)
@@ -80,23 +78,23 @@ export default function RegistroJugadorPage() {
             <input value={f.apellido} onChange={(e) => set('apellido', e.target.value)} />
           </label>
         </div>
+        <div className={s.dosCol}>
+          <label className={s.campo}>
+            <span>Celular (tu usuario para entrar)</span>
+            <input value={f.telefono} onChange={(e) => set('telefono', e.target.value)} placeholder="11 5555 1234" />
+          </label>
+          <label className={s.campo}>
+            <span>DNI (opcional)</span>
+            <input value={f.dni} onChange={(e) => set('dni', e.target.value)} placeholder="30111222" />
+          </label>
+        </div>
         <label className={s.campo}>
-          <span>Email</span>
+          <span>Email (opcional)</span>
           <input type="email" value={f.email} onChange={(e) => set('email', e.target.value)} placeholder="tu@email.com" />
         </label>
         <div className={s.dosCol}>
           <label className={s.campo}>
-            <span>DNI</span>
-            <input value={f.dni} onChange={(e) => set('dni', e.target.value)} placeholder="30111222" />
-          </label>
-          <label className={s.campo}>
-            <span>Teléfono</span>
-            <input value={f.telefono} onChange={(e) => set('telefono', e.target.value)} placeholder="+54 9 11..." />
-          </label>
-        </div>
-        <div className={s.dosCol}>
-          <label className={s.campo}>
-            <span>Fecha de nacimiento</span>
+            <span>Fecha de nacimiento (opcional)</span>
             <input type="date" value={f.fechaNacimiento} onChange={(e) => set('fechaNacimiento', e.target.value)} />
           </label>
           <label className={s.campo}>

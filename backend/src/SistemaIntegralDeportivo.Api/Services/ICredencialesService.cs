@@ -12,12 +12,16 @@ public record CredencialesCreadas(Guid UserId, string PasswordTemporal);
 public interface ICredencialesService
 {
     /// <summary>
-    /// Crea el Usuario global con contraseña TEMPORAL y DebeCambiarPassword=true.
+    /// Crea el Usuario global usando el TELÉFONO como usuario (UserName) y como
+    /// contraseña inicial. DNI y email son opcionales (no son la llave de login).
     /// </summary>
-    /// <exception cref="Common.ReglaDeNegocioException">Si el email ya tiene cuenta.</exception>
+    /// <exception cref="Common.ReglaDeNegocioException">Si ese teléfono ya tiene cuenta.</exception>
     Task<CredencialesCreadas> CrearConTemporalAsync(
-        string email, string nombre, string apellido,
-        string? dni, string? telefono, CancellationToken ct = default);
+        string telefono, string nombre, string apellido,
+        string? dni, string? email, CancellationToken ct = default);
+
+    /// <summary>¿Ese teléfono (usuario) ya tiene una cuenta? (para decidir si crear acceso).</summary>
+    Task<bool> TelefonoTieneCuentaAsync(string telefono, CancellationToken ct = default);
 
     /// <summary>Compensación: borra el usuario si la ficha no se pudo crear.</summary>
     Task EliminarAsync(Guid userId, CancellationToken ct = default);
