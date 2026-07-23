@@ -16,10 +16,16 @@ public class Alumno
     // ── Datos personales ──
     public required string Nombre { get; set; }
     public required string Apellido { get; set; }
-    public required string Dni { get; set; }
+    public string? Dni { get; set; }              // opcional: el profe no siempre lo tiene
     public string? Email { get; set; }            // opcional: hay gente sin email
-    public required string Telefono { get; set; } // formato E.164 (+549...) para WhatsApp
-    public DateTime FechaNacimiento { get; set; } // NO guardamos "esMenor": se calcula
+    public required string Telefono { get; set; } // es el usuario de login; formato flexible
+    public DateTime? FechaNacimiento { get; set; } // opcional; la condición de menor va en EsMenor
+    /// <summary>
+    /// Menor de edad (Ley 25.326): antes se derivaba de la fecha; ahora que la
+    /// fecha es opcional, lo marca el profe con un checkbox. Dispara la regla de
+    /// tutor + consentimiento.
+    /// </summary>
+    public bool EsMenor { get; set; }
     public string? FotoUrl { get; set; }
 
     // ── Datos deportivos ──

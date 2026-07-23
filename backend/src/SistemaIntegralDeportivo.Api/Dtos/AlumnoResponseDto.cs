@@ -10,10 +10,11 @@ public class AlumnoResponseDto
     public Guid Id { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public string Apellido { get; set; } = string.Empty;
-    public string Dni { get; set; } = string.Empty;
+    public string? Dni { get; set; }
     public string Telefono { get; set; } = string.Empty;
     public string? Email { get; set; }
-    public DateTime FechaNacimiento { get; set; }
+    public DateTime? FechaNacimiento { get; set; }
+    /// <summary>Menor de edad (lo marca el profe): dispara la regla de tutor.</summary>
     public bool EsMenor { get; set; }
     public string Categoria { get; set; } = string.Empty;
     public string Estado { get; set; } = string.Empty;

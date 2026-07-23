@@ -24,22 +24,24 @@ public class RegistroJugadorDto
     [Required, StringLength(80)]
     public required string Apellido { get; set; }
 
-    [Required, EmailAddress(ErrorMessage = "El email no tiene un formato válido.")]
-    public required string Email { get; set; }
+    /// <summary>Opcional: si lo tenés, se guarda (no es la llave de login).</summary>
+    [EmailAddress(ErrorMessage = "El email no tiene un formato válido.")]
+    public string? Email { get; set; }
 
     [Required, MinLength(8, ErrorMessage = "La contraseña necesita al menos 8 caracteres.")]
     public required string Password { get; set; }
 
-    [Required(ErrorMessage = "El DNI es obligatorio."),
-     RegularExpression(FormatosAuth.Dni, ErrorMessage = FormatosAuth.DniMensaje)]
-    public required string Dni { get; set; }
+    /// <summary>Opcional.</summary>
+    [RegularExpression(FormatosAuth.Dni, ErrorMessage = FormatosAuth.DniMensaje)]
+    public string? Dni { get; set; }
 
-    [Required(ErrorMessage = "El teléfono es obligatorio."),
+    /// <summary>Obligatorio: es el USUARIO de login.</summary>
+    [Required(ErrorMessage = "El teléfono es obligatorio (es tu usuario para entrar)."),
      RegularExpression(FormatosAuth.Telefono, ErrorMessage = FormatosAuth.TelefonoMensaje)]
     public required string Telefono { get; set; }
 
-    [Required(ErrorMessage = "La fecha de nacimiento es obligatoria.")]
-    public required DateTime FechaNacimiento { get; set; }
+    /// <summary>Opcional.</summary>
+    public DateTime? FechaNacimiento { get; set; }
 
     /// <summary>"No sé todavía" = SinCategoria.</summary>
     public Models.CategoriaAlumno Categoria { get; set; } = Models.CategoriaAlumno.SinCategoria;
@@ -54,17 +56,21 @@ public class RegistroProfesorDto
     [Required, StringLength(80)]
     public required string Apellido { get; set; }
 
-    [Required, EmailAddress(ErrorMessage = "El email no tiene un formato válido.")]
-    public required string Email { get; set; }
+    /// <summary>Opcional: si lo tenés, se guarda (no es la llave de login).</summary>
+    [EmailAddress(ErrorMessage = "El email no tiene un formato válido.")]
+    public string? Email { get; set; }
 
     [Required, MinLength(8, ErrorMessage = "La contraseña necesita al menos 8 caracteres.")]
     public required string Password { get; set; }
 
+    /// <summary>Opcional.</summary>
     [RegularExpression(FormatosAuth.Dni, ErrorMessage = FormatosAuth.DniMensaje)]
     public string? Dni { get; set; }
 
-    [RegularExpression(FormatosAuth.Telefono, ErrorMessage = FormatosAuth.TelefonoMensaje)]
-    public string? Telefono { get; set; }
+    /// <summary>Obligatorio: es el USUARIO de login.</summary>
+    [Required(ErrorMessage = "El teléfono es obligatorio (es tu usuario para entrar)."),
+     RegularExpression(FormatosAuth.Telefono, ErrorMessage = FormatosAuth.TelefonoMensaje)]
+    public required string Telefono { get; set; }
 
     [Required(ErrorMessage = "Poné el nombre de tu club o academia."), StringLength(80)]
     public required string NombreClub { get; set; }
@@ -80,7 +86,8 @@ public class ProfesorPublicoDto
 
 public class LoginDto
 {
-    public required string Email { get; set; }
+    /// <summary>Celular (usuario nuevo) o email (cuentas viejas).</summary>
+    public required string Identificador { get; set; }
     public required string Password { get; set; }
 }
 

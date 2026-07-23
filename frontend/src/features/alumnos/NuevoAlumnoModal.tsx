@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Modal from '../../components/Modal';
 import { ApiError } from '../../lib/api';
-import { CATEGORIAS, CAT_LABEL, edad } from './types';
+import { CATEGORIAS, CAT_LABEL } from './types';
 import type { AlumnoCreado, Categoria, CreateAlumno, RelacionTutor } from './types';
 import { useProfesores } from '../profesores/useProfesores';
 import s from './NuevoAlumnoModal.module.css';
@@ -21,7 +21,7 @@ interface Props {
 export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) {
   const [form, setForm] = useState({
     nombre: '', apellido: '', dni: '', telefono: '', email: '',
-    fechaNacimiento: '', categoria: 'SinCategoria' as Categoria,
+    fechaNacimiento: '', esMenor: false, categoria: 'SinCategoria' as Categoria,
     profesorId: '',
     notas: '',
     consentimientoWhatsapp: false, consentimientoDatos: false,
@@ -32,7 +32,8 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
   const [error, setError] = useState<string | null>(null);
   const { profes } = useProfesores();
 
-  const esMenor = form.fechaNacimiento !== '' && edad(form.fechaNacimiento) < 18;
+  // Ahora lo marca el profe con un checkbox (la fecha es opcional)
+  const esMenor = form.esMenor;
 
   const set = (campo: string, valor: string | boolean) =>
     setForm((f) => ({ ...f, [campo]: valor }));
@@ -44,10 +45,11 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
       const dto: CreateAlumno = {
         nombre: form.nombre.trim(),
         apellido: form.apellido.trim(),
-        dni: form.dni.trim(),
         telefono: form.telefono.trim(),
-        email: form.email.trim(),
-        fechaNacimiento: form.fechaNacimiento,
+        dni: form.dni.trim() || undefined,
+        email: form.email.trim() || undefined,
+        fechaNacimiento: form.fechaNacimiento || undefined,
+        esMenor: form.esMenor,
         categoria: form.categoria,
         profesorUserId: form.profesorId || undefined,
         // Arancel ya no se carga acá: el monto real sale de los cargos (ADR-0009)
@@ -84,7 +86,7 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
           <button
             className={s.btnPrimario}
             onClick={guardar}
-            disabled={enviando || !form.email.trim()}
+            disabled={enviando || !form.nombre.trim() || !form.apellido.trim() || !form.telefono.trim()}
           >
             {enviando ? 'Creando…' : 'Crear alumno'}
           </button>
@@ -101,20 +103,31 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
           <input value={form.apellido} onChange={(e) => set('apellido', e.target.value)} placeholder="Pérez" maxLength={80} />
         </label>
         <label className={s.campo}>
-          <span>DNI</span>
-          <input value={form.dni} onChange={(e) => set('dni', e.target.value)} placeholder="35123456" maxLength={15} />
+          <span>Celular (su usuario y contraseña)</span>
+          <input value={form.telefono} onChange={(e) => set('telefono', e.target.value)} placeholder="1155551234" maxLength={25} />
         </label>
         <label className={s.campo}>
-          <span>Teléfono</span>
-          <input value={form.telefono} onChange={(e) => set('telefono', e.target.value)} placeholder="+5491155551234" maxLength={25} />
+          <span>DNI (opcional)</span>
+          <input value={form.dni} onChange={(e) => set('dni', e.target.value)} placeholder="35123456" maxLength={15} />
         </label>
         <label className={`${s.campo} ${s.span2}`}>
-          <span>Email (con él se crea su acceso al portal)</span>
+          <span>Email (opcional)</span>
           <input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} placeholder="juan@email.com" />
         </label>
         <label className={s.campo}>
-          <span>Fecha de nacimiento</span>
+          <span>Fecha de nacimiento (opcional)</span>
           <input type="date" value={form.fechaNacimiento} onChange={(e) => set('fechaNacimiento', e.target.value)} />
+        </label>
+        <label className={s.campo}>
+          <span>&nbsp;</span>
+          <label className={s.check}>
+            <input
+              type="checkbox"
+              checked={form.esMenor}
+              onChange={(e) => set('esMenor', e.target.checked)}
+            />
+            Es menor de edad
+          </label>
         </label>
         <label className={s.campo}>
           <span>Categoría</span>
@@ -152,7 +165,7 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
         {esMenor && (
           <div className={`${s.span2} ${s.bloqueTutor}`}>
             <div className={s.bloqueTitulo}>
-              Alumno menor de edad ({edad(form.fechaNacimiento)} años) — datos del tutor
+              Alumno menor de edad — datos del tutor
             </div>
             <div className={s.grid}>
               <label className={s.campo}>
@@ -195,7 +208,7 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
           </div>
         )}
 
-        {!esMenor && form.fechaNacimiento !== '' && (
+        {!esMenor && (
           <label className={`${s.span2} ${s.check}`}>
             <input
               type="checkbox"

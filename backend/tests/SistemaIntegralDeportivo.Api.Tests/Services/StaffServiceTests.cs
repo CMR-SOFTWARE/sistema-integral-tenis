@@ -34,7 +34,7 @@ public class StaffServiceTests
         _tenants.Setup(t => t.ObtenerActualAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new Tenant { Subdominio = "d", Nombre = "Academia", OwnerUserId = OwnerId });
         // Por defecto: no hay cuenta con ese email
-        _repo.Setup(r => r.BuscarUsuarioPorEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _repo.Setup(r => r.BuscarUsuarioPorTelefonoAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
              .ReturnsAsync((Usuario?)null);
     }
 
@@ -52,8 +52,9 @@ public class StaffServiceTests
     public async Task Agregar_CasoFeliz_CreaLaCuentaYLoSumaComoStaff()
     {
         var uid = Guid.NewGuid();
+        // El teléfono es la llave; el email va como dato opcional
         _credenciales.Setup(c => c.CrearConTemporalAsync(
-                "ana@mail.com", "Ana", "Gómez", null, "1122334455", It.IsAny<CancellationToken>()))
+                "1122334455", "Ana", "Gómez", null, "ana@mail.com", It.IsAny<CancellationToken>()))
             .ReturnsAsync(new CredencialesCreadas(uid, "1122334455"));
         MembresiaTenant? creada = null;
         _repo.Setup(r => r.AgregarAsync(It.IsAny<MembresiaTenant>(), It.IsAny<CancellationToken>()))
@@ -73,7 +74,7 @@ public class StaffServiceTests
     [Fact]
     public async Task Agregar_EsElDueño_Lanza()
     {
-        _repo.Setup(r => r.BuscarUsuarioPorEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _repo.Setup(r => r.BuscarUsuarioPorTelefonoAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
              .ReturnsAsync(Usuario(OwnerId));
 
         await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.AgregarAsync(Dto("dueño@mail.com")));
@@ -86,7 +87,7 @@ public class StaffServiceTests
     public async Task Agregar_EmailYaEnUsoPeroNuncaFueStaff_Lanza()
     {
         var otro = Usuario(Guid.NewGuid());
-        _repo.Setup(r => r.BuscarUsuarioPorEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _repo.Setup(r => r.BuscarUsuarioPorTelefonoAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
              .ReturnsAsync(otro);
         _repo.Setup(r => r.ObtenerPorUserIdAsync(otro.Id, It.IsAny<CancellationToken>()))
              .ReturnsAsync((MembresiaTenant?)null);
@@ -101,7 +102,7 @@ public class StaffServiceTests
     public async Task Agregar_YaEsMiembroActivo_Lanza()
     {
         var u = Usuario(Guid.NewGuid());
-        _repo.Setup(r => r.BuscarUsuarioPorEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _repo.Setup(r => r.BuscarUsuarioPorTelefonoAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
              .ReturnsAsync(u);
         _repo.Setup(r => r.ObtenerPorUserIdAsync(u.Id, It.IsAny<CancellationToken>()))
              .ReturnsAsync(new MembresiaTenant { UserId = u.Id, Activo = true });
@@ -113,7 +114,7 @@ public class StaffServiceTests
     public async Task Agregar_ExStaffInactivo_LoReactiva_SinRecrear()
     {
         var u = Usuario(Guid.NewGuid());
-        _repo.Setup(r => r.BuscarUsuarioPorEmailAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+        _repo.Setup(r => r.BuscarUsuarioPorTelefonoAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
              .ReturnsAsync(u);
         var vieja = new MembresiaTenant { UserId = u.Id, Activo = false };
         _repo.Setup(r => r.ObtenerPorUserIdAsync(u.Id, It.IsAny<CancellationToken>())).ReturnsAsync(vieja);

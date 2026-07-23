@@ -17,6 +17,7 @@ interface Staff {
 /** Espejo de StaffCreadoDto. */
 interface StaffCreado {
   staff: Staff;
+  usuario: string | null;
   passwordTemporal: string | null;
 }
 
@@ -34,7 +35,7 @@ export default function ProfesoresPage() {
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [credenciales, setCredenciales] = useState<{ nombre: string; email: string; passwordTemporal: string } | null>(null);
+  const [credenciales, setCredenciales] = useState<{ nombre: string; usuario: string; passwordTemporal: string } | null>(null);
   const confirmar = useConfirmar();
 
   const setCampo = (campo: keyof typeof FORM_VACIO, valor: string) =>
@@ -55,7 +56,7 @@ export default function ProfesoresPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const completo = form.nombre.trim() && form.apellido.trim() && form.email.trim() && form.telefono.trim();
+  const completo = form.nombre.trim() && form.apellido.trim() && form.telefono.trim();
 
   const agregar = async () => {
     if (!completo) return;
@@ -65,8 +66,8 @@ export default function ProfesoresPage() {
       const creado = await api.post<StaffCreado>('/staff', {
         nombre: form.nombre.trim(),
         apellido: form.apellido.trim(),
-        email: form.email.trim(),
         telefono: form.telefono.trim(),
+        email: form.email.trim() || undefined,
       });
       setForm(FORM_VACIO);
       cargar();
@@ -74,7 +75,7 @@ export default function ProfesoresPage() {
         // Cuenta nueva: mostramos las credenciales una sola vez
         setCredenciales({
           nombre: `${creado.staff.nombre} ${creado.staff.apellido}`,
-          email: creado.staff.email,
+          usuario: creado.usuario ?? creado.staff.email,
           passwordTemporal: creado.passwordTemporal,
         });
       } else {
@@ -102,8 +103,8 @@ export default function ProfesoresPage() {
     <div>
       <div className={s.toolbar}>
         <div className={s.titulo}>
-          Sumá a los profes que trabajan con vos. Le creás la cuenta y su contraseña
-          inicial es su teléfono. Cada uno entra con su cuenta y ve solo su agenda y sus alumnos.
+          Sumá a los profes que trabajan con vos. Le creás la cuenta y su usuario y
+          contraseña inicial es su celular. Cada uno entra con su cuenta y ve solo su agenda y sus alumnos.
         </div>
       </div>
 
@@ -125,16 +126,16 @@ export default function ProfesoresPage() {
           />
           <input
             className={s.input}
-            type="email"
-            value={form.email}
-            onChange={(e) => setCampo('email', e.target.value)}
-            placeholder="Email"
+            value={form.telefono}
+            onChange={(e) => setCampo('telefono', e.target.value)}
+            placeholder="Celular (su usuario y contraseña)"
           />
           <input
             className={s.input}
-            value={form.telefono}
-            onChange={(e) => setCampo('telefono', e.target.value)}
-            placeholder="Teléfono (será su contraseña)"
+            type="email"
+            value={form.email}
+            onChange={(e) => setCampo('email', e.target.value)}
+            placeholder="Email (opcional)"
           />
         </div>
         <button
@@ -152,7 +153,7 @@ export default function ProfesoresPage() {
 
       {!cargando && staff.length === 0 && (
         <div className={s.vacioCard}>
-          Todavía no sumaste ningún profe. Agregá uno por su email para que te ayude con
+          Todavía no sumaste ningún profe. Agregá uno con su celular para que te ayude con
           las clases.
         </div>
       )}
@@ -184,7 +185,7 @@ export default function ProfesoresPage() {
       {credenciales && (
         <AccesoCreadoModal
           nombre={credenciales.nombre}
-          email={credenciales.email}
+          usuario={credenciales.usuario}
           passwordTemporal={credenciales.passwordTemporal}
           onClose={() => setCredenciales(null)}
         />

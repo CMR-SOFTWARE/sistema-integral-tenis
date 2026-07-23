@@ -15,7 +15,9 @@ namespace SistemaIntegralDeportivo.Api.Data;
 public static class AuthSeeder
 {
     // Credenciales del prototipo (solo dev; el alta real de profes nace del
-    // registro + checkout Mercado Pago)
+    // registro + checkout Mercado Pago). El usuario de login es el celular;
+    // el email queda como dato opcional (y sirve para el fallback de login).
+    public const string TelefonoProfe = "1122334455";
     public const string EmailProfe = "profe@clubdemo.com";
     public const string PasswordProfe = "profe1234";
 
@@ -36,8 +38,9 @@ public static class AuthSeeder
         {
             profe = new Usuario
             {
-                UserName = EmailProfe,
+                UserName = TelefonoProfe, // el usuario de login es el celular
                 Email = EmailProfe,
+                PhoneNumber = TelefonoProfe,
                 Nombre = "Profe",
                 Apellido = "Demo",
                 EsAdminPlataforma = true, // el profe demo es también el admin de la app

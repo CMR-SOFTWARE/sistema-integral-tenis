@@ -14,7 +14,7 @@ import s from './AlumnosPage.module.css';
 
 interface Credenciales {
   nombre: string;
-  email: string;
+  usuario: string;
   passwordTemporal: string;
 }
 
@@ -37,19 +37,21 @@ export default function AlumnosPage() {
     setTimeout(() => setToast(null), 2600);
   };
 
-  /** "Crear acceso" para fichas viejas sin usuario (desde la ficha). */
-  const accesoParaFicha = async (a: Alumno) => {
-    let email = a.email ?? undefined;
-    if (!email) {
-      email = window.prompt('La ficha no tiene email. Ingresá el email del alumno:')?.trim();
-      if (!email) return;
-    }
+  /** "Crear acceso" para fichas sin usuario (usa su celular; o uno alternativo). */
+  const accesoParaFicha = async (a: Alumno, telefonoAlternativo?: string) => {
     try {
-      const acceso = await crearAcceso(a.id, a.email ? undefined : email);
+      const acceso = await crearAcceso(a.id, telefonoAlternativo);
       setDetalle(null);
       setCredenciales({ nombre: `${a.nombre} ${a.apellido}`, ...acceso });
     } catch (e) {
-      avisar(e instanceof ApiError ? e.message : 'No se pudo crear el acceso.');
+      const msg = e instanceof ApiError ? e.message : 'No se pudo crear el acceso.';
+      // Celular ya usado (ej. hermano): pedimos uno alternativo y reintentamos
+      if (!telefonoAlternativo && msg.includes('ya tiene una cuenta')) {
+        const alt = window.prompt('Ese celular ya tiene una cuenta. Ingresá otro número para el acceso:')?.trim();
+        if (alt) await accesoParaFicha(a, alt);
+        return;
+      }
+      avisar(msg);
     }
   };
 
@@ -148,7 +150,7 @@ export default function AlumnosPage() {
                         <Avatar nombre={a.nombre} apellido={a.apellido} fotoUrl={a.fotoUrl} size={40} radius={12} />
                         <div>
                           <div className={s.nombre}>{a.nombre} {a.apellido}</div>
-                          <div className={s.dni}>DNI {a.dni}{a.esMenor ? ' · menor' : ''}</div>
+                          <div className={s.dni}>{a.dni ? `DNI ${a.dni}` : 'Sin DNI'}{a.esMenor ? ' · menor' : ''}</div>
                         </div>
                       </div>
                     </td>
@@ -233,11 +235,16 @@ export default function AlumnosPage() {
           onCrear={crear}
           onCreado={(creado) => {
             setModalNuevo(false);
-            setCredenciales({
-              nombre: `${creado.alumno.nombre} ${creado.alumno.apellido}`,
-              email: creado.email,
-              passwordTemporal: creado.passwordTemporal,
-            });
+            if (creado.accesoCreado && creado.usuario && creado.passwordTemporal) {
+              setCredenciales({
+                nombre: `${creado.alumno.nombre} ${creado.alumno.apellido}`,
+                usuario: creado.usuario,
+                passwordTemporal: creado.passwordTemporal,
+              });
+            } else {
+              // Celular ya usado (ej. hermano): la ficha se creó sin acceso
+              avisar(`${creado.alumno.nombre} creado. Ese celular ya tenía cuenta, así que la ficha quedó sin acceso al portal; podés crearlo con otro número desde la ficha.`);
+            }
           }}
         />
       )}
@@ -261,7 +268,7 @@ export default function AlumnosPage() {
       {credenciales && (
         <AccesoCreadoModal
           nombre={credenciales.nombre}
-          email={credenciales.email}
+          usuario={credenciales.usuario}
           passwordTemporal={credenciales.passwordTemporal}
           onClose={() => setCredenciales(null)}
         />

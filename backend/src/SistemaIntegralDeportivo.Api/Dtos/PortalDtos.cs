@@ -71,8 +71,8 @@ public class MiPerfilDto
 {
     public string Nombre { get; set; } = string.Empty;
     public string Apellido { get; set; } = string.Empty;
-    public DateTime FechaNacimiento { get; set; }
-    public string Dni { get; set; } = string.Empty;
+    public DateTime? FechaNacimiento { get; set; }
+    public string? Dni { get; set; }
     public string Telefono { get; set; } = string.Empty;
     public string? Email { get; set; }
     public string Categoria { get; set; } = string.Empty;

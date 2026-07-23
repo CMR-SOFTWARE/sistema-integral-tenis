@@ -67,6 +67,9 @@ public class AlumnoServiceTests
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
              .ReturnsAsync(new CredencialesCreadas(UserIdNuevo, "Temp1234AB"));
+        // Por defecto el celular está libre → se crea la cuenta del portal
+        _credenciales.Setup(c => c.TelefonoTieneCuentaAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync(false);
 
         _service = new AlumnoService(
             _repo.Object, _cargos.Object, _credenciales.Object,
@@ -86,7 +89,7 @@ public class AlumnoServiceTests
         ConsentimientoDatos = true,
     };
 
-    /// <summary>DTO de un alumno MENOR (15 años), sin tutor por defecto.</summary>
+    /// <summary>DTO de un alumno MENOR (marcado con el checkbox), sin tutor por defecto.</summary>
     private static CreateAlumnoDto AlumnoMenor() => new()
     {
         Nombre = "Sofía",
@@ -94,7 +97,7 @@ public class AlumnoServiceTests
         Dni = "50333444",
         Telefono = "+5491155559876",
         Email = "sofia@mail.com",
-        FechaNacimiento = DateTime.UtcNow.AddYears(-15), // 15 años
+        EsMenor = true, // el profe lo marca; dispara la regla del tutor
         Categoria = CategoriaAlumno.Septima,
     };
 
@@ -190,28 +193,35 @@ public class AlumnoServiceTests
     {
         var result = await _service.CrearAsync(AlumnoMayor());
 
+        Assert.True(result.AccesoCreado);
         Assert.Equal("Temp1234AB", result.PasswordTemporal);
-        Assert.Equal("juan@mail.com", result.Email);
+        Assert.Equal("Temp1234AB", result.Usuario);
         // La ficha nace VINCULADA al usuario nuevo
         _repo.Verify(r => r.AgregarAsync(
             It.Is<Alumno>(a => a.UserId == UserIdNuevo),
             It.IsAny<CancellationToken>()), Times.Once);
+        // El teléfono es la llave; el email va como dato opcional
         _credenciales.Verify(c => c.CrearConTemporalAsync(
-            "juan@mail.com", "Juan", "Pérez", "30111222", "+5491155551234",
+            "+5491155551234", "Juan", "Pérez", "30111222", "juan@mail.com",
             It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task CrearAsync_EmailYaRegistrado_Lanza_YNoPersisteLaFicha()
+    public async Task CrearAsync_CelularYaRegistrado_CreaLaFichaSinLogin()
     {
-        _credenciales.Setup(c => c.CrearConTemporalAsync(
-                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
-                It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
-             .ThrowsAsync(new ReglaDeNegocioException("El email ya tiene una cuenta."));
+        // Ej. hermano con el mismo celu del tutor: la ficha se crea igual, sin cuenta
+        _credenciales.Setup(c => c.TelefonoTieneCuentaAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync(true);
 
-        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.CrearAsync(AlumnoMayor()));
+        var result = await _service.CrearAsync(AlumnoMayor());
 
-        _repo.Verify(r => r.AgregarAsync(It.IsAny<Alumno>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.False(result.AccesoCreado);
+        Assert.Null(result.Usuario);
+        // La ficha SÍ se persiste; el usuario NO se crea
+        _repo.Verify(r => r.AgregarAsync(It.IsAny<Alumno>(), It.IsAny<CancellationToken>()), Times.Once);
+        _credenciales.Verify(c => c.CrearConTemporalAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -260,29 +270,33 @@ public class AlumnoServiceTests
     }
 
     [Fact]
-    public async Task CrearAcceso_FichaSinUsuario_VinculaYDevuelveLaTemporal()
+    public async Task CrearAcceso_FichaSinUsuario_UsaSuCelular_YVincula()
     {
-        var ficha = FichaExistente();
+        var ficha = FichaExistente(); // Telefono = "+5491155551234"
 
-        var acceso = await _service.CrearAccesoAsync(ficha.Id, email: null);
+        var acceso = await _service.CrearAccesoAsync(ficha.Id, telefonoAlternativo: null);
 
         Assert.Equal("Temp1234AB", acceso.PasswordTemporal);
-        Assert.Equal("juan@mail.com", acceso.Email); // usó el email de la ficha
+        Assert.Equal("Temp1234AB", acceso.Usuario);
         Assert.Equal(UserIdNuevo, ficha.UserId);
+        // Usó el celular de la ficha como llave
+        _credenciales.Verify(c => c.CrearConTemporalAsync(
+            "+5491155551234", "Juan", "Pérez", It.IsAny<string?>(), It.IsAny<string?>(),
+            It.IsAny<CancellationToken>()), Times.Once);
         _repo.Verify(r => r.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task CrearAcceso_FichaSinEmail_ExigeElEmailDelBody_YLoGuarda()
+    public async Task CrearAcceso_ConTelefonoAlternativo_UsaEseNumero()
     {
-        var ficha = FichaExistente(email: null);
+        // Cuando el celular de la ficha ya está usado (hermano), el profe pasa otro
+        var ficha = FichaExistente();
 
-        await Assert.ThrowsAsync<ReglaDeNegocioException>(
-            () => _service.CrearAccesoAsync(ficha.Id, email: null));
+        await _service.CrearAccesoAsync(ficha.Id, telefonoAlternativo: "1199998888");
 
-        var acceso = await _service.CrearAccesoAsync(ficha.Id, email: "nuevo@mail.com");
-        Assert.Equal("nuevo@mail.com", acceso.Email);
-        Assert.Equal("nuevo@mail.com", ficha.Email); // quedó en la ficha
+        _credenciales.Verify(c => c.CrearConTemporalAsync(
+            "1199998888", "Juan", "Pérez", It.IsAny<string?>(), It.IsAny<string?>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -291,7 +305,7 @@ public class AlumnoServiceTests
         var ficha = FichaExistente(userId: Guid.NewGuid());
 
         await Assert.ThrowsAsync<ReglaDeNegocioException>(
-            () => _service.CrearAccesoAsync(ficha.Id, email: null));
+            () => _service.CrearAccesoAsync(ficha.Id, telefonoAlternativo: null));
     }
 
     // ─────────────────────────────────────────────
@@ -406,12 +420,12 @@ public class AlumnoServiceTests
     }
 
     [Fact]
-    public async Task EditarAsync_FechaQueLoVuelveMenorSinTutor_Lanza()
+    public async Task EditarAsync_MarcarloMenorSinTutor_Lanza()
     {
-        // Corregir mal la fecha no puede dejar un menor sin tutor (Ley 25.326)
+        // Marcarlo menor no puede dejarlo sin tutor (Ley 25.326)
         var ficha = FichaExistente(); // sin tutor
         var dto = Edicion();
-        dto.FechaNacimiento = DateTime.UtcNow.AddYears(-15);
+        dto.EsMenor = true;
 
         await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.EditarAsync(ficha.Id, dto));
     }

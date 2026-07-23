@@ -16,14 +16,14 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
-  const [email, setEmail] = useState('');
+  const [identificador, setIdentificador] = useState('');
   const [password, setPassword] = useState('');
 
   const login = async () => {
     setError(null);
     setEnviando(true);
     try {
-      entrarConSesion(await api.post<Sesion>('/auth/login', { email, password }), navigate);
+      entrarConSesion(await api.post<Sesion>('/auth/login', { identificador, password }), navigate);
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo iniciar sesión.');
       setEnviando(false);
@@ -37,15 +37,22 @@ export default function LoginPage() {
 
       <form onSubmit={(e) => { e.preventDefault(); void login(); }}>
         <label className={s.campo}>
-          <span>Email</span>
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="tu@email.com" autoFocus />
+          <span>Celular</span>
+          <input
+            type="text"
+            inputMode="tel"
+            value={identificador}
+            onChange={(e) => setIdentificador(e.target.value)}
+            placeholder="Tu celular"
+            autoFocus
+          />
         </label>
         <label className={s.campo}>
           <span>Contraseña</span>
           <InputPassword value={password} onChange={setPassword} />
         </label>
         {error && <div className={s.error}>{error}</div>}
-        <button type="submit" className={s.btnEntrar} disabled={enviando || !email || !password}>
+        <button type="submit" className={s.btnEntrar} disabled={enviando || !identificador || !password}>
           {enviando ? 'Entrando…' : 'Entrar'}
         </button>
       </form>
@@ -54,7 +61,7 @@ export default function LoginPage() {
         ¿No tenés cuenta? <b>Creá una gratis</b>
       </Link>
 
-      <div className={s.pie}>Demo profesor: profe@clubdemo.com · profe1234</div>
+      <div className={s.pie}>Demo profesor: 1122334455 · profe1234</div>
     </AuthShell>
   );
 }

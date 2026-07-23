@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Modal from '../../components/Modal';
 import { ApiError } from '../../lib/api';
-import { CATEGORIAS, CAT_LABEL, edad } from './types';
+import { CATEGORIAS, CAT_LABEL } from './types';
 import type { Alumno, Categoria, Modalidad, UpdateAlumno } from './types';
 import { useProfesores } from '../profesores/useProfesores';
 import s from './NuevoAlumnoModal.module.css';
@@ -20,22 +20,23 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
   const [form, setForm] = useState({
     nombre: alumno.nombre,
     apellido: alumno.apellido,
-    dni: alumno.dni,
+    dni: alumno.dni ?? '',
     telefono: alumno.telefono,
     email: alumno.email ?? '',
-    fechaNacimiento: alumno.fechaNacimiento.slice(0, 10),
+    fechaNacimiento: alumno.fechaNacimiento?.slice(0, 10) ?? '',
+    esMenor: alumno.esMenor,
     categoria: alumno.categoria,
     modalidad: alumno.modalidad ?? 'Mensual',
     profesorId: alumno.profesorUserId ?? '',
     notas: alumno.notas ?? '',
   });
-  const set = (campo: keyof typeof form, valor: string) =>
+  const set = (campo: keyof typeof form, valor: string | boolean) =>
     setForm((f) => ({ ...f, [campo]: valor }));
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { profes } = useProfesores();
 
-  const esMenor = form.fechaNacimiento !== '' && edad(form.fechaNacimiento) < 18;
+  const esMenor = form.esMenor;
 
   const guardar = async () => {
     setError(null);
@@ -44,10 +45,11 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
       await onEditar(alumno.id, {
         nombre: form.nombre.trim(),
         apellido: form.apellido.trim(),
-        dni: form.dni.trim(),
+        dni: form.dni.trim() || undefined,
         telefono: form.telefono.trim(),
         email: form.email.trim() || undefined,
-        fechaNacimiento: form.fechaNacimiento,
+        fechaNacimiento: form.fechaNacimiento || undefined,
+        esMenor: form.esMenor,
         categoria: form.categoria as Categoria,
         modalidad: form.modalidad as Modalidad,
         profesorUserId: form.profesorId || undefined,
@@ -63,7 +65,7 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
   return (
     <Modal
       titulo={`Editar a ${alumno.nombre} ${alumno.apellido}`}
-      subtitulo="El acceso al portal (email de login y contraseña) no se cambia desde acá."
+      subtitulo="El acceso al portal (celular de login y contraseña) no se cambia desde acá."
       onClose={onClose}
       footer={
         <>
@@ -71,7 +73,7 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
           <button
             className={s.btnPrimario}
             onClick={guardar}
-            disabled={enviando || !form.nombre.trim() || !form.dni.trim() || !form.telefono.trim()}
+            disabled={enviando || !form.nombre.trim() || !form.apellido.trim() || !form.telefono.trim()}
           >
             {enviando ? 'Guardando…' : 'Guardar cambios'}
           </button>
@@ -88,20 +90,27 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
           <input value={form.apellido} onChange={(e) => set('apellido', e.target.value)} maxLength={80} />
         </label>
         <label className={s.campo}>
-          <span>DNI</span>
-          <input value={form.dni} onChange={(e) => set('dni', e.target.value)} maxLength={15} />
-        </label>
-        <label className={s.campo}>
-          <span>Teléfono</span>
+          <span>Celular (usuario de login)</span>
           <input value={form.telefono} onChange={(e) => set('telefono', e.target.value)} maxLength={25} />
         </label>
+        <label className={s.campo}>
+          <span>DNI (opcional)</span>
+          <input value={form.dni} onChange={(e) => set('dni', e.target.value)} maxLength={15} />
+        </label>
         <label className={`${s.campo} ${s.span2}`}>
-          <span>Email de contacto</span>
+          <span>Email de contacto (opcional)</span>
           <input type="email" value={form.email} onChange={(e) => set('email', e.target.value)} />
         </label>
         <label className={s.campo}>
-          <span>Fecha de nacimiento</span>
+          <span>Fecha de nacimiento (opcional)</span>
           <input type="date" value={form.fechaNacimiento} onChange={(e) => set('fechaNacimiento', e.target.value)} />
+        </label>
+        <label className={s.campo}>
+          <span>&nbsp;</span>
+          <label className={s.check}>
+            <input type="checkbox" checked={form.esMenor} onChange={(e) => set('esMenor', e.target.checked)} />
+            Es menor de edad
+          </label>
         </label>
         <label className={s.campo}>
           <span>Categoría</span>
@@ -140,8 +149,8 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
 
         {esMenor && !alumno.tutorId && (
           <div className={`${s.span2} ${s.error}`}>
-            Con esa fecha el alumno es menor y no tiene tutor cargado: el
-            backend va a rechazar el cambio.
+            Marcaste al alumno como menor y no tiene tutor cargado: el backend
+            va a rechazar el cambio.
           </div>
         )}
         {error && <div className={`${s.span2} ${s.error}`}>{error}</div>}

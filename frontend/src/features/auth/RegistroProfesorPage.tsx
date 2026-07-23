@@ -19,11 +19,11 @@ export default function RegistroProfesorPage() {
   const [error, setError] = useState<string | null>(null);
 
   const incompleto =
-    !f.nombre.trim() || !f.apellido.trim() || !f.email.trim() ||
+    !f.nombre.trim() || !f.apellido.trim() || !f.telefono.trim() ||
     !f.nombreClub.trim() || f.password.length < 8;
 
   const registrar = async () => {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) {
+    if (f.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email.trim())) {
       setError('El email no tiene un formato válido.');
       return;
     }
@@ -33,10 +33,10 @@ export default function RegistroProfesorPage() {
       const sesion = await api.post<Sesion>('/auth/registro-profesor', {
         nombre: f.nombre.trim(),
         apellido: f.apellido.trim(),
-        email: f.email.trim(),
+        telefono: f.telefono.trim(),
+        email: f.email.trim() || undefined,
         password: f.password,
         dni: f.dni.trim() || undefined,
-        telefono: f.telefono.trim() || undefined,
         nombreClub: f.nombreClub.trim(),
       });
       entrarConSesion(sesion, navigate); // → /checkout (nace PendientePago)
@@ -64,20 +64,20 @@ export default function RegistroProfesorPage() {
             <input value={f.apellido} onChange={(e) => set('apellido', e.target.value)} />
           </label>
         </div>
-        <label className={s.campo}>
-          <span>Email</span>
-          <input type="email" value={f.email} onChange={(e) => set('email', e.target.value)} placeholder="tu@email.com" />
-        </label>
         <div className={s.dosCol}>
+          <label className={s.campo}>
+            <span>Celular (tu usuario para entrar)</span>
+            <input value={f.telefono} onChange={(e) => set('telefono', e.target.value)} placeholder="11 5555 1234" />
+          </label>
           <label className={s.campo}>
             <span>DNI (opcional)</span>
             <input value={f.dni} onChange={(e) => set('dni', e.target.value)} placeholder="30111222" />
           </label>
-          <label className={s.campo}>
-            <span>Teléfono (opcional)</span>
-            <input value={f.telefono} onChange={(e) => set('telefono', e.target.value)} placeholder="+54 9 11..." />
-          </label>
         </div>
+        <label className={s.campo}>
+          <span>Email (opcional)</span>
+          <input type="email" value={f.email} onChange={(e) => set('email', e.target.value)} placeholder="tu@email.com" />
+        </label>
         <label className={s.campo}>
           <span>Nombre de tu club o academia</span>
           <input value={f.nombreClub} onChange={(e) => set('nombreClub', e.target.value)} placeholder="Academia Río Cuarto" />
