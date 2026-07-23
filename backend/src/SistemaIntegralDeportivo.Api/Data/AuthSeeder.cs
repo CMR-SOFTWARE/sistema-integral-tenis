@@ -5,20 +5,31 @@ using SistemaIntegralDeportivo.Api.Models;
 namespace SistemaIntegralDeportivo.Api.Data;
 
 /// <summary>
-/// Seed de auth: crea el usuario PROFE dueño del tenant demo si no existe.
+/// Seed de auth: crea el usuario PROFE dueño del tenant demo, pero SOLO si el
+/// tenant demo existe (lo siembra <c>HasData</c>, presente en desarrollo). En
+/// producción el Club Demo se borra a mano; una vez borrado, este seeder no lo
+/// recrea ni revive el admin de credenciales conocidas (profe@clubdemo.com),
+/// que no debe existir en prod.
 /// No puede ir en HasData porque el hash de contraseña no es determinístico.
 /// </summary>
 public static class AuthSeeder
 {
-    // Credenciales del prototipo (cambiar al desplegar; ver plan v2: el alta
-    // real de profesores nace del registro + checkout Mercado Pago)
+    // Credenciales del prototipo (solo dev; el alta real de profes nace del
+    // registro + checkout Mercado Pago)
     public const string EmailProfe = "profe@clubdemo.com";
     public const string PasswordProfe = "profe1234";
 
     public static async Task SeedAsync(IServiceProvider services)
     {
-        var userManager = services.GetRequiredService<UserManager<Usuario>>();
         var db = services.GetRequiredService<AppDbContext>();
+
+        // Sin tenant demo no sembramos nada (caso producción). Antes esto usaba
+        // FirstAsync y tiraba excepción si el demo no estaba → la API no arrancaba.
+        var tenant = await db.Tenants.FirstOrDefaultAsync(t => t.Id == AppDbContext.TenantDemoId);
+        if (tenant is null)
+            return;
+
+        var userManager = services.GetRequiredService<UserManager<Usuario>>();
 
         var profe = await userManager.FindByEmailAsync(EmailProfe);
         if (profe is null)
@@ -45,7 +56,6 @@ public static class AuthSeeder
         }
 
         // La membresía mínima del ADR-0007: el profe es dueño del tenant demo
-        var tenant = await db.Tenants.FirstAsync(t => t.Id == AppDbContext.TenantDemoId);
         if (tenant.OwnerUserId != profe.Id)
         {
             tenant.OwnerUserId = profe.Id;
