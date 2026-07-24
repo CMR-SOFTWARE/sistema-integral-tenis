@@ -8,13 +8,15 @@ import s from './DetalleAlumnoModal.module.css';
 
 interface Props {
   alumno: Alumno;
+  /** Otros miembros que comparten la cuenta (Capa 2: cuenta familiar). */
+  hermanos: Alumno[];
   onClose: () => void;
   /** "Crear acceso" para fichas sin usuario (genera credenciales del portal). */
   onCrearAcceso?: (alumno: Alumno) => void;
 }
 
 /** Ficha del alumno. Horarios y pagos: placeholders hasta sus verticales. */
-export default function DetalleAlumnoModal({ alumno, onClose, onCrearAcceso }: Props) {
+export default function DetalleAlumnoModal({ alumno, hermanos, onClose, onCrearAcceso }: Props) {
   const cat = CAT_COLOR[alumno.categoria];
   const estado = ESTADO_UI[alumno.estado];
   const { nombreDe } = useProfesores();
@@ -72,6 +74,15 @@ export default function DetalleAlumnoModal({ alumno, onClose, onCrearAcceso }: P
                   Crear acceso al portal
                 </button>
               )}
+            </>
+          )}
+
+          {hermanos.length > 0 && (
+            <>
+              <div className={s.seccion} style={{ marginTop: 18 }}>👪 Cuenta familiar</div>
+              <div className={s.obs}>
+                Comparte el mismo login con: {hermanos.map((h) => `${h.nombre} ${h.apellido}`).join(', ')}.
+              </div>
             </>
           )}
         </div>

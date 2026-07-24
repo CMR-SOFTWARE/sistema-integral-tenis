@@ -10,7 +10,29 @@ import { alumnoNav, portalTitles } from '../../components/layout/nav';
 import { CAT_LABEL } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import type { MiPerfil } from './types';
+import { FichaActivaProvider, useFichaActiva } from './FichaActivaContext';
 import s from '../../components/layout/AppLayout.module.css';
+
+/** Selector de miembro de la familia (Capa 2): solo aparece si hay más de uno. */
+function SelectorMiembro() {
+  const alumnos = obtenerSesion()?.alumnos ?? [];
+  const { alumnoId, setAlumnoId } = useFichaActiva();
+  if (alumnos.length <= 1) return null;
+  return (
+    <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+      <span style={{ color: '#6b7770', fontWeight: 600 }}>Viendo a</span>
+      <select
+        value={alumnoId ?? ''}
+        onChange={(e) => setAlumnoId(e.target.value)}
+        style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #dde5da', fontWeight: 600 }}
+      >
+        {alumnos.map((a) => (
+          <option key={a.alumnoId} value={a.alumnoId}>{a.nombre} {a.apellido}</option>
+        ))}
+      </select>
+    </label>
+  );
+}
 
 /** Fecha de hoy estilo "Jueves 18 de junio, 2026" (como en el mockup). */
 function fechaDeHoy(): string {
@@ -78,6 +100,7 @@ export default function PortalLayout() {
   const cat = perfil ? CAT_LABEL[perfil.categoria as Categoria] ?? perfil.categoria : null;
 
   return (
+    <FichaActivaProvider>
     <div className={s.shell}>
       {menuAbierto && (
         <button
@@ -141,6 +164,7 @@ export default function PortalLayout() {
             <h1 className={s.pageTitle}>{title}</h1>
             <div className={s.pageDate}>{fechaDeHoy()}</div>
           </div>
+          <SelectorMiembro />
         </header>
 
         <main className={s.content}>
@@ -148,5 +172,6 @@ export default function PortalLayout() {
         </main>
       </div>
     </div>
+    </FichaActivaProvider>
   );
 }

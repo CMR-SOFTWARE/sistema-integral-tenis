@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import { obtenerSesion } from '../auth/sesion';
+import { useFichaActiva } from './FichaActivaContext';
 import type { Servicio, Pedido } from '../cuotas/types';
 import type {
   Aviso,
@@ -24,16 +25,18 @@ import type {
 const tieneFicha = () => obtenerSesion()?.alumno != null;
 
 export function useMisTurnos() {
+  const { alumnoId } = useFichaActiva();
   return useQuery({
-    queryKey: ['portal-mis-turnos'],
+    queryKey: ['portal-mis-turnos', alumnoId],
     queryFn: () => api.get<MisTurnos>('/portal/mis-turnos'),
     enabled: tieneFicha(),
   });
 }
 
 export function useMiCuota(anio: number, mes: number) {
+  const { alumnoId } = useFichaActiva();
   return useQuery({
-    queryKey: ['portal-mi-cuota', anio, mes],
+    queryKey: ['portal-mi-cuota', alumnoId, anio, mes],
     // 204 (sin movimientos) → api.get resuelve undefined; lo normalizamos a null.
     queryFn: () =>
       api.get<MiLiquidacion | undefined>(`/portal/mi-cuota/${anio}/${mes}`).then((c) => c ?? null),
@@ -58,8 +61,9 @@ export function useAvisos() {
 }
 
 export function useNotas() {
+  const { alumnoId } = useFichaActiva();
   return useQuery({
-    queryKey: ['portal-notas'],
+    queryKey: ['portal-notas', alumnoId],
     queryFn: () => api.get<NotaProfe[]>('/portal/notas'),
     enabled: tieneFicha(),
   });
@@ -71,8 +75,9 @@ export interface ServiciosData {
 }
 
 export function useServiciosYPedidos() {
+  const { alumnoId } = useFichaActiva();
   return useQuery({
-    queryKey: ['portal-servicios'],
+    queryKey: ['portal-servicios', alumnoId],
     queryFn: async (): Promise<ServiciosData> => {
       const [servicios, pedidos] = await Promise.all([
         api.get<Servicio[]>('/portal/servicios'),
@@ -92,8 +97,9 @@ export interface ReservarData {
 }
 
 export function useReservarData() {
+  const { alumnoId } = useFichaActiva();
   return useQuery({
-    queryKey: ['portal-reservar'],
+    queryKey: ['portal-reservar', alumnoId],
     queryFn: async (): Promise<ReservarData> => {
       const [grupos, solGrupo, solHorario, clasesSueltas] = await Promise.all([
         api.get<GrupoDisponible[]>('/portal/grupos-disponibles'),

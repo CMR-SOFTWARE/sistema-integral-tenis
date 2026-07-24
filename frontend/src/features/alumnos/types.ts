@@ -33,6 +33,8 @@ export interface Alumno {
   deudaVencida: boolean;
   /** Ya tiene acceso al portal (usuario creado). */
   tieneUsuario: boolean;
+  /** Cuenta a la que pertenece (= titular). Las fichas con el mismo familiaId son una familia. */
+  familiaId: string | null;
   /** Foto de perfil (data URL) que cargó el alumno, o null. */
   fotoUrl: string | null;
   /** Profe de cabecera (dueño o staff); null = sin asignar. */
@@ -86,10 +88,13 @@ export interface UpdateAlumno {
 /** Espejo de AlumnoCreadoDto: usuario/temporal se muestran UNA sola vez. */
 export interface AlumnoCreado {
   alumno: Alumno;
-  /** false si el celular ya tenía cuenta → la ficha se creó sin acceso. */
   accesoCreado: boolean;
   usuario: string | null;
   passwordTemporal: string | null;
+  /** Se sumó a una familia existente (mismo celular): entra con el login del titular. */
+  sumadoAFamilia: boolean;
+  /** Nombre del titular a cuya familia se sumó (para el aviso). */
+  familiaTitular: string | null;
 }
 
 /** Espejo de AccesoCreadoDto (botón "Crear acceso" en fichas sin login). */

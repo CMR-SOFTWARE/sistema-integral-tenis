@@ -27,7 +27,10 @@ export interface Sesion {
   telefono: string | null;
   fechaNacimiento: string | null;
   categoria: string | null;
+  /** Ficha por defecto (la primera de la familia); null si no está en ningún club. */
   alumno: Ficha | null;
+  /** TODAS las fichas de la familia (Capa 2): el titular gestiona a varios miembros. */
+  alumnos: Ficha[];
 }
 
 /** ¿Tiene lo necesario para mandar una solicitud? (espejo de la regla del back) */
@@ -53,7 +56,10 @@ export function obtenerSesion(): Sesion | null {
   const crudo = localStorage.getItem(KEY_SESION);
   if (!crudo) return null;
   try {
-    return { token: null, ...(JSON.parse(crudo) as Omit<Sesion, 'token'>) };
+    const s = { token: null, ...(JSON.parse(crudo) as Omit<Sesion, 'token'>) };
+    // Compatibilidad con sesiones viejas sin la lista de familia
+    if (!Array.isArray(s.alumnos)) s.alumnos = s.alumno ? [s.alumno] : [];
+    return s;
   } catch {
     return null;
   }

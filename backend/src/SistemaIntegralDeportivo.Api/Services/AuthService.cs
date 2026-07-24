@@ -62,8 +62,9 @@ public class AuthService : IAuthService
 
         var esProfesor = tenantDeTrabajo is not null;
 
-        // Una ficha por usuario en el prototipo (multi-membresía: fase futura)
-        var vinculada = await _alumnos.ObtenerPorUserIdAsync(usuario.Id, ct);
+        // Capa 2 (cuenta familiar): un titular puede tener VARIAS fichas (sus hijos).
+        // Alumno = la default (compatibilidad); Alumnos = toda la familia.
+        var fichas = await _alumnos.ListarPorUserIdAsync(usuario.Id, ct);
 
         return new SesionDto
         {
@@ -85,7 +86,8 @@ public class AuthService : IAuthService
             Telefono = usuario.PhoneNumber,
             FechaNacimiento = usuario.FechaNacimiento,
             Categoria = usuario.Categoria?.ToString(),
-            Alumno = vinculada is null ? null : Mapear(vinculada),
+            Alumno = fichas.Count == 0 ? null : Mapear(fichas[0]),
+            Alumnos = fichas.Select(Mapear).ToList(),
         };
     }
 

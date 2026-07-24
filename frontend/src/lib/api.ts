@@ -8,6 +8,15 @@ import { cerrarSesion, obtenerToken } from '../features/auth/sesion';
 
 const BASE = `${import.meta.env.VITE_API_URL ?? ''}/api`;
 
+// Ficha ACTIVA del portal (Capa 2, cuenta familiar): el selector del titular
+// elige qué miembro se está viendo. El PortalLayout la fija; el back la lee del
+// header X-Alumno-Id (si no viene, usa la ficha por defecto). Los endpoints del
+// profe la ignoran, así que es inofensivo mandarla mientras hay un alumno activo.
+let fichaActivaId: string | null = null;
+export function setFichaActiva(id: string | null): void {
+  fichaActivaId = id;
+}
+
 export class ApiError extends Error {
   status: number;
   details?: unknown;
@@ -25,6 +34,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(fichaActivaId ? { 'X-Alumno-Id': fichaActivaId } : {}),
     },
     ...init,
   });

@@ -49,8 +49,11 @@ public class CredencialesService : ICredencialesService
         return new CredencialesCreadas(nuevo.Id, usuario);
     }
 
-    public async Task<bool> TelefonoTieneCuentaAsync(string telefono, CancellationToken ct = default) =>
-        await _userManager.FindByNameAsync(SoloDigitos(telefono)) is not null;
+    public async Task<TitularInfo?> BuscarTitularPorTelefonoAsync(string telefono, CancellationToken ct = default)
+    {
+        var u = await _userManager.FindByNameAsync(SoloDigitos(telefono));
+        return u is null ? null : new TitularInfo(u.Id, u.Nombre, u.Apellido);
+    }
 
     public async Task EliminarAsync(Guid userId, CancellationToken ct = default)
     {

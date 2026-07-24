@@ -44,6 +44,8 @@ public class AuthServiceTests
                    .ReturnsAsync((MembresiaTenant?)null);
         _alumnos.Setup(a => a.ObtenerPorUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync((Alumno?)null);
+        _alumnos.Setup(a => a.ListarPorUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync([]);
         _tokens.Setup(t => t.Generar(It.IsAny<Usuario>(), It.IsAny<Tenant?>(), It.IsAny<RolTenant?>()))
                .Returns("jwt-de-prueba");
     }
@@ -306,14 +308,15 @@ public class AuthServiceTests
     public async Task Sesion_ConFichaVinculada_LaInforma()
     {
         var vinculada = Ficha(userId: UserId);
-        _alumnos.Setup(a => a.ObtenerPorUserIdAsync(UserId, It.IsAny<CancellationToken>()))
-                .ReturnsAsync(vinculada);
+        _alumnos.Setup(a => a.ListarPorUserIdAsync(UserId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync([vinculada]);
 
         var sesion = await _service.ArmarSesionAsync(Jugador(), incluirToken: false);
 
         Assert.NotNull(sesion.Alumno);
         Assert.Equal(vinculada.Id, sesion.Alumno!.AlumnoId);
         Assert.Equal("Club Demo", sesion.Alumno.Club);
+        Assert.Single(sesion.Alumnos); // la familia (acá 1 miembro)
     }
 
     [Fact]

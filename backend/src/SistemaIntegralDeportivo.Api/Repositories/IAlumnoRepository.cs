@@ -32,6 +32,9 @@ public interface IAlumnoRepository
     /// <summary>La ficha vinculada a un usuario global, con su Tenant (null si no tiene club).</summary>
     Task<Alumno?> ObtenerPorUserIdAsync(Guid userId, CancellationToken ct = default);
 
+    /// <summary>TODAS las fichas de un usuario global (la familia: el titular ve a varios miembros).</summary>
+    Task<IReadOnlyList<Alumno>> ListarPorUserIdAsync(Guid userId, CancellationToken ct = default);
+
     // ── Agregados para el dashboard (queries de solo lectura) ──
 
     /// <summary>Cantidad de alumnos del tenant en un estado dado.</summary>

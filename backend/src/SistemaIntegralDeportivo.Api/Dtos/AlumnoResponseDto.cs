@@ -30,6 +30,12 @@ public class AlumnoResponseDto
     /// <summary>Tiene acceso al portal (para mostrar/ocultar "Crear acceso").</summary>
     public bool TieneUsuario { get; set; }
 
+    /// <summary>
+    /// Cuenta a la que pertenece la ficha (= UserId del titular). Las fichas que
+    /// comparten FamiliaId son una familia (el front las agrupa). Null si no tiene login.
+    /// </summary>
+    public Guid? FamiliaId { get; set; }
+
     /// <summary>Foto de perfil (data URL) que cargó el alumno, o null.</summary>
     public string? FotoUrl { get; set; }
 

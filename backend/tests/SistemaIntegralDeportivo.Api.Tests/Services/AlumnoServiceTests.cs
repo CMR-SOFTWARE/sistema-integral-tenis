@@ -67,9 +67,9 @@ public class AlumnoServiceTests
                 It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
                 It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()))
              .ReturnsAsync(new CredencialesCreadas(UserIdNuevo, "Temp1234AB"));
-        // Por defecto el celular está libre → se crea la cuenta del portal
-        _credenciales.Setup(c => c.TelefonoTieneCuentaAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-             .ReturnsAsync(false);
+        // Por defecto el celular está libre (no hay titular) → se crea la cuenta
+        _credenciales.Setup(c => c.BuscarTitularPorTelefonoAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync((TitularInfo?)null);
 
         _service = new AlumnoService(
             _repo.Object, _cargos.Object, _credenciales.Object,
@@ -207,21 +207,40 @@ public class AlumnoServiceTests
     }
 
     [Fact]
-    public async Task CrearAsync_CelularYaRegistrado_CreaLaFichaSinLogin()
+    public async Task CrearAsync_CelularDeUnTitular_SumaLaFichaALaFamilia()
     {
-        // Ej. hermano con el mismo celu del tutor: la ficha se crea igual, sin cuenta
-        _credenciales.Setup(c => c.TelefonoTieneCuentaAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-             .ReturnsAsync(true);
+        // Ej. hermano con el mismo celu del tutor: la ficha se suma a la cuenta del titular
+        var titularId = Guid.NewGuid();
+        _credenciales.Setup(c => c.BuscarTitularPorTelefonoAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new TitularInfo(titularId, "Juan", "Gómez"));
 
         var result = await _service.CrearAsync(AlumnoMayor());
 
-        Assert.False(result.AccesoCreado);
-        Assert.Null(result.Usuario);
-        // La ficha SÍ se persiste; el usuario NO se crea
-        _repo.Verify(r => r.AgregarAsync(It.IsAny<Alumno>(), It.IsAny<CancellationToken>()), Times.Once);
+        Assert.True(result.AccesoCreado);
+        Assert.True(result.SumadoAFamilia);
+        Assert.Equal("Juan Gómez", result.FamiliaTitular);
+        // La ficha nace BAJO la cuenta del titular; NO se crea un login nuevo
+        _repo.Verify(r => r.AgregarAsync(
+            It.Is<Alumno>(a => a.UserId == titularId), It.IsAny<CancellationToken>()), Times.Once);
         _credenciales.Verify(c => c.CrearConTemporalAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
             It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CrearAsync_MenorNuevaFamilia_ElTitularSeCreaConDatosDelTutor()
+    {
+        // Celular libre + menor → el login/titular se crea con el NOMBRE del tutor
+        // (el menor no maneja la cuenta), usando el celular de la ficha.
+        var dto = AlumnoMenor();
+        dto.Tutor = TutorValido(); // Marta Gómez
+        dto.ConsentimientoDatos = true;
+
+        await _service.CrearAsync(dto);
+
+        _credenciales.Verify(c => c.CrearConTemporalAsync(
+            dto.Telefono, "Marta", "Gómez", It.IsAny<string?>(), It.IsAny<string?>(),
+            It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
