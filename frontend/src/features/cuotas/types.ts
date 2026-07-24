@@ -22,6 +22,8 @@ export interface Liquidacion {
   alumnoId: string;
   nombre: string;
   apellido: string;
+  /** Cuenta (= titular). Las liquidaciones con el mismo familiaId son una familia. */
+  familiaId: string | null;
   modalidad: 'Mensual' | 'PorClase';
   total: number;
   pagado: number;

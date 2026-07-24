@@ -86,6 +86,37 @@ public class PortalController : ControllerBase
         }
     }
 
+    /// <summary>GET api/portal/mi-cuota-familia/2026/7 — cuota consolidada de la familia (Capa 2b).</summary>
+    [HttpGet("mi-cuota-familia/{anio:int}/{mes:int:range(1,12)}")]
+    public async Task<ActionResult<CuotaFamiliaDto>> MiCuotaFamilia(int anio, int mes, CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.MiCuotaFamiliaAsync(userId, anio, mes, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>POST api/portal/mi-cuota-familia/2026/7/informar — aviso que transferí toda la familia.</summary>
+    [HttpPost("mi-cuota-familia/{anio:int}/{mes:int:range(1,12)}/informar")]
+    public async Task<IActionResult> InformarFamilia(int anio, int mes, CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            await _portal.InformarPagoFamiliaAsync(userId, anio, mes, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     /// <summary>GET api/portal/datos-pago — a dónde transfiero (alias/CBU del club).</summary>
     [HttpGet("datos-pago")]
     public async Task<ActionResult<DatosPagoDto>> DatosPago(CancellationToken ct)

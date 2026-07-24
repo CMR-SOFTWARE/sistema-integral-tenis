@@ -93,11 +93,58 @@ public class PortalService : IPortalService
         return liquidacion.Liquidaciones.FirstOrDefault(l => l.AlumnoId == ficha.Id);
     }
 
+    public async Task<CuotaFamiliaDto> MiCuotaFamiliaAsync(
+        Guid userId, int anio, int mes, CancellationToken ct = default)
+    {
+        var fichas = await FamiliaDeAsync(userId, ct);
+
+        // La familia comparte club: liquidamos ese mes una vez y filtramos a los miembros
+        var liquidacion = await _cuotas.ObtenerMesAsync(anio, mes, ct);
+        var idsFamilia = fichas.Select(f => f.Id).ToHashSet();
+        var miembros = liquidacion.Liquidaciones
+            .Where(l => idsFamilia.Contains(l.AlumnoId))
+            .ToList();
+
+        return new CuotaFamiliaDto
+        {
+            Anio = anio,
+            Mes = mes,
+            Miembros = miembros,
+            Total = miembros.Sum(m => m.Total),
+            Pagado = miembros.Sum(m => m.Pagado),
+            Saldo = miembros.Sum(m => m.Saldo),
+            PuedeInformar = miembros.Any(m => m.Saldo > 0 && m.Estado != "Informado"),
+        };
+    }
+
     public async Task InformarPagoMesAsync(
         Guid userId, int anio, int mes, CancellationToken ct = default)
     {
         var ficha = await FichaDeAsync(userId, ct); // establece el tenant del club
         await _cuotas.InformarPagoMesAsync(ficha.Id, anio, mes, ct);
+    }
+
+    public async Task InformarPagoFamiliaAsync(
+        Guid userId, int anio, int mes, CancellationToken ct = default)
+    {
+        var fichas = await FamiliaDeAsync(userId, ct);
+
+        // Informar el pago de cada miembro que tenga cargos pendientes (los que no,
+        // lanzan y se saltan: no es error para la familia).
+        var alguno = false;
+        foreach (var f in fichas)
+        {
+            try
+            {
+                await _cuotas.InformarPagoMesAsync(f.Id, anio, mes, ct);
+                alguno = true;
+            }
+            catch (ReglaDeNegocioException) { /* ese miembro no tenía nada por informar */ }
+        }
+
+        if (!alguno)
+            throw new ReglaDeNegocioException(
+                "No hay cuotas pendientes por informar en la familia este mes.");
     }
 
     public async Task InformarPagoCargoAsync(
@@ -395,6 +442,17 @@ public class PortalService : IPortalService
         // turnos y la liquidación de cuotas operan el club correcto.
         _tenantActual.Establecer(ficha.TenantId);
         return ficha;
+    }
+
+    /// <summary>Todas las fichas de la familia (mismo titular) + fija su club (comparten tenant).</summary>
+    private async Task<IReadOnlyList<Alumno>> FamiliaDeAsync(Guid userId, CancellationToken ct)
+    {
+        var fichas = await _alumnos.ListarPorUserIdAsync(userId, ct);
+        if (fichas.Count == 0)
+            throw new ReglaDeNegocioException(
+                "Tu cuenta no está vinculada a ningún club todavía. Buscá tu club desde el portal.");
+        _tenantActual.Establecer(fichas[0].TenantId);
+        return fichas;
     }
 
     private static MiTurnoDto Mapear(Turno t, Guid miAlumnoId)

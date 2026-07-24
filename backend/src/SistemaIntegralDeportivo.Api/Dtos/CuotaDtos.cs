@@ -65,6 +65,8 @@ public class AlumnoLiquidacionDto
     public Guid AlumnoId { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public string Apellido { get; set; } = string.Empty;
+    /// <summary>Cuenta del alumno (= titular). Las filas con el mismo FamiliaId son una familia.</summary>
+    public Guid? FamiliaId { get; set; }
     public string Modalidad { get; set; } = string.Empty;
     public decimal Total { get; set; }
     public decimal Pagado { get; set; }
@@ -75,6 +77,22 @@ public class AlumnoLiquidacionDto
     /// </summary>
     public string Estado { get; set; } = string.Empty;
     public List<CargoResponseDto> Cargos { get; set; } = [];
+}
+
+/// <summary>
+/// La cuota CONSOLIDADA de una familia (Capa 2b): la liquidación de cada miembro
+/// + los totales. El titular ve un solo número y puede informar todo junto.
+/// </summary>
+public class CuotaFamiliaDto
+{
+    public int Anio { get; set; }
+    public int Mes { get; set; }
+    public List<AlumnoLiquidacionDto> Miembros { get; set; } = [];
+    public decimal Total { get; set; }
+    public decimal Pagado { get; set; }
+    public decimal Saldo { get; set; }
+    /// <summary>Algún miembro debe y no informó todavía → habilita "Ya transferí" familiar.</summary>
+    public bool PuedeInformar { get; set; }
 }
 
 /// <summary>La pantalla Cuotas de un mes: liquidaciones por alumno + stats.</summary>
