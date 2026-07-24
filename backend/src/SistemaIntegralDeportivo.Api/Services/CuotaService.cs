@@ -128,6 +128,7 @@ public class CuotaService : ICuotaService
                     AlumnoId = g.Key,
                     Nombre = alumno?.Nombre ?? string.Empty,
                     Apellido = alumno?.Apellido ?? string.Empty,
+                    FamiliaId = alumno?.UserId,
                     Modalidad = alumno?.Modalidad.ToString() ?? string.Empty,
                     Total = total,
                     Pagado = pagado,

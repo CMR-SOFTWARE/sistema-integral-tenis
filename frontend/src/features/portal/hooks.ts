@@ -6,6 +6,7 @@ import type { Servicio, Pedido } from '../cuotas/types';
 import type {
   Aviso,
   ClaseSuelta,
+  CuotaFamilia,
   GrupoDisponible,
   MiLiquidacion,
   MisTurnos,
@@ -40,6 +41,15 @@ export function useMiCuota(anio: number, mes: number) {
     // 204 (sin movimientos) → api.get resuelve undefined; lo normalizamos a null.
     queryFn: () =>
       api.get<MiLiquidacion | undefined>(`/portal/mi-cuota/${anio}/${mes}`).then((c) => c ?? null),
+    enabled: tieneFicha(),
+  });
+}
+
+/** Cuota consolidada de la familia (Capa 2b): a nivel familia, no del miembro activo. */
+export function useMiCuotaFamilia(anio: number, mes: number) {
+  return useQuery({
+    queryKey: ['portal-cuota-familia', anio, mes],
+    queryFn: () => api.get<CuotaFamilia>(`/portal/mi-cuota-familia/${anio}/${mes}`),
     enabled: tieneFicha(),
   });
 }

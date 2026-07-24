@@ -131,6 +131,8 @@ export default function CuotasPage() {
               const av = avatarColor(l.nombre + l.apellido);
               const estado = ESTADO_LIQ_UI[l.estado];
               const abierto = abiertos.has(l.alumnoId);
+              // Familia: comparte cuenta (familiaId) con otra liquidación del mes
+              const enFamilia = !!l.familiaId && liquidaciones.filter((o) => o.familiaId === l.familiaId).length > 1;
               return (
                 <div key={l.alumnoId} className={s.tarjeta}>
                   <button className={s.fila} onClick={() => toggleDetalle(l.alumnoId)}>
@@ -138,7 +140,10 @@ export default function CuotasPage() {
                       {iniciales(l.nombre, l.apellido)}
                     </div>
                     <div className={s.filaNombre}>
-                      <span className={s.nombre}>{l.nombre} {l.apellido}</span>
+                      <span className={s.nombre}>
+                        {l.nombre} {l.apellido}
+                        {enFamilia && <span title="Comparte cuenta familiar"> 👪</span>}
+                      </span>
                       <span className={s.modalidad}>{l.modalidad === 'PorClase' ? 'paga por clase' : 'mensual'}</span>
                     </div>
                     <div className={s.montos}>

@@ -26,6 +26,17 @@ export interface MisTurnos {
   historial: MiTurno[];
 }
 
+/** Espejo de CuotaFamiliaDto (Capa 2b): la cuota consolidada de la familia. */
+export interface CuotaFamilia {
+  anio: number;
+  mes: number;
+  miembros: MiLiquidacion[];
+  total: number;
+  pagado: number;
+  saldo: number;
+  puedeInformar: boolean;
+}
+
 /** Espejo de AlumnoLiquidacionDto: MI liquidación del mes. */
 export interface MiLiquidacion {
   alumnoId: string;

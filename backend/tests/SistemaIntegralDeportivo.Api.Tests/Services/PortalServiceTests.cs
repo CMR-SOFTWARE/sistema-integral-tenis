@@ -97,6 +97,36 @@ public class PortalServiceTests
     }
 
     [Fact]
+    public async Task MiCuotaFamilia_SumaSoloLosMiembros_YNoLosAjenos()
+    {
+        // Capa 2b: la cuota consolidada filtra a las fichas de la familia y suma
+        var f1 = new Alumno { TenantId = Guid.NewGuid(), Nombre = "Sofía", Apellido = "Gómez", Telefono = "1", UserId = UserId };
+        var f2 = new Alumno { TenantId = f1.TenantId, Nombre = "Juli", Apellido = "Gómez", Telefono = "1", UserId = UserId };
+        _alumnos.Setup(a => a.ListarPorUserIdAsync(UserId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync([f1, f2]);
+        var ajeno = Guid.NewGuid();
+        _cuotas.Setup(c => c.ObtenerMesAsync(2026, 7, It.IsAny<CancellationToken>()))
+               .ReturnsAsync(new LiquidacionMesDto
+               {
+                   Anio = 2026, Mes = 7,
+                   Liquidaciones =
+                   [
+                       new AlumnoLiquidacionDto { AlumnoId = f1.Id, Total = 12000, Saldo = 12000, Estado = "Pendiente" },
+                       new AlumnoLiquidacionDto { AlumnoId = f2.Id, Total = 10000, Saldo = 10000, Estado = "Pendiente" },
+                       new AlumnoLiquidacionDto { AlumnoId = ajeno, Total = 99999, Saldo = 99999, Estado = "Pendiente" },
+                   ],
+               });
+
+        var res = await _service.MiCuotaFamiliaAsync(UserId, 2026, 7);
+
+        Assert.Equal(2, res.Miembros.Count);   // solo la familia, no el ajeno
+        Assert.Equal(22000, res.Total);
+        Assert.Equal(22000, res.Saldo);
+        Assert.True(res.PuedeInformar);
+        _tenantActual.Verify(t => t.Establecer(f1.TenantId), Times.Once);
+    }
+
+    [Fact]
     public async Task MisTurnos_MaterializaElMesActualYElSiguiente_YPideDesdeElMesPasado()
     {
         var hoy = DateOnly.FromDateTime(DateTime.UtcNow);

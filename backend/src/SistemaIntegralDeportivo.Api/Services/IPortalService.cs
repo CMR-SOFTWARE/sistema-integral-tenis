@@ -19,6 +19,12 @@ public interface IPortalService
     /// <exception cref="Common.ReglaDeNegocioException">Si el usuario no tiene ficha vinculada.</exception>
     Task<AlumnoLiquidacionDto?> MiCuotaAsync(Guid userId, int anio, int mes, CancellationToken ct = default);
 
+    /// <summary>Cuota CONSOLIDADA de la familia (Capa 2b): liquidación de cada miembro + total.</summary>
+    Task<CuotaFamiliaDto> MiCuotaFamiliaAsync(Guid userId, int anio, int mes, CancellationToken ct = default);
+
+    /// <summary>Informar el pago del mes de TODA la familia (los miembros que deban).</summary>
+    Task InformarPagoFamiliaAsync(Guid userId, int anio, int mes, CancellationToken ct = default);
+
     /// <summary>Aviso que transferí el mes completo (queda pendiente de que el profe confirme).</summary>
     /// <exception cref="Common.ReglaDeNegocioException">Sin ficha, o nada por informar.</exception>
     Task InformarPagoMesAsync(Guid userId, int anio, int mes, CancellationToken ct = default);

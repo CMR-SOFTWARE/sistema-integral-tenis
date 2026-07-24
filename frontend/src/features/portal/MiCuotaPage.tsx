@@ -6,7 +6,7 @@ import SinClub from './SinClub';
 import InformarPagoModal from './InformarPagoModal';
 import { formatoPlata } from '../alumnos/types';
 import { ESTADO_LIQ_UI, MESES } from '../cuotas/types';
-import { useMiCuota } from './hooks';
+import { useMiCuota, useMiCuotaFamilia } from './hooks';
 import s from './PortalPages.module.css';
 
 /** El objeto de pago a informar: el mes entero o un cargo puntual. */
@@ -14,28 +14,135 @@ type AInformar =
   | { tipo: 'mes'; monto: number }
   | { tipo: 'cargo'; cargoId: string; concepto: string; monto: number };
 
-/** Mi cuota: resumen del mes + detalle de cargos + "avisar que ya transferí". */
+/**
+ * Mi cuota: si el titular tiene UN solo miembro, la vista individual (detalle de
+ * cargos). Si es una FAMILIA (Capa 2b), la cuota consolidada: total + por miembro.
+ */
 export default function MiCuotaPage() {
-  const hoy = new Date();
   const conClub = obtenerSesion()?.alumno != null;
-  const qc = useQueryClient();
+  const esFamilia = (obtenerSesion()?.alumnos.length ?? 0) > 1;
+
+  if (!conClub) return <SinClub mensaje="Cuando estés en un club, acá vas a ver tu cuota mensual y tus pagos." />;
+  return esFamilia ? <CuotaFamiliarView /> : <CuotaIndividualView />;
+}
+
+/** Navegación de mes compartida por las dos vistas. */
+function useMesNav() {
+  const hoy = new Date();
   const [anio, setAnio] = useState(hoy.getFullYear());
   const [mes, setMes] = useState(hoy.getMonth() + 1);
+  const mesAnterior = () => { if (mes === 1) { setMes(12); setAnio(anio - 1); } else setMes(mes - 1); };
+  const mesSiguiente = () => { if (mes === 12) { setMes(1); setAnio(anio + 1); } else setMes(mes + 1); };
+  return { anio, mes, mesAnterior, mesSiguiente };
+}
+
+// ─────────────────────────────────────────────
+// Vista FAMILIAR: total de la familia + detalle por miembro (Capa 2b)
+// ─────────────────────────────────────────────
+
+function CuotaFamiliarView() {
+  const qc = useQueryClient();
+  const { anio, mes, mesAnterior, mesSiguiente } = useMesNav();
+  const query = useMiCuotaFamilia(anio, mes);
+  const fam = query.data ?? null;
+  const cargando = query.isLoading;
+  const error = query.error ? (query.error.message || 'Error cargando la cuota de la familia') : null;
+  const [informar, setInformar] = useState(false);
+  const [aviso, setAviso] = useState<string | null>(null);
+
+  const confirmar = async () => {
+    await api.post(`/portal/mi-cuota-familia/${anio}/${mes}/informar`, {});
+    setInformar(false);
+    setAviso('¡Aviso enviado! Tu profe va a confirmar el pago de la familia.');
+    setTimeout(() => setAviso(null), 3500);
+    await qc.invalidateQueries({ queryKey: ['portal-cuota-familia'] });
+    await qc.invalidateQueries({ queryKey: ['portal-mi-cuota'] });
+  };
+
+  return (
+    <div>
+      <div className={s.toolbar}>
+        <button className={s.nav} onClick={mesAnterior}>‹</button>
+        <div className={s.rango}>{MESES[mes - 1]} {anio}</div>
+        <button className={s.nav} onClick={mesSiguiente}>›</button>
+      </div>
+
+      {error && <div className={s.error}>{error}</div>}
+      {aviso && <div className={s.avisoOk}>{aviso}</div>}
+      {cargando && !error && <div className={s.vacio}>Calculando…</div>}
+
+      {!cargando && !error && fam && (
+        <>
+          <div className={s.statsCuota}>
+            <div className={s.tarjeta}>
+              <h3 className={s.tarjetaTitulo}>Cuota de la familia</h3>
+              <div className={s.cuotaMonto}>{formatoPlata(fam.total)}</div>
+              <div className={s.cuotaVence}>Vence el 10 de {MESES[mes - 1].toLowerCase()}</div>
+            </div>
+            <div className={s.tarjeta}>
+              <h3 className={s.tarjetaTitulo}>Adeudado</h3>
+              <div className={s.cuotaMonto} style={{ color: fam.saldo > 0 ? '#b91c1c' : '#0e6b3c' }}>
+                {formatoPlata(fam.saldo)}
+              </div>
+              {fam.puedeInformar && (
+                <button className={s.btnInformar} onClick={() => setInformar(true)}>
+                  Ya transferí (toda la familia)
+                </button>
+              )}
+            </div>
+          </div>
+
+          <h2 className={s.seccion}>Por miembro</h2>
+          <div className={s.tarjeta}>
+            {fam.miembros.length === 0 && <div className={s.vacio}>Sin movimientos este mes.</div>}
+            {fam.miembros.map((m) => {
+              const est = ESTADO_LIQ_UI[m.estado];
+              return (
+                <div key={m.alumnoId} className={s.cargo}>
+                  <span className={s.cargoConcepto}>{m.nombre} {m.apellido}</span>
+                  <span className={s.cargoMonto}>{formatoPlata(m.total)}</span>
+                  {est && (
+                    <span className={s.chip} style={{ background: est.bg, color: est.fg }}>
+                      {m.estado === 'Pagada' ? 'Pagado'
+                        : m.estado === 'Informado' ? 'Avisado ✓'
+                        : m.estado}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <p className={s.nota}>
+            Transferí el total y tocá <b>“Ya transferí”</b>: tu profe confirma que le llegó y la cuota de toda la familia queda al día.
+          </p>
+        </>
+      )}
+
+      {informar && (
+        <InformarPagoModal
+          titulo="Informar pago de la familia"
+          monto={fam?.saldo ?? 0}
+          onConfirmar={confirmar}
+          onClose={() => setInformar(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// Vista INDIVIDUAL: la de siempre (detalle de cargos de un miembro)
+// ─────────────────────────────────────────────
+
+function CuotaIndividualView() {
+  const qc = useQueryClient();
+  const { anio, mes, mesAnterior, mesSiguiente } = useMesNav();
   const cuotaQuery = useMiCuota(anio, mes);
   const cuota = cuotaQuery.data ?? null;
   const cargando = cuotaQuery.isLoading;
   const error = cuotaQuery.error ? (cuotaQuery.error.message || 'Error cargando tu cuota') : null;
   const [informar, setInformar] = useState<AInformar | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
-
-  if (!conClub) return <SinClub mensaje="Cuando estés en un club, acá vas a ver tu cuota mensual y tus pagos." />;
-
-  const mesAnterior = () => {
-    if (mes === 1) { setMes(12); setAnio(anio - 1); } else setMes(mes - 1);
-  };
-  const mesSiguiente = () => {
-    if (mes === 12) { setMes(1); setAnio(anio + 1); } else setMes(mes + 1);
-  };
 
   const confirmarInforme = async () => {
     if (!informar) return;
@@ -66,7 +173,6 @@ export default function MiCuotaPage() {
 
       {!cargando && !error && (
         <>
-          {/* ── Las 3 cards del mockup ── */}
           <div className={s.statsCuota}>
             <div className={s.tarjeta}>
               <h3 className={s.tarjetaTitulo}>Cuota del mes</h3>
@@ -104,7 +210,6 @@ export default function MiCuotaPage() {
             </div>
           </div>
 
-          {/* ── Detalle del mes ── */}
           <h2 className={s.seccion}>Detalle del mes</h2>
           <div className={s.tarjeta}>
             {!cuota && <div className={s.vacio}>Sin movimientos este mes.</div>}
