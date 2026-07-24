@@ -119,14 +119,20 @@ public class AlumnoCreadoDto
 {
     public required AlumnoResponseDto Alumno { get; set; }
 
-    /// <summary>¿Se creó el acceso al portal? false si ese celular ya tenía cuenta.</summary>
+    /// <summary>¿La ficha quedó con acceso al portal? (true también si se sumó a una familia).</summary>
     public bool AccesoCreado { get; set; }
 
-    /// <summary>Usuario (el celular) para pasarle al alumno; null si no se creó acceso.</summary>
+    /// <summary>Usuario (el celular) para pasarle al alumno; null si se sumó a una familia existente.</summary>
     public string? Usuario { get; set; }
 
-    /// <summary>Contraseña inicial (el mismo celular); null si no se creó acceso.</summary>
+    /// <summary>Contraseña inicial (el mismo celular); null si se sumó a una familia existente.</summary>
     public string? PasswordTemporal { get; set; }
+
+    /// <summary>Se sumó a una familia existente (mismo celular): entra con el login del titular.</summary>
+    public bool SumadoAFamilia { get; set; }
+
+    /// <summary>Nombre del titular a cuya familia se sumó (para el aviso al profe).</summary>
+    public string? FamiliaTitular { get; set; }
 }
 
 /// <summary>

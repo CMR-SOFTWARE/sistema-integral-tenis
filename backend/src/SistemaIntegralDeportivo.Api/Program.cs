@@ -22,6 +22,7 @@ builder.Services.AddControllers().AddJsonOptions(options =>
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITenantActual, TenantActual>();
 builder.Services.AddScoped<IUsuarioActual, UsuarioActual>();
+builder.Services.AddScoped<IFichaActual, FichaActual>();
 
 // DI del módulo Alumnos: las capas se consumen por interfaz (ADR-0002)
 builder.Services.AddScoped<IAlumnoRepository, AlumnoRepository>();

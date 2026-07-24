@@ -9,6 +9,7 @@ import { comprimirImagen } from './comprimirImagen';
 import { CAT_LABEL, CATEGORIAS, avatarColor, iniciales } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import type { MiPerfil } from './types';
+import { useFichaActiva } from './FichaActivaContext';
 import s from './PortalPages.module.css';
 
 /**
@@ -18,6 +19,7 @@ import s from './PortalPages.module.css';
 export default function PerfilPage() {
   const sesion = obtenerSesion();
   const conClub = sesion?.alumno != null;
+  const { alumnoId } = useFichaActiva(); // refresca al cambiar de miembro (cuenta familiar)
   const [perfil, setPerfil] = useState<MiPerfil | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,7 +35,8 @@ export default function PerfilPage() {
     api.get<MiPerfil>('/portal/perfil')
       .then(setPerfil)
       .catch((e) => setError(e instanceof Error ? e.message : 'Error cargando tu perfil'));
-  }, [conClub]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [conClub, alumnoId]);
 
   useEffect(() => { cargar(); }, [cargar]);
 

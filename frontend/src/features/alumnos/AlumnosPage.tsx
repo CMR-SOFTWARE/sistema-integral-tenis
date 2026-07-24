@@ -32,6 +32,13 @@ export default function AlumnosPage() {
   // El profe empleado ve la lista y la ficha, pero no gestiona alumnos (eso es del dueño).
   const esOwner = obtenerSesion()?.rol === 'owner';
 
+  // Cuenta familiar: fichas que comparten familiaId (mismo login) son una familia.
+  const conteoFamilia = new Map<string, number>();
+  for (const a of alumnos) if (a.familiaId) conteoFamilia.set(a.familiaId, (conteoFamilia.get(a.familiaId) ?? 0) + 1);
+  const enFamilia = (a: Alumno) => !!a.familiaId && (conteoFamilia.get(a.familiaId) ?? 0) > 1;
+  const hermanosDe = (a: Alumno) =>
+    a.familiaId ? alumnos.filter((o) => o.familiaId === a.familiaId && o.id !== a.id) : [];
+
   const avisar = (msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2600);
@@ -150,7 +157,10 @@ export default function AlumnosPage() {
                         <Avatar nombre={a.nombre} apellido={a.apellido} fotoUrl={a.fotoUrl} size={40} radius={12} />
                         <div>
                           <div className={s.nombre}>{a.nombre} {a.apellido}</div>
-                          <div className={s.dni}>{a.dni ? `DNI ${a.dni}` : 'Sin DNI'}{a.esMenor ? ' · menor' : ''}</div>
+                          <div className={s.dni}>
+                            {a.dni ? `DNI ${a.dni}` : 'Sin DNI'}{a.esMenor ? ' · menor' : ''}
+                            {enFamilia(a) ? ` · 👪 Familia (${conteoFamilia.get(a.familiaId!)})` : ''}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -235,15 +245,15 @@ export default function AlumnosPage() {
           onCrear={crear}
           onCreado={(creado) => {
             setModalNuevo(false);
-            if (creado.accesoCreado && creado.usuario && creado.passwordTemporal) {
+            if (creado.sumadoAFamilia) {
+              // Mismo celular: se sumó a la cuenta del titular (cuenta familiar)
+              avisar(`${creado.alumno.nombre} se sumó a la cuenta de ${creado.familiaTitular ?? 'la familia'}. Entra con ese mismo celular y aparece en su selector.`);
+            } else if (creado.usuario && creado.passwordTemporal) {
               setCredenciales({
                 nombre: `${creado.alumno.nombre} ${creado.alumno.apellido}`,
                 usuario: creado.usuario,
                 passwordTemporal: creado.passwordTemporal,
               });
-            } else {
-              // Celular ya usado (ej. hermano): la ficha se creó sin acceso
-              avisar(`${creado.alumno.nombre} creado. Ese celular ya tenía cuenta, así que la ficha quedó sin acceso al portal; podés crearlo con otro número desde la ficha.`);
             }
           }}
         />
@@ -261,6 +271,7 @@ export default function AlumnosPage() {
       {detalle && (
         <DetalleAlumnoModal
           alumno={detalle}
+          hermanos={hermanosDe(detalle)}
           onClose={() => setDetalle(null)}
           onCrearAcceso={esOwner ? accesoParaFicha : undefined}
         />

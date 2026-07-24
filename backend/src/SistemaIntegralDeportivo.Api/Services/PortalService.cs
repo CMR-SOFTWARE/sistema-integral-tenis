@@ -22,6 +22,7 @@ public class PortalService : IPortalService
     private readonly INotaAlumnoService _notas;
     private readonly ISedeRepository _sedes;
     private readonly ITenantActual _tenantActual;
+    private readonly IFichaActual _fichaActual;
 
     public PortalService(
         IAlumnoRepository alumnos, ITurnoRepository turnos,
@@ -30,7 +31,7 @@ public class PortalService : IPortalService
         IRaquetaService raquetas, ISolicitudGrupoService solicitudesGrupo,
         ISolicitudHorarioService solicitudesHorario, IClaseSueltaService clasesSueltas,
         IPublicidadService publicidad, IAvisoService avisos, INotaAlumnoService notas,
-        ISedeRepository sedes, ITenantActual tenantActual)
+        ISedeRepository sedes, ITenantActual tenantActual, IFichaActual fichaActual)
     {
         _alumnos = alumnos;
         _turnos = turnos;
@@ -47,6 +48,7 @@ public class PortalService : IPortalService
         _notas = notas;
         _sedes = sedes;
         _tenantActual = tenantActual;
+        _fichaActual = fichaActual;
     }
 
     public async Task<MisTurnosDto> MisTurnosAsync(Guid userId, CancellationToken ct = default)
@@ -373,9 +375,20 @@ public class PortalService : IPortalService
 
     private async Task<Alumno> FichaDeAsync(Guid userId, CancellationToken ct)
     {
-        var ficha = await _alumnos.ObtenerPorUserIdAsync(userId, ct)
-            ?? throw new ReglaDeNegocioException(
-                "Tu cuenta no está vinculada a ningún club todavía. Buscá tu club desde el portal.");
+        Alumno? ficha;
+        if (_fichaActual.AlumnoId is { } alumnoId)
+        {
+            // Ficha elegida en el selector familiar: tiene que ser de la cuenta del titular
+            var fichas = await _alumnos.ListarPorUserIdAsync(userId, ct);
+            ficha = fichas.FirstOrDefault(f => f.Id == alumnoId)
+                ?? throw new ReglaDeNegocioException("Esa ficha no es de tu cuenta.");
+        }
+        else
+        {
+            ficha = await _alumnos.ObtenerPorUserIdAsync(userId, ct)
+                ?? throw new ReglaDeNegocioException(
+                    "Tu cuenta no está vinculada a ningún club todavía. Buscá tu club desde el portal.");
+        }
 
         // COSTURA CLAVE (ADR-0010): el alumno no trae claim tenant — el tenant
         // del request es el del CLUB de su ficha. Con esto, la generación de

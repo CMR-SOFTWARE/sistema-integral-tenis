@@ -40,17 +40,34 @@ public class AlumnoService : IAlumnoService
         if (dto.ProfesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))
             throw new ReglaDeNegocioException("Ese profe no es de tu club.");
 
-        // El celular es el usuario del portal. Si ya tiene cuenta (ej. hermano con el
-        // celu del tutor), la ficha se crea IGUAL pero sin login; el acceso se da
-        // después con otro dato. Si está libre, creamos usuario + ficha juntos.
-        if (await _credenciales.TelefonoTieneCuentaAsync(dto.Telefono, ct))
+        // El celular es la cuenta del portal. Si ya es de un titular (ej. hermano con
+        // el celu del tutor, o el padre que ya carga otro hijo), sumamos ESTA ficha a
+        // su FAMILIA (comparte el login). Si el celular está libre, creamos el titular.
+        var titular = await _credenciales.BuscarTitularPorTelefonoAsync(dto.Telefono, ct);
+        if (titular is not null)
         {
-            var fichaSinLogin = await _repo.AgregarAsync(Construir(dto), ct);
-            return new AlumnoCreadoDto { Alumno = Mapear(fichaSinLogin), AccesoCreado = false };
+            var ficha = Construir(dto);
+            ficha.UserId = titular.UserId; // la ficha nace bajo la cuenta del titular
+            var creada = await _repo.AgregarAsync(ficha, ct);
+            return new AlumnoCreadoDto
+            {
+                Alumno = Mapear(creada),
+                AccesoCreado = true,
+                SumadoAFamilia = true,
+                FamiliaTitular = $"{titular.Nombre} {titular.Apellido}".Trim(),
+            };
         }
 
+        // Celular libre → creamos el titular. Para un MENOR el titular es el TUTOR
+        // (su nombre; el menor no maneja la cuenta); para un adulto, el propio alumno.
+        var esMenorConTutor = dto.EsMenor && dto.Tutor is not null;
+        var titNombre = esMenorConTutor ? dto.Tutor!.Nombre : dto.Nombre;
+        var titApellido = esMenorConTutor ? dto.Tutor!.Apellido : dto.Apellido;
+        var titDni = esMenorConTutor ? dto.Tutor!.Dni : dto.Dni;
+        var titEmail = esMenorConTutor ? null : dto.Email;
+
         var cred = await _credenciales.CrearConTemporalAsync(
-            dto.Telefono, dto.Nombre, dto.Apellido, dto.Dni, dto.Email, ct);
+            dto.Telefono, titNombre, titApellido, titDni, titEmail, ct);
 
         try
         {
@@ -457,6 +474,7 @@ public class AlumnoService : IAlumnoService
         CreadoEl = a.CreadoEl,
         DeudaVencida = deudaVencida,
         TieneUsuario = a.UserId is not null,
+        FamiliaId = a.UserId,
         FotoUrl = a.FotoUrl,
         ProfesorUserId = a.ProfesorUserId,
     };

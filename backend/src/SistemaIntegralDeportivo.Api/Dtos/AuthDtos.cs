@@ -165,6 +165,12 @@ public class SesionDto
     public DateTime? FechaNacimiento { get; set; }
     public string? Categoria { get; set; }
 
-    /// <summary>Ficha vinculada (habilita el portal); null si no está en ningún club.</summary>
+    /// <summary>Ficha vinculada por defecto (habilita el portal); null si no está en ningún club.</summary>
     public FichaDto? Alumno { get; set; }
+
+    /// <summary>
+    /// TODAS las fichas de la familia (Capa 2): el titular ve/gestiona a varios
+    /// miembros con un selector. Para una cuenta común es una lista de 1.
+    /// </summary>
+    public List<FichaDto> Alumnos { get; set; } = new();
 }

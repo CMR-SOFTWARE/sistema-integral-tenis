@@ -77,7 +77,15 @@ public class AlumnoRepository : IAlumnoRepository
     public Task<Alumno?> ObtenerPorUserIdAsync(Guid userId, CancellationToken ct = default) =>
         _db.Alumnos
             .Include(a => a.Tenant)
+            .OrderBy(a => a.Nombre)
             .FirstOrDefaultAsync(a => a.UserId == userId, ct);
+
+    public async Task<IReadOnlyList<Alumno>> ListarPorUserIdAsync(Guid userId, CancellationToken ct = default) =>
+        await _db.Alumnos
+            .Include(a => a.Tenant)
+            .Where(a => a.UserId == userId)
+            .OrderBy(a => a.Nombre)
+            .ToListAsync(ct);
 
     public Task<int> ContarPorEstadoAsync(EstadoAlumno estado, CancellationToken ct = default) =>
         _db.Alumnos.CountAsync(a => a.TenantId == TenantId && a.Estado == estado, ct);
