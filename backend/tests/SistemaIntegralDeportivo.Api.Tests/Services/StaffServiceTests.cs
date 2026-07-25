@@ -147,6 +147,46 @@ public class StaffServiceTests
         await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.CambiarActivoAsync(Guid.NewGuid(), false));
     }
 
+    // ── Borrado REAL del profe empleado (el dueño se equivocó al cargarlo) ──
+
+    [Fact]
+    public async Task EliminarDefinitivo_SinOtroRol_BorraMembresiaYLogin()
+    {
+        var uid = Guid.NewGuid();
+        var m = new MembresiaTenant { UserId = uid, Activo = true };
+        _repo.Setup(r => r.ObtenerAsync(m.Id, It.IsAny<CancellationToken>())).ReturnsAsync(m);
+        _repo.Setup(r => r.TieneOtrosRolesAsync(uid, It.IsAny<CancellationToken>())).ReturnsAsync(false);
+
+        await _service.EliminarDefinitivoAsync(m.Id);
+
+        _repo.Verify(r => r.EliminarConReferenciasAsync(m, It.IsAny<CancellationToken>()), Times.Once);
+        _credenciales.Verify(c => c.EliminarAsync(uid, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task EliminarDefinitivo_TambienEsAlumnoODueño_BorraMembresiaPeroConservaLogin()
+    {
+        var uid = Guid.NewGuid();
+        var m = new MembresiaTenant { UserId = uid, Activo = true };
+        _repo.Setup(r => r.ObtenerAsync(m.Id, It.IsAny<CancellationToken>())).ReturnsAsync(m);
+        _repo.Setup(r => r.TieneOtrosRolesAsync(uid, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+
+        await _service.EliminarDefinitivoAsync(m.Id);
+
+        _repo.Verify(r => r.EliminarConReferenciasAsync(m, It.IsAny<CancellationToken>()), Times.Once);
+        _credenciales.Verify(c => c.EliminarAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task EliminarDefinitivo_Inexistente_Lanza()
+    {
+        _repo.Setup(r => r.ObtenerAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync((MembresiaTenant?)null);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.EliminarDefinitivoAsync(Guid.NewGuid()));
+        _repo.Verify(r => r.EliminarConReferenciasAsync(It.IsAny<MembresiaTenant>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
     // ── Profes asignables (dueño + staff activos) ──
 
     [Fact]

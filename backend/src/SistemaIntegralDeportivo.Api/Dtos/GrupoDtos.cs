@@ -20,6 +20,18 @@ public class CreateGrupoDto
     public Guid? ProfesorUserId { get; set; }
 }
 
+/// <summary>Edición de un grupo (nombre/categoría/cupo). El profe a cargo se cambia aparte (PATCH profesor).</summary>
+public class UpdateGrupoDto
+{
+    [Required, StringLength(80)]
+    public string Nombre { get; set; } = string.Empty;
+
+    public CategoriaAlumno? Categoria { get; set; }
+
+    [Range(1, 50)]
+    public int? CupoMaximo { get; set; }
+}
+
 /// <summary>Miembro activo de un grupo (para la tarjeta del mockup).</summary>
 public class MiembroGrupoDto
 {

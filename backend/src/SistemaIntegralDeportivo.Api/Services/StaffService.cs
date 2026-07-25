@@ -14,6 +14,13 @@ public interface IStaffService
     /// <summary>Baja/reactivación del profe empleado.</summary>
     Task CambiarActivoAsync(Guid id, bool activo, CancellationToken ct = default);
 
+    /// <summary>
+    /// Borrado REAL del profe empleado (el dueño se equivocó al cargarlo y lo quiere
+    /// eliminar, no solo desactivar). Saca la membresía, deja "sin asignar" lo que lo
+    /// tenía de profe (grupos/horarios/alumnos), y borra su login si no cumple otro rol.
+    /// </summary>
+    Task EliminarDefinitivoAsync(Guid id, CancellationToken ct = default);
+
     /// <summary>Los profes a los que el dueño puede asignar clases: el dueño + los staff ACTIVOS.</summary>
     Task<IReadOnlyList<ProfesorAsignableDto>> ListarAsignablesAsync(CancellationToken ct = default);
     /// <summary>¿Ese usuario es asignable en este club? (el dueño o un staff activo).</summary>
@@ -101,6 +108,22 @@ public class StaffService : IStaffService
 
         membresia.Activo = activo;
         await _membresias.GuardarCambiosAsync(ct);
+    }
+
+    public async Task EliminarDefinitivoAsync(Guid id, CancellationToken ct = default)
+    {
+        var membresia = await _membresias.ObtenerAsync(id, ct)
+            ?? throw new ReglaDeNegocioException("Ese profe no está en tu equipo.");
+
+        var userId = membresia.UserId;
+
+        // Saca la membresía y libera lo que lo tenía de profe (queda sin asignar).
+        await _membresias.EliminarConReferenciasAsync(membresia, ct);
+
+        // El login se va solo si no cumple otro rol (no es alumno, ni dueño, ni
+        // staff de otro club). Si la persona además juega/entrena, su cuenta queda.
+        if (!await _membresias.TieneOtrosRolesAsync(userId, ct))
+            await _credenciales.EliminarAsync(userId, ct);
     }
 
     public async Task<IReadOnlyList<ProfesorAsignableDto>> ListarAsignablesAsync(CancellationToken ct = default)

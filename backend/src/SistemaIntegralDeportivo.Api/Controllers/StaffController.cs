@@ -73,4 +73,22 @@ public class StaffController : ControllerBase
             return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
         }
     }
+
+    /// <summary>
+    /// DELETE api/staff/{id}/definitivo — borrado REAL del profe empleado (sin vuelta).
+    /// Lo que lo tenía de profe queda sin asignar; su login se va si no cumple otro rol.
+    /// </summary>
+    [HttpDelete("{id:guid}/definitivo")]
+    public async Task<IActionResult> EliminarDefinitivo(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            await _staff.EliminarDefinitivoAsync(id, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
 }

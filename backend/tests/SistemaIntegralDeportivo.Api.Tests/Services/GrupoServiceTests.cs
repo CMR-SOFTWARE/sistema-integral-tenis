@@ -200,4 +200,56 @@ public class GrupoServiceTests
         await Assert.ThrowsAsync<ReglaDeNegocioException>(
             () => _service.QuitarAlumnoAsync(GrupoId, AlumnoId));
     }
+
+    // ─────────────────────────────────────────────
+    // Editar y eliminar (borrado real) el grupo
+    // ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task Editar_CambiaNombreCategoriaYCupo_YPersiste()
+    {
+        var grupo = GrupoCon(cupo: 4);
+        _grupos.Setup(g => g.ObtenerAsync(GrupoId, It.IsAny<CancellationToken>())).ReturnsAsync(grupo);
+
+        var dto = new UpdateGrupoDto { Nombre = "Avanzados jueves", Categoria = CategoriaAlumno.Segunda, CupoMaximo = 6 };
+        var res = await _service.EditarAsync(GrupoId, dto);
+
+        Assert.Equal("Avanzados jueves", grupo.Nombre);
+        Assert.Equal(CategoriaAlumno.Segunda, grupo.Categoria);
+        Assert.Equal(6, grupo.CupoMaximo);
+        Assert.Equal("Avanzados jueves", res.Nombre);
+        _grupos.Verify(g => g.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Editar_GrupoInexistente_Lanza()
+    {
+        _grupos.Setup(g => g.ObtenerAsync(GrupoId, It.IsAny<CancellationToken>())).ReturnsAsync((Grupo?)null);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.EditarAsync(GrupoId, new UpdateGrupoDto { Nombre = "x" }));
+    }
+
+    [Fact]
+    public async Task Eliminar_GrupoExistente_BorraDeVerdad()
+    {
+        var grupo = GrupoCon(cupo: 4);
+        _grupos.Setup(g => g.ObtenerAsync(GrupoId, It.IsAny<CancellationToken>())).ReturnsAsync(grupo);
+
+        var ok = await _service.EliminarAsync(GrupoId);
+
+        Assert.True(ok);
+        _grupos.Verify(g => g.EliminarAsync(grupo, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Eliminar_GrupoInexistente_DevuelveFalse()
+    {
+        _grupos.Setup(g => g.ObtenerAsync(GrupoId, It.IsAny<CancellationToken>())).ReturnsAsync((Grupo?)null);
+
+        var ok = await _service.EliminarAsync(GrupoId);
+
+        Assert.False(ok);
+        _grupos.Verify(g => g.EliminarAsync(It.IsAny<Grupo>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
 }

@@ -43,6 +43,26 @@ public class GrupoRepository : IGrupoRepository
         return grupo;
     }
 
+    public async Task EliminarAsync(Grupo grupo, CancellationToken ct = default)
+    {
+        // Los horarios del grupo (y sus turnos) NO se van en cascada: la FK
+        // Horario→Grupo es SetNull. Los borramos a mano para no dejar horarios
+        // huérfanos (sin grupo ni alumno). Los TurnoParticipante de esos turnos
+        // sí caen en cascada (PK compuesta con TurnoId).
+        var horarios = await _db.Horarios
+            .Include(h => h.Turnos)
+            .Where(h => h.TenantId == TenantId && h.GrupoId == grupo.Id)
+            .ToListAsync(ct);
+
+        foreach (var h in horarios)
+            _db.Turnos.RemoveRange(h.Turnos);
+        _db.Horarios.RemoveRange(horarios);
+
+        // El grupo: sus membresías (AlumnoGrupo) y solicitudes caen en cascada.
+        _db.Grupos.Remove(grupo);
+        await _db.SaveChangesAsync(ct);
+    }
+
     public Task<AlumnoGrupo?> ObtenerMembresiaAsync(Guid grupoId, Guid alumnoId, CancellationToken ct = default) =>
         _db.AlumnoGrupos
             .FirstOrDefaultAsync(m => m.GrupoId == grupoId && m.AlumnoId == alumnoId, ct);

@@ -4,6 +4,7 @@ import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { useProfesores } from '../profesores/useProfesores';
 import { useGrupos } from './useGrupos';
 import NuevoGrupoModal from './NuevoGrupoModal';
+import EditarGrupoModal from './EditarGrupoModal';
 import AsignarAlumnoModal from './AsignarAlumnoModal';
 import PanelSolicitudes from './PanelSolicitudes';
 import { CAT_COLOR, CAT_LABEL } from '../alumnos/types';
@@ -11,9 +12,10 @@ import type { Grupo } from './types';
 import s from './GruposPage.module.css';
 
 export default function GruposPage() {
-  const { grupos, cargando, error, crear, asignar, quitar, recargar } = useGrupos();
+  const { grupos, cargando, error, crear, editar, eliminar, asignar, quitar, recargar } = useGrupos();
   const [modalNuevo, setModalNuevo] = useState(false);
   const [grupoAsignar, setGrupoAsignar] = useState<Grupo | null>(null);
+  const [grupoEditar, setGrupoEditar] = useState<Grupo | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const confirmar = useConfirmar();
   const { profes } = useProfesores();
@@ -26,6 +28,23 @@ export default function GruposPage() {
   const reasignarProfe = async (grupoId: string, profesorUserId: string) => {
     await api.patch(`/grupos/${grupoId}/profesor`, { profesorUserId: profesorUserId || null });
     void recargar();
+  };
+
+  const eliminarGrupo = async (g: Grupo) => {
+    if (!(await confirmar({
+      titulo: `Eliminar el grupo "${g.nombre}"`,
+      mensaje: (
+        <>
+          Se borra el grupo, sus horarios y los turnos de esas clases. Los alumnos <b>no</b> se
+          borran (siguen en la lista). <b>Esto no se puede deshacer.</b>
+        </>
+      ),
+      confirmar: 'Eliminar grupo',
+      cancelar: 'No, cancelar',
+      peligro: true,
+    }))) return;
+    await eliminar(g.id);
+    avisar(`Grupo "${g.nombre}" eliminado`);
   };
 
   const quitarMiembro = async (grupo: Grupo, alumnoId: string, nombre: string) => {
@@ -79,11 +98,24 @@ export default function GruposPage() {
                   )}
                   <span className={s.nombre}>{g.nombre}</span>
                 </div>
-                <span className={lleno ? s.cupoLleno : s.cupo}>
-                  {g.cupoMaximo === null
-                    ? `${g.miembrosActivos} integrantes`
-                    : `${g.miembrosActivos}/${g.cupoMaximo}${lleno ? ' · completo' : ''}`}
-                </span>
+                <div className={s.headerDerecha}>
+                  <span className={lleno ? s.cupoLleno : s.cupo}>
+                    {g.cupoMaximo === null
+                      ? `${g.miembrosActivos} integrantes`
+                      : `${g.miembrosActivos}/${g.cupoMaximo}${lleno ? ' · completo' : ''}`}
+                  </span>
+                  <button className={s.iconBtn} title="Editar grupo" onClick={() => setGrupoEditar(g)}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4v16h16v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z" />
+                    </svg>
+                  </button>
+                  <button className={s.iconBtnBorrar} title="Eliminar grupo (no se deshace)" onClick={() => void eliminarGrupo(g)}>
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86" />
+                      <path d="M15 9l-6 6M9 9l6 6" />
+                    </svg>
+                  </button>
+                </div>
               </div>
 
               <div className={s.miembros}>
@@ -139,6 +171,16 @@ export default function GruposPage() {
           onCrear={async (dto) => {
             await crear(dto);
             avisar(`Grupo "${dto.nombre}" creado`);
+          }}
+        />
+      )}
+      {grupoEditar && (
+        <EditarGrupoModal
+          grupo={grupoEditar}
+          onClose={() => setGrupoEditar(null)}
+          onEditar={async (id, dto) => {
+            await editar(id, dto);
+            avisar(`Grupo "${dto.nombre}" actualizado`);
           }}
         />
       )}

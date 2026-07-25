@@ -89,6 +89,97 @@
   border-radius: var(--radius-md);
 }
 
+/* ── Horarios asignados + cuenta corriente (datos reales) ── */
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.itemHorario {
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-md);
+  padding: 8px 10px;
+}
+
+.itemPrincipal {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.itemDia {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.itemTipo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--color-primary);
+  background: #eef6f0;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.itemSub {
+  font-size: 12px;
+  color: var(--color-text-faint);
+  margin-top: 2px;
+}
+
+.itemCargo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  padding: 6px 2px;
+  border-bottom: 1px solid var(--color-surface-hover);
+}
+
+.cargoFecha {
+  color: var(--color-text-faint);
+  font-size: 12px;
+  flex: none;
+  width: 42px;
+}
+
+.cargoConcepto {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cargoMonto {
+  font-weight: 700;
+  flex: none;
+}
+
+.cargoPagado {
+  color: #0e6b3c;
+  font-weight: 700;
+  font-size: 11px;
+  flex: none;
+}
+
+.cargoInformado {
+  color: #1a56db;
+  font-weight: 700;
+  font-size: 11px;
+  flex: none;
+}
+
+.cargoImpago {
+  color: #b7791f;
+  font-weight: 700;
+  font-size: 11px;
+  flex: none;
+}
+
 /* ── Acceso al portal (plan v2) ── */
 
 .btnAcceso {

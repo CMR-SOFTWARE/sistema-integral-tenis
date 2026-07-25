@@ -68,6 +68,26 @@ public class AlumnoRepository : IAlumnoRepository
     public Task<Alumno?> ObtenerAsync(Guid id, CancellationToken ct = default) =>
         _db.Alumnos.FirstOrDefaultAsync(a => a.TenantId == TenantId && a.Id == id, ct);
 
+    public async Task EliminarDefinitivoAsync(Alumno alumno, CancellationToken ct = default)
+    {
+        // Los horarios individuales del alumno (y sus turnos) NO caen en cascada:
+        // la FK Horario→Alumno es SetNull. Los borramos a mano para no dejar
+        // horarios huérfanos. Los TurnoParticipante de esos turnos sí caen solos.
+        var horarios = await _db.Horarios
+            .Include(h => h.Turnos)
+            .Where(h => h.TenantId == TenantId && h.AlumnoId == alumno.Id)
+            .ToListAsync(ct);
+
+        foreach (var h in horarios)
+            _db.Turnos.RemoveRange(h.Turnos);
+        _db.Horarios.RemoveRange(horarios);
+
+        // La ficha: cargos, participaciones, membresías, raquetas, notas y
+        // solicitudes (grupo/horario/clase suelta) caen en cascada.
+        _db.Alumnos.Remove(alumno);
+        await _db.SaveChangesAsync(ct);
+    }
+
     public Task GuardarCambiosAsync(CancellationToken ct = default) =>
         _db.SaveChangesAsync(ct);
 

@@ -14,6 +14,19 @@ public interface IMembresiaTenantRepository
     Task AgregarAsync(MembresiaTenant membresia, CancellationToken ct = default);
     Task GuardarCambiosAsync(CancellationToken ct = default);
 
+    /// <summary>
+    /// Borra la membresía DE VERDAD (el dueño se equivocó al cargar al profe y lo
+    /// quiere eliminar). Antes limpia sus referencias en el tenant: los grupos,
+    /// horarios y alumnos que lo tenían de profe quedan "sin asignar" (no se rompen).
+    /// </summary>
+    Task EliminarConReferenciasAsync(MembresiaTenant membresia, CancellationToken ct = default);
+
+    /// <summary>
+    /// ¿El usuario cumple otro rol en la plataforma? (es dueño de un tenant, tiene
+    /// otra membresía, o tiene fichas de alumno). Si NO, su login se puede borrar.
+    /// </summary>
+    Task<bool> TieneOtrosRolesAsync(Guid userId, CancellationToken ct = default);
+
     // ── NO scopeadas: corren sin tenant en contexto (login, búsqueda por celular) ──
     Task<Usuario?> BuscarUsuarioPorTelefonoAsync(string telefono, CancellationToken ct = default);
     Task<Usuario?> ObtenerUsuarioAsync(Guid userId, CancellationToken ct = default);
@@ -58,6 +71,34 @@ public class MembresiaTenantRepository : IMembresiaTenantRepository
         _db.MembresiasTenant.Add(membresia);
         await Task.CompletedTask;
     }
+
+    public async Task EliminarConReferenciasAsync(MembresiaTenant membresia, CancellationToken ct = default)
+    {
+        var userId = membresia.UserId;
+
+        // Dejar "sin asignar" lo que lo tenía de profe en ESTE tenant (no se rompe:
+        // ProfesorUserId es un Guid suelto, no un FK con cascada). Todo en una sola
+        // transacción con la baja de la membresía.
+        var grupos = await _db.Grupos
+            .Where(g => g.TenantId == TenantId && g.ProfesorUserId == userId).ToListAsync(ct);
+        foreach (var g in grupos) g.ProfesorUserId = null;
+
+        var horarios = await _db.Horarios
+            .Where(h => h.TenantId == TenantId && h.ProfesorUserId == userId).ToListAsync(ct);
+        foreach (var h in horarios) h.ProfesorUserId = null;
+
+        var alumnos = await _db.Alumnos
+            .Where(a => a.TenantId == TenantId && a.ProfesorUserId == userId).ToListAsync(ct);
+        foreach (var a in alumnos) a.ProfesorUserId = null;
+
+        _db.MembresiasTenant.Remove(membresia);
+        await _db.SaveChangesAsync(ct);
+    }
+
+    public async Task<bool> TieneOtrosRolesAsync(Guid userId, CancellationToken ct = default) =>
+        await _db.Tenants.AnyAsync(t => t.OwnerUserId == userId, ct)
+        || await _db.MembresiasTenant.AnyAsync(m => m.UserId == userId, ct)
+        || await _db.Alumnos.AnyAsync(a => a.UserId == userId, ct);
 
     public Task GuardarCambiosAsync(CancellationToken ct = default) =>
         _db.SaveChangesAsync(ct);

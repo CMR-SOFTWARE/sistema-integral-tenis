@@ -676,6 +676,68 @@ public class AlumnoServiceTests
     }
 
     // ─────────────────────────────────────────────
+    // Borrado REAL (hard delete): la ficha, su historial y el login
+    // ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task EliminarDefinitivo_UltimaFichaDeLaCuenta_BorraFichaYLogin()
+    {
+        var userId = Guid.NewGuid();
+        var ficha = FichaExistente(userId: userId);
+        // Tras borrar la ficha, la cuenta no tiene más miembros
+        _repo.Setup(r => r.ListarPorUserIdAsync(userId, It.IsAny<CancellationToken>()))
+             .ReturnsAsync([]);
+
+        var ok = await _service.EliminarDefinitivoAsync(ficha.Id);
+
+        Assert.True(ok);
+        _repo.Verify(r => r.EliminarDefinitivoAsync(ficha, It.IsAny<CancellationToken>()), Times.Once);
+        _credenciales.Verify(c => c.EliminarAsync(userId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task EliminarDefinitivo_FamiliaConMasMiembros_BorraFichaPeroConservaElLogin()
+    {
+        var userId = Guid.NewGuid();
+        var ficha = FichaExistente(userId: userId);
+        var hermano = new Alumno { Nombre = "Hermano", Apellido = "Pérez", Telefono = "1", UserId = userId };
+        _repo.Setup(r => r.ListarPorUserIdAsync(userId, It.IsAny<CancellationToken>()))
+             .ReturnsAsync([hermano]); // queda otra ficha bajo el mismo titular
+
+        var ok = await _service.EliminarDefinitivoAsync(ficha.Id);
+
+        Assert.True(ok);
+        _repo.Verify(r => r.EliminarDefinitivoAsync(ficha, It.IsAny<CancellationToken>()), Times.Once);
+        _credenciales.Verify(c => c.EliminarAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task EliminarDefinitivo_FichaSinLogin_BorraSoloLaFicha()
+    {
+        var ficha = FichaExistente(userId: null);
+
+        var ok = await _service.EliminarDefinitivoAsync(ficha.Id);
+
+        Assert.True(ok);
+        _repo.Verify(r => r.EliminarDefinitivoAsync(ficha, It.IsAny<CancellationToken>()), Times.Once);
+        _repo.Verify(r => r.ListarPorUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+        _credenciales.Verify(c => c.EliminarAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task EliminarDefinitivo_Inexistente_DevuelveFalse()
+    {
+        _repo.Setup(r => r.ObtenerAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync((Alumno?)null);
+
+        var ok = await _service.EliminarDefinitivoAsync(Guid.NewGuid());
+
+        Assert.False(ok);
+        _repo.Verify(r => r.EliminarDefinitivoAsync(It.IsAny<Alumno>(), It.IsAny<CancellationToken>()), Times.Never);
+        _credenciales.Verify(c => c.EliminarAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // ─────────────────────────────────────────────
     // Consentimiento con timestamp + unicidad de DNI (reglas previas)
     // ─────────────────────────────────────────────
 

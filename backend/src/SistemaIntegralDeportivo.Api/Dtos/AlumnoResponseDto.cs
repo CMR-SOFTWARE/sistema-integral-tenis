@@ -43,6 +43,42 @@ public class AlumnoResponseDto
     public Guid? ProfesorUserId { get; set; }
 }
 
+/// <summary>Un horario asignado del alumno, para la ficha del profe (día/hora/cancha).</summary>
+public class AlumnoHorarioDto
+{
+    public string Dia { get; set; } = string.Empty;        // "Lunes", "Martes"...
+    public string HoraInicio { get; set; } = string.Empty; // "18:00"
+    public int DuracionMinutos { get; set; }
+    public string Cancha { get; set; } = string.Empty;
+    public string Sede { get; set; } = string.Empty;
+    public string Tipo { get; set; } = string.Empty;       // "Grupal" | "Individual"
+    public string? Grupo { get; set; }                     // nombre del grupo (si es grupal)
+}
+
+/// <summary>La cuenta corriente del alumno vista desde su ficha (deuda + últimos cargos).</summary>
+public class AlumnoCuentaDto
+{
+    /// <summary>Tiene la cuota vencida (pasó el día 10 sin pagar).</summary>
+    public bool DeudaVencida { get; set; }
+    /// <summary>Total impago (todos los cargos sin pagar, no solo los recientes).</summary>
+    public decimal TotalAdeudado { get; set; }
+    /// <summary>Últimos movimientos (para mostrar en la ficha).</summary>
+    public List<CargoResumenDto> Cargos { get; set; } = [];
+}
+
+/// <summary>Línea resumida de un cargo (para la ficha del alumno).</summary>
+public class CargoResumenDto
+{
+    public Guid Id { get; set; }
+    public string Concepto { get; set; } = string.Empty;
+    public decimal Monto { get; set; }
+    public DateOnly Fecha { get; set; }
+    public bool Pagado { get; set; }
+    /// <summary>El alumno avisó que transfirió; el profe todavía no confirmó.</summary>
+    public bool PagoInformado { get; set; }
+    public string? MedioPago { get; set; }
+}
+
 /// <summary>
 /// Alumno ACTIVO al que se le pasó el día 15 sin pagar: el profe decide si
 /// lo saca del calendario (nunca es automático).

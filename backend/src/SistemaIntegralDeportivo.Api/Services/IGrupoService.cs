@@ -11,6 +11,17 @@ public interface IGrupoService
 
     Task<GrupoResponseDto?> ObtenerAsync(Guid id, CancellationToken ct = default);
 
+    /// <summary>Edita nombre/categoría/cupo del grupo.</summary>
+    /// <exception cref="Common.ReglaDeNegocioException">Si no existe.</exception>
+    Task<GrupoResponseDto> EditarAsync(Guid id, UpdateGrupoDto dto, CancellationToken ct = default);
+
+    /// <summary>
+    /// Borra el grupo DE VERDAD (hard delete), con sus horarios y turnos. La
+    /// baja lógica no existe para grupos: el profe elimina lo que no usa más.
+    /// False si no existe.
+    /// </summary>
+    Task<bool> EliminarAsync(Guid id, CancellationToken ct = default);
+
     /// <summary>(Re)asigna el profe a cargo del grupo (null = sin asignar). Valida que sea del club.</summary>
     Task<GrupoResponseDto> AsignarProfesorAsync(Guid grupoId, Guid? profesorUserId, CancellationToken ct = default);
 

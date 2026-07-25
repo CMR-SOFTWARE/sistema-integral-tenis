@@ -21,6 +21,15 @@ public interface IAlumnoRepository
     /// <summary>Un alumno del tenant por id (trackeado, apto para modificar).</summary>
     Task<Alumno?> ObtenerAsync(Guid id, CancellationToken ct = default);
 
+    /// <summary>
+    /// Borrado REAL de la ficha (el profe pidió poder borrar a los que no vienen
+    /// más). Borra el alumno y, en cascada, su historial dependiente (cargos,
+    /// participaciones de turno, membresías, raquetas, notas, solicitudes, clases
+    /// sueltas); además elimina sus horarios individuales y sus turnos (FK SetNull).
+    /// NO es la baja lógica (esa es <see cref="Services.IAlumnoService.DarDeBajaAsync"/>).
+    /// </summary>
+    Task EliminarDefinitivoAsync(Alumno alumno, CancellationToken ct = default);
+
     /// <summary>Confirma en la base los cambios hechos a entidades trackeadas.</summary>
     Task GuardarCambiosAsync(CancellationToken ct = default);
 

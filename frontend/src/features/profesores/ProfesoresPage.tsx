@@ -99,6 +99,30 @@ export default function ProfesoresPage() {
     cargar();
   };
 
+  /** Borrado REAL: saca al profe de verdad (para los que se cargaron mal). */
+  const eliminar = async (p: Staff) => {
+    if (!(await confirmar({
+      titulo: `Eliminar a ${p.nombre} ${p.apellido}`,
+      mensaje: (
+        <>
+          Se borra el profe de tu equipo y su acceso a la app. Los grupos, horarios y
+          alumnos que lo tenían asignado quedan <b>sin profe</b> (no se borran).{' '}
+          <b>Esto no se puede deshacer.</b>
+        </>
+      ),
+      confirmar: 'Eliminar definitivamente',
+      cancelar: 'No, cancelar',
+      peligro: true,
+    }))) return;
+    try {
+      await api.delete(`/staff/${p.id}/definitivo`);
+      avisar(`${p.nombre} ${p.apellido} eliminado`);
+      cargar();
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'No se pudo eliminar el profe.');
+    }
+  };
+
   return (
     <div>
       <div className={s.toolbar}>
@@ -174,6 +198,9 @@ export default function ProfesoresPage() {
               </div>
               <button className={s.btnMini} onClick={() => void cambiarActivo(p)}>
                 {p.activo ? 'Sacar' : 'Reactivar'}
+              </button>
+              <button className={s.btnMiniBorrar} onClick={() => void eliminar(p)}>
+                Eliminar
               </button>
             </div>
           ))}
