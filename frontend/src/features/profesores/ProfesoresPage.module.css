@@ -150,6 +150,25 @@
   white-space: nowrap;
 }
 
+/* Borrado real del profe: rojo, separado del "Sacar" (que es baja lógica) */
+.btnMiniBorrar {
+  border: 1px solid var(--color-danger-border);
+  background: var(--color-surface);
+  color: var(--color-danger);
+  font-weight: 700;
+  font-size: 12px;
+  padding: 7px 12px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btnMiniBorrar:hover {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: #fff;
+}
+
 /* ── Estados ── */
 
 .vacio {

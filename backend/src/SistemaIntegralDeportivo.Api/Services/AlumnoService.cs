@@ -209,6 +209,55 @@ public class AlumnoService : IAlumnoService
         return Mapear(alumno, deudores.Contains(id));
     }
 
+    public async Task<IReadOnlyList<AlumnoHorarioDto>> HorariosDeAsync(Guid id, CancellationToken ct = default)
+    {
+        // Grupos activos del alumno → sus horarios grupales; más sus individuales.
+        var misGrupos = (await _grupos.ListarMembresiasActivasDeAlumnoAsync(id, ct))
+            .Select(m => m.GrupoId)
+            .ToHashSet();
+
+        return (await _horarios.ListarActivosAsync(ct))
+            .Where(h => h.AlumnoId == id
+                     || (h.GrupoId is not null && misGrupos.Contains(h.GrupoId.Value)))
+            .OrderBy(h => ((int)h.Dia + 6) % 7) // Lunes primero (Domingo=0 → al final)
+            .ThenBy(h => h.HoraInicio)
+            .Select(h => new AlumnoHorarioDto
+            {
+                Dia = DiaEnEspanol(h.Dia),
+                HoraInicio = h.HoraInicio.ToString("HH:mm"),
+                DuracionMinutos = h.DuracionMinutos,
+                Cancha = h.Cancha?.Nombre ?? string.Empty,
+                Sede = h.Cancha?.Sede?.Nombre ?? string.Empty,
+                Tipo = h.GrupoId is not null ? "Grupal" : "Individual",
+                Grupo = h.Grupo?.Nombre,
+            })
+            .ToList();
+    }
+
+    public async Task<AlumnoCuentaDto> CuentaDeAsync(Guid id, CancellationToken ct = default)
+    {
+        // Deuda total = TODOS los impagos; la lista muestra solo los últimos.
+        var impagos = await _cargos.ListarImpagosAsync([id], ct);
+        var recientes = await _cargos.ListarPorAlumnoAsync(id, 30, ct);
+        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        return new AlumnoCuentaDto
+        {
+            DeudaVencida = CuotaService.TieneDeudaVencida(impagos, hoy),
+            TotalAdeudado = impagos.Sum(c => c.Monto),
+            Cargos = recientes.Select(c => new CargoResumenDto
+            {
+                Id = c.Id,
+                Concepto = c.Concepto,
+                Monto = c.Monto,
+                Fecha = c.Fecha,
+                Pagado = c.PagadoEl is not null,
+                PagoInformado = c.PagadoEl is null && c.PagoInformadoEl is not null,
+                MedioPago = c.MedioPago?.ToString(),
+            }).ToList(),
+        };
+    }
+
     public async Task<AlumnoResponseDto?> CambiarEstadoAsync(
         Guid id, EstadoAlumno estado, CancellationToken ct = default)
     {
@@ -244,6 +293,38 @@ public class AlumnoService : IAlumnoService
         await SincronizarCalendarioAsync(id, ct);
 
         await _repo.GuardarCambiosAsync(ct);
+        return true;
+    }
+
+    public async Task<bool> EliminarDefinitivoAsync(Guid id, CancellationToken ct = default)
+    {
+        // Borrado REAL: el profe quiere sacar de verdad a los que no vienen más
+        // (a diferencia de DarDeBaja, que solo lo inactiva). No hay vuelta atrás.
+        var alumno = await _repo.ObtenerAsync(id, ct);
+        if (alumno is null) return false;
+
+        var userId = alumno.UserId;
+
+        // Igual que la baja: liberar su lugar y sacarlo del calendario ANTES de
+        // borrar. La sincronización invalida los cargos IMPAGOS de los turnos que
+        // compartía para que sus compañeros queden con el divisor correcto (si no,
+        // seguirían con la cuota calculada como si él siguiera en el grupo).
+        await LiberarLugarAsync(id, ct);
+        await SincronizarCalendarioAsync(id, ct);
+        await _repo.GuardarCambiosAsync(ct);
+
+        // Ahora sí, borrado físico de la ficha y todo su historial dependiente.
+        await _repo.EliminarDefinitivoAsync(alumno, ct);
+
+        // El login se va con la ÚLTIMA ficha de la cuenta. Si es una familia con
+        // más miembros (mismo UserId), el titular sigue entrando.
+        if (userId is not null)
+        {
+            var quedan = await _repo.ListarPorUserIdAsync(userId.Value, ct);
+            if (quedan.Count == 0)
+                await _credenciales.EliminarAsync(userId.Value, ct);
+        }
+
         return true;
     }
 
@@ -284,6 +365,14 @@ public class AlumnoService : IAlumnoService
         "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
         "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
     ];
+
+    private static readonly string[] Dias =
+    [
+        "Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado",
+    ];
+
+    /// <summary>Nombre del día en español (DayOfWeek: Domingo = 0).</summary>
+    private static string DiaEnEspanol(DayOfWeek dia) => Dias[(int)dia];
 
     /// <summary>"Junio" o "Junio 2025" si es de otro año (para que no confunda).</summary>
     private static string MesEnEspanol(DateOnly fecha) =>

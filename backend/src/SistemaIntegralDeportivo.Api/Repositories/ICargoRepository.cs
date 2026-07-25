@@ -18,6 +18,9 @@ public interface ICargoRepository
     Task<IReadOnlyList<Cargo>> ListarImpagosAsync(
         IReadOnlyCollection<Guid> alumnoIds, CancellationToken ct = default);
 
+    /// <summary>Últimos <paramref name="max"/> cargos de un alumno (más recientes primero, para la ficha).</summary>
+    Task<IReadOnlyList<Cargo>> ListarPorAlumnoAsync(Guid alumnoId, int max, CancellationToken ct = default);
+
     /// <summary>
     /// Recaudación por mes: suma de cargos PAGADOS con Fecha en el rango,
     /// agrupada por (año, mes) del cargo — agregación en SQL (reportes).

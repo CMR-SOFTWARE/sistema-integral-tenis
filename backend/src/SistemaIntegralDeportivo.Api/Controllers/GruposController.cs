@@ -45,6 +45,25 @@ public class GruposController : ControllerBase
         }
     }
 
+    /// <summary>PUT api/grupos/{id} — edita nombre/categoría/cupo del grupo.</summary>
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<GrupoResponseDto>> Editar(Guid id, UpdateGrupoDto dto, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await _service.EditarAsync(id, dto, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>DELETE api/grupos/{id} — borra el grupo DE VERDAD (con sus horarios y turnos).</summary>
+    [HttpDelete("{id:guid}")]
+    public async Task<IActionResult> Eliminar(Guid id, CancellationToken ct) =>
+        await _service.EliminarAsync(id, ct) ? NoContent() : NotFound();
+
     /// <summary>PATCH api/grupos/{id}/profesor — (re)asigna el profe a cargo del grupo.</summary>
     [HttpPatch("{id:guid}/profesor")]
     public async Task<ActionResult<GrupoResponseDto>> AsignarProfesor(

@@ -55,10 +55,16 @@ export function useAlumnos(categoria: Categoria | 'todas', estado: Estado | 'tod
     await invalidar();
   };
 
+  /** Borrado REAL: la ficha y todo su historial, sin vuelta atrás. */
+  const eliminarDefinitivo = async (id: string) => {
+    await api.delete<void>(`/alumnos/${id}/definitivo`);
+    await invalidar();
+  };
+
   return {
     alumnos: query.data ?? [],
     cargando: query.isLoading,
     error: query.error ? (query.error.message || 'Error cargando alumnos') : null,
-    crear, crearAcceso, editar, cambiarEstado, darDeBaja,
+    crear, crearAcceso, editar, cambiarEstado, darDeBaja, eliminarDefinitivo,
   };
 }

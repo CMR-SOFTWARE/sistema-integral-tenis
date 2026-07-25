@@ -1,8 +1,10 @@
+import { useQuery } from '@tanstack/react-query';
 import Modal from '../../components/Modal';
 import Avatar from '../../components/Avatar';
 import NotasAlumnoSection from './NotasAlumnoSection';
+import { api } from '../../lib/api';
 import { CAT_COLOR, CAT_LABEL, ESTADO_UI, formatoPlata } from './types';
-import type { Alumno } from './types';
+import type { Alumno, AlumnoCuenta, AlumnoHorario } from './types';
 import { useProfesores } from '../profesores/useProfesores';
 import s from './DetalleAlumnoModal.module.css';
 
@@ -15,11 +17,20 @@ interface Props {
   onCrearAcceso?: (alumno: Alumno) => void;
 }
 
-/** Ficha del alumno. Horarios y pagos: placeholders hasta sus verticales. */
+/** Ficha del alumno con sus horarios asignados y su cuenta corriente reales. */
 export default function DetalleAlumnoModal({ alumno, hermanos, onClose, onCrearAcceso }: Props) {
   const cat = CAT_COLOR[alumno.categoria];
   const estado = ESTADO_UI[alumno.estado];
   const { nombreDe } = useProfesores();
+
+  const horarios = useQuery({
+    queryKey: ['alumno-horarios', alumno.id],
+    queryFn: () => api.get<AlumnoHorario[]>(`/alumnos/${alumno.id}/horarios`),
+  });
+  const cuenta = useQuery({
+    queryKey: ['alumno-cuenta', alumno.id],
+    queryFn: () => api.get<AlumnoCuenta>(`/alumnos/${alumno.id}/cuenta`),
+  });
 
   const datos: [string, string][] = [
     ['DNI', alumno.dni ?? '—'],
@@ -88,9 +99,65 @@ export default function DetalleAlumnoModal({ alumno, hermanos, onClose, onCrearA
         </div>
         <div>
           <div className={s.seccion}>Horarios asignados</div>
-          <div className={s.placeholder}>Llega con la vertical de Horarios.</div>
-          <div className={s.seccion} style={{ marginTop: 18 }}>Pagos realizados</div>
-          <div className={s.placeholder}>Llega con la vertical de Cuotas.</div>
+          {horarios.isLoading ? (
+            <div className={s.placeholder}>Cargando…</div>
+          ) : (horarios.data?.length ?? 0) === 0 ? (
+            <div className={s.placeholder}>Sin horarios asignados todavía.</div>
+          ) : (
+            <div className={s.lista}>
+              {horarios.data!.map((h, i) => (
+                <div key={i} className={s.itemHorario}>
+                  <div className={s.itemPrincipal}>
+                    <span className={s.itemDia}>{h.dia} {h.horaInicio}</span>
+                    <span className={s.itemTipo}>{h.grupo ?? h.tipo}</span>
+                  </div>
+                  <div className={s.itemSub}>
+                    {h.cancha}{h.sede ? ` · ${h.sede}` : ''} · {h.duracionMinutos}′
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className={s.seccion} style={{ marginTop: 18 }}>
+            Cuenta corriente
+            {cuenta.data && cuenta.data.totalAdeudado > 0 && (
+              <span
+                className={s.chip}
+                style={{
+                  marginLeft: 8,
+                  background: cuenta.data.deudaVencida ? '#fdeaea' : '#fef6e7',
+                  color: cuenta.data.deudaVencida ? '#b91c1c' : '#b7791f',
+                }}
+              >
+                debe {formatoPlata(cuenta.data.totalAdeudado)}
+              </span>
+            )}
+          </div>
+          {cuenta.isLoading ? (
+            <div className={s.placeholder}>Cargando…</div>
+          ) : (cuenta.data?.cargos.length ?? 0) === 0 ? (
+            <div className={s.placeholder}>Sin movimientos.</div>
+          ) : (
+            <div className={s.lista}>
+              {cuenta.data!.cargos.map((c) => (
+                <div key={c.id} className={s.itemCargo}>
+                  <span className={s.cargoFecha}>
+                    {new Date(`${c.fecha}T00:00:00`).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' })}
+                  </span>
+                  <span className={s.cargoConcepto}>{c.concepto}</span>
+                  <span className={s.cargoMonto}>{formatoPlata(c.monto)}</span>
+                  {c.pagado ? (
+                    <span className={s.cargoPagado}>✓ {c.medioPago}</span>
+                  ) : c.pagoInformado ? (
+                    <span className={s.cargoInformado}>informó</span>
+                  ) : (
+                    <span className={s.cargoImpago}>impago</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 

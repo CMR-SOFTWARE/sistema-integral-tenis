@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
-import type { CreateGrupo, Grupo } from './types';
+import type { CreateGrupo, Grupo, UpdateGrupo } from './types';
 
 /** Estado y operaciones de la pantalla Grupos contra la API .NET. */
 export function useGrupos() {
@@ -24,6 +24,18 @@ export function useGrupos() {
     return creado;
   };
 
+  const editar = async (id: string, dto: UpdateGrupo) => {
+    const actualizado = await api.put<Grupo>(`/grupos/${id}`, dto);
+    await qc.invalidateQueries({ queryKey: ['grupos'] });
+    return actualizado;
+  };
+
+  // Borrado real: se va el grupo, sus horarios y turnos → invalidar también el calendario.
+  const eliminar = async (id: string) => {
+    await api.delete<void>(`/grupos/${id}`);
+    await invalidar();
+  };
+
   const asignar = async (grupoId: string, alumnoId: string) => {
     await api.post<void>(`/grupos/${grupoId}/alumnos`, { alumnoId });
     await invalidar();
@@ -38,7 +50,7 @@ export function useGrupos() {
     grupos: query.data ?? [],
     cargando: query.isLoading,
     error: query.error ? (query.error.message || 'Error cargando grupos') : null,
-    crear, asignar, quitar,
+    crear, editar, eliminar, asignar, quitar,
     recargar: () => qc.invalidateQueries({ queryKey: ['grupos'] }),
   };
 }

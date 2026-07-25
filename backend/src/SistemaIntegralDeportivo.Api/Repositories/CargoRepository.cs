@@ -46,6 +46,15 @@ public class CargoRepository : ICargoRepository
             .Where(c => c.TenantId == TenantId && c.PagadoEl == null && alumnoIds.Contains(c.AlumnoId))
             .ToListAsync(ct);
 
+    public async Task<IReadOnlyList<Cargo>> ListarPorAlumnoAsync(
+        Guid alumnoId, int max, CancellationToken ct = default) =>
+        await _db.Cargos
+            .AsNoTracking()
+            .Where(c => c.TenantId == TenantId && c.AlumnoId == alumnoId)
+            .OrderByDescending(c => c.Fecha).ThenByDescending(c => c.CreadoEl)
+            .Take(max)
+            .ToListAsync(ct);
+
     public async Task<Dictionary<(int Anio, int Mes), decimal>> SumarPagadosPorMesAsync(
         DateOnly desde, DateOnly hasta, CancellationToken ct = default)
     {

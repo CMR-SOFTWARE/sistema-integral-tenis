@@ -28,3 +28,10 @@ export interface CreateGrupo {
   cupoMaximo?: number;
   profesorUserId?: string;
 }
+
+/** Espejo de UpdateGrupoDto (el profe a cargo se cambia con el select de la tarjeta). */
+export interface UpdateGrupo {
+  nombre: string;
+  categoria?: Categoria;
+  cupoMaximo?: number;
+}

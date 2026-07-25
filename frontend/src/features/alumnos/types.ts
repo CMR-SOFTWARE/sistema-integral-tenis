@@ -103,6 +103,35 @@ export interface AccesoCreado {
   passwordTemporal: string;
 }
 
+/** Espejo de AlumnoHorarioDto: un horario asignado del alumno (para la ficha). */
+export interface AlumnoHorario {
+  dia: string;         // "Lunes", "Martes"...
+  horaInicio: string;  // "18:00"
+  duracionMinutos: number;
+  cancha: string;
+  sede: string;
+  tipo: string;        // "Grupal" | "Individual"
+  grupo: string | null;
+}
+
+/** Espejo de CargoResumenDto. */
+export interface CargoResumen {
+  id: string;
+  concepto: string;
+  monto: number;
+  fecha: string;
+  pagado: boolean;
+  pagoInformado: boolean;
+  medioPago: string | null;
+}
+
+/** Espejo de AlumnoCuentaDto: la cuenta corriente del alumno para la ficha. */
+export interface AlumnoCuenta {
+  deudaVencida: boolean;
+  totalAdeudado: number;
+  cargos: CargoResumen[];
+}
+
 export const CATEGORIAS: Categoria[] = [
   'Primera', 'Segunda', 'Tercera', 'Cuarta', 'Quinta', 'Sexta', 'Septima', 'SinCategoria',
 ];

@@ -263,6 +263,7 @@ function PublicidadCard() {
   const [imagen, setImagen] = useState<string | null>(null);
   const [subiendo, setSubiendo] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [previewIdx, setPreviewIdx] = useState(0);
   const fileInput = useRef<HTMLInputElement>(null);
   const confirmar = useConfirmar();
 
@@ -270,6 +271,16 @@ function PublicidadCard() {
     void api.get<Banner[]>('/configuracion/publicidad').then(setBanners).catch(() => setBanners([]));
   };
   useEffect(() => { cargar(); }, []);
+
+  // Solo los prendidos se muestran al alumno: el preview refleja eso.
+  const activos = banners.filter((b) => b.activo);
+
+  // Rotación del preview (igual que el portal) cuando hay más de un banner activo.
+  useEffect(() => {
+    if (activos.length < 2) return;
+    const t = setInterval(() => setPreviewIdx((i) => (i + 1) % activos.length), 4000);
+    return () => clearInterval(t);
+  }, [activos.length]);
 
   const elegirImagen = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -326,6 +337,31 @@ function PublicidadCard() {
         imagen (se comprime sola), poné un nombre y, si querés, un link. Si hay varios, rotan.
       </p>
       {error && <div className={s.error}>{error}</div>}
+
+      {/* Preview: los banners prendidos, tal como los ve el alumno */}
+      {activos.length > 0 && (
+        <div className={s.preview}>
+          <span className={s.previewLabel}>Así lo ve tu alumno</span>
+          <div className={s.previewSlide}>
+            <div
+              className={s.previewBg}
+              style={{ backgroundImage: `url("${activos[previewIdx % activos.length].imagenUrl}")` }}
+            />
+            <img
+              src={activos[previewIdx % activos.length].imagenUrl}
+              alt={activos[previewIdx % activos.length].nombre}
+              className={s.previewImg}
+            />
+          </div>
+          {activos.length > 1 && (
+            <div className={s.previewDots}>
+              {activos.map((b, i) => (
+                <span key={b.id} className={i === previewIdx % activos.length ? s.previewDotOn : s.previewDot} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className={s.bannerAlta}>
         {imagen

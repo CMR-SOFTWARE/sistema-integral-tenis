@@ -56,6 +56,29 @@ public class GrupoService : IGrupoService
         return Mapear(grupo);
     }
 
+    public async Task<GrupoResponseDto> EditarAsync(Guid id, UpdateGrupoDto dto, CancellationToken ct = default)
+    {
+        var grupo = await _grupos.ObtenerAsync(id, ct)
+            ?? throw new ReglaDeNegocioException("El grupo no existe.");
+
+        grupo.Nombre = dto.Nombre;
+        grupo.Categoria = dto.Categoria;
+        grupo.CupoMaximo = dto.CupoMaximo;
+        await _grupos.GuardarCambiosAsync(ct);
+        return Mapear(grupo);
+    }
+
+    public async Task<bool> EliminarAsync(Guid id, CancellationToken ct = default)
+    {
+        var grupo = await _grupos.ObtenerAsync(id, ct);
+        if (grupo is null) return false;
+
+        // Borrado real: el repositorio se lleva el grupo, sus membresías,
+        // solicitudes, horarios y turnos. Los cargos ya emitidos quedan.
+        await _grupos.EliminarAsync(grupo, ct);
+        return true;
+    }
+
     public async Task<IReadOnlyList<GrupoResponseDto>> ListarAsync(CancellationToken ct = default)
     {
         var grupos = await _grupos.ListarAsync(ct);

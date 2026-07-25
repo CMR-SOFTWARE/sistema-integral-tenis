@@ -13,6 +13,14 @@ public interface IGrupoRepository
 
     Task<Grupo> AgregarAsync(Grupo grupo, CancellationToken ct = default);
 
+    /// <summary>
+    /// Borrado REAL del grupo (el profe lo pidió: lo que no usa más le ocupa lugar).
+    /// Borra el grupo y, en cascada, sus membresías y solicitudes; además elimina
+    /// sus horarios y los turnos de esos horarios (su FK es SetNull, no se van solos).
+    /// Los cargos ya generados NO se tocan (plata/historia de cada alumno).
+    /// </summary>
+    Task EliminarAsync(Grupo grupo, CancellationToken ct = default);
+
     /// <summary>Membresía (activa o histórica) de un alumno en un grupo, si existe.</summary>
     Task<AlumnoGrupo?> ObtenerMembresiaAsync(Guid grupoId, Guid alumnoId, CancellationToken ct = default);
 

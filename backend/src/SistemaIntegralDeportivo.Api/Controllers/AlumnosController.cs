@@ -114,6 +114,25 @@ public class AlumnosController : ControllerBase
     public async Task<IActionResult> DarDeBaja(Guid id, CancellationToken ct) =>
         await _service.DarDeBajaAsync(id, ct) ? NoContent() : NotFound();
 
+    /// <summary>
+    /// DELETE api/alumnos/{id}/definitivo — borrado REAL: la ficha y todo su
+    /// historial, sin vuelta atrás (el profe borra a los que no vienen más).
+    /// </summary>
+    [HttpDelete("{id:guid}/definitivo")]
+    [Authorize(Policy = "Owner")]
+    public async Task<IActionResult> EliminarDefinitivo(Guid id, CancellationToken ct) =>
+        await _service.EliminarDefinitivoAsync(id, ct) ? NoContent() : NotFound();
+
+    /// <summary>GET api/alumnos/{id}/horarios — los horarios asignados del alumno (grupos + individuales).</summary>
+    [HttpGet("{id:guid}/horarios")]
+    public async Task<ActionResult<IReadOnlyList<AlumnoHorarioDto>>> Horarios(Guid id, CancellationToken ct) =>
+        Ok(await _service.HorariosDeAsync(id, ct));
+
+    /// <summary>GET api/alumnos/{id}/cuenta — la cuenta corriente del alumno (deuda + últimos cargos).</summary>
+    [HttpGet("{id:guid}/cuenta")]
+    public async Task<ActionResult<AlumnoCuentaDto>> Cuenta(Guid id, CancellationToken ct) =>
+        Ok(await _service.CuentaDeAsync(id, ct));
+
     // ── Notas de seguimiento del profe sobre el alumno ──
 
     /// <summary>GET api/alumnos/{id}/notas — todas las notas (privadas y compartidas).</summary>

@@ -41,6 +41,12 @@ public interface IAlumnoService
     /// <summary>Un alumno por id, o null si no existe en el tenant.</summary>
     Task<AlumnoResponseDto?> ObtenerAsync(Guid id, CancellationToken ct = default);
 
+    /// <summary>Horarios asignados del alumno (grupos activos + horarios individuales), para su ficha.</summary>
+    Task<IReadOnlyList<AlumnoHorarioDto>> HorariosDeAsync(Guid id, CancellationToken ct = default);
+
+    /// <summary>La cuenta corriente del alumno (deuda total + últimos cargos), para su ficha.</summary>
+    Task<AlumnoCuentaDto> CuentaDeAsync(Guid id, CancellationToken ct = default);
+
     /// <summary>
     /// Pausar (Suspendido) o reactivar (Activo). El estado manda sobre el
     /// calendario: al pausar sale de sus turnos futuros (y de sus cargos
@@ -55,6 +61,16 @@ public interface IAlumnoService
     /// horarios individuales). False si no existe.
     /// </summary>
     Task<bool> DarDeBajaAsync(Guid id, CancellationToken ct = default);
+
+    /// <summary>
+    /// Borrado REAL (hard delete): elimina la ficha y TODO su historial (cargos,
+    /// participaciones, membresías, raquetas, notas, solicitudes, horarios y
+    /// turnos individuales). No es reversible. Si era la última ficha de la
+    /// cuenta, borra también el login (una familia con más miembros lo conserva).
+    /// Antes de borrar lo saca del calendario y recalcula el divisor de sus
+    /// compañeros (como la baja). False si no existe.
+    /// </summary>
+    Task<bool> EliminarDefinitivoAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>
     /// Alumnos ACTIVOS a los que se les pasó el día 15 sin pagar (candidatos
