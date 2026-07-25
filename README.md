@@ -1,4 +1,4 @@
-# Sistema Integral Deportivo — CourtSet
+# Sistema Integral Deportivo (S.I.D)
 
 SaaS **multi-tenant** para profesores de tenis: alumnos, grupos, agenda de
 turnos, cuotas (cuenta corriente), servicios, y un **portal del alumno**. Cada
@@ -6,8 +6,8 @@ profesor/club es un tenant aislado.
 
 ## Stack
 
-- **Backend**: ASP.NET Core Web API + EF Core + SQLite. Auth con JWT.
-- **Frontend**: React + Vite + TypeScript + CSS Modules.
+- **Backend**: ASP.NET Core Web API + EF Core + **PostgreSQL** (Supabase en prod). Auth con JWT.
+- **Frontend**: React + Vite + TypeScript + React Query + CSS Modules.
 - **Tests**: xUnit + Moq (TDD selectivo).
 
 ## Estructura
@@ -24,10 +24,15 @@ docs/       ADRs (decisiones de arquitectura) + modelo-*.md (el dominio) — doc
 
 ### Backend (API en `http://localhost:5223`)
 
+Necesitás un **PostgreSQL local** (⚠️ nunca apuntes el entorno de desarrollo a la base de
+producción). La connection string va en `user-secrets`, una sola vez:
+
 ```bash
 cd backend
-dotnet ef database update --project src/SistemaIntegralDeportivo.Api   # aplica las migraciones (crea/actualiza la base SQLite local)
-dotnet run --project src/SistemaIntegralDeportivo.Api
+dotnet user-secrets set "ConnectionStrings:Default" \
+  "Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=<tu-password>" \
+  --project src/SistemaIntegralDeportivo.Api
+dotnet run --project src/SistemaIntegralDeportivo.Api   # las migraciones se aplican solas al arrancar
 ```
 
 ### Frontend (Vite en `http://localhost:5173`, proxya `/api` → `:5223`)
@@ -52,9 +57,17 @@ dotnet test
 JWT del profe, o del override del portal cuando entra un alumno (ADR-0010). El
 detalle de cada decisión vive en [`docs/adr/`](docs/adr/).
 
+## Producción
+
+- **Base**: Supabase (PostgreSQL). **API**: Railway (aplica las migraciones al desplegar).
+  **Front**: Vercel.
+- **Merge a `main` = deploy automático** (backend y frontend).
+
 ## Cómo trabajamos (seguí esta línea 🙏)
 
-1. **Rama por vertical, ANTES de tocar nada**: `git checkout -b feat/<algo>`.
+El acuerdo de trabajo completo está en [`CLAUDE.md`](CLAUDE.md). En resumen:
+
+1. **Rama por vertical, ANTES de tocar nada**: `git switch -c feat/<algo>`.
    Nunca se commitea directo a `main`.
 2. **De atrás para adelante**: modelo → service con tests → endpoints → frontend.
    Así cada capa se prueba antes de montar la de arriba.
@@ -62,19 +75,18 @@ detalle de cada decisión vive en [`docs/adr/`](docs/adr/).
    services con reglas). NO en scaffolding, repos ni UI.
 4. **Migraciones**: si tocás el modelo →
    `dotnet ef migrations add <Nombre> --project src/SistemaIntegralDeportivo.Api`
-   → **revisá el archivo generado** → `dotnet ef database update`.
-5. **Commits temáticos**: uno por capa/tema (modelo / lógica+tests / endpoints /
-   frontend). Mensaje en una línea que explique el **qué** y el **porqué**.
-6. **PR y merge**: subís la rama (`git push -u origin <rama>`), abrís el PR,
-   lo mergeás, y sincronizás tu local:
+   → **revisá el archivo generado**. Se aplican solas al arrancar la API.
+5. **PR y merge**: subís la rama (`git push -u origin <rama>`), abrís el PR, esperás el CI
+   en verde, lo mergeás, y sincronizás tu local:
    ```bash
-   git checkout main && git pull && git branch -d <rama>
+   git switch main && git pull && git branch -d <rama>
    ```
-7. **Doc viva**: cada regla de dominio nueva se documenta en `docs/modelo-*.md`;
+6. **Doc viva**: cada regla de dominio nueva se documenta en `docs/modelo-*.md`;
    las decisiones de arquitectura, como un ADR en `docs/adr/`.
 
 ## Documentación
 
+- [`CLAUDE.md`](CLAUDE.md) — el acuerdo de trabajo (cómo se construye la app).
 - [`docs/adr/`](docs/adr/) — decisiones de arquitectura (por qué .NET, TDD
   selectivo, multi-tenant, cuenta corriente de cargos…).
 - [`docs/modelo-precios.md`](docs/modelo-precios.md),
@@ -82,3 +94,4 @@ detalle de cada decisión vive en [`docs/adr/`](docs/adr/).
   [`modelo-agenda.md`](docs/modelo-agenda.md),
   [`modelo-identidad-roles.md`](docs/modelo-identidad-roles.md) — el dominio.
 - [`LEARNING.md`](LEARNING.md) — notas de aprendizaje.
+```
