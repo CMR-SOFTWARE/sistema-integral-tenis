@@ -10,14 +10,17 @@ public class HorarioService : IHorarioService
     private readonly IHorarioRepository _horarios;
     private readonly ITurnoRepository _turnos;
     private readonly ICargoRepository _cargos;
+    private readonly IBloqueoRepository _bloqueos;
     private readonly IStaffService _staff;
 
     public HorarioService(
-        IHorarioRepository horarios, ITurnoRepository turnos, ICargoRepository cargos, IStaffService staff)
+        IHorarioRepository horarios, ITurnoRepository turnos, ICargoRepository cargos,
+        IBloqueoRepository bloqueos, IStaffService staff)
     {
         _horarios = horarios;
         _turnos = turnos;
         _cargos = cargos;
+        _bloqueos = bloqueos;
         _staff = staff;
     }
 
@@ -47,6 +50,20 @@ public class HorarioService : IHorarioService
         if (pisado is not null)
             throw new ReglaDeNegocioException(
                 $"Se superpone con otro horario de esa cancha ({pisado.HoraInicio:HH\\:mm}, {pisado.DuracionMinutos}').");
+
+        // Regla: no crear un horario que pise un BLOQUEO FIJO (ese día/franja no está
+        // disponible). Los bloqueos por RANGO (fecha puntual) NO frenan el horario
+        // recurrente: solo saltean el turno de esa fecha (lo maneja la generación).
+        var bloqueos = await _bloqueos.ListarAsync(ct);
+        var bloqueado = bloqueos.FirstOrDefault(b =>
+            b.Tipo == TipoBloqueo.Fijo
+            && b.Dia == dto.Dia
+            && (b.CanchaId is null || b.CanchaId == dto.CanchaId)
+            && dto.HoraInicio < b.HoraFin && b.HoraInicio < fin);
+        if (bloqueado is not null)
+            throw new ReglaDeNegocioException(
+                $"Ese día y horario están bloqueados ({bloqueado.HoraInicio:HH\\:mm}–{bloqueado.HoraFin:HH\\:mm}). " +
+                "Sacá el bloqueo o elegí otro horario.");
 
         // Regla: si se asigna un profe, tiene que ser del club (dueño o staff activo)
         if (dto.ProfesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))

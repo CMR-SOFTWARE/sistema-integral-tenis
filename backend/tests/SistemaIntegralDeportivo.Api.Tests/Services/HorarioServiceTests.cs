@@ -21,6 +21,7 @@ public class HorarioServiceTests
     private readonly Mock<IHorarioRepository> _repo;
     private readonly Mock<ITurnoRepository> _turnos;
     private readonly Mock<ICargoRepository> _cargos;
+    private readonly Mock<IBloqueoRepository> _bloqueos;
     private readonly Mock<IStaffService> _staff;
     private readonly HorarioService _service;
 
@@ -29,8 +30,9 @@ public class HorarioServiceTests
         _repo = new Mock<IHorarioRepository>();
         _turnos = new Mock<ITurnoRepository>();
         _cargos = new Mock<ICargoRepository>();
+        _bloqueos = new Mock<IBloqueoRepository>();
         _staff = new Mock<IStaffService>();
-        _service = new HorarioService(_repo.Object, _turnos.Object, _cargos.Object, _staff.Object);
+        _service = new HorarioService(_repo.Object, _turnos.Object, _cargos.Object, _bloqueos.Object, _staff.Object);
 
         // Por defecto: cualquier profe asignado es válido (los tests que prueban la
         // regla lo pisan con false)
@@ -40,6 +42,9 @@ public class HorarioServiceTests
         // Por defecto: nadie debe nada
         _cargos.Setup(c => c.ListarImpagosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
                .ReturnsAsync([]);
+
+        // Por defecto: no hay bloqueos
+        _bloqueos.Setup(b => b.ListarAsync(It.IsAny<CancellationToken>())).ReturnsAsync([]);
 
         // Ya existe: martes 18:00-19:00 en Cancha 1
         var existente = new Horario
@@ -112,6 +117,43 @@ public class HorarioServiceTests
         await _service.CrearAsync(dto);
 
         Assert.Equal(profe, creado!.ProfesorUserId);
+    }
+
+    [Fact]
+    public async Task Crear_PisaUnBloqueoFijo_Lanza()
+    {
+        // Bloqueo fijo martes 18:00-20:00 en TODAS las canchas → no se puede poner ahí
+        _bloqueos.Setup(b => b.ListarAsync(It.IsAny<CancellationToken>())).ReturnsAsync([new Bloqueo
+        {
+            Tipo = TipoBloqueo.Fijo,
+            Dia = DayOfWeek.Tuesday,
+            HoraInicio = new TimeOnly(18, 0),
+            HoraFin = new TimeOnly(20, 0),
+            CanchaId = null, // todas
+        }]);
+        var dto = Dto(Cancha2, new TimeOnly(18, 30)); // cancha libre de horarios, pero bloqueada
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.CrearAsync(dto));
+        _repo.Verify(r => r.AgregarAsync(It.IsAny<Horario>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Crear_BloqueoFijoDeOtraCancha_NoFrena()
+    {
+        // El bloqueo es solo en Cancha1 → un horario en Cancha2 se puede crear igual
+        _bloqueos.Setup(b => b.ListarAsync(It.IsAny<CancellationToken>())).ReturnsAsync([new Bloqueo
+        {
+            Tipo = TipoBloqueo.Fijo,
+            Dia = DayOfWeek.Tuesday,
+            HoraInicio = new TimeOnly(18, 0),
+            HoraFin = new TimeOnly(20, 0),
+            CanchaId = Cancha1,
+        }]);
+        var dto = Dto(Cancha2, new TimeOnly(18, 30));
+
+        await _service.CrearAsync(dto);
+
+        _repo.Verify(r => r.AgregarAsync(It.IsAny<Horario>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
