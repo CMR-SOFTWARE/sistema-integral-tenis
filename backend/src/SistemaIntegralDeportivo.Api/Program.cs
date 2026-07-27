@@ -42,6 +42,11 @@ builder.Services.AddScoped<ICuotaService, CuotaService>();
 // Política de cuota (costura intercambiable): cambiar el modelo de cobro = cambiar
 // esta línea por otra IPoliticaDeCuota. Hoy: cuota mensual manual por alumno.
 builder.Services.AddScoped<IPoliticaDeCuota, CuotaMensualManual>();
+// Sueldos a empleados (G3): el egreso, espejo de las cuotas.
+builder.Services.AddScoped<IPagoEmpleadoRepository, PagoEmpleadoRepository>();
+builder.Services.AddScoped<ISueldoService, SueldoService>();
+// Política de sueldo (misma costura intercambiable). Hoy: valor hora × horas dadas.
+builder.Services.AddScoped<IPoliticaDeSueldo, SueldoPorHora>();
 builder.Services.AddScoped<IConfigService, ConfigService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();

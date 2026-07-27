@@ -44,7 +44,7 @@ public class HorariosController : ControllerBase
     {
         try
         {
-            return Ok(await _service.AsignarProfesorAsync(id, dto.ProfesorUserId, ct));
+            return Ok(await _service.AsignarProfesorAsync(id, dto.ProfesorUserId, dto.ValorHoraProfe, ct));
         }
         catch (ReglaDeNegocioException ex)
         {

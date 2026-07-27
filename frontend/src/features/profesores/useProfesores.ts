@@ -6,6 +6,8 @@ export interface ProfesorAsignable {
   userId: string;
   nombre: string;
   esDueño: boolean;
+  /** Valor hora base del empleado (para pre-cargar el del horario); null en el dueño. */
+  valorHora: number | null;
 }
 
 /**

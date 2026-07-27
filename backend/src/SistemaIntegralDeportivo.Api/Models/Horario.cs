@@ -19,6 +19,13 @@ public class Horario
     /// <summary>El profe que da esta clase (dueño o staff); null = sin asignar. Sin nav, como UserId.</summary>
     public Guid? ProfesorUserId { get; set; }
 
+    /// <summary>
+    /// Valor hora del profe SOLO para esta clase (override del base de su membresía,
+    /// para el caso "menores" que se paga menos). null = usar el valor hora base del
+    /// empleado. Es el dato con el que se liquida el sueldo (ver IPoliticaDeSueldo).
+    /// </summary>
+    public decimal? ValorHoraProfe { get; set; }
+
     // ── Grupal XOR individual ──
     public Guid? GrupoId { get; set; }
     public Grupo? Grupo { get; set; }

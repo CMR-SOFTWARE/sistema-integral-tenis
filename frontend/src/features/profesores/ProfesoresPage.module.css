@@ -150,6 +150,46 @@
   white-space: nowrap;
 }
 
+/* ── Valor hora del profe (base para el sueldo) ── */
+.valorHoraCell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.vhChip {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-soft);
+  font-weight: 700;
+  font-size: 12px;
+  padding: 7px 11px;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.vhChip:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.vhChipVacio {
+  color: var(--color-text-faint);
+  font-style: italic;
+}
+
+.vhInput {
+  width: 110px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 7px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
 /* Borrado real del profe: rojo, separado del "Sacar" (que es baja lógica) */
 .btnMiniBorrar {
   border: 1px solid var(--color-danger-border);
