@@ -30,6 +30,7 @@ export interface Horario {
   duracionMinutos: number;
   activo: boolean;
   profesorUserId: string | null;
+  valorHoraProfe: number | null;
 }
 
 export interface CreateHorario {
@@ -38,6 +39,16 @@ export interface CreateHorario {
   alumnoId?: string;
   profesorUserId?: string;
   /** Valor hora del profe para esta clase (override; vacío = usa el base del profe). */
+  valorHoraProfe?: number;
+  dia: DiaSemana;
+  horaInicio: string;
+  duracionMinutos: number;
+}
+
+/** Edición de un horario (sin grupo/alumno: el roster no se toca acá). */
+export interface UpdateHorario {
+  canchaId: string;
+  profesorUserId?: string;
   valorHoraProfe?: number;
   dia: DiaSemana;
   horaInicio: string;

@@ -72,6 +72,18 @@ public class HorarioServiceTests
         DuracionMinutos = duracion,
     };
 
+    private static UpdateHorarioDto Update(
+        Guid cancha, DayOfWeek dia, TimeOnly hora, int duracion = 60,
+        Guid? profe = null, decimal? valor = null) => new()
+    {
+        CanchaId = cancha,
+        Dia = dia,
+        HoraInicio = hora,
+        DuracionMinutos = duracion,
+        ProfesorUserId = profe,
+        ValorHoraProfe = valor,
+    };
+
     [Fact]
     public async Task Crear_SolapaEnLaMismaCancha_Lanza()
     {
@@ -304,5 +316,119 @@ public class HorarioServiceTests
         var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
         _turnos.Verify(t => t.ListarPorHorarioDesdeAsync(horario.Id, hoy, It.IsAny<CancellationToken>()), Times.Once);
         _turnos.Verify(t => t.Eliminar(It.IsAny<Turno>()), Times.Never);
+    }
+
+    // ─────────────────────────────────────────────
+    // Editar: cambia el horario; si movés la agenda, reprograma turnos futuros
+    // ─────────────────────────────────────────────
+
+    /// <summary>Horario editable en Cancha2/miércoles 10:00 (Cancha2 no tiene otros → sin solape).</summary>
+    private Horario HorarioEditable()
+    {
+        var horario = new Horario
+        {
+            CanchaId = Cancha2,
+            GrupoId = GrupoId,
+            Dia = DayOfWeek.Wednesday,
+            HoraInicio = new TimeOnly(10, 0),
+            DuracionMinutos = 60,
+            Activo = true,
+        };
+        _repo.Setup(r => r.ObtenerAsync(horario.Id, It.IsAny<CancellationToken>())).ReturnsAsync(horario);
+        return horario;
+    }
+
+    [Fact]
+    public async Task Editar_SoloProfeYValor_SeteaLosCampos_SinTocarTurnos()
+    {
+        var horario = HorarioEditable();
+        var profe = Guid.NewGuid();
+        // Mismo día/hora/cancha/duración: solo cambia el profe y su valor hora
+        var dto = Update(Cancha2, DayOfWeek.Wednesday, new TimeOnly(10, 0), 60, profe, 5_000m);
+
+        await _service.EditarAsync(horario.Id, dto);
+
+        Assert.Equal(profe, horario.ProfesorUserId);
+        Assert.Equal(5_000m, horario.ValorHoraProfe);
+        _turnos.Verify(t => t.Eliminar(It.IsAny<Turno>()), Times.Never); // no se movió la agenda
+        _repo.Verify(r => r.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Editar_CambiaLaHora_ReprogramaLosTurnosFuturos()
+    {
+        var horario = HorarioEditable();
+        var futuro = TurnoDe(horario, DateOnly.FromDateTime(DateTime.UtcNow).AddDays(3));
+        var cargoImpago = new Cargo
+        {
+            AlumnoId = AlumnoId, TurnoId = futuro.Id, Tipo = TipoCargo.Clase,
+            Concepto = "Clase", Monto = 8_000m, Fecha = futuro.Fecha,
+        };
+        _turnos.Setup(t => t.ListarPorHorarioDesdeAsync(horario.Id, It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([futuro]);
+        _cargos.Setup(c => c.ListarPorTurnosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([cargoImpago]);
+        var dto = Update(Cancha2, DayOfWeek.Wednesday, new TimeOnly(11, 0), 60); // movió la hora
+
+        await _service.EditarAsync(horario.Id, dto);
+
+        Assert.Equal(new TimeOnly(11, 0), horario.HoraInicio);
+        _turnos.Verify(t => t.Eliminar(futuro), Times.Once);
+        _cargos.Verify(c => c.Eliminar(cargoImpago), Times.Once);
+    }
+
+    [Fact]
+    public async Task Editar_SeSuperponeConOtroHorario_Lanza()
+    {
+        var horario = HorarioEditable();
+        // Lo muevo a Cancha1/martes 18:30 → pisa al `existente` (18:00-19:00, otro id)
+        var dto = Update(Cancha1, DayOfWeek.Tuesday, new TimeOnly(18, 30), 60);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.EditarAsync(horario.Id, dto));
+        _repo.Verify(r => r.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Editar_MismoSlot_NoSePisaASiMismo()
+    {
+        var horario = new Horario
+        {
+            CanchaId = Cancha1, GrupoId = GrupoId, Dia = DayOfWeek.Tuesday,
+            HoraInicio = new TimeOnly(18, 0), DuracionMinutos = 60, Activo = true,
+        };
+        _repo.Setup(r => r.ObtenerAsync(horario.Id, It.IsAny<CancellationToken>())).ReturnsAsync(horario);
+        // El propio horario aparece en la lista de su cancha/día: no debe contarse como solape
+        _repo.Setup(r => r.ListarPorCanchaYDiaAsync(Cancha1, DayOfWeek.Tuesday, It.IsAny<CancellationToken>()))
+             .ReturnsAsync([horario]);
+        var dto = Update(Cancha1, DayOfWeek.Tuesday, new TimeOnly(18, 0), 60, Guid.NewGuid(), 7_000m);
+
+        await _service.EditarAsync(horario.Id, dto);
+
+        Assert.Equal(7_000m, horario.ValorHoraProfe);
+        _repo.Verify(r => r.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Editar_PisaUnBloqueoFijo_Lanza()
+    {
+        var horario = HorarioEditable();
+        _bloqueos.Setup(b => b.ListarAsync(It.IsAny<CancellationToken>())).ReturnsAsync([new Bloqueo
+        {
+            Tipo = TipoBloqueo.Fijo, Dia = DayOfWeek.Wednesday,
+            HoraInicio = new TimeOnly(9, 0), HoraFin = new TimeOnly(12, 0), CanchaId = null,
+        }]);
+        var dto = Update(Cancha2, DayOfWeek.Wednesday, new TimeOnly(10, 30), 60); // dentro del bloqueo
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.EditarAsync(horario.Id, dto));
+    }
+
+    [Fact]
+    public async Task Editar_HorarioInexistente_Lanza()
+    {
+        _repo.Setup(r => r.ObtenerAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync((Horario?)null);
+        var dto = Update(Cancha2, DayOfWeek.Wednesday, new TimeOnly(10, 0), 60);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.EditarAsync(Guid.NewGuid(), dto));
     }
 }

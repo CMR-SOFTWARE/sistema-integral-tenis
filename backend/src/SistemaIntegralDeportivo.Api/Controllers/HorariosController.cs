@@ -52,6 +52,21 @@ public class HorariosController : ControllerBase
         }
     }
 
+    /// <summary>PUT api/horarios/{id} — edita el horario (cancha/día/hora/duración/profe/valor hora).</summary>
+    [HttpPut("{id:guid}")]
+    public async Task<ActionResult<HorarioResponseDto>> Editar(
+        Guid id, UpdateHorarioDto dto, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await _service.EditarAsync(id, dto, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     /// <summary>DELETE api/horarios/{id} — desactiva la plantilla (turnos generados intactos).</summary>
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> Desactivar(Guid id, CancellationToken ct)

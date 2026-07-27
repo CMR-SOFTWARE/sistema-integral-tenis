@@ -42,28 +42,9 @@ public class HorarioService : IHorarioService
                     "El alumno tiene la cuota vencida: registrá el pago en Cuotas antes de asignarle clases nuevas.");
         }
 
-        // Regla: sin solapamiento en la MISMA cancha (mismo día, rangos que se pisan)
-        var fin = dto.HoraInicio.AddMinutes(dto.DuracionMinutos);
-        var delDia = await _horarios.ListarPorCanchaYDiaAsync(dto.CanchaId, dto.Dia, ct);
-        var pisado = delDia.FirstOrDefault(h =>
-            dto.HoraInicio < h.HoraInicio.AddMinutes(h.DuracionMinutos) && h.HoraInicio < fin);
-        if (pisado is not null)
-            throw new ReglaDeNegocioException(
-                $"Se superpone con otro horario de esa cancha ({pisado.HoraInicio:HH\\:mm}, {pisado.DuracionMinutos}').");
-
-        // Regla: no crear un horario que pise un BLOQUEO FIJO (ese día/franja no está
-        // disponible). Los bloqueos por RANGO (fecha puntual) NO frenan el horario
-        // recurrente: solo saltean el turno de esa fecha (lo maneja la generación).
-        var bloqueos = await _bloqueos.ListarAsync(ct);
-        var bloqueado = bloqueos.FirstOrDefault(b =>
-            b.Tipo == TipoBloqueo.Fijo
-            && b.Dia == dto.Dia
-            && (b.CanchaId is null || b.CanchaId == dto.CanchaId)
-            && dto.HoraInicio < b.HoraFin && b.HoraInicio < fin);
-        if (bloqueado is not null)
-            throw new ReglaDeNegocioException(
-                $"Ese día y horario están bloqueados ({bloqueado.HoraInicio:HH\\:mm}–{bloqueado.HoraFin:HH\\:mm}). " +
-                "Sacá el bloqueo o elegí otro horario.");
+        // Regla: la franja tiene que estar libre en esa cancha (sin solapar otro
+        // horario ni pisar un bloqueo fijo).
+        await ValidarSlotLibreAsync(dto.CanchaId, dto.Dia, dto.HoraInicio, dto.DuracionMinutos, null, ct);
 
         // Regla: si se asigna un profe, tiene que ser del club (dueño o staff activo)
         if (dto.ProfesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))
@@ -103,6 +84,40 @@ public class HorarioService : IHorarioService
         return Mapear(horario);
     }
 
+    public async Task<HorarioResponseDto> EditarAsync(
+        Guid id, UpdateHorarioDto dto, CancellationToken ct = default)
+    {
+        var horario = await _horarios.ObtenerAsync(id, ct)
+            ?? throw new ReglaDeNegocioException("El horario no existe.");
+
+        // La franja destino tiene que estar libre (excluyéndose a sí mismo, así
+        // editar sin moverlo no se marca como "se pisa con otro").
+        await ValidarSlotLibreAsync(dto.CanchaId, dto.Dia, dto.HoraInicio, dto.DuracionMinutos, id, ct);
+
+        if (dto.ProfesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))
+            throw new ReglaDeNegocioException("Ese profe no es de tu club.");
+
+        // Si cambió el horario EN SÍ (cancha/día/hora/duración), los turnos futuros ya
+        // no corresponden: se limpian (los pagados no) y la generación perezosa los
+        // rehace con el nuevo horario. Cambiar solo el profe/valor no toca los turnos.
+        var cambioAgenda = horario.CanchaId != dto.CanchaId
+            || horario.Dia != dto.Dia
+            || horario.HoraInicio != dto.HoraInicio
+            || horario.DuracionMinutos != dto.DuracionMinutos;
+        if (cambioAgenda)
+            await LimpiarTurnosFuturosAsync(id, ct);
+
+        horario.CanchaId = dto.CanchaId;
+        horario.ProfesorUserId = dto.ProfesorUserId;
+        horario.ValorHoraProfe = dto.ProfesorUserId is null ? null : dto.ValorHoraProfe;
+        horario.Dia = dto.Dia;
+        horario.HoraInicio = dto.HoraInicio;
+        horario.DuracionMinutos = dto.DuracionMinutos;
+
+        await _horarios.GuardarCambiosAsync(ct);
+        return Mapear(horario);
+    }
+
     public async Task<IReadOnlyList<HorarioResponseDto>> ListarAsync(CancellationToken ct = default)
     {
         var horarios = await _horarios.ListarActivosAsync(ct);
@@ -115,27 +130,65 @@ public class HorarioService : IHorarioService
             ?? throw new ReglaDeNegocioException("El horario no existe.");
 
         horario.Activo = false;
-
-        // Lo pasado es historia y no se toca. Lo futuro (≥ hoy) se limpia para
-        // no dejar facturado algo que ya no va a ocurrir — salvo turnos con
-        // algún cargo PAGADO: la plata cobrada no se rompe.
-        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
-        var futuros = await _turnos.ListarPorHorarioDesdeAsync(id, hoy, ct);
-        if (futuros.Count > 0)
-        {
-            var cargos = await _cargos.ListarPorTurnosAsync(futuros.Select(t => t.Id).ToList(), ct);
-            var porTurno = cargos.ToLookup(c => c.TurnoId!.Value);
-            foreach (var turno in futuros)
-            {
-                if (porTurno[turno.Id].Any(c => c.PagadoEl is not null)) continue;
-
-                foreach (var cargo in porTurno[turno.Id])
-                    _cargos.Eliminar(cargo);
-                _turnos.Eliminar(turno);
-            }
-        }
-
+        await LimpiarTurnosFuturosAsync(id, ct);
         await _horarios.GuardarCambiosAsync(ct); // mismo DbContext: persiste todo junto
+    }
+
+    /// <summary>
+    /// La franja (cancha + día + rango horario) tiene que estar libre: sin solapar
+    /// otro horario de esa cancha ni pisar un BLOQUEO FIJO. Al editar, <paramref
+    /// name="excluirId"/> es el propio horario (no se pisa consigo mismo). Los
+    /// bloqueos por RANGO (fecha puntual) no frenan el recurrente: solo saltean el
+    /// turno de esa fecha (lo maneja la generación).
+    /// </summary>
+    private async Task ValidarSlotLibreAsync(
+        Guid canchaId, DayOfWeek dia, TimeOnly horaInicio, int duracionMinutos,
+        Guid? excluirId, CancellationToken ct)
+    {
+        var fin = horaInicio.AddMinutes(duracionMinutos);
+
+        var delDia = await _horarios.ListarPorCanchaYDiaAsync(canchaId, dia, ct);
+        var pisado = delDia.FirstOrDefault(h =>
+            h.Id != excluirId
+            && horaInicio < h.HoraInicio.AddMinutes(h.DuracionMinutos) && h.HoraInicio < fin);
+        if (pisado is not null)
+            throw new ReglaDeNegocioException(
+                $"Se superpone con otro horario de esa cancha ({pisado.HoraInicio:HH\\:mm}, {pisado.DuracionMinutos}').");
+
+        var bloqueos = await _bloqueos.ListarAsync(ct);
+        var bloqueado = bloqueos.FirstOrDefault(b =>
+            b.Tipo == TipoBloqueo.Fijo
+            && b.Dia == dia
+            && (b.CanchaId is null || b.CanchaId == canchaId)
+            && horaInicio < b.HoraFin && b.HoraInicio < fin);
+        if (bloqueado is not null)
+            throw new ReglaDeNegocioException(
+                $"Ese día y horario están bloqueados ({bloqueado.HoraInicio:HH\\:mm}–{bloqueado.HoraFin:HH\\:mm}). " +
+                "Sacá el bloqueo o elegí otro horario.");
+    }
+
+    /// <summary>
+    /// Borra los turnos FUTUROS (≥ hoy) del horario y sus cargos impagos, para no
+    /// dejar facturado algo que ya no va a ocurrir (baja o cambio de horario). Los
+    /// turnos con algún cargo PAGADO se conservan: la plata cobrada no se rompe. NO
+    /// guarda: el caller persiste todo junto.
+    /// </summary>
+    private async Task LimpiarTurnosFuturosAsync(Guid horarioId, CancellationToken ct)
+    {
+        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+        var futuros = await _turnos.ListarPorHorarioDesdeAsync(horarioId, hoy, ct);
+        if (futuros.Count == 0) return;
+
+        var cargos = await _cargos.ListarPorTurnosAsync(futuros.Select(t => t.Id).ToList(), ct);
+        var porTurno = cargos.ToLookup(c => c.TurnoId!.Value);
+        foreach (var turno in futuros)
+        {
+            if (porTurno[turno.Id].Any(c => c.PagadoEl is not null)) continue;
+
+            foreach (var cargo in porTurno[turno.Id])
+                _cargos.Eliminar(cargo);
+            _turnos.Eliminar(turno);
+        }
     }
 
     private static HorarioResponseDto Mapear(Horario h) => new()
