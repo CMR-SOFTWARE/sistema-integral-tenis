@@ -45,6 +45,7 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
     public DbSet<Aviso> Avisos => Set<Aviso>();
     public DbSet<NotaAlumno> NotasAlumno => Set<NotaAlumno>();
     public DbSet<MembresiaTenant> MembresiasTenant => Set<MembresiaTenant>();
+    public DbSet<PagoEmpleado> PagosEmpleado => Set<PagoEmpleado>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -294,6 +295,25 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
         // Resolver rápido "¿de qué clubes es staff este usuario?" al armar la sesión.
         modelBuilder.Entity<MembresiaTenant>()
             .HasIndex(m => m.UserId);
+
+        // Valor hora base del empleado: precisión monetaria.
+        modelBuilder.Entity<MembresiaTenant>()
+            .Property(m => m.ValorHora)
+            .HasPrecision(12, 2);
+
+        // ── Sueldos: valor hora por horario + pagos a empleados (G3) ──
+
+        modelBuilder.Entity<Horario>()
+            .Property(h => h.ValorHoraProfe)
+            .HasPrecision(12, 2);
+
+        modelBuilder.Entity<PagoEmpleado>().Property(p => p.MedioPago).HasConversion<string>();
+        modelBuilder.Entity<PagoEmpleado>().Property(p => p.Monto).HasPrecision(12, 2);
+
+        // Un sueldo por (empleado, mes): idempotencia del pago mensual.
+        modelBuilder.Entity<PagoEmpleado>()
+            .HasIndex(p => new { p.TenantId, p.UserId, p.Anio, p.Mes })
+            .IsUnique();
 
         // ── Notas por alumno: seguimiento privado/compartido del profe ──
 

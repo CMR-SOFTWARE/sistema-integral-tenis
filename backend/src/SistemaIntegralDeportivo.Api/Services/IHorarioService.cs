@@ -15,7 +15,7 @@ public interface IHorarioService
     Task<IReadOnlyList<HorarioResponseDto>> ListarAsync(CancellationToken ct = default);
 
     /// <summary>(Re)asigna el profe del horario (null = sin asignar). Valida que sea del club.</summary>
-    Task<HorarioResponseDto> AsignarProfesorAsync(Guid id, Guid? profesorUserId, CancellationToken ct = default);
+    Task<HorarioResponseDto> AsignarProfesorAsync(Guid id, Guid? profesorUserId, decimal? valorHoraProfe, CancellationToken ct = default);
 
     /// <summary>
     /// Desactiva la plantilla y limpia el futuro: los turnos con fecha ≥ hoy

@@ -21,6 +21,7 @@ import CalendarioPage from './features/agenda/CalendarioPage';
 import HorariosPage from './features/agenda/HorariosPage';
 import ConfiguracionPage from './features/agenda/ConfiguracionPage';
 import CuotasPage from './features/cuotas/CuotasPage';
+import SueldosPage from './features/sueldos/SueldosPage';
 import AvisosPage from './features/avisos/AvisosPage';
 import BloqueosPage from './features/bloqueos/BloqueosPage';
 import CancelacionesPage from './features/cancelaciones/CancelacionesPage';
@@ -103,6 +104,7 @@ export default function App() {
             <Route path="/profesores" element={<ProfesoresPage />} />
             <Route path="/horarios" element={<HorariosPage />} />
             <Route path="/cuotas" element={<CuotasPage />} />
+            <Route path="/sueldos" element={<SueldosPage />} />
             <Route path="/avisos" element={<AvisosPage />} />
             <Route path="/bloqueos" element={<BloqueosPage />} />
             <Route path="/cancelaciones" element={<CancelacionesPage />} />

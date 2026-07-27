@@ -14,6 +14,10 @@ public class CreateHorarioDto
     /// <summary>Profe que da la clase (dueño o staff); opcional.</summary>
     public Guid? ProfesorUserId { get; set; }
 
+    /// <summary>Valor hora del profe para ESTA clase (override; null = usa el base del profe).</summary>
+    [Range(0, 99_999_999)]
+    public decimal? ValorHoraProfe { get; set; }
+
     [Required]
     public DayOfWeek Dia { get; set; }
 
@@ -40,6 +44,8 @@ public class HorarioResponseDto
     public bool Activo { get; set; }
     /// <summary>Profe asignado (dueño o staff); null = sin asignar. El front mapea el nombre.</summary>
     public Guid? ProfesorUserId { get; set; }
+    /// <summary>Valor hora del profe para esta clase (override; null = usa el base del profe).</summary>
+    public decimal? ValorHoraProfe { get; set; }
 }
 
 /// <summary>Participante del roster de un turno + asistencia.</summary>

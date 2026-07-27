@@ -75,6 +75,7 @@ public class HorarioService : IHorarioService
             GrupoId = dto.GrupoId,
             AlumnoId = dto.AlumnoId,
             ProfesorUserId = dto.ProfesorUserId,
+            ValorHoraProfe = dto.ValorHoraProfe,
             Dia = dto.Dia,
             HoraInicio = dto.HoraInicio,
             DuracionMinutos = dto.DuracionMinutos,
@@ -86,7 +87,7 @@ public class HorarioService : IHorarioService
     }
 
     public async Task<HorarioResponseDto> AsignarProfesorAsync(
-        Guid id, Guid? profesorUserId, CancellationToken ct = default)
+        Guid id, Guid? profesorUserId, decimal? valorHoraProfe, CancellationToken ct = default)
     {
         var horario = await _horarios.ObtenerAsync(id, ct)
             ?? throw new ReglaDeNegocioException("El horario no existe.");
@@ -95,6 +96,9 @@ public class HorarioService : IHorarioService
             throw new ReglaDeNegocioException("Ese profe no es de tu club.");
 
         horario.ProfesorUserId = profesorUserId;
+        // El valor hora acompaña al profe: null = usar el base del profe (o queda
+        // sin profe → sin valor). Sacar al profe limpia el override.
+        horario.ValorHoraProfe = profesorUserId is null ? null : valorHoraProfe;
         await _horarios.GuardarCambiosAsync(ct);
         return Mapear(horario);
     }
@@ -149,5 +153,6 @@ public class HorarioService : IHorarioService
         DuracionMinutos = h.DuracionMinutos,
         Activo = h.Activo,
         ProfesorUserId = h.ProfesorUserId,
+        ValorHoraProfe = h.ValorHoraProfe,
     };
 }

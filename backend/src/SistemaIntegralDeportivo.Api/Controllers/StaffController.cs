@@ -74,6 +74,21 @@ public class StaffController : ControllerBase
         }
     }
 
+    /// <summary>PATCH api/staff/{id}/valor-hora — setea el valor hora base del profe.</summary>
+    [HttpPatch("{id:guid}/valor-hora")]
+    public async Task<IActionResult> CambiarValorHora(Guid id, ValorHoraStaffDto dto, CancellationToken ct)
+    {
+        try
+        {
+            await _staff.CambiarValorHoraAsync(id, dto.ValorHora, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     /// <summary>
     /// DELETE api/staff/{id}/definitivo — borrado REAL del profe empleado (sin vuelta).
     /// Lo que lo tenía de profe queda sin asignar; su login se va si no cumple otro rol.

@@ -37,6 +37,8 @@ export interface CreateHorario {
   grupoId?: string;
   alumnoId?: string;
   profesorUserId?: string;
+  /** Valor hora del profe para esta clase (override; vacío = usa el base del profe). */
+  valorHoraProfe?: number;
   dia: DiaSemana;
   horaInicio: string;
   duracionMinutos: number;

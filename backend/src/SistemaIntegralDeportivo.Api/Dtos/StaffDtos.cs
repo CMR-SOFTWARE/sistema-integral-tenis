@@ -11,6 +11,8 @@ public class StaffDto
     public string Apellido { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public bool Activo { get; set; }
+    /// <summary>Valor hora base (lo que se le paga por hora de clase); null = sin definir.</summary>
+    public decimal? ValorHora { get; set; }
 }
 
 /// <summary>
@@ -33,6 +35,10 @@ public class AgregarStaffDto
     [Required(ErrorMessage = "El teléfono es obligatorio (es el usuario y la contraseña inicial del profe)."),
      RegularExpression(FormatosAuth.Telefono, ErrorMessage = FormatosAuth.TelefonoMensaje)]
     public string Telefono { get; set; } = string.Empty;
+
+    /// <summary>Valor hora base del profe (opcional; se puede cargar/editar después).</summary>
+    [Range(0, 99_999_999)]
+    public decimal? ValorHora { get; set; }
 }
 
 /// <summary>Respuesta del alta: el profe + su usuario/clave temporal (null si se reactivó una cuenta existente).</summary>
@@ -57,10 +63,15 @@ public class ProfesorAsignableDto
     public Guid UserId { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public bool EsDueño { get; set; }
+    /// <summary>Valor hora base del empleado (para pre-cargar el del horario); null en el dueño.</summary>
+    public decimal? ValorHora { get; set; }
 }
 
 /// <summary>Body para (re)asignar el profe de un horario o grupo (null = sacar la asignación).</summary>
 public class AsignarProfesorDto
 {
     public Guid? ProfesorUserId { get; set; }
+    /// <summary>Solo horarios: valor hora del profe para esa clase (override; null = base del profe).</summary>
+    [Range(0, 99_999_999)]
+    public decimal? ValorHoraProfe { get; set; }
 }

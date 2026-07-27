@@ -18,6 +18,14 @@ public class MembresiaTenant
 
     public RolTenant Rol { get; set; } = RolTenant.Staff;
 
+    /// <summary>
+    /// Valor hora BASE del empleado (lo que el head pro le paga por hora de clase).
+    /// Se setea una vez y se propaga: cada horario que se le asigna lo toma como
+    /// default, salvo que se ponga un <see cref="Horario.ValorHoraProfe"/> propio
+    /// (ej. clases con menores, que se pagan menos). null = todavía sin definir.
+    /// </summary>
+    public decimal? ValorHora { get; set; }
+
     /// <summary>Baja lógica: se desactiva cuando el profe deja de trabajar acá.</summary>
     public bool Activo { get; set; } = true;
 

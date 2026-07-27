@@ -14,6 +14,9 @@ public interface IStaffService
     /// <summary>Baja/reactivación del profe empleado.</summary>
     Task CambiarActivoAsync(Guid id, bool activo, CancellationToken ct = default);
 
+    /// <summary>Setea/actualiza el valor hora base del profe (null = borrarlo).</summary>
+    Task CambiarValorHoraAsync(Guid id, decimal? valorHora, CancellationToken ct = default);
+
     /// <summary>
     /// Borrado REAL del profe empleado (el dueño se equivocó al cargarlo y lo quiere
     /// eliminar, no solo desactivar). Saca la membresía, deja "sin asignar" lo que lo
@@ -72,6 +75,7 @@ public class StaffService : IStaffService
                     throw new ReglaDeNegocioException("Ese profe ya está en tu equipo.");
                 // Ya tuvo cuenta de profe acá y quedó inactivo: se reactiva (sin recrear ni nueva clave)
                 membresia.Activo = true;
+                if (dto.ValorHora is not null) membresia.ValorHora = dto.ValorHora;
                 await _membresias.GuardarCambiosAsync(ct);
                 return new StaffCreadoDto { Staff = Mapear(membresia, existente), Usuario = null, PasswordTemporal = null };
             }
@@ -85,7 +89,7 @@ public class StaffService : IStaffService
         var cred = await _credenciales.CrearConTemporalAsync(
             telefono, dto.Nombre, dto.Apellido, dni: null, email: email, ct);
 
-        var nueva = new MembresiaTenant { UserId = cred.UserId, Rol = RolTenant.Staff };
+        var nueva = new MembresiaTenant { UserId = cred.UserId, Rol = RolTenant.Staff, ValorHora = dto.ValorHora };
         await _membresias.AgregarAsync(nueva, ct);
         await _membresias.GuardarCambiosAsync(ct);
 
@@ -97,6 +101,7 @@ public class StaffService : IStaffService
             Apellido = dto.Apellido.Trim(),
             Email = email ?? string.Empty,
             Activo = true,
+            ValorHora = dto.ValorHora,
         };
         return new StaffCreadoDto { Staff = staff, Usuario = cred.PasswordTemporal, PasswordTemporal = cred.PasswordTemporal };
     }
@@ -152,6 +157,7 @@ public class StaffService : IStaffService
                 UserId = u.Id,
                 Nombre = $"{u.Nombre} {u.Apellido}",
                 EsDueño = false,
+                ValorHora = m.ValorHora,
             });
         }
 
@@ -179,6 +185,18 @@ public class StaffService : IStaffService
         await _membresias.GuardarCambiosAsync(ct);
     }
 
+    public async Task CambiarValorHoraAsync(Guid id, decimal? valorHora, CancellationToken ct = default)
+    {
+        var membresia = await _membresias.ObtenerAsync(id, ct)
+            ?? throw new ReglaDeNegocioException("Ese profe no está en tu equipo.");
+
+        if (valorHora is < 0)
+            throw new ReglaDeNegocioException("El valor hora no puede ser negativo.");
+
+        membresia.ValorHora = valorHora;
+        await _membresias.GuardarCambiosAsync(ct);
+    }
+
     private static StaffDto Mapear(MembresiaTenant m, Usuario u) => new()
     {
         Id = m.Id,
@@ -187,5 +205,6 @@ public class StaffService : IStaffService
         Apellido = u.Apellido,
         Email = u.Email ?? string.Empty,
         Activo = m.Activo,
+        ValorHora = m.ValorHora,
     };
 }

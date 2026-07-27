@@ -44,6 +44,12 @@ export const profNav: NavItem[] = [
     soloOwner: true,
   },
   {
+    to: '/sueldos',
+    label: 'Sueldos',
+    icon: 'M20 12V8H6a2 2 0 0 1 0-4h12v4M4 6v12a2 2 0 0 0 2 2h14v-4M18 12a2 2 0 0 0 0 4h4v-4z',
+    soloOwner: true,
+  },
+  {
     to: '/solicitudes',
     label: 'Solicitudes',
     icon: 'M22 6l-10 7L2 6M2 4h20v16H2z',

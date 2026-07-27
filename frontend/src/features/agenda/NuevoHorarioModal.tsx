@@ -26,6 +26,7 @@ export default function NuevoHorarioModal({ sedes, onClose, onCrear }: Props) {
   const [hora, setHora] = useState('18:00');
   const [duracion, setDuracion] = useState(60);
   const [profesorId, setProfesorId] = useState('');
+  const [valorHora, setValorHora] = useState('');
   const { profes } = useProfesores();
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [alumnos, setAlumnos] = useState<Alumno[]>([]);
@@ -55,6 +56,7 @@ export default function NuevoHorarioModal({ sedes, onClose, onCrear }: Props) {
         grupoId: tipo === 'grupo' ? grupoId : undefined,
         alumnoId: tipo === 'individual' ? alumnoId : undefined,
         profesorUserId: profesorId || undefined,
+        valorHoraProfe: profesorId && valorHora ? Number(valorHora) : undefined,
         dia,
         horaInicio: hora, // "18:00" — TimeOnly lo parsea
         duracionMinutos: duracion,
@@ -143,13 +145,36 @@ export default function NuevoHorarioModal({ sedes, onClose, onCrear }: Props) {
         </label>
         <label className={s.campo}>
           <span>Profe (opcional)</span>
-          <select value={profesorId} onChange={(e) => setProfesorId(e.target.value)}>
+          <select
+            value={profesorId}
+            onChange={(e) => {
+              const id = e.target.value;
+              setProfesorId(id);
+              // Al elegir un profe, pre-cargamos su valor hora base (lo podés
+              // pisar para esta clase, ej. menores que se pagan menos).
+              const p = profes.find((x) => x.userId === id);
+              setValorHora(p?.valorHora != null ? String(p.valorHora) : '');
+            }}
+          >
             <option value="">Sin asignar</option>
             {profes.map((p) => (
               <option key={p.userId} value={p.userId}>{p.nombre}{p.esDueño ? ' (vos)' : ''}</option>
             ))}
           </select>
         </label>
+        {profesorId && (
+          <label className={s.campo}>
+            <span>Valor hora del profe</span>
+            <input
+              type="number"
+              min={0}
+              value={valorHora}
+              onChange={(e) => setValorHora(e.target.value)}
+              onWheel={(e) => e.currentTarget.blur()}
+              placeholder="Ej. 8000 (menores: menos)"
+            />
+          </label>
+        )}
 
         {error && <div className={`${s.span2} ${s.error}`}>{error}</div>}
       </div>
