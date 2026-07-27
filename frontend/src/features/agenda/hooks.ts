@@ -45,11 +45,13 @@ export function useHorarios() {
     queryFn: () => api.get<Horario[]>('/horarios'),
   });
 
-  // Los horarios generan los turnos del calendario: al crear/desactivar uno,
-  // también invalidamos la semana para que el calendario refleje el cambio.
+  // Los horarios generan los turnos del calendario y definen quién "toma clase"
+  // (solo se cobra cuota al que tiene clase): al crear/desactivar uno, invalidamos
+  // la semana y las cuotas para que todo refleje el cambio.
   const invalidar = async () => {
     await qc.invalidateQueries({ queryKey: ['horarios'] });
     await qc.invalidateQueries({ queryKey: ['turnos-semana'] });
+    await qc.invalidateQueries({ queryKey: ['cuotas'] });
   };
 
   const crear = async (dto: CreateHorario) => {

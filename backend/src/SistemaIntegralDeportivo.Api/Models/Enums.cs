@@ -105,9 +105,10 @@ public enum EstadoSolicitud
 /// <summary>Tipo de línea en la cuenta corriente del alumno (ADR-0009).</summary>
 public enum TipoCargo
 {
-    Clase,    // auto, desde un turno (grupal ÷ asignados o individual entera)
+    Clase,    // (legado) auto, desde un turno; hoy el cobro es mensual (ver Cuota)
     Producto, // manual: encordado, tubo de pelotas, etc.
-    Ajuste    // manual, monto + o - con motivo (hermanos, beca, redondeo)
+    Ajuste,   // manual, monto + o - con motivo (hermanos, beca, redondeo)
+    Cuota     // la cuota MENSUAL del alumno (una por mes); la genera IPoliticaDeCuota
 }
 
 /// <summary>Cómo se registró un pago.</summary>

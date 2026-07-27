@@ -11,11 +11,13 @@ export function useGrupos() {
     queryFn: () => api.get<Grupo[]>('/grupos'),
   });
 
-  // Sumar/quitar a un grupo repone o saca al alumno de los turnos futuros:
-  // invalidamos también el calendario para que se vea el cambio.
+  // Sumar/quitar a un grupo repone o saca al alumno de los turnos futuros e
+  // impacta en quién tiene cuota (solo se cobra al que toma clases): invalidamos
+  // también el calendario y las cuotas para que se vea el cambio.
   const invalidar = async () => {
     await qc.invalidateQueries({ queryKey: ['grupos'] });
     await qc.invalidateQueries({ queryKey: ['turnos-semana'] });
+    await qc.invalidateQueries({ queryKey: ['cuotas'] });
   };
 
   const crear = async (dto: CreateGrupo) => {

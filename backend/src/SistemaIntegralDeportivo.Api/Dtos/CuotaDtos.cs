@@ -27,6 +27,21 @@ public class PagarCargoDto
     public MedioPago Medio { get; set; }
 }
 
+/// <summary>Editar el monto de un cargo impago (ej. ajustar la cuota al cobrar).</summary>
+public class EditarMontoCargoDto
+{
+    [Required, Range(0, 99_999_999)]
+    public decimal Monto { get; set; }
+}
+
+/// <summary>Recaudado de un mes (balance simple del panel financiero).</summary>
+public class RecaudadoMesDto
+{
+    public int Anio { get; set; }
+    public int Mes { get; set; }
+    public decimal Recaudado { get; set; }
+}
+
 public class PagarMesDto
 {
     [Required]
@@ -76,6 +91,11 @@ public class AlumnoLiquidacionDto
     /// "Informado" = debe, pero avisó que transfirió todo y espera confirmación.
     /// </summary>
     public string Estado { get; set; } = string.Empty;
+    /// <summary>
+    /// La cuota mensual del alumno está definida (tiene arancel o ya se le generó
+    /// el cargo Cuota). Si es false, el profe la ve como "sin definir" para cargarla.
+    /// </summary>
+    public bool CuotaDefinida { get; set; }
     public List<CargoResponseDto> Cargos { get; set; } = [];
 }
 

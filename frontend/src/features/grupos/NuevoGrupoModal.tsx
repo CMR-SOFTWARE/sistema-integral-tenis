@@ -70,7 +70,7 @@ export default function NuevoGrupoModal({ onClose, onCrear }: Props) {
         </label>
         <label className={s.campo}>
           <span>Cupo máximo (vacío = sin límite)</span>
-          <input type="number" min={1} value={cupo} onChange={(e) => setCupo(e.target.value)} placeholder="4" />
+          <input type="number" min={1} value={cupo} onChange={(e) => setCupo(e.target.value)} onWheel={(e) => e.currentTarget.blur()} placeholder="4" />
         </label>
         <label className={s.campo}>
           <span>Profe a cargo (opcional)</span>

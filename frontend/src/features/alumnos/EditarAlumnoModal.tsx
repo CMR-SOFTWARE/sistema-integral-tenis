@@ -27,6 +27,7 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
     esMenor: alumno.esMenor,
     categoria: alumno.categoria,
     modalidad: alumno.modalidad ?? 'Mensual',
+    arancel: alumno.arancel?.toString() ?? '',
     profesorId: alumno.profesorUserId ?? '',
     notas: alumno.notas ?? '',
   });
@@ -52,6 +53,7 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
         esMenor: form.esMenor,
         categoria: form.categoria as Categoria,
         modalidad: form.modalidad as Modalidad,
+        arancel: form.arancel.trim() === '' ? undefined : Number(form.arancel),
         profesorUserId: form.profesorId || undefined,
         notas: form.notas.trim() || undefined,
       });
@@ -119,6 +121,17 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
               <option key={c} value={c}>{c === 'SinCategoria' ? 'Sin categoría' : CAT_LABEL[c]}</option>
             ))}
           </select>
+        </label>
+        <label className={s.campo}>
+          <span>Cuota mensual (opcional)</span>
+          <input
+            type="number"
+            min={0}
+            value={form.arancel}
+            onChange={(e) => set('arancel', e.target.value)}
+            onWheel={(e) => e.currentTarget.blur()}
+            placeholder="Ej: 30000"
+          />
         </label>
         <label className={s.campo}>
           <span>Modalidad de pago</span>

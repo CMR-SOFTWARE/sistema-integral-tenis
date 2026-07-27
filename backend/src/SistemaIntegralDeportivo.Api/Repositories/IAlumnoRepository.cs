@@ -22,6 +22,14 @@ public interface IAlumnoRepository
     Task<Alumno?> ObtenerAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>
+    /// Ids de los alumnos del tenant con al menos una clase asignada: miembro de un
+    /// grupo activo (membresía sin baja) u horario individual activo. Se usa para
+    /// cobrar la cuota SOLO a los que efectivamente toman clases (el que no tiene
+    /// clase no tiene cuota, aunque tenga arancel cargado).
+    /// </summary>
+    Task<HashSet<Guid>> ListarConClaseAsync(CancellationToken ct = default);
+
+    /// <summary>
     /// Borrado REAL de la ficha (el profe pidió poder borrar a los que no vienen
     /// más). Borra el alumno y, en cascada, su historial dependiente (cargos,
     /// participaciones de turno, membresías, raquetas, notas, solicitudes, clases

@@ -3,6 +3,7 @@ import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { useCuotas } from './useCuotas';
 import MedioModal from './MedioModal';
 import NuevoCargoModal from './NuevoCargoModal';
+import EditarMontoModal from './EditarMontoModal';
 import PanelMorosos from './PanelMorosos';
 import PanelPedidos from './PanelPedidos';
 import { ESTADO_LIQ_UI, MESES } from './types';
@@ -16,12 +17,13 @@ export default function CuotasPage() {
   const hoy = new Date();
   const [anio, setAnio] = useState(hoy.getFullYear());
   const [mes, setMes] = useState(hoy.getMonth() + 1);
-  const { datos, cargando, error, pagarMes, pagarCargo, rechazarMes, agregarCargo, recargar } = useCuotas(anio, mes);
+  const { datos, cargando, error, reporte, pagarMes, pagarCargo, rechazarMes, agregarCargo, editarMonto, recargar } = useCuotas(anio, mes);
 
   const [filtro, setFiltro] = useState<'todas' | EstadoLiquidacion>('todas');
   const [abiertos, setAbiertos] = useState<Set<string>>(new Set());
   const [pagandoMes, setPagandoMes] = useState<Liquidacion | null>(null);
   const [pagandoCargo, setPagandoCargo] = useState<{ id: string; concepto: string } | null>(null);
+  const [editandoCargo, setEditandoCargo] = useState<{ id: string; concepto: string; monto: number } | null>(null);
   const [cargoPara, setCargoPara] = useState<Liquidacion | null>(null);
   const confirmar = useConfirmar();
 
@@ -90,19 +92,19 @@ export default function CuotasPage() {
 
       {datos && !cargando && (
         <>
-          {/* ── Stats del mes (datos reales) ── */}
+          {/* ── Panel financiero del mes (datos reales) ── */}
           <div className={s.stats}>
             <div className={s.stat}>
-              <div className={s.statValor}>{formatoPlata(datos.totalFacturado)}</div>
-              <div className={s.statLabel}>Facturado</div>
-            </div>
-            <div className={s.stat}>
               <div className={s.statValor} style={{ color: '#0e6b3c' }}>{formatoPlata(datos.totalCobrado)}</div>
-              <div className={s.statLabel}>Cobrado</div>
+              <div className={s.statLabel}>Recaudado</div>
             </div>
             <div className={s.stat}>
               <div className={s.statValor} style={{ color: '#b7791f' }}>{formatoPlata(datos.totalPendiente)}</div>
-              <div className={s.statLabel}>Pendiente</div>
+              <div className={s.statLabel}>Por cobrar</div>
+            </div>
+            <div className={s.stat}>
+              <div className={s.statValor}>{formatoPlata(datos.totalFacturado)}</div>
+              <div className={s.statLabel}>Potencial del mes</div>
             </div>
             <div className={s.stat}>
               <div className={s.statValor} style={{ color: datos.alumnosVencidos > 0 ? '#b91c1c' : undefined }}>
@@ -111,6 +113,29 @@ export default function CuotasPage() {
               <div className={s.statLabel}>Vencidos</div>
             </div>
           </div>
+
+          {/* ── Balance: recaudado por mes (últimos meses) ── */}
+          {reporte.length > 0 && (
+            <div className={s.balance}>
+              <div className={s.balanceTitulo}>Recaudado por mes</div>
+              <div className={s.balanceBarras}>
+                {(() => {
+                  const max = Math.max(...reporte.map((r) => r.recaudado), 1);
+                  return reporte.map((r) => (
+                    <div key={`${r.anio}-${r.mes}`} className={s.balanceItem} title={formatoPlata(r.recaudado)}>
+                      <div className={s.balanceBarraWrap}>
+                        <div
+                          className={s.balanceBarra}
+                          style={{ height: `${Math.round((r.recaudado / max) * 100)}%` }}
+                        />
+                      </div>
+                      <div className={s.balanceMes}>{MESES[r.mes - 1].slice(0, 3)}</div>
+                    </div>
+                  ));
+                })()}
+              </div>
+            </div>
+          )}
 
           {datos.liquidaciones.length === 0 && (
             <div className={s.vacioCard}>
@@ -152,9 +177,15 @@ export default function CuotasPage() {
                         <span className={s.saldo}>debe {formatoPlata(l.saldo)}</span>
                       )}
                     </div>
-                    <span className={s.chip} style={{ background: estado.bg, color: estado.fg }}>
-                      {l.estado}
-                    </span>
+                    {l.cuotaDefinida ? (
+                      <span className={s.chip} style={{ background: estado.bg, color: estado.fg }}>
+                        {l.estado}
+                      </span>
+                    ) : (
+                      <span className={s.chip} style={{ background: '#f3f4f6', color: '#6b7280' }} title="Cargale la cuota mensual en la ficha del alumno">
+                        Sin cuota
+                      </span>
+                    )}
                     <span className={`${s.flecha} ${abierto ? s.flechaAbierta : ''}`}>›</span>
                   </button>
 
@@ -190,12 +221,21 @@ export default function CuotasPage() {
                           ) : c.pagoInformado ? (
                             <span className={s.cargoInformado}>Informó transf.</span>
                           ) : (
-                            <button
-                              className={s.btnPagarCargo}
-                              onClick={() => setPagandoCargo({ id: c.id, concepto: c.concepto })}
-                            >
-                              Pagar
-                            </button>
+                            <span className={s.cargoAcciones}>
+                              <button
+                                className={s.btnEditarMonto}
+                                title="Cambiar el monto"
+                                onClick={() => setEditandoCargo({ id: c.id, concepto: c.concepto, monto: c.monto })}
+                              >
+                                ✎
+                              </button>
+                              <button
+                                className={s.btnPagarCargo}
+                                onClick={() => setPagandoCargo({ id: c.id, concepto: c.concepto })}
+                              >
+                                Pagar
+                              </button>
+                            </span>
                           )}
                         </div>
                       ))}
@@ -233,6 +273,14 @@ export default function CuotasPage() {
           subtitulo={pagandoCargo.concepto}
           onClose={() => setPagandoCargo(null)}
           onConfirmar={(medio: Medio) => pagarCargo(pagandoCargo.id, medio)}
+        />
+      )}
+      {editandoCargo && (
+        <EditarMontoModal
+          concepto={editandoCargo.concepto}
+          montoActual={editandoCargo.monto}
+          onClose={() => setEditandoCargo(null)}
+          onGuardar={(monto) => editarMonto(editandoCargo.id, monto)}
         />
       )}
       {cargoPara && (

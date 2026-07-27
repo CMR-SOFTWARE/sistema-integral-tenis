@@ -22,6 +22,7 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
   const [form, setForm] = useState({
     nombre: '', apellido: '', dni: '', telefono: '', email: '',
     fechaNacimiento: '', esMenor: false, categoria: 'SinCategoria' as Categoria,
+    arancel: '',
     profesorId: '',
     notas: '',
     consentimientoWhatsapp: false, consentimientoDatos: false,
@@ -51,8 +52,8 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
         fechaNacimiento: form.fechaNacimiento || undefined,
         esMenor: form.esMenor,
         categoria: form.categoria,
+        arancel: form.arancel.trim() === '' ? undefined : Number(form.arancel),
         profesorUserId: form.profesorId || undefined,
-        // Arancel ya no se carga acá: el monto real sale de los cargos (ADR-0009)
         notas: form.notas.trim() || undefined,
         consentimientoWhatsapp: form.consentimientoWhatsapp,
         consentimientoDatos: form.consentimientoDatos,
@@ -136,6 +137,17 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
               <option key={c} value={c}>{c === 'SinCategoria' ? 'Sin categoría' : CAT_LABEL[c]}</option>
             ))}
           </select>
+        </label>
+        <label className={s.campo}>
+          <span>Cuota mensual (opcional)</span>
+          <input
+            type="number"
+            min={0}
+            value={form.arancel}
+            onChange={(e) => set('arancel', e.target.value)}
+            onWheel={(e) => e.currentTarget.blur()}
+            placeholder="Ej: 30000"
+          />
         </label>
         <label className={s.campo}>
           <span>Profe de cabecera (opcional)</span>

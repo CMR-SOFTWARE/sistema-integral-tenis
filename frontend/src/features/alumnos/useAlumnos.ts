@@ -24,7 +24,11 @@ export function useAlumnos(categoria: Categoria | 'todas', estado: Estado | 'tod
     },
   });
 
-  const invalidar = () => qc.invalidateQueries({ queryKey: ['alumnos'] });
+  // El cambio de un alumno (ej. su cuota mensual / arancel) también repercute en Cuotas.
+  const invalidar = () => Promise.all([
+    qc.invalidateQueries({ queryKey: ['alumnos'] }),
+    qc.invalidateQueries({ queryKey: ['cuotas'] }),
+  ]);
 
   const crear = async (dto: CreateAlumno) => {
     // Devuelve la ficha + credenciales (la temporal viaja UNA sola vez)

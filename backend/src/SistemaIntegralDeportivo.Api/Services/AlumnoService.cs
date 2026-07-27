@@ -179,6 +179,7 @@ public class AlumnoService : IAlumnoService
         alumno.EsMenor = dto.EsMenor;
         alumno.Categoria = dto.Categoria;
         alumno.Modalidad = dto.Modalidad;
+        alumno.Arancel = dto.Arancel;
         alumno.ProfesorUserId = dto.ProfesorUserId;
         alumno.Notas = string.IsNullOrWhiteSpace(dto.Notas) ? null : dto.Notas;
         alumno.ActualizadoEl = DateTime.UtcNow;
