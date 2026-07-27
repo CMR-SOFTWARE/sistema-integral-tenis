@@ -105,6 +105,11 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
         modelBuilder.Entity<Grupo>()
             .HasIndex(g => new { g.TenantId, g.Activo });
 
+        // Valor mensual del grupo (atajo para repartir aranceles): precisión monetaria
+        modelBuilder.Entity<Grupo>()
+            .Property(g => g.ValorMensual)
+            .HasPrecision(12, 2);
+
         // ── AlumnoGrupo: clave primaria COMPUESTA (alumno + grupo) ──
         modelBuilder.Entity<AlumnoGrupo>()
             .HasKey(ag => new { ag.AlumnoId, ag.GrupoId });

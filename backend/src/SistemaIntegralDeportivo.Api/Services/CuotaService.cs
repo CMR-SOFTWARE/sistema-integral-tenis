@@ -18,123 +18,71 @@ public class CuotaService : ICuotaService
     public const int DiaSuspension = 15;
 
     private readonly ICargoRepository _cargos;
-    private readonly ITurnoRepository _turnos;
-    private readonly ITenantRepository _tenant;
-    private readonly ITurnoService _turnoService;
+    private readonly IAlumnoRepository _alumnos;
+    private readonly IPoliticaDeCuota _politica;
 
     public CuotaService(
-        ICargoRepository cargos, ITurnoRepository turnos, ITenantRepository tenant, ITurnoService turnoService)
+        ICargoRepository cargos, IAlumnoRepository alumnos, IPoliticaDeCuota politica)
     {
         _cargos = cargos;
-        _turnos = turnos;
-        _tenant = tenant;
-        _turnoService = turnoService;
+        _alumnos = alumnos;
+        _politica = politica;
     }
 
     public async Task<LiquidacionMesDto> ObtenerMesAsync(int anio, int mes, CancellationToken ct = default)
     {
-        var tenant = await _tenant.ObtenerActualAsync(ct);
-        var primerDia = new DateOnly(anio, mes, 1);
-        var ultimoDia = primerDia.AddMonths(1).AddDays(-1);
+        // Costura VOLÁTIL: la política asegura los cargos del mes (hoy: cuota
+        // mensual manual). De acá para abajo solo LEEMOS el ledger de cargos, así
+        // que cambiar el modelo de cobro no toca nada de esto (ver IPoliticaDeCuota).
+        await _politica.GenerarCargosDelMesAsync(anio, mes, ct);
 
-        // Materializar los turnos del mes ANTES de liquidar: la cuota no
-        // depende de que se haya paseado por el Calendario semana a semana
-        await _turnoService.GenerarTurnosDelMesAsync(anio, mes, ct);
-
-        // ── Generación perezosa de cargos de clase (idempotente) ──
-        var turnos = await _turnos.ListarEntreAsync(primerDia, ultimoDia, ct);
-        var existentes = await _cargos.ListarDelMesAsync(anio, mes, ct);
-        var yaCargados = existentes
-            .Where(c => c.TurnoId is not null)
-            .Select(c => (Turno: c.TurnoId!.Value, Alumno: c.AlumnoId))
-            .ToHashSet();
-
-        var generoAlguno = false;
-        foreach (var turno in turnos)
-        {
-            // Cancelado = la clase no ocurrió → nadie paga
-            if (turno.Estado == EstadoTurno.Cancelado) continue;
-            if (turno.Participantes.Count == 0) continue;
-            // Turno SUELTO (clase suelta, M5c): su cargo ya nació al confirmarse
-            // (precio individual). La liquidación no lo re-cobra.
-            if (turno.HorarioId is null) continue;
-
-            // La fórmula (modelo-precios.md): ambos precios son POR HORA y se
-            // prorratean por la duración del turno; grupal además se divide
-            // entre los ASIGNADOS (el ausente paga igual)
-            var esIndividual = turno.Horario?.AlumnoId is not null;
-            var factorDuracion = turno.DuracionMinutos / 60m;
-            decimal monto;
-            string concepto;
-            if (esIndividual)
-            {
-                var valorHora = tenant.ValorClaseIndividual
-                    ?? throw new ReglaDeNegocioException(
-                        "Configurá el valor hora de la clase individual antes de liquidar (Configuración).");
-                monto = Math.Round(valorHora * factorDuracion, 2);
-                concepto = $"Clase individual ({turno.DuracionMinutos}')";
-            }
-            else
-            {
-                var valorHora = tenant.ValorHoraGrupal
-                    ?? throw new ReglaDeNegocioException(
-                        "Configurá el valor hora grupal antes de liquidar (Configuración).");
-                monto = Math.Round(valorHora * factorDuracion / turno.Participantes.Count, 2);
-                concepto = $"Clase grupal — {turno.Horario?.Grupo?.Nombre ?? "grupo"} ({turno.Participantes.Count})";
-            }
-
-            foreach (var p in turno.Participantes)
-            {
-                if (yaCargados.Contains((turno.Id, p.AlumnoId))) continue;
-
-                await _cargos.AgregarAsync(new Cargo
-                {
-                    AlumnoId = p.AlumnoId,
-                    Tipo = TipoCargo.Clase,
-                    Concepto = concepto,
-                    Monto = monto,          // snapshot: cambios de precio no lo tocan
-                    Fecha = turno.Fecha,
-                    TurnoId = turno.Id,
-                    // TenantId lo asigna el repositorio
-                }, ct);
-                generoAlguno = true;
-            }
-        }
-
-        if (generoAlguno)
-            await _cargos.GuardarCambiosAsync(ct);
-
-        // ── La liquidación: cargos del mes agrupados por alumno ──
         var cargosMes = await _cargos.ListarDelMesAsync(anio, mes, ct);
         var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+        var esMesActual = anio == hoy.Year && mes == hoy.Month;
 
-        var liquidaciones = cargosMes
-            .GroupBy(c => c.AlumnoId)
-            .Select(g =>
+        // Roster a mostrar: los que tienen movimientos este mes + (solo el mes
+        // corriente) los alumnos activos CON CLASE asignada (los inscriptos), para
+        // ver también a los que están "sin cuota definida". El que no toma clases no
+        // aparece (su arancel queda de referencia hasta que tenga una clase).
+        var porAlumno = cargosMes.GroupBy(c => c.AlumnoId).ToDictionary(g => g.Key, g => g.ToList());
+        var alumnos = new Dictionary<Guid, Alumno>();
+        foreach (var c in cargosMes)
+            if (c.Alumno is not null) alumnos.TryAdd(c.AlumnoId, c.Alumno);
+        if (esMesActual)
+        {
+            var conClase = await _alumnos.ListarConClaseAsync(ct);
+            foreach (var a in await _alumnos.ListarAsync(null, EstadoAlumno.Activo, ct))
+                if (conClase.Contains(a.Id)) alumnos.TryAdd(a.Id, a);
+        }
+
+        var liquidaciones = alumnos.Values
+            .Select(alumno =>
             {
-                var total = g.Sum(c => c.Monto);
-                var pagado = g.Where(c => c.PagadoEl is not null).Sum(c => c.Monto);
+                var cargos = porAlumno.TryGetValue(alumno.Id, out var cs) ? cs : [];
+                var total = cargos.Sum(c => c.Monto);
+                var pagado = cargos.Where(c => c.PagadoEl is not null).Sum(c => c.Monto);
                 var saldo = total - pagado;
-                var alumno = g.Select(c => c.Alumno).FirstOrDefault(a => a is not null);
 
                 // "Informado": debe, pero avisó que transfirió TODO el saldo y
-                // espera que el profe confirme (tapa a "Vencida": ya no es un
-                // moroso silencioso, hay una acción pendiente del profe)
-                var impagos = g.Where(c => c.PagadoEl is null).ToList();
+                // espera que el profe confirme (tapa a "Vencida").
+                var impagos = cargos.Where(c => c.PagadoEl is null).ToList();
                 var todoInformado = impagos.Count > 0 && impagos.All(c => c.PagoInformadoEl is not null);
 
                 return new AlumnoLiquidacionDto
                 {
-                    AlumnoId = g.Key,
-                    Nombre = alumno?.Nombre ?? string.Empty,
-                    Apellido = alumno?.Apellido ?? string.Empty,
-                    FamiliaId = alumno?.UserId,
-                    Modalidad = alumno?.Modalidad.ToString() ?? string.Empty,
+                    AlumnoId = alumno.Id,
+                    Nombre = alumno.Nombre,
+                    Apellido = alumno.Apellido,
+                    FamiliaId = alumno.UserId,
+                    Modalidad = alumno.Modalidad.ToString(),
                     Total = total,
                     Pagado = pagado,
                     Saldo = saldo,
                     Estado = todoInformado ? "Informado" : CalcularEstado(anio, mes, saldo, hoy),
-                    Cargos = g.OrderBy(c => c.Fecha).ThenBy(c => c.CreadoEl).Select(Mapear).ToList(),
+                    // Cuota sin definir: activo sin arancel y sin cargo Cuota → el
+                    // profe lo ve marcado para cargarle el valor mensual.
+                    CuotaDefinida = alumno.Arancel is > 0 || cargos.Any(c => c.Tipo == TipoCargo.Cuota),
+                    Cargos = cargos.OrderBy(c => c.Fecha).ThenBy(c => c.CreadoEl).Select(Mapear).ToList(),
                 };
             })
             .OrderBy(l => l.Apellido).ThenBy(l => l.Nombre)
@@ -152,12 +100,51 @@ public class CuotaService : ICuotaService
         };
     }
 
+    public async Task<CargoResponseDto> EditarMontoCargoAsync(
+        Guid cargoId, decimal monto, CancellationToken ct = default)
+    {
+        var cargo = await _cargos.ObtenerAsync(cargoId, ct)
+            ?? throw new ReglaDeNegocioException("El cargo no existe.");
+
+        // Editar el monto al cobrar (ej. ajustar la cuota de un alumno ese mes).
+        // Lo pagado es historia: no se retoca.
+        if (cargo.PagadoEl is not null)
+            throw new ReglaDeNegocioException("Ese cargo ya está pagado: no se puede cambiar el monto.");
+        if (monto < 0)
+            throw new ReglaDeNegocioException("El monto no puede ser negativo.");
+
+        cargo.Monto = monto;
+        await _cargos.GuardarCambiosAsync(ct);
+        return Mapear(cargo);
+    }
+
+    public async Task<IReadOnlyList<RecaudadoMesDto>> ObtenerReporteAsync(
+        int meses, CancellationToken ct = default)
+    {
+        if (meses < 1) meses = 6;
+        var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
+        var desde = new DateOnly(hoy.Year, hoy.Month, 1).AddMonths(-(meses - 1));
+        var hasta = new DateOnly(hoy.Year, hoy.Month, 1).AddMonths(1).AddDays(-1);
+
+        var porMes = await _cargos.SumarPagadosPorMesAsync(desde, hasta, ct);
+
+        return Enumerable.Range(0, meses)
+            .Select(i => desde.AddMonths(i))
+            .Select(f => new RecaudadoMesDto
+            {
+                Anio = f.Year,
+                Mes = f.Month,
+                Recaudado = porMes.TryGetValue((f.Year, f.Month), out var t) ? t : 0m,
+            })
+            .ToList();
+    }
+
     public async Task<CargoResponseDto> AgregarCargoManualAsync(
         CreateCargoManualDto dto, CancellationToken ct = default)
     {
-        if (dto.Tipo == TipoCargo.Clase)
+        if (dto.Tipo is TipoCargo.Clase or TipoCargo.Cuota)
             throw new ReglaDeNegocioException(
-                "Los cargos de clase se generan automáticamente desde los turnos.");
+                "Solo se cargan a mano Producto o Ajuste (la cuota mensual se genera sola).");
 
         var cargo = new Cargo
         {

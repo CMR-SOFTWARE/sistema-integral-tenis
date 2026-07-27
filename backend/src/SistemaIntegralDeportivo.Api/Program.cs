@@ -39,6 +39,9 @@ builder.Services.AddScoped<ITurnoService, TurnoService>();
 builder.Services.AddScoped<ICargoRepository, CargoRepository>();
 builder.Services.AddScoped<ITenantRepository, TenantRepository>();
 builder.Services.AddScoped<ICuotaService, CuotaService>();
+// Política de cuota (costura intercambiable): cambiar el modelo de cobro = cambiar
+// esta línea por otra IPoliticaDeCuota. Hoy: cuota mensual manual por alumno.
+builder.Services.AddScoped<IPoliticaDeCuota, CuotaMensualManual>();
 builder.Services.AddScoped<IConfigService, ConfigService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();

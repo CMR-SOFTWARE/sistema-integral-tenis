@@ -68,6 +68,22 @@ public class AlumnoRepository : IAlumnoRepository
     public Task<Alumno?> ObtenerAsync(Guid id, CancellationToken ct = default) =>
         _db.Alumnos.FirstOrDefaultAsync(a => a.TenantId == TenantId && a.Id == id, ct);
 
+    public async Task<HashSet<Guid>> ListarConClaseAsync(CancellationToken ct = default)
+    {
+        // En un grupo activo (membresía sin baja) del tenant
+        var enGrupos = _db.AlumnoGrupos
+            .Where(m => m.FechaBaja == null && m.Grupo.TenantId == TenantId)
+            .Select(m => m.AlumnoId);
+
+        // Con un horario individual activo del tenant
+        var conHorario = _db.Horarios
+            .Where(h => h.TenantId == TenantId && h.Activo && h.AlumnoId != null)
+            .Select(h => h.AlumnoId!.Value);
+
+        var ids = await enGrupos.Concat(conHorario).Distinct().ToListAsync(ct);
+        return ids.ToHashSet();
+    }
+
     public async Task EliminarDefinitivoAsync(Alumno alumno, CancellationToken ct = default)
     {
         // Los horarios individuales del alumno (y sus turnos) NO caen en cascada:

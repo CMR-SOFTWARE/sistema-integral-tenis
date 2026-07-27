@@ -17,6 +17,13 @@ public class Grupo
     public int? CupoMaximo { get; set; }            // null = sin límite
     public bool Activo { get; set; } = true;
 
+    /// <summary>
+    /// RESERVADO para automatización futura de cuotas (hoy NO se usa). El cobro es
+    /// 100% manual: la cuota es el Arancel de cada alumno. Cuando sumemos el reparto
+    /// automático por grupo (que sume, no pise), esta columna vuelve a entrar en juego.
+    /// </summary>
+    public decimal? ValorMensual { get; set; }
+
     /// <summary>El profe a cargo del grupo (dueño o staff); null = sin asignar. Sin nav, como UserId.</summary>
     public Guid? ProfesorUserId { get; set; }
 

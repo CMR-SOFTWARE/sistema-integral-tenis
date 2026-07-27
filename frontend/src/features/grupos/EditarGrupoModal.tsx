@@ -67,7 +67,7 @@ export default function EditarGrupoModal({ grupo, onClose, onEditar }: Props) {
         </label>
         <label className={s.campo}>
           <span>Cupo máximo (vacío = sin límite)</span>
-          <input type="number" min={1} value={cupo} onChange={(e) => setCupo(e.target.value)} placeholder="4" />
+          <input type="number" min={1} value={cupo} onChange={(e) => setCupo(e.target.value)} onWheel={(e) => e.currentTarget.blur()} placeholder="4" />
         </label>
         {error && <div className={`${s.span2} ${s.error}`}>{error}</div>}
       </div>

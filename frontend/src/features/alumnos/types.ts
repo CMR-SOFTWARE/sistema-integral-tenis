@@ -81,6 +81,8 @@ export interface UpdateAlumno {
   esMenor: boolean;
   categoria: Categoria;
   modalidad: Modalidad;
+  /** Cuota mensual del alumno (la fuente de verdad del cobro). */
+  arancel?: number;
   profesorUserId?: string;
   notas?: string;
 }

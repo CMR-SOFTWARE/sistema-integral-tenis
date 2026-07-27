@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
-import type { LiquidacionMes, Medio, TipoCargo } from './types';
+import type { LiquidacionMes, Medio, RecaudadoMes, TipoCargo } from './types';
 
 export function useCuotas(anio: number, mes: number) {
   const qc = useQueryClient();
@@ -8,6 +8,12 @@ export function useCuotas(anio: number, mes: number) {
   const query = useQuery({
     queryKey: ['cuotas', anio, mes],
     queryFn: () => api.get<LiquidacionMes>(`/cuotas/${anio}/${mes}`),
+  });
+
+  // Balance simple: recaudado de los últimos meses (independiente del mes que mirás).
+  const reporte = useQuery({
+    queryKey: ['cuotas-reporte'],
+    queryFn: () => api.get<RecaudadoMes[]>('/cuotas/reporte?meses=6'),
   });
 
   // Mover plata cambia las cuotas Y la señal de deuda de la lista de alumnos.
@@ -42,11 +48,18 @@ export function useCuotas(anio: number, mes: number) {
     await invalidar();
   };
 
+  /** Ajusta el monto de un cargo impago (ej. cambiar la cuota del mes al cobrar). */
+  const editarMonto = async (cargoId: string, monto: number) => {
+    await api.put(`/cuotas/cargos/${cargoId}/monto`, { monto });
+    await invalidar();
+  };
+
   return {
     datos: query.data ?? null,
     cargando: query.isLoading,
     error: query.error ? (query.error.message || 'Error cargando el mes') : null,
-    pagarMes, pagarCargo, rechazarMes, agregarCargo,
+    reporte: reporte.data ?? [],
+    pagarMes, pagarCargo, rechazarMes, agregarCargo, editarMonto,
     recargar: () => qc.invalidateQueries({ queryKey: ['cuotas', anio, mes] }),
   };
 }

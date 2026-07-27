@@ -20,6 +20,15 @@ public interface ICuotaService
     /// <summary>Cargo manual: Producto (encordado, pelotas) o Ajuste (+/- con motivo).</summary>
     Task<CargoResponseDto> AgregarCargoManualAsync(CreateCargoManualDto dto, CancellationToken ct = default);
 
+    /// <summary>
+    /// Cambia el monto de un cargo IMPAGO (ej. ajustar la cuota de un alumno ese mes
+    /// al cobrarle). Se refleja en el portal. Lo ya pagado no se toca.
+    /// </summary>
+    Task<CargoResponseDto> EditarMontoCargoAsync(Guid cargoId, decimal monto, CancellationToken ct = default);
+
+    /// <summary>Recaudado por mes (últimos N meses) para el balance simple del panel financiero.</summary>
+    Task<IReadOnlyList<RecaudadoMesDto>> ObtenerReporteAsync(int meses, CancellationToken ct = default);
+
     /// <summary>Modalidad Mensual: salda TODOS los cargos impagos del mes de un alumno.</summary>
     Task PagarMesAsync(Guid alumnoId, int anio, int mes, MedioPago medio, CancellationToken ct = default);
 

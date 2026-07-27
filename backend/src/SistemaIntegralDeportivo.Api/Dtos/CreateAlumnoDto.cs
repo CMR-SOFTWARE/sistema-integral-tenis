@@ -103,6 +103,10 @@ public class UpdateAlumnoDto
 
     public ModalidadPago Modalidad { get; set; } = ModalidadPago.Mensual;
 
+    /// <summary>Cuota mensual del alumno (la fuente de verdad del cobro mensual).</summary>
+    [Range(0, 99_999_999)]
+    public decimal? Arancel { get; set; }
+
     /// <summary>Profe de cabecera (dueño o staff); opcional.</summary>
     public Guid? ProfesorUserId { get; set; }
 

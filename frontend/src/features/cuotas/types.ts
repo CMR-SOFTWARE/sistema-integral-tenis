@@ -29,7 +29,16 @@ export interface Liquidacion {
   pagado: number;
   saldo: number;
   estado: EstadoLiquidacion;
+  /** La cuota mensual del alumno está definida; si es false, se muestra "sin definir". */
+  cuotaDefinida: boolean;
   cargos: CargoLinea[];
+}
+
+/** Recaudado de un mes (balance simple del panel financiero). */
+export interface RecaudadoMes {
+  anio: number;
+  mes: number;
+  recaudado: number;
 }
 
 export interface LiquidacionMes {

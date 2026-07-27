@@ -47,6 +47,27 @@ public class CuotasController : ControllerBase
         }
     }
 
+    /// <summary>PUT api/cuotas/cargos/{id}/monto — cambia el monto de un cargo impago (ajustar la cuota al cobrar).</summary>
+    [HttpPut("cargos/{id:guid}/monto")]
+    public async Task<ActionResult<CargoResponseDto>> EditarMonto(
+        Guid id, EditarMontoCargoDto dto, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await _service.EditarMontoCargoAsync(id, dto.Monto, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>GET api/cuotas/reporte?meses=6 — recaudado por mes (balance simple).</summary>
+    [HttpGet("reporte")]
+    public async Task<ActionResult<IReadOnlyList<RecaudadoMesDto>>> Reporte(
+        [FromQuery] int meses, CancellationToken ct) =>
+        Ok(await _service.ObtenerReporteAsync(meses <= 0 ? 6 : meses, ct));
+
     /// <summary>POST api/cuotas/2026/7/pagar — salda el mes de un alumno (modalidad Mensual).</summary>
     [HttpPost("{anio:int}/{mes:int:range(1,12)}/pagar")]
     public async Task<IActionResult> PagarMes(int anio, int mes, PagarMesDto dto, CancellationToken ct)
