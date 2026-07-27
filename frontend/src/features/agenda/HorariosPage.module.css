@@ -84,7 +84,8 @@
   font-size: 12px;
 }
 
-.slot:hover .slotBaja {
+.slot:hover .slotBaja,
+.slot:hover .slotEditar {
   opacity: 1;
 }
 
@@ -151,6 +152,23 @@
 
 .slotBaja:hover {
   color: var(--color-danger);
+}
+
+.slotEditar {
+  position: absolute;
+  top: 6px;
+  right: 26px;
+  border: none;
+  background: none;
+  color: var(--color-text-faint);
+  cursor: pointer;
+  padding: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.slotEditar:hover {
+  color: var(--color-primary);
 }
 
 .error {

@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
-import type { CreateHorario, Horario, Sede, Turno } from './types';
+import type { CreateHorario, Horario, Sede, Turno, UpdateHorario } from './types';
 
 export function useSedes() {
   const qc = useQueryClient();
@@ -46,16 +46,22 @@ export function useHorarios() {
   });
 
   // Los horarios generan los turnos del calendario y definen quién "toma clase"
-  // (solo se cobra cuota al que tiene clase): al crear/desactivar uno, invalidamos
-  // la semana y las cuotas para que todo refleje el cambio.
+  // (solo se cobra cuota al que tiene clase) y las horas del profe (sueldo): al
+  // crear/editar/desactivar uno, invalidamos la semana, las cuotas y los sueldos.
   const invalidar = async () => {
     await qc.invalidateQueries({ queryKey: ['horarios'] });
     await qc.invalidateQueries({ queryKey: ['turnos-semana'] });
     await qc.invalidateQueries({ queryKey: ['cuotas'] });
+    await qc.invalidateQueries({ queryKey: ['sueldos'] });
   };
 
   const crear = async (dto: CreateHorario) => {
     await api.post<Horario>('/horarios', dto);
+    await invalidar();
+  };
+
+  const editar = async (id: string, dto: UpdateHorario) => {
+    await api.put<Horario>(`/horarios/${id}`, dto);
     await invalidar();
   };
 
@@ -68,7 +74,7 @@ export function useHorarios() {
     horarios: query.data ?? [],
     cargando: query.isLoading,
     error: query.error ? (query.error.message || 'Error cargando horarios') : null,
-    crear, desactivar,
+    crear, editar, desactivar,
     recargar: () => qc.invalidateQueries({ queryKey: ['horarios'] }),
   };
 }

@@ -28,6 +28,32 @@ public class CreateHorarioDto
     public int DuracionMinutos { get; set; } = 60;
 }
 
+/// <summary>
+/// Edición de un horario: cambia cancha/día/hora/duración/profe/valor hora. El
+/// grupo o alumno NO se toca (para cambiarlo, se borra y se recrea).
+/// </summary>
+public class UpdateHorarioDto
+{
+    [Required]
+    public Guid CanchaId { get; set; }
+
+    /// <summary>Profe que da la clase (dueño o staff); null = sin asignar.</summary>
+    public Guid? ProfesorUserId { get; set; }
+
+    /// <summary>Valor hora del profe para esta clase (override; null = usa el base del profe).</summary>
+    [Range(0, 99_999_999)]
+    public decimal? ValorHoraProfe { get; set; }
+
+    [Required]
+    public DayOfWeek Dia { get; set; }
+
+    [Required]
+    public TimeOnly HoraInicio { get; set; }
+
+    [Range(15, 240)]
+    public int DuracionMinutos { get; set; } = 60;
+}
+
 /// <summary>Horario para la grilla semanal del mockup.</summary>
 public class HorarioResponseDto
 {

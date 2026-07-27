@@ -18,6 +18,13 @@ public interface IHorarioService
     Task<HorarioResponseDto> AsignarProfesorAsync(Guid id, Guid? profesorUserId, decimal? valorHoraProfe, CancellationToken ct = default);
 
     /// <summary>
+    /// Edita un horario (cancha/día/hora/duración/profe/valor hora). Si cambia el
+    /// horario en sí, los turnos futuros se reprograman (los pasados quedan). El
+    /// grupo/alumno no se toca acá.
+    /// </summary>
+    Task<HorarioResponseDto> EditarAsync(Guid id, UpdateHorarioDto dto, CancellationToken ct = default);
+
+    /// <summary>
     /// Desactiva la plantilla y limpia el futuro: los turnos con fecha ≥ hoy
     /// se borran junto con sus cargos impagos; los que tienen algún cargo
     /// pagado se conservan (plata cobrada). Lo pasado es historia y no se toca.

@@ -4,18 +4,21 @@ import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { useProfesores } from '../profesores/useProfesores';
 import { useHorarios, useSedes } from './hooks';
 import NuevoHorarioModal from './NuevoHorarioModal';
+import EditarHorarioModal from './EditarHorarioModal';
 import PanelSolicitudesHorario from './PanelSolicitudesHorario';
 import SelectSede from './SelectSede';
 import { DIAS, horaCorta } from './types';
+import type { Horario } from './types';
 import { CAT_COLOR, CAT_LABEL } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import s from './HorariosPage.module.css';
 
 /** Grilla semanal de PLANTILLAS (horarios recurrentes de la temporada). */
 export default function HorariosPage() {
-  const { horarios, cargando, error, crear, desactivar, recargar } = useHorarios();
+  const { horarios, cargando, error, crear, editar, desactivar, recargar } = useHorarios();
   const { sedes } = useSedes();
   const [modal, setModal] = useState(false);
+  const [editando, setEditando] = useState<Horario | null>(null);
   const [sede, setSede] = useState(''); // '' = todas
   const confirmar = useConfirmar();
   const { profes } = useProfesores();
@@ -105,6 +108,15 @@ export default function HorariosPage() {
                       ))}
                     </select>
                     <button
+                      className={s.slotEditar}
+                      title="Editar horario"
+                      onClick={() => setEditando(h)}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+                      </svg>
+                    </button>
+                    <button
                       className={s.slotBaja}
                       title="Desactivar horario"
                       onClick={() => void baja(h.id, h.titulo)}
@@ -126,6 +138,15 @@ export default function HorariosPage() {
           sedes={disponibles}
           onClose={() => setModal(false)}
           onCrear={crear}
+        />
+      )}
+
+      {editando && (
+        <EditarHorarioModal
+          horario={editando}
+          sedes={sedes}
+          onClose={() => setEditando(null)}
+          onEditar={editar}
         />
       )}
     </div>
