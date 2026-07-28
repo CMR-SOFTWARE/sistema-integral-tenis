@@ -7,6 +7,72 @@ import { formatoPlata } from '../alumnos/types';
 import type { Precios, Servicio } from '../cuotas/types';
 import s from './ConfiguracionPage.module.css';
 
+interface DirectorConfig {
+  daClases: boolean;
+}
+
+/** Card del Director: el dueño puede o no dar clases (si no, no aparece como profe asignable). */
+function DirectorCard() {
+  const [daClases, setDaClases] = useState(true);
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void api.get<DirectorConfig>('/configuracion/director')
+      .then((d) => setDaClases(d.daClases))
+      .catch(() => {})
+      .finally(() => setCargando(false));
+  }, []);
+
+  const cambiar = async (valor: boolean) => {
+    setError(null);
+    setGuardando(true);
+    const anterior = daClases;
+    setDaClases(valor); // optimista: si falla, se revierte
+    try {
+      await api.put<DirectorConfig>('/configuracion/director', { daClases: valor });
+    } catch (e) {
+      setDaClases(anterior);
+      setError(e instanceof ApiError ? e.message : 'No se pudo guardar.');
+    } finally {
+      setGuardando(false);
+    }
+  };
+
+  return (
+    <div className={s.tarjeta}>
+      <h3 className={s.titulo}>Director de la academia</h3>
+      <p className={s.bajada}>
+        Sos el <b>Director</b> de tu academia. Si además <b>das clases</b>, aparecés como profe
+        para asignarte a horarios, grupos y alumnos. Si tu academia crece y solo gestionás, apagá
+        esta opción: dejás de aparecer como profe (los horarios que ya tenés asignados no se tocan).
+      </p>
+      {error && <div className={s.error}>{error}</div>}
+      <label
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          fontSize: 14,
+          fontWeight: 600,
+          opacity: cargando || guardando ? 0.6 : 1,
+          cursor: cargando || guardando ? 'default' : 'pointer',
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={daClases}
+          disabled={cargando || guardando}
+          onChange={(e) => void cambiar(e.target.checked)}
+          style={{ width: 18, height: 18 }}
+        />
+        Doy clases en la academia
+      </label>
+    </div>
+  );
+}
+
 /** Card de precios del profe (la base de la fórmula de cuotas). */
 function PreciosCard() {
   const [grupal, setGrupal] = useState('');
@@ -457,6 +523,7 @@ export default function ConfiguracionPage() {
 
   return (
     <div className={s.contenedor}>
+      <DirectorCard />
       <PreciosCard />
       <DatosPagoCard />
       <ServiciosCard />

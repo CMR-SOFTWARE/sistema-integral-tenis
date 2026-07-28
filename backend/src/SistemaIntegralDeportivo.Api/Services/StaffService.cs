@@ -141,8 +141,9 @@ public class StaffService : IStaffService
         var tenant = await _tenants.ObtenerActualAsync(ct);
         var lista = new List<ProfesorAsignableDto>();
 
-        // El dueño primero (es un profe más a la hora de asignar clases)
-        if (tenant.OwnerUserId is { } ownerId &&
+        // El dueño (Director) primero, PERO solo si da clases: si marcó que no,
+        // deja de ofrecerse como profe asignable (solo gestiona la academia).
+        if (tenant.DirectorDaClases && tenant.OwnerUserId is { } ownerId &&
             await _membresias.ObtenerUsuarioAsync(ownerId, ct) is { } dueño)
         {
             lista.Add(new ProfesorAsignableDto

@@ -40,6 +40,16 @@ public class ConfiguracionController : ControllerBase
         DatosPagoConfigDto dto, CancellationToken ct) =>
         Ok(await _service.ActualizarDatosPagoAsync(dto, ct));
 
+    /// <summary>El dueño = Director: si da clases, se ofrece como profe asignable.</summary>
+    [HttpGet("director")]
+    public async Task<ActionResult<DirectorConfigDto>> Director(CancellationToken ct) =>
+        Ok(await _service.ObtenerDirectorAsync(ct));
+
+    [HttpPut("director")]
+    public async Task<ActionResult<DirectorConfigDto>> ActualizarDirector(
+        DirectorConfigDto dto, CancellationToken ct) =>
+        Ok(await _service.ActualizarDirectorAsync(dto, ct));
+
     // ── Catálogo de servicios que ofrece el profe (M4) ──
 
     /// <summary>Todos los servicios del catálogo (activos e inactivos).</summary>

@@ -22,6 +22,13 @@ public class Tenant
     //    Membresía mínima del ADR-0007; Staff y demás roles, en fases futuras. ──
     public Guid? OwnerUserId { get; set; }
 
+    /// <summary>
+    /// El dueño ES el "Director" de la academia y puede o no dar clases. Si NO da
+    /// clases (false), deja de ofrecerse como profe asignable (solo gestiona). Por
+    /// defecto true: el caso típico es un profe solo que dirige y además enseña.
+    /// </summary>
+    public bool DirectorDaClases { get; set; } = true;
+
     // ── Precios (config del profe; null = todavía no configurado) ──
     // La fórmula (modelo-precios.md): grupal se divide entre los ASIGNADOS
     // del turno; individual la paga entera el alumno.

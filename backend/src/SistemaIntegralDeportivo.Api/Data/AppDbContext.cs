@@ -158,6 +158,10 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
         modelBuilder.Entity<Tenant>().Property(t => t.ValorHoraGrupal).HasPrecision(12, 2);
         modelBuilder.Entity<Tenant>().Property(t => t.ValorClaseIndividual).HasPrecision(12, 2);
 
+        // Default en la BASE (no solo en C#): así los tenants YA existentes quedan
+        // en true al aplicar la migración (el dueño sigue siendo profe asignable).
+        modelBuilder.Entity<Tenant>().Property(t => t.DirectorDaClases).HasDefaultValue(true);
+
         modelBuilder.Entity<Cargo>().Property(c => c.Tipo).HasConversion<string>();
         modelBuilder.Entity<Cargo>().Property(c => c.MedioPago).HasConversion<string>();
         modelBuilder.Entity<Cargo>().Property(c => c.Monto).HasPrecision(12, 2);
