@@ -250,4 +250,63 @@ public class StaffServiceTests
         Assert.False(await _service.EsAsignableAsync(inactivo));
         Assert.False(await _service.EsAsignableAsync(Guid.NewGuid())); // desconocido
     }
+
+    // ── Editar la ficha del empleado (datos del Usuario + valor hora; el celular no) ──
+
+    [Fact]
+    public async Task Editar_ActualizaDatosDelUsuarioYValorHora()
+    {
+        var m = new MembresiaTenant { UserId = Guid.NewGuid(), ValorHora = 5_000m };
+        var u = Usuario(m.UserId);
+        _repo.Setup(r => r.ObtenerAsync(m.Id, It.IsAny<CancellationToken>())).ReturnsAsync(m);
+        _repo.Setup(r => r.ObtenerUsuarioAsync(m.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(u);
+        var dto = new UpdateStaffDto
+        {
+            Nombre = "Ana María", Apellido = "López", Email = "nueva@mail.com",
+            Dni = "30111222", FechaNacimiento = new DateTime(1990, 5, 1), ValorHora = 8_000m,
+        };
+
+        await _service.EditarAsync(m.Id, dto);
+
+        Assert.Equal("Ana María", u.Nombre);
+        Assert.Equal("López", u.Apellido);
+        Assert.Equal("nueva@mail.com", u.Email);
+        Assert.Equal("30111222", u.Dni);
+        Assert.Equal(new DateTime(1990, 5, 1), u.FechaNacimiento);
+        Assert.Equal(8_000m, m.ValorHora);
+        _repo.Verify(r => r.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Editar_EmailVacio_QuedaNull()
+    {
+        var m = new MembresiaTenant { UserId = Guid.NewGuid() };
+        var u = Usuario(m.UserId, "viejo@mail.com");
+        _repo.Setup(r => r.ObtenerAsync(m.Id, It.IsAny<CancellationToken>())).ReturnsAsync(m);
+        _repo.Setup(r => r.ObtenerUsuarioAsync(m.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(u);
+
+        await _service.EditarAsync(m.Id, new UpdateStaffDto { Nombre = "Ana", Apellido = "Gómez", Email = "" });
+
+        Assert.Null(u.Email);
+    }
+
+    [Fact]
+    public async Task Editar_MembresiaInexistente_Lanza()
+    {
+        _repo.Setup(r => r.ObtenerAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync((MembresiaTenant?)null);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.EditarAsync(Guid.NewGuid(), new UpdateStaffDto { Nombre = "A", Apellido = "B" }));
+    }
+
+    [Fact]
+    public async Task Editar_ValorHoraNegativo_Lanza()
+    {
+        var m = new MembresiaTenant { UserId = Guid.NewGuid() };
+        _repo.Setup(r => r.ObtenerAsync(m.Id, It.IsAny<CancellationToken>())).ReturnsAsync(m);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.EditarAsync(m.Id, new UpdateStaffDto { Nombre = "A", Apellido = "B", ValorHora = -1m }));
+    }
 }

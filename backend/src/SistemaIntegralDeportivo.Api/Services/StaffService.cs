@@ -17,6 +17,9 @@ public interface IStaffService
     /// <summary>Setea/actualiza el valor hora base del profe (null = borrarlo).</summary>
     Task CambiarValorHoraAsync(Guid id, decimal? valorHora, CancellationToken ct = default);
 
+    /// <summary>Edita la ficha del empleado (datos personales + valor hora; el celular/login no).</summary>
+    Task EditarAsync(Guid id, UpdateStaffDto dto, CancellationToken ct = default);
+
     /// <summary>
     /// Borrado REAL del profe empleado (el dueño se equivocó al cargarlo y lo quiere
     /// eliminar, no solo desactivar). Saca la membresía, deja "sin asignar" lo que lo
@@ -100,8 +103,10 @@ public class StaffService : IStaffService
             Nombre = dto.Nombre.Trim(),
             Apellido = dto.Apellido.Trim(),
             Email = email ?? string.Empty,
+            Telefono = telefono,
             Activo = true,
             ValorHora = dto.ValorHora,
+            CreadoEl = nueva.CreadoEl,
         };
         return new StaffCreadoDto { Staff = staff, Usuario = cred.PasswordTemporal, PasswordTemporal = cred.PasswordTemporal };
     }
@@ -197,6 +202,32 @@ public class StaffService : IStaffService
         await _membresias.GuardarCambiosAsync(ct);
     }
 
+    public async Task EditarAsync(Guid id, UpdateStaffDto dto, CancellationToken ct = default)
+    {
+        var membresia = await _membresias.ObtenerAsync(id, ct)
+            ?? throw new ReglaDeNegocioException("Ese profe no está en tu equipo.");
+
+        if (dto.ValorHora is < 0)
+            throw new ReglaDeNegocioException("El valor hora no puede ser negativo.");
+
+        // Los datos personales viven en el Usuario (identidad global). El celular
+        // (login) NO se toca acá. La entidad viene trackeada → persiste con Guardar.
+        var usuario = await _membresias.ObtenerUsuarioAsync(membresia.UserId, ct)
+            ?? throw new ReglaDeNegocioException("No se encontró la cuenta del profe.");
+
+        usuario.Nombre = dto.Nombre.Trim();
+        usuario.Apellido = dto.Apellido.Trim();
+        var email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
+        usuario.Email = email;
+        usuario.NormalizedEmail = email?.ToUpperInvariant(); // Identity busca por el normalizado
+        usuario.Dni = string.IsNullOrWhiteSpace(dto.Dni) ? null : dto.Dni.Trim();
+        usuario.FechaNacimiento = dto.FechaNacimiento;
+
+        membresia.ValorHora = dto.ValorHora; // el valor hora es del tenant (membresía)
+
+        await _membresias.GuardarCambiosAsync(ct);
+    }
+
     private static StaffDto Mapear(MembresiaTenant m, Usuario u) => new()
     {
         Id = m.Id,
@@ -204,7 +235,11 @@ public class StaffService : IStaffService
         Nombre = u.Nombre,
         Apellido = u.Apellido,
         Email = u.Email ?? string.Empty,
+        Telefono = u.PhoneNumber ?? u.UserName ?? string.Empty,
+        Dni = u.Dni,
+        FechaNacimiento = u.FechaNacimiento,
         Activo = m.Activo,
         ValorHora = m.ValorHora,
+        CreadoEl = m.CreadoEl,
     };
 }
