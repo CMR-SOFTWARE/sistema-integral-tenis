@@ -34,16 +34,27 @@ public enum EstadoTenant
     Suspendido
 }
 
-/// <summary>Categoría deportiva del alumno (7ma = inicial, 1ra = la mejor).</summary>
+/// <summary>
+/// Categoría deportiva del alumno. Dos escalas por género (el género queda
+/// implícito en el valor): VARONES 1ra…6ta (1ra = la mejor) y DAMAS A…D (A = la
+/// mejor). La compatibilidad ±1 corre DENTRO de cada escala (ver Categorias).
+/// </summary>
 public enum CategoriaAlumno
 {
+    // Varones (1ra = mejor … 6ta)
     Primera,
     Segunda,
     Tercera,
     Cuarta,
     Quinta,
     Sexta,
-    Septima,
+    // Damas (A = mejor … D)
+    A,
+    B1,
+    B2,
+    C1,
+    C2,
+    D,
     SinCategoria // alumno nuevo, todavía no evaluado
 }
 

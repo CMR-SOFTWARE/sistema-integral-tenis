@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 import type { Sesion } from '../auth/sesion';
-import { CATEGORIAS, CAT_LABEL } from '../alumnos/types';
-import type { Categoria } from '../alumnos/types';
+import CategoriaOptions from '../alumnos/CategoriaOptions';
 import s from './PortalPages.module.css';
 
 interface Props {
@@ -75,9 +74,7 @@ export default function MisDatosForm({ sesion, onGuardado }: Props) {
             <span>Categoría</span>
             <select value={f.categoria} onChange={(e) => set('categoria', e.target.value)}>
               <option value="SinCategoria">No sé todavía</option>
-              {CATEGORIAS.filter((c) => c !== 'SinCategoria').map((c: Categoria) => (
-                <option key={c} value={c}>{CAT_LABEL[c]}</option>
-              ))}
+              <CategoriaOptions />
             </select>
           </label>
         </div>

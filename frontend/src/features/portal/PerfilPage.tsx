@@ -6,7 +6,8 @@ import type { Sesion } from '../auth/sesion';
 import MisDatosForm from './MisDatosForm';
 import RaquetasSection from './RaquetasSection';
 import { comprimirImagen } from './comprimirImagen';
-import { CAT_LABEL, CATEGORIAS, avatarColor, iniciales } from '../alumnos/types';
+import { CAT_LABEL, avatarColor, iniciales } from '../alumnos/types';
+import CategoriaOptions from '../alumnos/CategoriaOptions';
 import type { Categoria } from '../alumnos/types';
 import type { MiPerfil } from './types';
 import { useFichaActiva } from './FichaActivaContext';
@@ -178,9 +179,8 @@ export default function PerfilPage() {
             <label className={s.perfilCampo}>
               <span>Categoría</span>
               <select value={form.categoria} onChange={(e) => setForm((f) => ({ ...f, categoria: e.target.value as Categoria }))}>
-                {CATEGORIAS.map((c) => (
-                  <option key={c} value={c}>{CAT_LABEL[c]}</option>
-                ))}
+                <option value="SinCategoria">Sin categoría</option>
+                <CategoriaOptions />
               </select>
             </label>
             <div className={s.perfilAcciones}>

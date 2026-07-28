@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import Modal from '../../components/Modal';
 import { ApiError } from '../../lib/api';
-import { CATEGORIAS, CAT_LABEL } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
+import CategoriaOptions from '../alumnos/CategoriaOptions';
 import type { CreateGrupo } from './types';
 import { useProfesores } from '../profesores/useProfesores';
 import s from '../alumnos/NuevoAlumnoModal.module.css';
@@ -63,9 +63,7 @@ export default function NuevoGrupoModal({ onClose, onCrear }: Props) {
           <span>Categoría sugerida (opcional)</span>
           <select value={categoria} onChange={(e) => setCategoria(e.target.value as '' | Categoria)}>
             <option value="">Sin categoría</option>
-            {CATEGORIAS.filter((c) => c !== 'SinCategoria').map((c) => (
-              <option key={c} value={c}>{CAT_LABEL[c]}</option>
-            ))}
+            <CategoriaOptions />
           </select>
         </label>
         <label className={s.campo}>

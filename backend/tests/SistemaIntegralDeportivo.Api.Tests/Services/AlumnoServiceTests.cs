@@ -98,7 +98,7 @@ public class AlumnoServiceTests
         Telefono = "+5491155559876",
         Email = "sofia@mail.com",
         EsMenor = true, // el profe lo marca; dispara la regla del tutor
-        Categoria = CategoriaAlumno.Septima,
+        Categoria = CategoriaAlumno.Sexta,
     };
 
     private static TutorDto TutorValido() => new()

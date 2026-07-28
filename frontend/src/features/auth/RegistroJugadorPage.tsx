@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
-import { CATEGORIAS, CAT_LABEL } from '../alumnos/types';
-import type { Categoria } from '../alumnos/types';
+import CategoriaOptions from '../alumnos/CategoriaOptions';
 import AuthShell from './AuthShell';
 import InputPassword from '../../components/InputPassword';
 import { entrarConSesion } from './entrar';
@@ -101,9 +100,7 @@ export default function RegistroJugadorPage() {
             <span>Categoría</span>
             <select value={f.categoria} onChange={(e) => set('categoria', e.target.value)}>
               <option value="SinCategoria">No sé todavía</option>
-              {CATEGORIAS.filter((c) => c !== 'SinCategoria').map((c: Categoria) => (
-                <option key={c} value={c}>{CAT_LABEL[c]}</option>
-              ))}
+              <CategoriaOptions />
             </select>
           </label>
         </div>

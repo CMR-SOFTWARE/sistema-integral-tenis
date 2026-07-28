@@ -3,7 +3,7 @@ import Modal from '../../components/Modal';
 import Avatar from '../../components/Avatar';
 import NotasAlumnoSection from './NotasAlumnoSection';
 import { api } from '../../lib/api';
-import { CAT_COLOR, CAT_LABEL, ESTADO_UI, formatoPlata } from './types';
+import { CAT_COLOR, CAT_LABEL, ESTADO_UI, formatoPlata, subPorEdad } from './types';
 import type { Alumno, AlumnoCuenta, AlumnoHorario } from './types';
 import { useProfesores } from '../profesores/useProfesores';
 import s from './DetalleAlumnoModal.module.css';
@@ -39,6 +39,7 @@ export default function DetalleAlumnoModal({ alumno, hermanos, onClose, onCrearA
     ['Nacimiento', alumno.fechaNacimiento
       ? new Date(alumno.fechaNacimiento).toLocaleDateString('es-AR')
       : '—'],
+    ['Categoría por edad', subPorEdad(alumno.fechaNacimiento) ?? 'Adulto'],
     ['Es menor', alumno.esMenor ? 'Sí (tutor registrado)' : 'No'],
     ['Profe de cabecera', nombreDe(alumno.profesorUserId) ?? 'Sin asignar'],
     ['Cuota mensual', formatoPlata(alumno.arancel)],

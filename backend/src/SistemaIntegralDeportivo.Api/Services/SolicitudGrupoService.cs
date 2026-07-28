@@ -75,7 +75,7 @@ public class SolicitudGrupoService : ISolicitudGrupoService
             var yaEsMiembro = g.Alumnos.Any(m => m.AlumnoId == alumnoId && m.FechaBaja is null);
             if (yaEsMiembro) continue;
             if (g.CupoMaximo is not null && activos >= g.CupoMaximo) continue;
-            if (!CategoriaCompatible(g.Categoria, alumno.Categoria)) continue;
+            if (!Categorias.EsCompatible(g.Categoria, alumno.Categoria)) continue;
 
             var futuros = activos + 1; // contándolo a él para estimar el divisor
             var hs = horariosPorGrupo[g.Id].Select(h => new HorarioDisponibleDto
@@ -117,7 +117,7 @@ public class SolicitudGrupoService : ISolicitudGrupoService
             throw new ReglaDeNegocioException("Ese grupo ya no está disponible.");
         if (grupo.Alumnos.Any(m => m.AlumnoId == alumnoId && m.FechaBaja is null))
             throw new ReglaDeNegocioException("Ya sos parte de ese grupo.");
-        if (!CategoriaCompatible(grupo.Categoria, alumno.Categoria))
+        if (!Categorias.EsCompatible(grupo.Categoria, alumno.Categoria))
             throw new ReglaDeNegocioException("Ese grupo es de otra categoría.");
 
         var activos = grupo.Alumnos.Count(m => m.FechaBaja is null);
@@ -177,21 +177,6 @@ public class SolicitudGrupoService : ISolicitudGrupoService
         solicitud.Estado = EstadoSolicitudGrupo.Rechazada;
         solicitud.ResueltoEl = DateTime.UtcNow;
         await _solicitudes.GuardarCambiosAsync(ct);
-    }
-
-    /// <summary>
-    /// Un alumno puede pedir un grupo de su categoría o de una ADYACENTE (una
-    /// arriba o una abajo): p.ej. un Cuarta llega a Tercera, Cuarta y Quinta.
-    /// El enum va de mejor a peor (Primera=0 … Septima=6), así que "adyacente"
-    /// es diferencia de índice ≤ 1. El grupo sin categoría (null o SinCategoria)
-    /// es ABIERTO a todos; y el alumno todavía sin evaluar (SinCategoria) solo
-    /// puede pedir esos grupos abiertos (no se cuela por cercanía con Séptima).
-    /// </summary>
-    private static bool CategoriaCompatible(CategoriaAlumno? grupo, CategoriaAlumno alumno)
-    {
-        if (grupo is null || grupo == CategoriaAlumno.SinCategoria) return true;
-        if (alumno == CategoriaAlumno.SinCategoria) return false;
-        return Math.Abs((int)grupo.Value - (int)alumno) <= 1;
     }
 
     private static SolicitudGrupoDto Mapear(SolicitudGrupo s) => new()
