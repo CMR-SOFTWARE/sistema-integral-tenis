@@ -10,13 +10,16 @@ public class SueldoService : ISueldoService
     private readonly IPoliticaDeSueldo _politica;
     private readonly IPagoEmpleadoRepository _pagos;
     private readonly IMembresiaTenantRepository _membresias;
+    private readonly IUsuarioActual _usuario;
 
     public SueldoService(
-        IPoliticaDeSueldo politica, IPagoEmpleadoRepository pagos, IMembresiaTenantRepository membresias)
+        IPoliticaDeSueldo politica, IPagoEmpleadoRepository pagos,
+        IMembresiaTenantRepository membresias, IUsuarioActual usuario)
     {
         _politica = politica;
         _pagos = pagos;
         _membresias = membresias;
+        _usuario = usuario;
     }
 
     public async Task<LiquidacionSueldosDto> ObtenerMesAsync(int anio, int mes, CancellationToken ct = default)
@@ -60,6 +63,38 @@ public class SueldoService : ISueldoService
             TotalPagado = empleados.Sum(e => e.Pagado),
             TotalPendiente = empleados.Sum(e => e.Saldo),
             Empleados = empleados,
+        };
+    }
+
+    public async Task<EmpleadoSueldoDto> ObtenerMioAsync(int anio, int mes, CancellationToken ct = default)
+    {
+        var userId = _usuario.UserId
+            ?? throw new ReglaDeNegocioException("No hay usuario en el contexto.");
+
+        // Mismo cálculo que la pantalla del dueño, pero nos quedamos SOLO con la
+        // fila del que pregunta (su propia liquidación del mes).
+        var calculados = await _politica.CalcularDelMesAsync(anio, mes, ct);
+        var mio = calculados.FirstOrDefault(c => c.UserId == userId);
+        var pago = await _pagos.ObtenerDelMesAsync(userId, anio, mes, ct);
+
+        var calculado = mio?.Monto ?? 0m;
+        var pagado = pago?.Monto ?? 0m;
+        return new EmpleadoSueldoDto
+        {
+            UserId = userId,
+            MembresiaId = mio?.MembresiaId ?? Guid.Empty,
+            Nombre = mio?.Nombre ?? string.Empty,
+            Apellido = mio?.Apellido ?? string.Empty,
+            Activo = mio?.Activo ?? true,
+            Calculado = calculado,
+            Pagado = pagado,
+            Saldo = calculado - pagado,
+            Estado = pago is not null ? "Pagado" : "Pendiente",
+            HorasTotales = mio?.HorasTotales ?? 0m,
+            TieneValorHora = mio?.TieneValorHora ?? false,
+            MedioPago = pago?.MedioPago.ToString(),
+            PagadoEl = pago?.PagadoEl,
+            Detalle = mio?.Detalle ?? [],
         };
     }
 
