@@ -72,6 +72,9 @@ public class HorarioResponseDto
     public Guid? ProfesorUserId { get; set; }
     /// <summary>Valor hora del profe para esta clase (override; null = usa el base del profe).</summary>
     public decimal? ValorHoraProfe { get; set; }
+    // Roster (grupal XOR individual): el front los usa para pre-seleccionar al duplicar.
+    public Guid? GrupoId { get; set; }
+    public Guid? AlumnoId { get; set; }
 }
 
 /// <summary>Participante del roster de un turno + asistencia.</summary>
@@ -96,6 +99,8 @@ public class TurnoResponseDto
     public string Titulo { get; set; } = string.Empty;
     public string Cancha { get; set; } = string.Empty;
     public string Sede { get; set; } = string.Empty;
+    /// <summary>Profe a cargo (del horario); null = suelto o sin asignar. Para el filtro por profe.</summary>
+    public Guid? ProfesorUserId { get; set; }
     public List<ParticipanteTurnoDto> Participantes { get; set; } = [];
 }
 

@@ -4,8 +4,8 @@ import HoraSelect from '../../components/HoraSelect';
 import { api, ApiError } from '../../lib/api';
 import type { Alumno } from '../alumnos/types';
 import type { Grupo } from '../grupos/types';
-import { DIAS } from './types';
-import type { CreateHorario, DiaSemana, Sede } from './types';
+import { DIAS, horaCorta } from './types';
+import type { CreateHorario, DiaSemana, Horario, Sede } from './types';
 import { useProfesores } from '../profesores/useProfesores';
 import s from '../alumnos/NuevoAlumnoModal.module.css';
 
@@ -13,20 +13,26 @@ interface Props {
   sedes: Sede[];
   onClose: () => void;
   onCrear: (dto: CreateHorario) => Promise<void>;
+  /** Al duplicar: horario del que se copian los datos (roster incluido). */
+  base?: Horario;
 }
 
 /** Alta de horario recurrente: cancha + (grupo XOR alumno) + día/hora/duración. */
-export default function NuevoHorarioModal({ sedes, onClose, onCrear }: Props) {
-  const [sedeId, setSedeId] = useState(sedes[0]?.id ?? '');
-  const [canchaId, setCanchaId] = useState('');
-  const [tipo, setTipo] = useState<'grupo' | 'individual'>('grupo');
-  const [grupoId, setGrupoId] = useState('');
-  const [alumnoId, setAlumnoId] = useState('');
-  const [dia, setDia] = useState<DiaSemana>('Monday');
-  const [hora, setHora] = useState('18:00');
-  const [duracion, setDuracion] = useState(60);
-  const [profesorId, setProfesorId] = useState('');
-  const [valorHora, setValorHora] = useState('');
+export default function NuevoHorarioModal({ sedes, onClose, onCrear, base }: Props) {
+  // Al duplicar, los estados arrancan con los datos del horario base.
+  const sedeInicial = base
+    ? sedes.find((x) => x.canchas.some((c) => c.id === base.canchaId))?.id ?? sedes[0]?.id ?? ''
+    : sedes[0]?.id ?? '';
+  const [sedeId, setSedeId] = useState(sedeInicial);
+  const [canchaId, setCanchaId] = useState(base?.canchaId ?? '');
+  const [tipo, setTipo] = useState<'grupo' | 'individual'>(base?.esIndividual ? 'individual' : 'grupo');
+  const [grupoId, setGrupoId] = useState(base && !base.esIndividual ? base.grupoId ?? '' : '');
+  const [alumnoId, setAlumnoId] = useState(base?.esIndividual ? base.alumnoId ?? '' : '');
+  const [dia, setDia] = useState<DiaSemana>(base?.dia ?? 'Monday');
+  const [hora, setHora] = useState(base ? horaCorta(base.horaInicio) : '18:00');
+  const [duracion, setDuracion] = useState(base?.duracionMinutos ?? 60);
+  const [profesorId, setProfesorId] = useState(base?.profesorUserId ?? '');
+  const [valorHora, setValorHora] = useState(base?.valorHoraProfe?.toString() ?? '');
   const { profes } = useProfesores();
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [alumnos, setAlumnos] = useState<Alumno[]>([]);
@@ -71,8 +77,8 @@ export default function NuevoHorarioModal({ sedes, onClose, onCrear }: Props) {
 
   return (
     <Modal
-      titulo="Nuevo horario"
-      subtitulo="Plantilla semanal: se repite toda la temporada"
+      titulo={base ? 'Duplicar horario' : 'Nuevo horario'}
+      subtitulo={base ? 'Copiá la clase y cambiale el día/hora' : 'Plantilla semanal: se repite toda la temporada'}
       onClose={onClose}
       footer={
         <>

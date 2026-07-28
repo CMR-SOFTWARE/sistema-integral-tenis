@@ -13,6 +13,12 @@ public interface ITurnoService
     Task<IReadOnlyList<TurnoResponseDto>> ObtenerSemanaAsync(DateOnly lunes, CancellationToken ct = default);
 
     /// <summary>
+    /// Turnos de un mes entero (vista mensual del calendario), generando los que
+    /// falten (idempotente). El staff ve solo los suyos, igual que la semana.
+    /// </summary>
+    Task<IReadOnlyList<TurnoResponseDto>> ObtenerMesAsync(int anio, int mes, CancellationToken ct = default);
+
+    /// <summary>
     /// Materializa los turnos que falten de TODO el mes (misma generación
     /// perezosa e idempotente que la semanal). La usa la liquidación de
     /// cuotas para no depender de que se haya visitado el Calendario.

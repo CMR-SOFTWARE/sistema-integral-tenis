@@ -31,6 +31,9 @@ export interface Horario {
   activo: boolean;
   profesorUserId: string | null;
   valorHoraProfe: number | null;
+  /** Roster (grupal XOR individual): para pre-seleccionar al duplicar. */
+  grupoId: string | null;
+  alumnoId: string | null;
 }
 
 export interface CreateHorario {
@@ -74,6 +77,8 @@ export interface Turno {
   titulo: string;
   cancha: string;
   sede: string;
+  /** Profe a cargo (del horario); null = suelto o sin asignar. Para el filtro por profe. */
+  profesorUserId: string | null;
   participantes: ParticipanteTurno[];
 }
 
@@ -126,4 +131,24 @@ export function rangoSemana(lunesIso: string): string {
   const domingo = new Date(`${sumarDias(lunesIso, 6)}T00:00:00`);
   const mes = domingo.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
   return `${lunes.getDate()} al ${domingo.getDate()} de ${mes}`;
+}
+
+/**
+ * 42 días (6 semanas, lunes primero) para la grilla mensual estilo calendario.
+ * `enMes=false` son los días de relleno del mes anterior/siguiente (atenuados).
+ */
+export function diasDelMesGrid(anio: number, mes: number): { iso: string; enMes: boolean }[] {
+  const primero = new Date(anio, mes - 1, 1);
+  const offset = (primero.getDay() + 6) % 7; // getDay(): domingo=0 → lunes=0
+  const inicio = new Date(anio, mes - 1, 1 - offset);
+  return Array.from({ length: 42 }, (_, i) => {
+    const d = new Date(inicio);
+    d.setDate(inicio.getDate() + i);
+    return { iso: aISO(d), enMes: d.getMonth() === mes - 1 };
+  });
+}
+
+/** Día del mes de una fecha ISO ("2026-07-14" → 14). */
+export function diaDelMes(iso: string): number {
+  return Number(iso.slice(8, 10));
 }

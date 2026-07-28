@@ -4,6 +4,7 @@
   justify-content: center;
   gap: 14px;
   margin-bottom: 18px;
+  flex-wrap: wrap;
 }
 
 .nav {
@@ -39,6 +40,38 @@
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
+}
+
+/* Toggle Semana / Mes */
+.toggle {
+  display: flex;
+  gap: 4px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 4px;
+}
+
+.toggleBtn,
+.toggleActivo {
+  border: none;
+  background: none;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: var(--font-display);
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.toggleBtn:hover {
+  color: var(--color-text);
+}
+
+.toggleActivo {
+  background: var(--color-primary-dark);
+  color: #fff;
 }
 
 .grilla {

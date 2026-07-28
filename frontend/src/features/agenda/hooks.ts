@@ -79,11 +79,12 @@ export function useHorarios() {
   };
 }
 
-export function useSemana(lunes: string) {
+export function useSemana(lunes: string, enabled = true) {
   const qc = useQueryClient();
   const query = useQuery({
     queryKey: ['turnos-semana', lunes],
     queryFn: () => api.get<Turno[]>(`/turnos/semana?lunes=${lunes}`),
+    enabled,
   });
   const invalidar = () => qc.invalidateQueries({ queryKey: ['turnos-semana'] });
 
@@ -101,6 +102,40 @@ export function useSemana(lunes: string) {
     turnos: query.data ?? [],
     cargando: query.isLoading,
     error: query.error ? (query.error.message || 'Error cargando la semana') : null,
+    marcarAsistencia, cancelar,
+    recargar: invalidar,
+  };
+}
+
+/** Turnos de un mes (vista mensual). El back genera lo que falte al pedirlo. */
+export function useMes(anio: number, mes: number, enabled = true) {
+  const qc = useQueryClient();
+  const query = useQuery({
+    queryKey: ['turnos-mes', anio, mes],
+    queryFn: () => api.get<Turno[]>(`/turnos/mes?anio=${anio}&mes=${mes}`),
+    enabled,
+  });
+
+  // Cancelar/asistencia impacta la misma clase en la semanal: invalidamos ambas.
+  const invalidar = async () => {
+    await qc.invalidateQueries({ queryKey: ['turnos-mes'] });
+    await qc.invalidateQueries({ queryKey: ['turnos-semana'] });
+  };
+
+  const marcarAsistencia = async (turnoId: string, alumnoId: string, presente: boolean) => {
+    await api.patch(`/turnos/${turnoId}/asistencia`, { alumnoId, presente });
+    await invalidar();
+  };
+
+  const cancelar = async (turnoId: string, motivo: string) => {
+    await api.post(`/turnos/${turnoId}/cancelar`, { motivo });
+    await invalidar();
+  };
+
+  return {
+    turnos: query.data ?? [],
+    cargando: query.isLoading,
+    error: query.error ? (query.error.message || 'Error cargando el mes') : null,
     marcarAsistencia, cancelar,
     recargar: invalidar,
   };

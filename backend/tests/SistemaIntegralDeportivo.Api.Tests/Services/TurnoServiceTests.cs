@@ -485,4 +485,50 @@ public class TurnoServiceTests
         await Assert.ThrowsAsync<ReglaDeNegocioException>(
             () => _service.CancelarAsync(turno.Id, "otra vez"));
     }
+
+    // ─────────────────────────────────────────────
+    // Vista mensual: el staff ve solo lo suyo (igual que la semana)
+    // ─────────────────────────────────────────────
+
+    private static Turno TurnoConHorarioDe(Guid profeId) => new()
+    {
+        HorarioId = Guid.NewGuid(),
+        Fecha = new DateOnly(2026, 7, 14),
+        HoraInicio = new TimeOnly(18, 0),
+        DuracionMinutos = 60,
+        Horario = new Horario { ProfesorUserId = profeId, CanchaId = Guid.NewGuid() },
+    };
+
+    [Fact]
+    public async Task MesVista_Staff_SoloDevuelveSusTurnos()
+    {
+        var staffId = Guid.NewGuid();
+        _usuario.Setup(u => u.EsStaff).Returns(true);
+        _usuario.Setup(u => u.UserId).Returns(staffId);
+        // Sin horarios activos → la generación no agrega nada (aislamos la vista)
+        _horarios.Setup(h => h.ListarActivosAsync(It.IsAny<CancellationToken>())).ReturnsAsync([]);
+        var mio = TurnoConHorarioDe(staffId);
+        var ajeno = TurnoConHorarioDe(Guid.NewGuid());
+        _turnos.Setup(t => t.ListarEntreAsync(It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([mio, ajeno]);
+
+        var mesVista = await _service.ObtenerMesAsync(2026, 7);
+
+        var t = Assert.Single(mesVista);
+        Assert.Equal(mio.Id, t.Id);
+        Assert.Equal(staffId, t.ProfesorUserId);
+    }
+
+    [Fact]
+    public async Task MesVista_Dueño_VeTodosLosTurnos()
+    {
+        // El dueño no es staff → sin filtro
+        _horarios.Setup(h => h.ListarActivosAsync(It.IsAny<CancellationToken>())).ReturnsAsync([]);
+        _turnos.Setup(t => t.ListarEntreAsync(It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([TurnoConHorarioDe(Guid.NewGuid()), TurnoConHorarioDe(Guid.NewGuid())]);
+
+        var mesVista = await _service.ObtenerMesAsync(2026, 7);
+
+        Assert.Equal(2, mesVista.Count);
+    }
 }
