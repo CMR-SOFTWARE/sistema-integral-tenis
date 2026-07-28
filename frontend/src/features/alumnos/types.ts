@@ -2,8 +2,9 @@
 // (colores y etiquetas calcados del mockup CourtSet).
 
 export type Categoria =
-  | 'Primera' | 'Segunda' | 'Tercera' | 'Cuarta'
-  | 'Quinta' | 'Sexta' | 'Septima' | 'SinCategoria';
+  | 'Primera' | 'Segunda' | 'Tercera' | 'Cuarta' | 'Quinta' | 'Sexta' // varones
+  | 'A' | 'B1' | 'B2' | 'C1' | 'C2' | 'D'                             // damas
+  | 'SinCategoria';
 
 export type Estado = 'Activo' | 'Suspendido' | 'Inactivo';
 
@@ -134,19 +135,22 @@ export interface AlumnoCuenta {
   cargos: CargoResumen[];
 }
 
-export const CATEGORIAS: Categoria[] = [
-  'Primera', 'Segunda', 'Tercera', 'Cuarta', 'Quinta', 'Sexta', 'Septima', 'SinCategoria',
-];
+/** Dos escalas por género (el género es implícito en el valor). */
+export const CATEGORIAS_VARONES: Categoria[] = ['Primera', 'Segunda', 'Tercera', 'Cuarta', 'Quinta', 'Sexta'];
+export const CATEGORIAS_DAMAS: Categoria[] = ['A', 'B1', 'B2', 'C1', 'C2', 'D'];
+export const CATEGORIAS: Categoria[] = [...CATEGORIAS_VARONES, ...CATEGORIAS_DAMAS, 'SinCategoria'];
 
 export const CAT_LABEL: Record<Categoria, string> = {
-  Primera: '1ra', Segunda: '2da', Tercera: '3ra', Cuarta: '4ta',
-  Quinta: '5ta', Sexta: '6ta', Septima: '7ma', SinCategoria: 'S/C',
+  Primera: '1ra', Segunda: '2da', Tercera: '3ra', Cuarta: '4ta', Quinta: '5ta', Sexta: '6ta',
+  A: 'A', B1: 'B1', B2: 'B2', C1: 'C1', C2: 'C2', D: 'D',
+  SinCategoria: 'S/C',
 };
 
-/** CAT_COLOR del mockup. */
+/** CAT_COLOR: varones (frío/verde) y damas (magenta/violeta) para distinguirlas de un vistazo. */
 export const CAT_COLOR: Record<Categoria, string> = {
-  Primera: '#7c3aed', Segunda: '#2563eb', Tercera: '#0891b2', Cuarta: '#178a4c',
-  Quinta: '#ca8a04', Sexta: '#ea580c', Septima: '#be123c', SinCategoria: '#6b7770',
+  Primera: '#7c3aed', Segunda: '#2563eb', Tercera: '#0891b2', Cuarta: '#178a4c', Quinta: '#ca8a04', Sexta: '#ea580c',
+  A: '#db2777', B1: '#c026d3', B2: '#9333ea', C1: '#7c3aed', C2: '#e11d48', D: '#be123c',
+  SinCategoria: '#6b7770',
 };
 
 /** estadoChip del mockup (Suspendido se muestra "Pausado", Inactivo "Baja"). */
@@ -180,4 +184,20 @@ export function edad(fechaNacimiento: string): number {
   const m = hoy.getMonth() - nac.getMonth();
   if (m < 0 || (m === 0 && hoy.getDate() < nac.getDate())) e--;
   return e;
+}
+
+/**
+ * Categoría por EDAD (Sub), derivada de la fecha de nacimiento e INDEPENDIENTE de
+ * la categoría de nivel. Un jugador puede ser Sub-16 y a la vez 5ta o C1. null si
+ * es adulto (>18) o no cargó la fecha.
+ */
+export function subPorEdad(fechaNacimiento: string | null): string | null {
+  if (!fechaNacimiento) return null;
+  const e = edad(fechaNacimiento);
+  if (e <= 10) return 'Sub-10';
+  if (e <= 12) return 'Sub-12';
+  if (e <= 14) return 'Sub-14';
+  if (e <= 16) return 'Sub-16';
+  if (e <= 18) return 'Sub-18';
+  return null;
 }

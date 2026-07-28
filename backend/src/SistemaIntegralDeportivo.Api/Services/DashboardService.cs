@@ -11,12 +11,14 @@ namespace SistemaIntegralDeportivo.Api.Services;
 /// </summary>
 public class DashboardService : IDashboardService
 {
-    // Orden fijo del ranking: de la mejor (1ra) a la inicial (7ma) + sin categoría
+    // Orden fijo del ranking: varones (1ra→6ta), damas (A→D) y sin categoría
     private static readonly CategoriaAlumno[] OrdenCategorias =
     [
         CategoriaAlumno.Primera, CategoriaAlumno.Segunda, CategoriaAlumno.Tercera,
         CategoriaAlumno.Cuarta, CategoriaAlumno.Quinta, CategoriaAlumno.Sexta,
-        CategoriaAlumno.Septima, CategoriaAlumno.SinCategoria,
+        CategoriaAlumno.A, CategoriaAlumno.B1, CategoriaAlumno.B2,
+        CategoriaAlumno.C1, CategoriaAlumno.C2, CategoriaAlumno.D,
+        CategoriaAlumno.SinCategoria,
     ];
 
     private const int CancelacionesAMostrar = 5;

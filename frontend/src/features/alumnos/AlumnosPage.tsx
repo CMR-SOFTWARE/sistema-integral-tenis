@@ -9,7 +9,8 @@ import Avatar from '../../components/Avatar';
 import { obtenerSesion } from '../auth/sesion';
 import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { useProfesores } from '../profesores/useProfesores';
-import { CATEGORIAS, CAT_COLOR, CAT_LABEL, ESTADO_UI } from './types';
+import { CAT_COLOR, CAT_LABEL, ESTADO_UI, subPorEdad } from './types';
+import CategoriaOptions from './CategoriaOptions';
 import type { Alumno, Categoria, Estado } from './types';
 import s from './AlumnosPage.module.css';
 
@@ -136,23 +137,16 @@ export default function AlumnosPage() {
           onChange={(e) => setBusqueda(e.target.value)}
           placeholder="Buscar por nombre o DNI…"
         />
-        <div className={s.filtros}>
-          <button
-            className={filtro === 'todas' ? s.filtroActivo : s.filtro}
-            onClick={() => setFiltro('todas')}
-          >
-            Todas
-          </button>
-          {CATEGORIAS.map((c) => (
-            <button
-              key={c}
-              className={filtro === c ? s.filtroActivo : s.filtro}
-              onClick={() => setFiltro(c)}
-            >
-              {CAT_LABEL[c]}
-            </button>
-          ))}
-        </div>
+        {/* Categoría: select agrupado Varones/Damas (12 categorías no entran como chips) */}
+        <select
+          className={s.selectEstado}
+          value={filtro}
+          onChange={(e) => setFiltro(e.target.value as Categoria | 'todas')}
+        >
+          <option value="todas">Todas las categorías</option>
+          <option value="SinCategoria">Sin categoría</option>
+          <CategoriaOptions />
+        </select>
         {/* Estado: por defecto se ven todos (incluidas bajas) */}
         <select
           className={s.selectEstado}
@@ -209,6 +203,7 @@ export default function AlumnosPage() {
               {visibles.map((a) => {
                 const cat = CAT_COLOR[a.categoria];
                 const estado = ESTADO_UI[a.estado];
+                const sub = subPorEdad(a.fechaNacimiento);
                 return (
                   <tr key={a.id}>
                     <td>
@@ -227,6 +222,11 @@ export default function AlumnosPage() {
                       <span className={s.chip} style={{ background: `${cat}1a`, color: cat }}>
                         {CAT_LABEL[a.categoria]}
                       </span>
+                      {sub && (
+                        <span className={s.chip} style={{ background: '#eef2ff', color: '#4f46e5', marginLeft: 6 }}>
+                          {sub}
+                        </span>
+                      )}
                     </td>
                     <td className={s.tel}>{a.telefono}</td>
                     <td>

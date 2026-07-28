@@ -8,12 +8,14 @@ public class ReporteService : IReporteService
 {
     private const int MesesDeVentana = 6;
 
-    // Mismo orden que el dashboard: de la mejor (1ra) a la inicial (7ma) + sin categoría
+    // Mismo orden que el dashboard: varones (1ra→6ta), damas (A→D) y sin categoría
     private static readonly CategoriaAlumno[] OrdenCategorias =
     [
         CategoriaAlumno.Primera, CategoriaAlumno.Segunda, CategoriaAlumno.Tercera,
         CategoriaAlumno.Cuarta, CategoriaAlumno.Quinta, CategoriaAlumno.Sexta,
-        CategoriaAlumno.Septima, CategoriaAlumno.SinCategoria,
+        CategoriaAlumno.A, CategoriaAlumno.B1, CategoriaAlumno.B2,
+        CategoriaAlumno.C1, CategoriaAlumno.C2, CategoriaAlumno.D,
+        CategoriaAlumno.SinCategoria,
     ];
 
     private readonly ICargoRepository _cargos;

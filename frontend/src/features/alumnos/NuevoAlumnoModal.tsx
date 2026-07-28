@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Modal from '../../components/Modal';
 import { ApiError } from '../../lib/api';
-import { CATEGORIAS, CAT_LABEL } from './types';
+import CategoriaOptions from './CategoriaOptions';
 import type { AlumnoCreado, Categoria, CreateAlumno, RelacionTutor } from './types';
 import { useProfesores } from '../profesores/useProfesores';
 import s from './NuevoAlumnoModal.module.css';
@@ -133,9 +133,8 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
         <label className={s.campo}>
           <span>Categoría</span>
           <select value={form.categoria} onChange={(e) => set('categoria', e.target.value)}>
-            {CATEGORIAS.map((c) => (
-              <option key={c} value={c}>{c === 'SinCategoria' ? 'Sin categoría' : CAT_LABEL[c]}</option>
-            ))}
+            <option value="SinCategoria">Sin categoría</option>
+            <CategoriaOptions />
           </select>
         </label>
         <label className={s.campo}>

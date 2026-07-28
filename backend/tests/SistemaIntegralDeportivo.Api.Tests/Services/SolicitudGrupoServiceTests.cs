@@ -126,13 +126,27 @@ public class SolicitudGrupoServiceTests
     }
 
     [Fact]
+    public async Task Disponibles_GrupoDeOtraEscala_NoAparece()
+    {
+        // Alumno Cuarta (varones) NO ve un grupo de damas, aunque el "rank" coincida.
+        var damas = Grupo(CategoriaAlumno.C1, 4, (Guid.NewGuid(), true)); // C1 = rank 3, igual que Cuarta
+        var varones = Grupo(CategoriaAlumno.Cuarta, 4, (Guid.NewGuid(), true));
+        ConGrupos(damas, varones);
+
+        var res = await _service.DisponiblesParaAlumnoAsync(AlumnoId);
+
+        var g = Assert.Single(res);
+        Assert.Equal(varones.Id, g.GrupoId);
+    }
+
+    [Fact]
     public async Task Disponibles_AlumnoSinCategoria_SoloVeGruposAbiertos()
     {
         _alumnos.Setup(a => a.ObtenerAsync(AlumnoId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(AlumnoDe(CategoriaAlumno.SinCategoria));
         var abierto = Grupo(null, 4, (Guid.NewGuid(), true));
-        var septima = Grupo(CategoriaAlumno.Septima, 4, (Guid.NewGuid(), true));
-        ConGrupos(abierto, septima);
+        var conCategoria = Grupo(CategoriaAlumno.Sexta, 4, (Guid.NewGuid(), true));
+        ConGrupos(abierto, conCategoria);
 
         var res = await _service.DisponiblesParaAlumnoAsync(AlumnoId);
 
