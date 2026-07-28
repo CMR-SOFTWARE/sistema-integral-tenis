@@ -25,13 +25,21 @@ public class DatosPagoConfigDto
     public string? TitularPago { get; set; }
 }
 
-/// <summary>Configuración del tenant: precios del profe y datos de transferencia.</summary>
+/// <summary>El dueño ES el Director: si da clases, se ofrece como profe asignable.</summary>
+public class DirectorConfigDto
+{
+    public bool DaClases { get; set; }
+}
+
+/// <summary>Configuración del tenant: precios, datos de transferencia y el Director.</summary>
 public interface IConfigService
 {
     Task<PreciosDto> ObtenerPreciosAsync(CancellationToken ct = default);
     Task<PreciosDto> ActualizarPreciosAsync(PreciosDto dto, CancellationToken ct = default);
     Task<DatosPagoConfigDto> ObtenerDatosPagoAsync(CancellationToken ct = default);
     Task<DatosPagoConfigDto> ActualizarDatosPagoAsync(DatosPagoConfigDto dto, CancellationToken ct = default);
+    Task<DirectorConfigDto> ObtenerDirectorAsync(CancellationToken ct = default);
+    Task<DirectorConfigDto> ActualizarDirectorAsync(DirectorConfigDto dto, CancellationToken ct = default);
 }
 
 public class ConfigService : IConfigService
@@ -81,5 +89,20 @@ public class ConfigService : IConfigService
         tenant.TitularPago = string.IsNullOrWhiteSpace(dto.TitularPago) ? null : dto.TitularPago.Trim();
         await _tenant.GuardarCambiosAsync(ct);
         return await ObtenerDatosPagoAsync(ct);
+    }
+
+    public async Task<DirectorConfigDto> ObtenerDirectorAsync(CancellationToken ct = default)
+    {
+        var tenant = await _tenant.ObtenerActualAsync(ct);
+        return new DirectorConfigDto { DaClases = tenant.DirectorDaClases };
+    }
+
+    public async Task<DirectorConfigDto> ActualizarDirectorAsync(
+        DirectorConfigDto dto, CancellationToken ct = default)
+    {
+        var tenant = await _tenant.ObtenerActualAsync(ct);
+        tenant.DirectorDaClases = dto.DaClases;
+        await _tenant.GuardarCambiosAsync(ct);
+        return new DirectorConfigDto { DaClases = tenant.DirectorDaClases };
     }
 }

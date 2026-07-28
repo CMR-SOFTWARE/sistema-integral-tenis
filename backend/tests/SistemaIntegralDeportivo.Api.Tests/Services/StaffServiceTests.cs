@@ -212,6 +212,25 @@ public class StaffServiceTests
     }
 
     [Fact]
+    public async Task ListarAsignables_DirectorNoDaClases_NoIncluyeAlDueño()
+    {
+        // El dueño (Director) marcó que NO da clases → no se ofrece como profe.
+        _tenants.Setup(t => t.ObtenerActualAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Tenant { Subdominio = "d", Nombre = "Academia", OwnerUserId = OwnerId, DirectorDaClases = false });
+        _repo.Setup(r => r.ObtenerUsuarioAsync(OwnerId, It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new Usuario { Id = OwnerId, Nombre = "Juan", Apellido = "Head" });
+        var activo = Usuario(Guid.NewGuid());
+        _repo.Setup(r => r.ListarConUsuarioAsync(It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new[] { (new MembresiaTenant { UserId = activo.Id, Activo = true }, activo) });
+
+        var res = await _service.ListarAsignablesAsync();
+
+        Assert.Single(res); // solo el staff activo, NO el dueño
+        Assert.DoesNotContain(res, p => p.EsDueño);
+        Assert.Contains(res, p => p.UserId == activo.Id);
+    }
+
+    [Fact]
     public async Task Desvincularme_DesactivaMiMembresia()
     {
         var yo = Guid.NewGuid();
