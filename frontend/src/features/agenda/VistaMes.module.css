@@ -1,6 +1,8 @@
 .grilla {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  /* minmax(0, 1fr): las 7 columnas se reparten el ancho y PUEDEN encogerse por
+     debajo del contenido (si no, los chips ensanchan la grilla y aparece scroll). */
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 6px;
 }
 
@@ -20,6 +22,7 @@
   flex-direction: column;
   gap: 4px;
   min-height: 96px;
+  min-width: 0; /* deja que la celda (y sus chips) se achiquen y trunquen */
   border: 1px solid var(--color-border);
   border-radius: 10px;
   background: var(--color-surface);
@@ -87,6 +90,7 @@
 .chipHora {
   font-weight: 800;
   color: var(--color-primary-dark);
+  margin-right: 4px;
 }
 
 .chipCancelado {
@@ -177,11 +181,33 @@
   text-align: right;
 }
 
-/* ── Móvil: la grilla se desliza de lado ── */
-@media (max-width: 720px) {
+/* ── Móvil: las 7 columnas ENTRAN igual (sin scroll); achicamos espacios y
+   tipografías, y el chip muestra solo el título (como el calendario del cel) ── */
+@media (max-width: 640px) {
   .grilla {
-    overflow-x: auto;
-    grid-auto-flow: row;
-    grid-template-columns: repeat(7, minmax(96px, 1fr));
+    gap: 3px;
+  }
+
+  .celda {
+    min-height: 84px;
+    padding: 4px;
+    border-radius: 8px;
+  }
+
+  .celdaNum {
+    font-size: 12px;
+  }
+
+  .encabezado {
+    font-size: 10px;
+  }
+
+  .chip {
+    font-size: 10px;
+    padding: 1px 4px;
+  }
+
+  .chipHora {
+    display: none;
   }
 }

@@ -62,7 +62,7 @@ export default function VistaMes({ anio, mes, turnos, bloqueos, onAbrirTurno }: 
                     className={`${s.chip} ${t.estado === 'Cancelado' ? s.chipCancelado : ''}`}
                     title={`${horaCorta(t.horaInicio)} ${t.titulo}`}
                   >
-                    <span className={s.chipHora}>{horaCorta(t.horaInicio)}</span> {t.titulo}
+                    <span className={s.chipHora}>{horaCorta(t.horaInicio)}</span>{t.titulo}
                   </div>
                 ))}
                 {items.length > MAX_CHIPS && (
