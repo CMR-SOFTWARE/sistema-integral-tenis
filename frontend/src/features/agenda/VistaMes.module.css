@@ -1,0 +1,187 @@
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.encabezado {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+  text-align: center;
+  padding: 4px 0 6px;
+}
+
+.celda {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 96px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  padding: 6px;
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  transition: border-color 0.12s, background 0.12s;
+}
+
+.celda:hover {
+  border-color: var(--color-primary);
+}
+
+.celdaFuera {
+  background: var(--color-surface-subtle);
+  opacity: 0.55;
+}
+
+.celdaHoy .celdaNum {
+  color: var(--color-primary);
+}
+
+.celdaSel {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-primary-soft, rgb(16 107 60 / 0.15));
+}
+
+.celdaNum {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+}
+
+.bloqueoDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #b7791f;
+  flex: none;
+}
+
+.chips {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.chip {
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--color-text);
+  background: var(--color-primary-soft, rgb(16 107 60 / 0.1));
+  border-radius: 5px;
+  padding: 1px 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.chipHora {
+  font-weight: 800;
+  color: var(--color-primary-dark);
+}
+
+.chipCancelado {
+  background: var(--color-surface-hover);
+  color: var(--color-text-faint);
+  text-decoration: line-through;
+}
+
+.chipMas {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  padding: 0 5px;
+}
+
+/* ── Detalle del día ── */
+.detalle {
+  margin-top: 16px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+}
+
+.detalleTitulo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  text-transform: capitalize;
+  margin-bottom: 10px;
+}
+
+.detalleVacio {
+  color: var(--color-text-faint);
+  font-size: 13px;
+  padding: 6px 0;
+}
+
+.detalleTurno,
+.detalleBloqueo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  text-align: left;
+  margin-bottom: 6px;
+}
+
+.detalleTurno {
+  border: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-subtle);
+  cursor: pointer;
+}
+
+.detalleTurno:hover {
+  border-color: var(--color-primary);
+}
+
+.detalleCancelado {
+  opacity: 0.6;
+}
+
+.detalleBloqueo {
+  background: #fef6e7;
+  border: 1px solid #f3dfb6;
+  color: #b7791f;
+}
+
+.detalleHora {
+  font-family: var(--font-display);
+  font-weight: 800;
+  width: 48px;
+  flex: none;
+}
+
+.detalleNombre {
+  font-weight: 700;
+  flex: none;
+}
+
+.detalleInfo {
+  color: var(--color-text-faint);
+  font-size: 12px;
+  margin-left: auto;
+  text-align: right;
+}
+
+/* ── Móvil: la grilla se desliza de lado ── */
+@media (max-width: 720px) {
+  .grilla {
+    overflow-x: auto;
+    grid-auto-flow: row;
+    grid-template-columns: repeat(7, minmax(96px, 1fr));
+  }
+}

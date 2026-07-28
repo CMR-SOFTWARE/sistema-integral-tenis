@@ -27,6 +27,15 @@ public class TurnosController : ControllerBase
         [FromQuery] DateOnly lunes, CancellationToken ct) =>
         Ok(await _service.ObtenerSemanaAsync(lunes, ct));
 
+    /// <summary>
+    /// GET api/turnos/mes?anio=2026&amp;mes=7 — turnos del mes (vista mensual),
+    /// generando perezosamente los que falten.
+    /// </summary>
+    [HttpGet("mes")]
+    public async Task<ActionResult<IReadOnlyList<TurnoResponseDto>>> Mes(
+        [FromQuery] int anio, [FromQuery] int mes, CancellationToken ct) =>
+        Ok(await _service.ObtenerMesAsync(anio, mes, ct));
+
     [HttpPatch("{id:guid}/asistencia")]
     public async Task<IActionResult> Asistencia(Guid id, AsistenciaDto dto, CancellationToken ct)
     {

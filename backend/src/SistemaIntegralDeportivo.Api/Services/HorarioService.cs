@@ -207,5 +207,7 @@ public class HorarioService : IHorarioService
         Activo = h.Activo,
         ProfesorUserId = h.ProfesorUserId,
         ValorHoraProfe = h.ValorHoraProfe,
+        GrupoId = h.GrupoId,
+        AlumnoId = h.AlumnoId,
     };
 }

@@ -51,6 +51,28 @@ public class TurnoService : ITurnoService
             .ToList();
     }
 
+    public async Task<IReadOnlyList<TurnoResponseDto>> ObtenerMesAsync(
+        int anio, int mes, CancellationToken ct = default)
+    {
+        // Misma costura que la semana, pero para el mes entero (vista mensual):
+        // materializa lo que falte (idempotente) y después lee y mapea.
+        await GenerarTurnosDelMesAsync(anio, mes, ct);
+
+        var primerDia = new DateOnly(anio, mes, 1);
+        var ultimoDia = primerDia.AddMonths(1).AddDays(-1);
+        var turnosMes = await _turnos.ListarEntreAsync(primerDia, ultimoDia, ct);
+
+        // El profe EMPLEADO ve solo SUS clases; el dueño ve todas (igual que la semana).
+        if (_usuario.EsStaff)
+            turnosMes = turnosMes.Where(t => t.Horario?.ProfesorUserId == _usuario.UserId).ToList();
+
+        var deudores = await DeudoresDeAsync(turnosMes, ct);
+        return turnosMes
+            .OrderBy(t => t.Fecha).ThenBy(t => t.HoraInicio)
+            .Select(t => Mapear(t, deudores))
+            .ToList();
+    }
+
     /// <summary>Alumnos del roster con cuota vencida (señal para el profe, no mueve plata).</summary>
     private async Task<HashSet<Guid>> DeudoresDeAsync(IReadOnlyList<Turno> turnos, CancellationToken ct)
     {
@@ -210,6 +232,7 @@ public class TurnoService : ITurnoService
                     : "Clase suelta"),
         Cancha = t.Cancha?.Nombre ?? string.Empty,
         Sede = t.Cancha?.Sede?.Nombre ?? string.Empty,
+        ProfesorUserId = t.Horario?.ProfesorUserId,
         Participantes = t.Participantes.Select(p => new ParticipanteTurnoDto
         {
             AlumnoId = p.AlumnoId,

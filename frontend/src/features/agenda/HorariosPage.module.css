@@ -85,7 +85,8 @@
 }
 
 .slot:hover .slotBaja,
-.slot:hover .slotEditar {
+.slot:hover .slotEditar,
+.slot:hover .slotDuplicar {
   opacity: 1;
 }
 
@@ -168,6 +169,23 @@
 }
 
 .slotEditar:hover {
+  color: var(--color-primary);
+}
+
+.slotDuplicar {
+  position: absolute;
+  top: 6px;
+  right: 46px;
+  border: none;
+  background: none;
+  color: var(--color-text-faint);
+  cursor: pointer;
+  padding: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.slotDuplicar:hover {
   color: var(--color-primary);
 }
 
