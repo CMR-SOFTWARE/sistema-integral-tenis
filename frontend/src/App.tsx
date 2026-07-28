@@ -15,13 +15,11 @@ import { obtenerSesion, obtenerToken } from './features/auth/sesion';
 import DashboardPage from './features/dashboard/DashboardPage';
 import StaffDashboardPage from './features/staff/StaffDashboardPage';
 import GruposPage from './features/grupos/GruposPage';
-import ProfesoresPage from './features/profesores/ProfesoresPage';
+import MiAcademiaPage from './features/miacademia/MiAcademiaPage';
 import PlataformaPage from './features/admin/PlataformaPage';
 import CalendarioPage from './features/agenda/CalendarioPage';
 import HorariosPage from './features/agenda/HorariosPage';
-import ConfiguracionPage from './features/agenda/ConfiguracionPage';
 import CuotasPage from './features/cuotas/CuotasPage';
-import SueldosPage from './features/sueldos/SueldosPage';
 import AvisosPage from './features/avisos/AvisosPage';
 import BloqueosPage from './features/bloqueos/BloqueosPage';
 import CancelacionesPage from './features/cancelaciones/CancelacionesPage';
@@ -101,16 +99,14 @@ export default function App() {
             <Route path="/alumnos" element={<AlumnosPage />} />
             <Route path="/calendario" element={<CalendarioPage />} />
             <Route path="/grupos" element={<GruposPage />} />
-            <Route path="/profesores" element={<ProfesoresPage />} />
+            <Route path="/mi-academia" element={<MiAcademiaPage />} />
             <Route path="/horarios" element={<HorariosPage />} />
             <Route path="/cuotas" element={<CuotasPage />} />
-            <Route path="/sueldos" element={<SueldosPage />} />
             <Route path="/avisos" element={<AvisosPage />} />
             <Route path="/bloqueos" element={<BloqueosPage />} />
             <Route path="/cancelaciones" element={<CancelacionesPage />} />
             <Route path="/solicitudes" element={<SolicitudesPage />} />
             <Route path="/reportes" element={<ReportesPage />} />
-            <Route path="/configuracion" element={<ConfiguracionPage />} />
             <Route path="/plataforma" element={<PlataformaPage />} />
           </Route>
         </Route>

@@ -85,7 +85,7 @@ export default function CuotasPage() {
       {error && (
         <div className={s.error}>
           {error}
-          {sinPrecios && <> — cargalos en <b>Configuración</b> (sidebar).</>}
+          {sinPrecios && <> — cargalos en <b>Mi academia</b> → Configuración.</>}
         </div>
       )}
       {cargando && <div className={s.vacio}>Calculando el mes…</div>}

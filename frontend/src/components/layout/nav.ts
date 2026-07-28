@@ -31,9 +31,10 @@ export const profNav: NavItem[] = [
     soloOwner: true,
   },
   {
-    to: '/profesores',
-    label: 'Profesores',
-    icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+    // "Mi academia" agrupa la gestión del negocio: Profesores + Sueldos + Configuración (pestañas).
+    to: '/mi-academia',
+    label: 'Mi academia',
+    icon: 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M9 11h.01M15 11h.01',
     soloOwner: true,
   },
   { to: '/horarios', label: 'Horarios', icon: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 3', soloOwner: true },
@@ -41,12 +42,6 @@ export const profNav: NavItem[] = [
     to: '/cuotas',
     label: 'Cuotas',
     icon: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
-    soloOwner: true,
-  },
-  {
-    to: '/sueldos',
-    label: 'Sueldos',
-    icon: 'M20 12V8H6a2 2 0 0 1 0-4h12v4M4 6v12a2 2 0 0 0 2 2h14v-4M18 12a2 2 0 0 0 0 4h4v-4z',
     soloOwner: true,
   },
   {
@@ -69,12 +64,6 @@ export const profNav: NavItem[] = [
     soloOwner: true,
   },
   { to: '/reportes', label: 'Reportes', icon: 'M18 20V10M12 20V4M6 20v-6', soloOwner: true },
-  {
-    to: '/configuracion',
-    label: 'Configuración',
-    icon: 'M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6',
-    soloOwner: true,
-  },
   {
     to: '/plataforma',
     label: 'Plataforma',

@@ -55,7 +55,7 @@ export default function HorariosPage() {
           className={s.btnNuevo}
           onClick={() => setModal(true)}
           disabled={sinCanchas}
-          title={sinCanchas ? 'Primero cargá una sede con canchas en Configuración' : undefined}
+          title={sinCanchas ? 'Primero cargá una sede con canchas en Mi academia → Configuración' : undefined}
         >
           + Nuevo horario
         </button>
@@ -67,7 +67,7 @@ export default function HorariosPage() {
       {sinCanchas && !cargando && (
         <div className={s.aviso}>
           Para crear horarios primero necesitás al menos una <b>sede con canchas</b>.
-          Cargalas en <b>Configuración</b> (sidebar).
+          Cargalas en <b>Mi academia</b> → Configuración.
         </div>
       )}
 
