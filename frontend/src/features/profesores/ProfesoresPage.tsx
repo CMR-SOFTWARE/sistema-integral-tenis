@@ -1,55 +1,38 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '../../lib/api';
 import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
+import { obtenerSesion } from '../auth/sesion';
+import Avatar from '../../components/Avatar';
 import AccesoCreadoModal from '../alumnos/AccesoCreadoModal';
 import { formatoPlata } from '../alumnos/types';
-import s from './ProfesoresPage.module.css';
-
-/** Espejo de StaffDto. */
-interface Staff {
-  id: string;
-  userId: string;
-  nombre: string;
-  apellido: string;
-  email: string;
-  activo: boolean;
-  /** Valor hora base (para el sueldo); null = sin definir. */
-  valorHora: number | null;
-}
-
-/** Espejo de StaffCreadoDto. */
-interface StaffCreado {
-  staff: Staff;
-  usuario: string | null;
-  passwordTemporal: string | null;
-}
-
-const FORM_VACIO = { nombre: '', apellido: '', email: '', telefono: '', valorHora: '' };
+import NuevoEmpleadoModal from './NuevoEmpleadoModal';
+import EditarEmpleadoModal from './EditarEmpleadoModal';
+import DetalleEmpleadoModal from './DetalleEmpleadoModal';
+import type { Staff, StaffCreado, UpdateEmpleado } from './types';
+import s from '../alumnos/AlumnosPage.module.css';
 
 /**
- * Profes empleados (Staff) del club. El dueño suma a un profe por su email (tiene
- * que tener cuenta en la app), lo ve en la lista y lo activa/desactiva. Los profes
- * empleados ven una versión reducida del panel (su agenda y sus alumnos).
+ * Profes empleados (Staff) del club, con la misma UI que Alumnos: tabla con
+ * buscador, ver ficha y editar. Solo el DUEÑO los gestiona (alta/baja/edición).
  */
 export default function ProfesoresPage() {
   const [staff, setStaff] = useState<Staff[]>([]);
   const [cargando, setCargando] = useState(true);
-  const [form, setForm] = useState(FORM_VACIO);
-  const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const [busqueda, setBusqueda] = useState('');
+  const [modalNuevo, setModalNuevo] = useState(false);
+  const [editando, setEditando] = useState<Staff | null>(null);
+  const [detalle, setDetalle] = useState<Staff | null>(null);
   const [credenciales, setCredenciales] = useState<{ nombre: string; usuario: string; passwordTemporal: string } | null>(null);
-  const [editVh, setEditVh] = useState<{ id: string; valor: string } | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const confirmar = useConfirmar();
-
-  const setCampo = (campo: keyof typeof FORM_VACIO, valor: string) =>
-    setForm((f) => ({ ...f, [campo]: valor }));
+  const esOwner = obtenerSesion()?.rol === 'owner';
 
   const cargar = useCallback(() => {
     setCargando(true);
     api.get<Staff[]>('/staff')
-      .then(setStaff)
-      .catch(() => setStaff([]))
+      .then((data) => { setStaff(data); setError(null); })
+      .catch((e) => setError(e instanceof ApiError ? e.message : 'No se pudo cargar el equipo.'))
       .finally(() => setCargando(false));
   }, []);
 
@@ -57,65 +40,36 @@ export default function ProfesoresPage() {
 
   const avisar = (msg: string) => {
     setToast(msg);
-    setTimeout(() => setToast(null), 3000);
+    setTimeout(() => setToast(null), 2800);
   };
 
-  const completo = form.nombre.trim() && form.apellido.trim() && form.telefono.trim();
+  // Buscador (nombre/apellido/DNI/celular): client-side sobre lo ya cargado.
+  const termino = busqueda.trim().toLowerCase();
+  const visibles = staff.filter((p) =>
+    termino === ''
+    || `${p.nombre} ${p.apellido}`.toLowerCase().includes(termino)
+    || (p.dni ?? '').toLowerCase().includes(termino)
+    || p.telefono.toLowerCase().includes(termino),
+  );
 
-  const agregar = async () => {
-    if (!completo) return;
-    setGuardando(true);
-    setError(null);
-    try {
-      const creado = await api.post<StaffCreado>('/staff', {
-        nombre: form.nombre.trim(),
-        apellido: form.apellido.trim(),
-        telefono: form.telefono.trim(),
-        email: form.email.trim() || undefined,
-        valorHora: form.valorHora ? Number(form.valorHora) : undefined,
-      });
-      setForm(FORM_VACIO);
-      cargar();
-      if (creado.passwordTemporal) {
-        // Cuenta nueva: mostramos las credenciales una sola vez
-        setCredenciales({
-          nombre: `${creado.staff.nombre} ${creado.staff.apellido}`,
-          usuario: creado.usuario ?? creado.staff.email,
-          passwordTemporal: creado.passwordTemporal,
-        });
-      } else {
-        avisar(`${creado.staff.nombre} volvió a tu equipo.`);
-      }
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'No se pudo agregar el profe.');
-    } finally {
-      setGuardando(false);
-    }
+  const crear = (dto: { nombre: string; apellido: string; telefono: string; email?: string; valorHora?: number }) =>
+    api.post<StaffCreado>('/staff', dto);
+
+  const editar = async (id: string, dto: UpdateEmpleado) => {
+    await api.put(`/staff/${id}`, dto);
+    cargar();
   };
 
   const cambiarActivo = async (p: Staff) => {
     if (p.activo && !(await confirmar({
       titulo: 'Sacar del equipo',
-      mensaje: `¿Sacar a ${p.nombre} ${p.apellido} de tu equipo? Deja de ver la academia; lo podés volver a activar cuando quieras.`,
+      mensaje: `¿Sacar a ${p.nombre} ${p.apellido} de tu equipo? Deja de ver la academia; lo podés reactivar cuando quieras.`,
       confirmar: 'Sacar',
       peligro: true,
     }))) return;
     await api.patch(`/staff/${p.id}/activo`, { activo: !p.activo });
     cargar();
-  };
-
-  /** Guarda el valor hora base del profe (vacío = lo borra). */
-  const guardarValorHora = async () => {
-    if (!editVh) return;
-    try {
-      await api.patch(`/staff/${editVh.id}/valor-hora`, {
-        valorHora: editVh.valor ? Number(editVh.valor) : null,
-      });
-      setEditVh(null);
-      cargar();
-    } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'No se pudo guardar el valor hora.');
-    }
+    avisar(p.activo ? `${p.nombre} salió del equipo` : `${p.nombre} reactivado`);
   };
 
   /** Borrado REAL: saca al profe de verdad (para los que se cargaron mal). */
@@ -138,134 +92,154 @@ export default function ProfesoresPage() {
       avisar(`${p.nombre} ${p.apellido} eliminado`);
       cargar();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'No se pudo eliminar el profe.');
+      avisar(e instanceof ApiError ? e.message : 'No se pudo eliminar el profe.');
     }
   };
 
   return (
     <div>
       <div className={s.toolbar}>
-        <div className={s.titulo}>
-          Sumá a los profes que trabajan con vos. Le creás la cuenta y su usuario y
-          contraseña inicial es su celular. Cada uno entra con su cuenta y ve solo su agenda y sus alumnos.
-        </div>
+        <input
+          className={s.buscador}
+          type="search"
+          value={busqueda}
+          onChange={(e) => setBusqueda(e.target.value)}
+          placeholder="Buscar por nombre, DNI o celular…"
+        />
+        <div className={s.spacer} />
+        <div className={s.contador}>{visibles.length} profes</div>
+        {esOwner && (
+          <button className={s.btnNuevo} onClick={() => setModalNuevo(true)}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
+              <path d="M12 5v14M5 12h14" />
+            </svg>
+            Nuevo profe
+          </button>
+        )}
       </div>
 
-      <div className={s.altaCard}>
-        <div className={s.altaCampos}>
-          <input
-            className={s.input}
-            value={form.nombre}
-            onChange={(e) => setCampo('nombre', e.target.value)}
-            placeholder="Nombre"
-            maxLength={80}
-          />
-          <input
-            className={s.input}
-            value={form.apellido}
-            onChange={(e) => setCampo('apellido', e.target.value)}
-            placeholder="Apellido"
-            maxLength={80}
-          />
-          <input
-            className={s.input}
-            value={form.telefono}
-            onChange={(e) => setCampo('telefono', e.target.value)}
-            placeholder="Celular (su usuario y contraseña)"
-          />
-          <input
-            className={s.input}
-            type="email"
-            value={form.email}
-            onChange={(e) => setCampo('email', e.target.value)}
-            placeholder="Email (opcional)"
-          />
-          <input
-            className={s.input}
-            type="number"
-            min={0}
-            value={form.valorHora}
-            onChange={(e) => setCampo('valorHora', e.target.value)}
-            onWheel={(e) => e.currentTarget.blur()}
-            placeholder="Valor hora (opcional)"
-          />
-        </div>
-        <button
-          className={s.btnPrimario}
-          disabled={guardando || !completo}
-          onClick={() => void agregar()}
-        >
-          {guardando ? 'Creando…' : 'Crear profe'}
-        </button>
+      <div className={s.tarjeta}>
+        {error && <div className={s.error}>{error} — ¿está corriendo la API? (dotnet run)</div>}
+        {cargando && !error && <div className={s.vacio}>Cargando…</div>}
+        {!cargando && !error && (
+          <table className={s.tabla}>
+            <thead>
+              <tr>
+                <th>Profe</th>
+                <th>Valor hora</th>
+                <th>Celular</th>
+                <th>Estado</th>
+                <th className={s.thAcciones}>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visibles.map((p) => (
+                <tr key={p.id}>
+                  <td>
+                    <div className={s.celdaAlumno}>
+                      <Avatar nombre={p.nombre} apellido={p.apellido} size={40} radius={12} />
+                      <div>
+                        <div className={s.nombre}>{p.nombre} {p.apellido}</div>
+                        <div className={s.dni}>{p.dni ? `DNI ${p.dni}` : 'Sin DNI'}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>{p.valorHora != null ? `${formatoPlata(p.valorHora)}/h` : '—'}</td>
+                  <td className={s.tel}>{p.telefono || '—'}</td>
+                  <td>
+                    <span
+                      className={s.chip}
+                      style={p.activo
+                        ? { background: '#e7f6ec', color: '#0e6b3c' }
+                        : { background: '#f3f4f6', color: '#6b7280' }}
+                    >
+                      {p.activo ? 'Activo' : 'Inactivo'}
+                    </span>
+                  </td>
+                  <td>
+                    <div className={s.acciones}>
+                      <button className={s.accion} title="Ver ficha" onClick={() => setDetalle(p)}>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z" /><circle cx="12" cy="12" r="3" />
+                        </svg>
+                      </button>
+                      {esOwner && (
+                        <>
+                          <button className={s.accion} title="Editar datos" onClick={() => setEditando(p)}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M11 4H4v16h16v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z" />
+                            </svg>
+                          </button>
+                          <button
+                            className={`${s.accion} ${s.accionBaja}`}
+                            title={p.activo ? 'Sacar del equipo (se puede reactivar)' : 'Reactivar'}
+                            onClick={() => void cambiarActivo(p)}
+                          >
+                            {p.activo ? (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 11h-6" />
+                              </svg>
+                            ) : (
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM20 8v6M23 11h-6" />
+                              </svg>
+                            )}
+                          </button>
+                          <button className={`${s.accion} ${s.accionEliminar}`} title="Eliminar definitivamente (no se deshace)" onClick={() => void eliminar(p)}>
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86" />
+                              <path d="M15 9l-6 6M9 9l6 6" />
+                            </svg>
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+        {!cargando && !error && visibles.length === 0 && (
+          <div className={s.vacio}>
+            {staff.length === 0 && termino === ''
+              ? 'Todavía no sumaste ningún profe. Creá el primero con "Nuevo profe".'
+              : 'No se encontraron profes con esa búsqueda.'}
+          </div>
+        )}
       </div>
 
-      {error && <div className={s.error}>{error}</div>}
-
-      {cargando && <div className={s.vacio}>Cargando…</div>}
-
-      {!cargando && staff.length === 0 && (
-        <div className={s.vacioCard}>
-          Todavía no sumaste ningún profe. Agregá uno con su celular para que te ayude con
-          las clases.
-        </div>
+      {modalNuevo && (
+        <NuevoEmpleadoModal
+          onClose={() => setModalNuevo(false)}
+          onCrear={crear}
+          onCreado={(creado) => {
+            cargar();
+            if (creado.passwordTemporal) {
+              setCredenciales({
+                nombre: `${creado.staff.nombre} ${creado.staff.apellido}`,
+                usuario: creado.usuario ?? creado.staff.email,
+                passwordTemporal: creado.passwordTemporal,
+              });
+            } else {
+              avisar(`${creado.staff.nombre} volvió a tu equipo.`);
+            }
+          }}
+        />
       )}
-
-      {!cargando && staff.length > 0 && (
-        <div className={s.lista}>
-          {staff.map((p) => (
-            <div key={p.id} className={p.activo ? s.fila : s.filaInactiva}>
-              <div className={s.avatar}>
-                {`${p.nombre.charAt(0)}${p.apellido.charAt(0)}`.toUpperCase()}
-              </div>
-              <div className={s.cuerpo}>
-                <div className={s.nombre}>
-                  {p.nombre} {p.apellido}
-                  {!p.activo && <span className={s.badgeInactivo}>Inactivo</span>}
-                </div>
-                <div className={s.email}>{p.email}</div>
-              </div>
-              <div className={s.valorHoraCell}>
-                {editVh?.id === p.id ? (
-                  <>
-                    <input
-                      className={s.vhInput}
-                      type="number"
-                      min={0}
-                      autoFocus
-                      value={editVh.valor}
-                      onChange={(e) => setEditVh({ id: p.id, valor: e.target.value })}
-                      onWheel={(e) => e.currentTarget.blur()}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') void guardarValorHora();
-                        if (e.key === 'Escape') setEditVh(null);
-                      }}
-                      placeholder="Valor hora"
-                    />
-                    <button className={s.btnMini} onClick={() => void guardarValorHora()}>Guardar</button>
-                  </>
-                ) : (
-                  <button
-                    className={`${s.vhChip} ${p.valorHora == null ? s.vhChipVacio : ''}`}
-                    title="Valor hora base (para calcular el sueldo)"
-                    onClick={() => setEditVh({ id: p.id, valor: p.valorHora?.toString() ?? '' })}
-                  >
-                    {p.valorHora != null ? `${formatoPlata(p.valorHora)}/h` : '+ valor hora'}
-                  </button>
-                )}
-              </div>
-              <button className={s.btnMini} onClick={() => void cambiarActivo(p)}>
-                {p.activo ? 'Sacar' : 'Reactivar'}
-              </button>
-              <button className={s.btnMiniBorrar} onClick={() => void eliminar(p)}>
-                Eliminar
-              </button>
-            </div>
-          ))}
-        </div>
+      {editando && (
+        <EditarEmpleadoModal
+          empleado={editando}
+          onClose={() => setEditando(null)}
+          onEditar={async (id, dto) => {
+            await editar(id, dto);
+            avisar(`${dto.nombre} ${dto.apellido} actualizado`);
+          }}
+        />
       )}
-
-      {toast && <div className={s.toast}>{toast}</div>}
-
+      {detalle && (
+        <DetalleEmpleadoModal empleado={detalle} onClose={() => setDetalle(null)} />
+      )}
       {credenciales && (
         <AccesoCreadoModal
           nombre={credenciales.nombre}
@@ -273,6 +247,15 @@ export default function ProfesoresPage() {
           passwordTemporal={credenciales.passwordTemporal}
           onClose={() => setCredenciales(null)}
         />
+      )}
+
+      {toast && (
+        <div className={s.toast}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7bed9f" strokeWidth="2.5" strokeLinecap="round">
+            <path d="M20 6L9 17l-5-5" />
+          </svg>
+          {toast}
+        </div>
       )}
     </div>
   );

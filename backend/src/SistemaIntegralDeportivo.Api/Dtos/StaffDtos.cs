@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace SistemaIntegralDeportivo.Api.Dtos;
 
-/// <summary>Un profe empleado (Staff) del club, con los datos de su usuario.</summary>
+/// <summary>Un profe empleado (Staff) del club, con los datos de su usuario (para la ficha).</summary>
 public class StaffDto
 {
     public Guid Id { get; set; } // id de la membresía
@@ -10,8 +10,35 @@ public class StaffDto
     public string Nombre { get; set; } = string.Empty;
     public string Apellido { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
+    /// <summary>Celular (es el login del profe): se muestra, no se edita desde la ficha.</summary>
+    public string Telefono { get; set; } = string.Empty;
+    public string? Dni { get; set; }
+    public DateTime? FechaNacimiento { get; set; }
     public bool Activo { get; set; }
     /// <summary>Valor hora base (lo que se le paga por hora de clase); null = sin definir.</summary>
+    public decimal? ValorHora { get; set; }
+    /// <summary>Alta del profe en el club (para la ficha).</summary>
+    public DateTime CreadoEl { get; set; }
+}
+
+/// <summary>Edición de la ficha del empleado (el celular/login NO se toca acá).</summary>
+public class UpdateStaffDto
+{
+    [Required, StringLength(80)]
+    public string Nombre { get; set; } = string.Empty;
+
+    [Required, StringLength(80)]
+    public string Apellido { get; set; } = string.Empty;
+
+    [EmailAddress(ErrorMessage = "El email no tiene un formato válido.")]
+    public string? Email { get; set; }
+
+    [StringLength(15)]
+    public string? Dni { get; set; }
+
+    public DateTime? FechaNacimiento { get; set; }
+
+    [Range(0, 99_999_999)]
     public decimal? ValorHora { get; set; }
 }
 

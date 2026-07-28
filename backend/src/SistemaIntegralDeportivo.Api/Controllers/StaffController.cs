@@ -89,6 +89,21 @@ public class StaffController : ControllerBase
         }
     }
 
+    /// <summary>PUT api/staff/{id} — edita la ficha del empleado (datos + valor hora; el celular no).</summary>
+    [HttpPut("{id:guid}")]
+    public async Task<IActionResult> Editar(Guid id, UpdateStaffDto dto, CancellationToken ct)
+    {
+        try
+        {
+            await _staff.EditarAsync(id, dto, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     /// <summary>
     /// DELETE api/staff/{id}/definitivo — borrado REAL del profe empleado (sin vuelta).
     /// Lo que lo tenía de profe queda sin asignar; su login se va si no cumple otro rol.
