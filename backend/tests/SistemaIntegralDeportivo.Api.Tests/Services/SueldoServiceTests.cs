@@ -18,6 +18,7 @@ public class SueldoServiceTests
     private readonly Mock<IPoliticaDeSueldo> _politica = new();
     private readonly Mock<IPagoEmpleadoRepository> _pagos = new();
     private readonly Mock<IMembresiaTenantRepository> _membresias = new();
+    private readonly Mock<IUsuarioActual> _usuario = new();
     private readonly SueldoService _service;
 
     private readonly List<SueldoCalculadoDto> _calculados = [];
@@ -25,7 +26,7 @@ public class SueldoServiceTests
 
     public SueldoServiceTests()
     {
-        _service = new SueldoService(_politica.Object, _pagos.Object, _membresias.Object);
+        _service = new SueldoService(_politica.Object, _pagos.Object, _membresias.Object, _usuario.Object);
 
         _politica.Setup(p => p.CalcularDelMesAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
                  .ReturnsAsync(() => [.. _calculados]);
@@ -151,5 +152,49 @@ public class SueldoServiceTests
     {
         await Assert.ThrowsAsync<ReglaDeNegocioException>(
             () => _service.RevertirPagoAsync(Profe, 2026, 7));
+    }
+
+    // ── Mi sueldo: el propio empleado ve SU liquidación ──
+
+    [Fact]
+    public async Task ObtenerMio_DevuelveLaFilaDelUsuarioActual_NoLaDeOtros()
+    {
+        _usuario.Setup(u => u.UserId).Returns(Profe);
+        Calculado(Profe, 16_000m);
+        Calculado(Guid.NewGuid(), 9_000m); // otro empleado: no debe aparecer
+
+        var mio = await _service.ObtenerMioAsync(2026, 7);
+
+        Assert.Equal(Profe, mio.UserId);
+        Assert.Equal(16_000m, mio.Calculado);
+        Assert.Equal("Pendiente", mio.Estado); // sin pago registrado
+    }
+
+    [Fact]
+    public async Task ObtenerMio_ConPago_QuedaPagado()
+    {
+        _usuario.Setup(u => u.UserId).Returns(Profe);
+        Calculado(Profe, 16_000m);
+        _pagos.Setup(p => p.ObtenerDelMesAsync(Profe, 2026, 7, It.IsAny<CancellationToken>()))
+              .ReturnsAsync(new PagoEmpleado { UserId = Profe, Anio = 2026, Mes = 7, Monto = 16_000m, MedioPago = MedioPago.Transferencia, PagadoEl = DateTime.UtcNow });
+
+        var mio = await _service.ObtenerMioAsync(2026, 7);
+
+        Assert.Equal("Pagado", mio.Estado);
+        Assert.Equal(16_000m, mio.Pagado);
+        Assert.Equal(0m, mio.Saldo);
+    }
+
+    [Fact]
+    public async Task ObtenerMio_SinClases_DaCeroYPendiente()
+    {
+        _usuario.Setup(u => u.UserId).Returns(Profe);
+        // La política no devuelve fila para Profe este mes
+
+        var mio = await _service.ObtenerMioAsync(2026, 7);
+
+        Assert.Equal(0m, mio.Calculado);
+        Assert.Equal("Pendiente", mio.Estado);
+        Assert.False(mio.TieneValorHora);
     }
 }

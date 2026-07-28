@@ -9,6 +9,9 @@ public interface ISueldoService
     /// <summary>La pantalla Sueldos de un mes: calculado vs pagado por empleado + totales.</summary>
     Task<LiquidacionSueldosDto> ObtenerMesAsync(int anio, int mes, CancellationToken ct = default);
 
+    /// <summary>La liquidación del PROPIO empleado logueado (para su panel).</summary>
+    Task<EmpleadoSueldoDto> ObtenerMioAsync(int anio, int mes, CancellationToken ct = default);
+
     /// <summary>Registra el pago del sueldo de un empleado por un mes (monto ajustable).</summary>
     Task PagarAsync(Guid userId, int anio, int mes, decimal monto, MedioPago medio, CancellationToken ct = default);
 

@@ -1,10 +1,15 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { obtenerSesion } from '../auth/sesion';
-import { aISO, fechaCorta, horaCorta, lunesDe } from '../agenda/types';
+import { aISO, DIAS, fechaCorta, horaCorta, lunesDe } from '../agenda/types';
 import { useSemana } from '../agenda/hooks';
 import { useAlumnos } from '../alumnos/useAlumnos';
+import { useMiSueldo } from '../sueldos/useMiSueldo';
+import { formatoPlata } from '../alumnos/types';
+import { MESES } from '../cuotas/types';
 import s from './StaffDashboardPage.module.css';
+
+const DIA_LABEL: Record<string, string> = Object.fromEntries(DIAS.map((d) => [d.valor, d.corto]));
 
 /**
  * Inicio del profe EMPLEADO: un resumen de su semana (clases a dar, horas,
@@ -16,6 +21,7 @@ export default function StaffDashboardPage() {
   const lunes = useMemo(() => lunesDe(new Date()), []);
   const semana = useSemana(lunes);
   const { alumnos, cargando: cargandoAlumnos } = useAlumnos('todas', 'todos');
+  const miSueldo = useMiSueldo();
   const turnos = semana.turnos;
   const cargando = semana.cargando || cargandoAlumnos;
 
@@ -74,6 +80,65 @@ export default function StaffDashboardPage() {
           </div>
         </div>
         <Link to="/calendario" className={s.btnPrimario}>Ver mi calendario</Link>
+      </div>
+
+      {/* ── Mi sueldo del mes (horas dadas × valor hora) ── */}
+      <div className={s.tarjeta}>
+        <h3 className={s.tarjetaTitulo}>Mi sueldo — {MESES[miSueldo.mes - 1]}</h3>
+        {miSueldo.cargando ? (
+          <div className={s.vacio}>Calculando…</div>
+        ) : miSueldo.error ? (
+          <div className={s.vacio}>{miSueldo.error}</div>
+        ) : (
+          <>
+            {miSueldo.sueldo && !miSueldo.sueldo.tieneValorHora && (
+              <div style={{ background: '#fef6e7', border: '1px solid #f3dfb6', color: '#b7791f', borderRadius: 10, padding: '10px 12px', fontSize: 13, marginBottom: 12 }}>
+                Tu valor hora todavía no está definido — lo carga el director.
+              </div>
+            )}
+            <div className={s.metricas}>
+              <div className={s.metrica}>
+                <div className={s.metricaNumero}>
+                  {(miSueldo.sueldo?.horasTotales ?? 0).toLocaleString('es-AR', { maximumFractionDigits: 1 })}
+                </div>
+                <div className={s.metricaLabel}>horas este mes</div>
+              </div>
+              <div className={s.metrica}>
+                <div className={s.metricaNumero}>{formatoPlata(miSueldo.sueldo?.calculado ?? 0)}</div>
+                <div className={s.metricaLabel}>a cobrar</div>
+              </div>
+            </div>
+            <div style={{ marginTop: 4, marginBottom: (miSueldo.sueldo?.detalle.length ?? 0) > 0 ? 12 : 0 }}>
+              {miSueldo.sueldo?.estado === 'Pagado' ? (
+                <span style={{ background: '#e7f6ec', color: '#0e6b3c', fontWeight: 700, fontSize: 13, padding: '5px 12px', borderRadius: 8 }}>
+                  ✓ Pagado{miSueldo.sueldo.medioPago ? ` · ${miSueldo.sueldo.medioPago}` : ''}
+                </span>
+              ) : (
+                <span style={{ background: '#fef6e7', color: '#b7791f', fontWeight: 700, fontSize: 13, padding: '5px 12px', borderRadius: 8 }}>
+                  Pendiente de pago
+                </span>
+              )}
+            </div>
+            {miSueldo.sueldo && miSueldo.sueldo.detalle.length > 0 && (
+              <div className={s.lista}>
+                {miSueldo.sueldo.detalle.map((d) => (
+                  <div key={d.horarioId} className={s.fila}>
+                    <div className={s.filaDia}>
+                      <div className={s.filaFecha}>{DIA_LABEL[d.dia] ?? d.dia}</div>
+                      <div className={s.filaHora}>{horaCorta(d.horaInicio)}</div>
+                    </div>
+                    <div className={s.filaInfo}>
+                      <div className={s.filaTitulo}>{d.titulo}</div>
+                      <div className={s.filaLugar}>
+                        {d.clases} clase{d.clases === 1 ? '' : 's'} · {d.horas} h · {formatoPlata(d.subtotal)}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* ── Próximas clases ── */}
