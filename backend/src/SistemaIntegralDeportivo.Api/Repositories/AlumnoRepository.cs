@@ -52,6 +52,31 @@ public class AlumnoRepository : IAlumnoRepository
         return alumno;
     }
 
+    public async Task VincularTutorAsync(Alumno alumno, Tutor tutor, CancellationToken ct = default)
+    {
+        // Mismo criterio que el alta: si ya hay un tutor con ese DNI en el tenant se
+        // REUTILIZA (índice único TenantId+Dni); si no, se crea el nuevo. NO guarda:
+        // el caller persiste con GuardarCambiosAsync (misma transacción que la ficha).
+        var existente = await _db.Tutores.FirstOrDefaultAsync(
+            t => t.TenantId == TenantId && t.Dni == tutor.Dni, ct);
+        if (existente is not null)
+        {
+            alumno.Tutor = null;
+            alumno.TutorId = existente.Id;
+        }
+        else
+        {
+            // El alumno YA está trackeado: colgar el tutor por navegación haría que EF
+            // adivine el estado por la PK. Como Tutor.Id ya viene con Guid.NewGuid() (no
+            // vacío), EF lo tomaría como Modified → UPDATE en vez de INSERT → el tutor
+            // nunca se inserta y la FK del alumno apunta a un id inexistente (23503).
+            // Add() fuerza el estado Added sin importar el valor de la clave (como el alta).
+            tutor.TenantId = TenantId;
+            _db.Tutores.Add(tutor);
+            alumno.Tutor = tutor;
+        }
+    }
+
     public async Task<IReadOnlyList<Alumno>> ListarAsync(
         CategoriaAlumno? categoria, EstadoAlumno? estado, CancellationToken ct = default)
     {

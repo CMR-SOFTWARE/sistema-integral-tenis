@@ -74,8 +74,9 @@ public class CreateAlumnoDto
 }
 
 /// <summary>
-/// Edición de la ficha por el PROFE. No incluye credenciales (el email de
-/// login vive en Identity) ni tutor (se administra aparte).
+/// Edición de la ficha por el PROFE. No incluye credenciales (el email de login
+/// vive en Identity). El tutor es OPCIONAL: se puede marcar menor sin cargarlo y
+/// completarlo después (si viene y el alumno no tenía tutor, se crea y vincula).
 /// </summary>
 public class UpdateAlumnoDto
 {
@@ -112,6 +113,12 @@ public class UpdateAlumnoDto
 
     [StringLength(500)]
     public string? Notas { get; set; }
+
+    /// <summary>
+    /// Tutor a cargar (opcional). Solo se usa si el alumno TODAVÍA no tiene tutor:
+    /// permite completarlo después de haberlo marcado menor. No borra ni pisa uno existente.
+    /// </summary>
+    public TutorDto? Tutor { get; set; }
 }
 
 /// <summary>

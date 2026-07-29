@@ -40,7 +40,7 @@ export default function DetalleAlumnoModal({ alumno, hermanos, onClose, onCrearA
       ? new Date(alumno.fechaNacimiento).toLocaleDateString('es-AR')
       : '—'],
     ['Categoría por edad', subPorEdad(alumno.fechaNacimiento) ?? 'Adulto'],
-    ['Es menor', alumno.esMenor ? 'Sí (tutor registrado)' : 'No'],
+    ['Es menor', alumno.esMenor ? (alumno.tutorId ? 'Sí (con tutor)' : 'Sí — falta cargar el tutor') : 'No'],
     ['Profe de cabecera', nombreDe(alumno.profesorUserId) ?? 'Sin asignar'],
     ['Cuota mensual', formatoPlata(alumno.arancel)],
     ['Alta en el sistema', new Date(alumno.creadoEl).toLocaleDateString('es-AR')],

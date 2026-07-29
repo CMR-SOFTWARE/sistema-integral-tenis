@@ -71,7 +71,7 @@ export interface CreateAlumno {
   };
 }
 
-/** Espejo de UpdateAlumnoDto: el profe corrige la ficha (sin credenciales ni tutor). */
+/** Espejo de UpdateAlumnoDto: el profe corrige la ficha (sin credenciales). */
 export interface UpdateAlumno {
   nombre: string;
   apellido: string;
@@ -86,6 +86,14 @@ export interface UpdateAlumno {
   arancel?: number;
   profesorUserId?: string;
   notas?: string;
+  /** Tutor a cargar DESPUÉS (opcional): solo si el alumno todavía no tiene uno. */
+  tutor?: {
+    nombre: string;
+    apellido: string;
+    dni: string;
+    telefono: string;
+    relacion: RelacionTutor;
+  };
 }
 
 /** Espejo de AlumnoCreadoDto: usuario/temporal se muestran UNA sola vez. */

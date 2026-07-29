@@ -272,10 +272,14 @@ public class PortalServiceTests
     [Fact]
     public async Task CancelarMiTurno_HoyPeroYaEmpezo_Lanza()
     {
-        var ahora = DateTime.UtcNow;
+        // Arrancó hace 10': derivamos fecha y hora del MISMO instante para no
+        // desincronizarlas. Si 'ahora' cae en los primeros 10' del día UTC,
+        // restar sobre TimeOnly daría la vuelta a las 23:5x y dejaría el turno
+        // en el futuro (el turno pasaría a ayer, pero igual debe lanzar).
+        var inicio = DateTime.UtcNow.AddMinutes(-10);
         var turno = TurnoConmigo(
-            DateOnly.FromDateTime(ahora),
-            TimeOnly.FromDateTime(ahora).AddMinutes(-10)); // arrancó hace 10'
+            DateOnly.FromDateTime(inicio),
+            TimeOnly.FromDateTime(inicio));
 
         await Assert.ThrowsAsync<ReglaDeNegocioException>(
             () => _service.CancelarMiTurnoAsync(UserId, turno.Id, "x"));
