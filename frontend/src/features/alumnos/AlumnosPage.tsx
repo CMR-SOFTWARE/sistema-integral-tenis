@@ -16,8 +16,10 @@ import s from './AlumnosPage.module.css';
 
 interface Credenciales {
   nombre: string;
-  usuario: string;
-  passwordTemporal: string;
+  usuario: string | null;
+  passwordTemporal: string | null;
+  vinculado: boolean;
+  titular: string | null;
 }
 
 export default function AlumnosPage() {
@@ -318,6 +320,8 @@ export default function AlumnosPage() {
                 nombre: `${creado.alumno.nombre} ${creado.alumno.apellido}`,
                 usuario: creado.usuario,
                 passwordTemporal: creado.passwordTemporal,
+                vinculado: false,
+                titular: null,
               });
             }
           }}
@@ -346,6 +350,8 @@ export default function AlumnosPage() {
           nombre={credenciales.nombre}
           usuario={credenciales.usuario}
           passwordTemporal={credenciales.passwordTemporal}
+          vinculado={credenciales.vinculado}
+          titular={credenciales.titular}
           onClose={() => setCredenciales(null)}
         />
       )}

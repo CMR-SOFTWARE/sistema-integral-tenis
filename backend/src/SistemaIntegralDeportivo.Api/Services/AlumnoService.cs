@@ -106,6 +106,22 @@ public class AlumnoService : IAlumnoService
             ? ficha.Telefono
             : telefonoAlternativo.Trim();
 
+        // Si el celular ya es de una cuenta (la misma persona que es staff, un
+        // hermano, el tutor…), vinculamos la ficha a ESE login en vez de crear otro
+        // —mismo criterio que el alta (familia): un usuario, varias facetas—.
+        var titular = await _credenciales.BuscarTitularPorTelefonoAsync(telefono, ct);
+        if (titular is not null)
+        {
+            ficha.UserId = titular.UserId;
+            ficha.ActualizadoEl = DateTime.UtcNow;
+            await _repo.GuardarCambiosAsync(ct);
+            return new AccesoCreadoDto
+            {
+                Vinculado = true,
+                Titular = $"{titular.Nombre} {titular.Apellido}".Trim(),
+            };
+        }
+
         var cred = await _credenciales.CrearConTemporalAsync(
             telefono, ficha.Nombre, ficha.Apellido, ficha.Dni, ficha.Email, ct);
 

@@ -21,6 +21,7 @@ public class StaffServiceTests
     private readonly Mock<ITenantRepository> _tenants;
     private readonly Mock<ICredencialesService> _credenciales;
     private readonly Mock<IUsuarioActual> _usuario;
+    private readonly Mock<IAlumnoRepository> _alumnos;
     private readonly StaffService _service;
 
     public StaffServiceTests()
@@ -29,7 +30,8 @@ public class StaffServiceTests
         _tenants = new Mock<ITenantRepository>();
         _credenciales = new Mock<ICredencialesService>();
         _usuario = new Mock<IUsuarioActual>();
-        _service = new StaffService(_repo.Object, _tenants.Object, _credenciales.Object, _usuario.Object);
+        _alumnos = new Mock<IAlumnoRepository>();
+        _service = new StaffService(_repo.Object, _tenants.Object, _credenciales.Object, _usuario.Object, _alumnos.Object);
 
         _tenants.Setup(t => t.ObtenerActualAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new Tenant { Subdominio = "d", Nombre = "Academia", OwnerUserId = OwnerId });
@@ -93,6 +95,34 @@ public class StaffServiceTests
              .ReturnsAsync((MembresiaTenant?)null);
 
         await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.AgregarAsync(Dto()));
+        _credenciales.Verify(c => c.CrearConTemporalAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(),
+            It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Agregar_YaEsAlumnoDeLaAcademia_ReusaSuLoginComoStaff()
+    {
+        // La misma persona que ya es alumno del club (su empleado que también toma
+        // clases): se suma como Staff con su MISMO login, sin crear otra cuenta.
+        var u = Usuario(Guid.NewGuid());
+        _repo.Setup(r => r.BuscarUsuarioPorTelefonoAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync(u);
+        _repo.Setup(r => r.ObtenerPorUserIdAsync(u.Id, It.IsAny<CancellationToken>()))
+             .ReturnsAsync((MembresiaTenant?)null); // no es (ni fue) profe acá
+        _alumnos.Setup(a => a.EsAlumnoDelTenantAsync(u.Id, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);                 // pero SÍ es alumno de la academia
+        MembresiaTenant? creada = null;
+        _repo.Setup(r => r.AgregarAsync(It.IsAny<MembresiaTenant>(), It.IsAny<CancellationToken>()))
+             .Callback((MembresiaTenant m, CancellationToken _) => creada = m).Returns(Task.CompletedTask);
+
+        var res = await _service.AgregarAsync(Dto());
+
+        Assert.NotNull(creada);
+        Assert.Equal(u.Id, creada!.UserId); // reusa el MISMO usuario
+        Assert.Equal(RolTenant.Staff, creada.Rol);
+        Assert.True(creada.Activo);
+        Assert.Null(res.PasswordTemporal);  // ya tenía login: no se genera clave nueva
         _credenciales.Verify(c => c.CrearConTemporalAsync(
             It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(),
             It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);

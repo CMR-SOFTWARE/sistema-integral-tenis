@@ -148,6 +148,12 @@ export default function AppLayout() {
             <h1 className={s.pageTitle}>{title}</h1>
             <div className={s.pageDate}>{fechaDeHoy()}</div>
           </div>
+          {/* Es profe y ADEMÁS alumno: puede pasarse a su portal de alumno. */}
+          {sesion?.alumno && (
+            <button className={s.switcher} onClick={() => navigate('/portal')}>
+              Mi portal
+            </button>
+          )}
         </header>
 
         <main className={s.content}>
