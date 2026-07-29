@@ -8,37 +8,33 @@ using SistemaIntegralDeportivo.Api.Services;
 namespace SistemaIntegralDeportivo.Api.Tests.Services;
 
 /// <summary>
-/// Reglas de solicitudes alumno→profe (TDD, plan v2 — reemplaza al reclamo):
-/// una pendiente por club, un club por alumno (por ahora), y aprobar crea
-/// o vincula la ficha con los datos del registro.
+/// Lista de espera (TDD): unirse a un club crea la ficha DIRECTO en espera
+/// (EnEspera), sin aprobar; un club por persona y datos completos. El profe ve
+/// la lista, puede quitar, y la persona se vuelve alumno al recibir una clase.
 /// </summary>
 public class SolicitudServiceTests
 {
     private static readonly Guid UserId = Guid.NewGuid();
     private static readonly Guid TenantId = Guid.NewGuid();
 
-    private readonly Mock<ISolicitudRepository> _solicitudes;
     private readonly Mock<IAlumnoService> _alumnos;
     private readonly Mock<IAlumnoRepository> _alumnoRepo;
     private readonly Mock<ITenantRepository> _tenants;
+    private readonly Mock<ITenantActual> _tenantActual;
     private readonly SolicitudService _service;
 
     public SolicitudServiceTests()
     {
-        _solicitudes = new Mock<ISolicitudRepository>();
         _alumnos = new Mock<IAlumnoService>();
         _alumnoRepo = new Mock<IAlumnoRepository>();
         _tenants = new Mock<ITenantRepository>();
+        _tenantActual = new Mock<ITenantActual>();
         _service = new SolicitudService(
-            _solicitudes.Object, _alumnos.Object, _alumnoRepo.Object, _tenants.Object);
+            _alumnos.Object, _alumnoRepo.Object, _tenants.Object, _tenantActual.Object);
 
-        // Por defecto: el club existe y está activo, sin pendientes ni ficha previa
+        // Por defecto: el club existe y está activo, sin ficha previa
         _tenants.Setup(t => t.ObtenerPorIdAsync(TenantId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(ClubActivo());
-        _solicitudes.Setup(s => s.ExistePendienteAsync(It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(false);
-        _solicitudes.Setup(s => s.ListarPorUsuarioAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync([]);
         _alumnoRepo.Setup(a => a.ObtenerPorUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                    .ReturnsAsync((Alumno?)null);
     }
@@ -63,9 +59,7 @@ public class SolicitudServiceTests
         Categoria = CategoriaAlumno.Cuarta,
     };
 
-    // ─────────────────────────────────────────────
-    // Crear solicitud
-    // ─────────────────────────────────────────────
+    // ── Unirse (crea la ficha directo en la lista de espera) ──
 
     [Fact]
     public async Task Crear_ClubInexistente_Lanza()
@@ -90,21 +84,9 @@ public class SolicitudServiceTests
     }
 
     [Fact]
-    public async Task Crear_YaTengoSolicitudPendienteEnEseClub_Lanza()
-    {
-        _solicitudes.Setup(s => s.ExistePendienteAsync(UserId, TenantId, It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(true);
-
-        await Assert.ThrowsAsync<ReglaDeNegocioException>(
-            () => _service.CrearAsync(Jugador(), new CrearSolicitudDto { TenantId = TenantId }));
-
-        _solicitudes.Verify(s => s.AgregarAsync(It.IsAny<Solicitud>(), It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
     public async Task Crear_YaEstoyEnUnClub_Lanza()
     {
-        // Un club por alumno POR AHORA (multi-club llega con la reserva de turnos)
+        // Un club por persona POR AHORA (multi-club llega con la reserva de turnos)
         _alumnoRepo.Setup(a => a.ObtenerPorUserIdAsync(UserId, It.IsAny<CancellationToken>()))
                    .ReturnsAsync(new Alumno
                    {
@@ -114,6 +96,8 @@ public class SolicitudServiceTests
 
         await Assert.ThrowsAsync<ReglaDeNegocioException>(
             () => _service.CrearAsync(Jugador(), new CrearSolicitudDto { TenantId = TenantId }));
+        _alumnos.Verify(a => a.CrearVinculadoAsync(
+            It.IsAny<CreateAlumnoDto>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -128,98 +112,74 @@ public class SolicitudServiceTests
     }
 
     [Fact]
-    public async Task Crear_OK_NacePendienteConMensaje()
+    public async Task Crear_OK_CreaLaFichaVinculadaEnEseClubConLosDatos()
     {
-        Solicitud? creada = null;
-        _solicitudes.Setup(s => s.AgregarAsync(It.IsAny<Solicitud>(), It.IsAny<CancellationToken>()))
-                    .Callback((Solicitud s, CancellationToken _) => creada = s)
-                    .Returns(Task.CompletedTask);
+        CreateAlumnoDto? dtoUsado = null;
+        _alumnos.Setup(a => a.CrearVinculadoAsync(It.IsAny<CreateAlumnoDto>(), UserId, It.IsAny<CancellationToken>()))
+                .Callback((CreateAlumnoDto d, Guid _, CancellationToken _) => dtoUsado = d)
+                .ReturnsAsync(new AlumnoResponseDto { Id = Guid.NewGuid(), Nombre = "Lucas" });
 
         await _service.CrearAsync(Jugador(), new CrearSolicitudDto
         {
             TenantId = TenantId, Mensaje = "Juego los martes",
         });
 
-        Assert.NotNull(creada);
-        Assert.Equal(EstadoSolicitud.Pendiente, creada!.Estado);
-        Assert.Equal(UserId, creada.UserId);
-        Assert.Equal(TenantId, creada.TenantId);
-        Assert.Equal("Juego los martes", creada.Mensaje);
-        _solicitudes.Verify(s => s.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
-    }
-
-    // ─────────────────────────────────────────────
-    // Aprobar / rechazar (lado profe)
-    // ─────────────────────────────────────────────
-
-    private Solicitud Pendiente()
-    {
-        var solicitud = new Solicitud { UserId = UserId, TenantId = TenantId };
-        _solicitudes.Setup(s => s.ObtenerPendienteConUsuarioAsync(solicitud.Id, It.IsAny<CancellationToken>()))
-                    .ReturnsAsync((solicitud, Jugador()));
-        return solicitud;
-    }
-
-    [Fact]
-    public async Task Aprobar_CreaLaFichaVinculadaConLosDatosDelRegistro_YMarcaAprobada()
-    {
-        var solicitud = Pendiente();
-        var ficha = new AlumnoResponseDto { Id = Guid.NewGuid(), Nombre = "Lucas" };
-        CreateAlumnoDto? dtoUsado = null;
-        _alumnos.Setup(a => a.CrearVinculadoAsync(It.IsAny<CreateAlumnoDto>(), UserId, It.IsAny<CancellationToken>()))
-                .Callback((CreateAlumnoDto d, Guid _, CancellationToken _) => dtoUsado = d)
-                .ReturnsAsync(ficha);
-
-        var resultado = await _service.AprobarAsync(solicitud.Id);
-
-        Assert.Equal(ficha.Id, resultado.Id);
-        Assert.Equal(EstadoSolicitud.Aprobada, solicitud.Estado);
-        Assert.Equal(ficha.Id, solicitud.AlumnoId);
-        Assert.NotNull(solicitud.ResueltoEl);
-        // Los datos del registro viajan a la ficha
+        // Fija el club elegido y crea la ficha con los datos del registro
+        _tenantActual.Verify(t => t.Establecer(TenantId), Times.Once);
         Assert.NotNull(dtoUsado);
         Assert.Equal("Lucas", dtoUsado!.Nombre);
         Assert.Equal("30111222", dtoUsado.Dni);
         Assert.Equal("lucas@mail.com", dtoUsado.Email);
         Assert.Equal(CategoriaAlumno.Cuarta, dtoUsado.Categoria);
-        Assert.True(dtoUsado.ConsentimientoDatos); // lo dio al registrarse
-        _solicitudes.Verify(s => s.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+        Assert.True(dtoUsado.ConsentimientoDatos);       // lo dio al registrarse
+        Assert.Equal("Juego los martes", dtoUsado.Notas); // el mensaje queda como nota
+    }
+
+    // ── Lista de espera del profe + quitar ──
+
+    [Fact]
+    public async Task Pendientes_DevuelveLasFichasEnEspera()
+    {
+        _alumnoRepo.Setup(a => a.ListarAsync(null, EstadoAlumno.EnEspera, It.IsAny<CancellationToken>()))
+                   .ReturnsAsync(new[]
+                   {
+                       new Alumno { Nombre = "Ana", Apellido = "Mora", Dni = "40", Telefono = "+1",
+                                    Estado = EstadoAlumno.EnEspera, Notas = "Los jueves" },
+                   });
+
+        var lista = await _service.PendientesAsync();
+
+        var item = Assert.Single(lista);
+        Assert.Equal("Ana", item.Nombre);
+        Assert.Equal("Los jueves", item.Mensaje);
     }
 
     [Fact]
-    public async Task Aprobar_InexistenteODeOtroClub_Lanza()
+    public async Task Quitar_EnEspera_BorraLaFicha()
     {
-        _solicitudes.Setup(s => s.ObtenerPendienteConUsuarioAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-                    .ReturnsAsync(((Solicitud, Usuario)?)null);
+        var ficha = new Alumno
+        {
+            Nombre = "Ana", Apellido = "Mora", Dni = "40", Telefono = "+1",
+            Estado = EstadoAlumno.EnEspera,
+        };
+        _alumnoRepo.Setup(a => a.ObtenerAsync(ficha.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ficha);
 
-        await Assert.ThrowsAsync<ReglaDeNegocioException>(
-            () => _service.AprobarAsync(Guid.NewGuid()));
+        await _service.QuitarDeEsperaAsync(ficha.Id);
+
+        _alumnoRepo.Verify(a => a.EliminarDefinitivoAsync(ficha, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
-    public async Task Aprobar_SiLaFichaFalla_LaSolicitudQuedaPendiente()
+    public async Task Quitar_NoEstaEnEspera_Lanza()
     {
-        // Ej.: menor sin tutor → el profe lo carga a mano desde Alumnos
-        var solicitud = Pendiente();
-        _alumnos.Setup(a => a.CrearVinculadoAsync(It.IsAny<CreateAlumnoDto>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-                .ThrowsAsync(new ReglaDeNegocioException("Un alumno menor de edad requiere un tutor."));
+        var ficha = new Alumno
+        {
+            Nombre = "Ana", Apellido = "Mora", Dni = "40", Telefono = "+1",
+            Estado = EstadoAlumno.Activo, // ya es alumno de verdad: no se quita desde acá
+        };
+        _alumnoRepo.Setup(a => a.ObtenerAsync(ficha.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ficha);
 
-        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.AprobarAsync(solicitud.Id));
-
-        Assert.Equal(EstadoSolicitud.Pendiente, solicitud.Estado);
-        _solicitudes.Verify(s => s.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Never);
-    }
-
-    [Fact]
-    public async Task Rechazar_SoloMarca_NuncaTocaAlumnos()
-    {
-        var solicitud = Pendiente();
-
-        await _service.RechazarAsync(solicitud.Id);
-
-        Assert.Equal(EstadoSolicitud.Rechazada, solicitud.Estado);
-        Assert.NotNull(solicitud.ResueltoEl);
-        _alumnos.Verify(a => a.CrearVinculadoAsync(It.IsAny<CreateAlumnoDto>(), It.IsAny<Guid>(), It.IsAny<CancellationToken>()), Times.Never);
-        _solicitudes.Verify(s => s.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.QuitarDeEsperaAsync(ficha.Id));
+        _alumnoRepo.Verify(a => a.EliminarDefinitivoAsync(It.IsAny<Alumno>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 }

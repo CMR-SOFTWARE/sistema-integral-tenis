@@ -207,6 +207,18 @@ public class AlumnoServiceTests
     }
 
     [Fact]
+    public async Task CrearAsync_LaFichaNaceEnListaDeEspera()
+    {
+        // "Alumno = el que tiene clase": toda ficha nueva arranca EnEspera hasta que
+        // se le asigne la primera clase (grupo u horario), que la promueve a Activo.
+        await _service.CrearAsync(AlumnoMayor());
+
+        _repo.Verify(r => r.AgregarAsync(
+            It.Is<Alumno>(a => a.Estado == EstadoAlumno.EnEspera),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task CrearAsync_CelularDeUnTitular_SumaLaFichaALaFamilia()
     {
         // Ej. hermano con el mismo celu del tutor: la ficha se suma a la cuenta del titular

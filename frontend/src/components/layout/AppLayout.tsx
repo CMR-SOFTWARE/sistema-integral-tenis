@@ -29,15 +29,7 @@ export default function AppLayout() {
   const confirmar = useConfirmar();
   const title = pageTitles[pathname] ?? 'CourtSet';
   const sesion = obtenerSesion();
-  const [pendientes, setPendientes] = useState(0);
   const [menuAbierto, setMenuAbierto] = useState(false);
-
-  // Badge de solicitudes: se refresca al navegar (barato: un COUNT)
-  useEffect(() => {
-    api.get<{ pendientes: number }>('/solicitudes/conteo')
-      .then((c) => setPendientes(c.pendientes))
-      .catch(() => setPendientes(0));
-  }, [pathname]);
 
   // Al navegar se cierra el drawer (en escritorio no se ve: CSS)
   useEffect(() => {
@@ -111,9 +103,6 @@ export default function AppLayout() {
                 <path d={item.icon} />
               </svg>
               <span>{item.label}</span>
-              {item.to === '/solicitudes' && pendientes > 0 && (
-                <span className={s.badge}>{pendientes}</span>
-              )}
             </NavLink>
           ))}
         </nav>

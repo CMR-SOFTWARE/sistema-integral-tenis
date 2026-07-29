@@ -99,8 +99,9 @@ public class GrupoService : IGrupoService
         var alumno = await _alumnos.ObtenerAsync(alumnoId, ct)
             ?? throw new ReglaDeNegocioException("El alumno no existe.");
 
-        // Regla: solo alumnos ACTIVOS se asignan (un suspendido no reserva)
-        if (alumno.Estado != EstadoAlumno.Activo)
+        // Regla: se asignan los ACTIVOS y los de la LISTA DE ESPERA (sumarlos es lo
+        // que los vuelve alumnos). Un suspendido o inactivo no.
+        if (alumno.Estado != EstadoAlumno.Activo && alumno.Estado != EstadoAlumno.EnEspera)
             throw new ReglaDeNegocioException(
                 $"{alumno.Nombre} {alumno.Apellido} no está activo y no puede asignarse a un grupo.");
 
@@ -146,6 +147,10 @@ public class GrupoService : IGrupoService
         // consulta las membresías activas del alumno (query a la base) y tiene
         // que ver ya la que acabamos de dar de alta.
         await _grupos.GuardarCambiosAsync(ct);
+
+        // Sumarlo a un grupo es "darle su primera clase": si estaba en la lista de
+        // espera, ahora es alumno de verdad (Activo) antes de reconciliar el calendario.
+        await _alumnos.PromoverDeEsperaAsync(alumnoId, ct);
 
         // Sumarlo a un grupo lo repone en los turnos futuros YA generados de
         // ese grupo y recalcula el divisor: sin esto, el que vuelve no aparece

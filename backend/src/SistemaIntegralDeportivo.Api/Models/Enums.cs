@@ -63,7 +63,11 @@ public enum EstadoAlumno
 {
     Activo,     // al día, puede reservar
     Suspendido, // no pagó → se bloquea reserva, NO se borra
-    Inactivo    // dejó de venir, se conserva el historial
+    Inactivo,   // dejó de venir, se conserva el historial
+    // Se unió/lo cargaron pero TODAVÍA no tiene ninguna clase → está en la "lista
+    // de espera": es un miembro, no un alumno (no cuenta ni paga cuota). Pasa a
+    // Activo cuando se le asigna la primera clase (grupo u horario).
+    EnEspera
 }
 
 /// <summary>Vínculo del tutor con el alumno menor.</summary>

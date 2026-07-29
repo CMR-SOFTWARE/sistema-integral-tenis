@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 import { datosCompletos, guardarSesion, obtenerSesion } from '../auth/sesion';
 import type { Sesion } from '../auth/sesion';
-import type { MiSolicitud } from '../solicitudes/types';
 import s from './PortalPages.module.css';
 
 interface ProfesorPublico {
@@ -12,33 +11,32 @@ interface ProfesorPublico {
   profesor: string;
 }
 
-const ESTADO_SOL_UI: Record<MiSolicitud['estado'], { label: string; clase: 'chipAmbar' | 'chipVerde' | 'chipRojo' }> = {
-  Pendiente: { label: 'Pendiente', clase: 'chipAmbar' },
-  Aprobada: { label: 'Aprobada', clase: 'chipVerde' },
-  Rechazada: { label: 'Rechazada', clase: 'chipRojo' },
-};
-
 /**
- * Mi club (plan v2): buscá a tu profesor por nombre o club y mandale una
- * solicitud; cuando la apruebe, tu ficha nace en su club y el portal se
- * habilita completo.
+ * Mi club: buscá a tu profe por nombre o club y unite. Al unirte entrás a su
+ * LISTA DE ESPERA (todavía no sos alumno); cuando tu profe te asigne una clase
+ * (un grupo o un horario) el portal se habilita completo.
  */
 export default function BuscarClubPage() {
-  const sesion = obtenerSesion();
+  const [sesion, setSesion] = useState<Sesion | null>(obtenerSesion());
   const [buscar, setBuscar] = useState('');
   const [profes, setProfes] = useState<ProfesorPublico[]>([]);
-  const [solicitudes, setSolicitudes] = useState<MiSolicitud[]>([]);
   const [mensaje, setMensaje] = useState('');
   const [enviando, setEnviando] = useState<string | null>(null); // tenantId en curso
   const [error, setError] = useState<string | null>(null);
 
-  const cargarSolicitudes = useCallback(() => {
-    api.get<MiSolicitud[]>('/portal/solicitudes').then(setSolicitudes).catch(() => {});
+  // Refresca la sesión: si el profe te asignó una clase (o recién te uniste), la
+  // ficha aparece y la vista cambia sin re-loguear.
+  const refrescarSesion = useCallback(async () => {
+    try {
+      const s2 = await api.get<Sesion>('/auth/yo');
+      guardarSesion(s2);
+      setSesion(s2);
+    } catch { /* sin red: seguimos con la sesión guardada */ }
   }, []);
 
   useEffect(() => {
-    cargarSolicitudes();
-  }, [cargarSolicitudes]);
+    void refrescarSesion();
+  }, [refrescarSesion]);
 
   // Buscador con debounce simple
   useEffect(() => {
@@ -49,83 +47,54 @@ export default function BuscarClubPage() {
     return () => clearTimeout(timer);
   }, [buscar]);
 
-  const solicitar = async (p: ProfesorPublico) => {
+  const unirme = async (p: ProfesorPublico) => {
     setError(null);
     setEnviando(p.tenantId);
     try {
-      const lista = await api.post<MiSolicitud[]>('/portal/solicitudes', {
+      await api.post('/portal/solicitudes', {
         tenantId: p.tenantId,
         mensaje: mensaje.trim() || undefined,
       });
-      setSolicitudes(lista);
       setMensaje('');
+      await refrescarSesion(); // ahora tengo ficha (en espera) → cambia la vista
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'No se pudo enviar la solicitud.');
+      setError(e instanceof ApiError ? e.message : 'No se pudo unir al club.');
     } finally {
       setEnviando(null);
     }
   };
 
-  // Si el profe aprobó, el refresh de sesión del layout ya trae la ficha;
-  // acá refrescamos por las dudas al montar
-  useEffect(() => {
-    api.get<Sesion>('/auth/yo').then(guardarSesion).catch(() => {});
-  }, []);
-
+  // Ya estás vinculado a un club (en lista de espera o alumno pleno)
   if (sesion?.alumno) {
     return (
       <div className={s.tarjeta}>
         <h3 className={s.tarjetaTitulo}>Tu club</h3>
-        <p className={s.sinClubTexto}>
-          Estás vinculado a <b>{sesion.alumno.club}</b> como {sesion.alumno.nombre} {sesion.alumno.apellido}.
-        </p>
+        {sesion.alumno.enEspera ? (
+          <p className={s.sinClubTexto}>
+            Estás en la <b>lista de espera</b> de <b>{sesion.alumno.club}</b>. Cuando tu
+            profe te asigne un horario o un grupo, tu portal se habilita completo.
+          </p>
+        ) : (
+          <p className={s.sinClubTexto}>
+            Estás en <b>{sesion.alumno.club}</b> como {sesion.alumno.nombre} {sesion.alumno.apellido}.
+          </p>
+        )}
       </div>
     );
   }
 
-  const pendiente = solicitudes.find((x) => x.estado === 'Pendiente');
-
   return (
     <div className={s.perfilCol}>
-      {/* ── Mis solicitudes ── */}
-      {solicitudes.length > 0 && (
-        <div className={s.tarjeta}>
-          <h3 className={s.tarjetaTitulo}>Mis solicitudes</h3>
-          <div className={s.horariosLista}>
-            {solicitudes.map((sol) => {
-              const ui = ESTADO_SOL_UI[sol.estado];
-              return (
-                <div key={sol.id} className={s.horarioFila}>
-                  <div className={s.horarioInfo}>
-                    <div className={s.horarioTitulo}>{sol.club}</div>
-                    <div className={s.horarioDetalle}>
-                      Enviada el {new Date(sol.creadoEl).toLocaleDateString('es-AR')}
-                    </div>
-                  </div>
-                  <span className={`${s.chip} ${s[ui.clase]}`}>{ui.label}</span>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* ── Buscar profesor ── */}
       <div className={s.tarjeta}>
-        <h3 className={s.tarjetaTitulo}>Buscar a tu profesor</h3>
+        <h3 className={s.tarjetaTitulo}>Unirte a un club</h3>
         {!datosCompletos(sesion) ? (
           <>
             <p className={s.sinClubTexto}>
-              Antes de solicitar necesitamos tu DNI, teléfono y fecha de
-              nacimiento (con ellos se arma tu ficha en el club).
+              Antes de unirte necesitamos tu DNI, teléfono y fecha de nacimiento
+              (con ellos se arma tu ficha en el club).
             </p>
             <Link to="/portal/perfil" className={s.btnPrimario}>Completar mis datos</Link>
           </>
-        ) : pendiente ? (
-          <p className={s.sinClubTexto}>
-            Tenés una solicitud pendiente en <b>{pendiente.club}</b>. Cuando tu
-            profe la apruebe, tu portal se habilita solo.
-          </p>
         ) : (
           <>
             <div className={s.perfilEdicion}>
@@ -168,9 +137,9 @@ export default function BuscarClubPage() {
                     <button
                       className={s.btnGuardar}
                       disabled={enviando !== null}
-                      onClick={() => void solicitar(p)}
+                      onClick={() => void unirme(p)}
                     >
-                      {enviando === p.tenantId ? 'Enviando…' : 'Solicitar'}
+                      {enviando === p.tenantId ? 'Uniéndote…' : 'Unirme'}
                     </button>
                   </div>
                 ))}

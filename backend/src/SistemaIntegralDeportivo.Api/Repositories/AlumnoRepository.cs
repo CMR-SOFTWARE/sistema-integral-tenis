@@ -87,10 +87,25 @@ public class AlumnoRepository : IAlumnoRepository
 
         if (categoria is not null) query = query.Where(a => a.Categoria == categoria);
         if (estado is not null) query = query.Where(a => a.Estado == estado);
+        // Sin filtro explícito, la lista principal NO muestra a los de la lista de
+        // espera (todavía no son alumnos). Se ven pidiendo estado=EnEspera.
+        else query = query.Where(a => a.Estado != EstadoAlumno.EnEspera);
 
         return await query
             .OrderBy(a => a.Apellido).ThenBy(a => a.Nombre)
             .ToListAsync(ct);
+    }
+
+    public async Task PromoverDeEsperaAsync(Guid alumnoId, CancellationToken ct = default)
+    {
+        var alumno = await _db.Alumnos.FirstOrDefaultAsync(
+            a => a.TenantId == TenantId && a.Id == alumnoId && a.Estado == EstadoAlumno.EnEspera, ct);
+        if (alumno is not null)
+        {
+            alumno.Estado = EstadoAlumno.Activo;
+            alumno.ActualizadoEl = DateTime.UtcNow;
+            await _db.SaveChangesAsync(ct);
+        }
     }
 
     public Task<Alumno?> ObtenerAsync(Guid id, CancellationToken ct = default) =>
@@ -164,7 +179,8 @@ public class AlumnoRepository : IAlumnoRepository
 
     public async Task<Dictionary<CategoriaAlumno, int>> ContarPorCategoriaAsync(CancellationToken ct = default) =>
         await _db.Alumnos
-            .Where(a => a.TenantId == TenantId && a.Estado != EstadoAlumno.Inactivo)
+            .Where(a => a.TenantId == TenantId
+                && a.Estado != EstadoAlumno.Inactivo && a.Estado != EstadoAlumno.EnEspera)
             .GroupBy(a => a.Categoria)
             .Select(g => new { Categoria = g.Key, Cantidad = g.Count() })
             .ToDictionaryAsync(x => x.Categoria, x => x.Cantidad, ct);

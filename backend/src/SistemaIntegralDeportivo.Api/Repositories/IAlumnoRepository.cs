@@ -21,9 +21,20 @@ public interface IAlumnoRepository
     /// <summary>Persiste el alumno (y su tutor, si viene en el grafo).</summary>
     Task<Alumno> AgregarAsync(Alumno alumno, CancellationToken ct = default);
 
-    /// <summary>Alumnos del tenant, filtrables por categoría y estado.</summary>
+    /// <summary>
+    /// Alumnos del tenant, filtrables por categoría y estado. Sin filtro de estado
+    /// devuelve la lista "de alumnos de verdad": EXCLUYE a los de la lista de espera
+    /// (<see cref="EstadoAlumno.EnEspera"/>). Para verlos, pedir estado=EnEspera.
+    /// </summary>
     Task<IReadOnlyList<Alumno>> ListarAsync(
         CategoriaAlumno? categoria, EstadoAlumno? estado, CancellationToken ct = default);
+
+    /// <summary>
+    /// Promueve al alumno de la lista de espera: si está <see cref="EstadoAlumno.EnEspera"/>,
+    /// pasa a <see cref="EstadoAlumno.Activo"/> (le asignaron su primera clase). Idempotente
+    /// y scopeado; no toca a los que ya son Activo/Suspendido/Inactivo.
+    /// </summary>
+    Task PromoverDeEsperaAsync(Guid alumnoId, CancellationToken ct = default);
 
     /// <summary>Un alumno del tenant por id (trackeado, apto para modificar).</summary>
     Task<Alumno?> ObtenerAsync(Guid id, CancellationToken ct = default);

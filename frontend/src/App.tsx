@@ -3,14 +3,13 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { ConfirmarProvider } from './components/confirmar/ConfirmarProvider';
 import AppLayout from './components/layout/AppLayout';
-import AlumnosPage from './features/alumnos/AlumnosPage';
+import AlumnosSeccionPage from './features/alumnos/AlumnosSeccionPage';
 import LoginPage from './features/auth/LoginPage';
 import RegistroPage from './features/auth/RegistroPage';
 import RegistroJugadorPage from './features/auth/RegistroJugadorPage';
 import RegistroProfesorPage from './features/auth/RegistroProfesorPage';
 import CheckoutPage from './features/auth/CheckoutPage';
 import CambiarPasswordPage from './features/auth/CambiarPasswordPage';
-import SolicitudesPage from './features/solicitudes/SolicitudesPage';
 import { obtenerSesion, obtenerToken } from './features/auth/sesion';
 import DashboardPage from './features/dashboard/DashboardPage';
 import StaffDashboardPage from './features/staff/StaffDashboardPage';
@@ -98,7 +97,7 @@ export default function App() {
           <Route element={<AppLayout />}>
             <Route index element={<InicioProfesor />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/alumnos" element={<AlumnosPage />} />
+            <Route path="/alumnos" element={<AlumnosSeccionPage />} />
             <Route path="/calendario" element={<CalendarioPage />} />
             <Route path="/grupos" element={<GruposPage />} />
             <Route path="/mi-academia" element={<MiAcademiaPage />} />
@@ -107,7 +106,6 @@ export default function App() {
             <Route path="/avisos" element={<AvisosPage />} />
             <Route path="/bloqueos" element={<BloqueosPage />} />
             <Route path="/cancelaciones" element={<CancelacionesPage />} />
-            <Route path="/solicitudes" element={<SolicitudesPage />} />
             <Route path="/reportes" element={<ReportesPage />} />
             <Route path="/plataforma" element={<PlataformaPage />} />
           </Route>

@@ -22,7 +22,8 @@ function diaCorto(iso: string): string {
  */
 export default function InicioPage() {
   const hoy = new Date();
-  const conClub = obtenerSesion()?.alumno != null;
+  const ficha = obtenerSesion()?.alumno ?? null;
+  const conClub = ficha != null;
   const turnosQuery = useMisTurnos();
   const cuotaQuery = useMiCuota(hoy.getFullYear(), hoy.getMonth() + 1);
   const { data: banners = [] } = usePublicidad();
@@ -38,6 +39,19 @@ export default function InicioPage() {
   }, [banners.length]);
 
   if (!conClub) return <SinClub />;
+  // Miembro en lista de espera: todavía no tiene clases ni cuota. Le mostramos su
+  // estado en vez del dashboard vacío; se habilita cuando el profe le da una clase.
+  if (ficha?.enEspera) {
+    return (
+      <div className={s.tarjeta}>
+        <h3 className={s.tarjetaTitulo}>Estás en la lista de espera 🎾</h3>
+        <p className={s.sinClubTexto}>
+          Ya sos parte de <b>{ficha.club}</b>. Tu profe te va a asignar un horario o un
+          grupo; cuando lo haga, acá vas a ver tus clases y tu cuota.
+        </p>
+      </div>
+    );
+  }
   if (turnosQuery.error) {
     return <div className={s.error}>{turnosQuery.error.message || 'Error cargando tus clases'}</div>;
   }

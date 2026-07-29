@@ -538,6 +538,10 @@ public class AlumnoService : IAlumnoService
             FechaNacimiento = dto.FechaNacimiento,
             EsMenor = dto.EsMenor,
             Categoria = dto.Categoria,
+            // Nace en la LISTA DE ESPERA: es alumno recién cuando se le asigna la
+            // primera clase (grupo u horario). Vale para el alta manual, la familia
+            // y el auto-registro (todos pasan por acá).
+            Estado = EstadoAlumno.EnEspera,
             Arancel = dto.Arancel,
             ProfesorUserId = dto.ProfesorUserId,
             Notas = dto.Notas,

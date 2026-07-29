@@ -168,5 +168,6 @@ public class AuthService : IAuthService
         Nombre = a.Nombre,
         Apellido = a.Apellido,
         Club = a.Tenant?.Nombre ?? string.Empty,
+        EnEspera = a.Estado == EstadoAlumno.EnEspera,
     };
 }
