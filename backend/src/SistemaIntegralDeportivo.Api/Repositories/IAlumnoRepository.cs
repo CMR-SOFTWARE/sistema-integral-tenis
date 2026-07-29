@@ -22,6 +22,13 @@ public interface IAlumnoRepository
     Task<Alumno?> ObtenerAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>
+    /// Vincula un tutor a un alumno YA existente (completar la ficha después de
+    /// marcarlo menor). Si ya hay un tutor con ese DNI en el tenant, lo REUTILIZA
+    /// (índice único TenantId+Dni); si no, crea el nuevo. Persiste con GuardarCambiosAsync.
+    /// </summary>
+    Task VincularTutorAsync(Alumno alumno, Tutor tutor, CancellationToken ct = default);
+
+    /// <summary>
     /// Ids de los alumnos del tenant con al menos una clase asignada: miembro de un
     /// grupo activo (membresía sin baja) u horario individual activo. Se usa para
     /// cobrar la cuota SOLO a los que efectivamente toman clases (el que no tiene

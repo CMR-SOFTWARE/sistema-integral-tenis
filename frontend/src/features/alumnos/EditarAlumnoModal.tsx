@@ -2,7 +2,8 @@ import { useState } from 'react';
 import Modal from '../../components/Modal';
 import { ApiError } from '../../lib/api';
 import CategoriaOptions from './CategoriaOptions';
-import type { Alumno, Categoria, Modalidad, UpdateAlumno } from './types';
+import { subPorEdad } from './types';
+import type { Alumno, Categoria, Modalidad, RelacionTutor, UpdateAlumno } from './types';
 import { useProfesores } from '../profesores/useProfesores';
 import s from './NuevoAlumnoModal.module.css';
 
@@ -30,6 +31,8 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
     arancel: alumno.arancel?.toString() ?? '',
     profesorId: alumno.profesorUserId ?? '',
     notas: alumno.notas ?? '',
+    tutorNombre: '', tutorApellido: '', tutorDni: '', tutorTelefono: '',
+    tutorRelacion: 'Madre' as RelacionTutor,
   });
   const set = (campo: keyof typeof form, valor: string | boolean) =>
     setForm((f) => ({ ...f, [campo]: valor }));
@@ -56,6 +59,16 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
         arancel: form.arancel.trim() === '' ? undefined : Number(form.arancel),
         profesorUserId: form.profesorId || undefined,
         notas: form.notas.trim() || undefined,
+        // Tutor: solo si es menor, todavía no tiene uno, y cargaste al menos el nombre.
+        tutor: form.esMenor && !alumno.tutorId && form.tutorNombre.trim()
+          ? {
+              nombre: form.tutorNombre.trim(),
+              apellido: form.tutorApellido.trim(),
+              dni: form.tutorDni.trim(),
+              telefono: form.tutorTelefono.trim(),
+              relacion: form.tutorRelacion,
+            }
+          : undefined,
       });
       onClose();
     } catch (e) {
@@ -106,6 +119,10 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
         <label className={s.campo}>
           <span>Fecha de nacimiento (opcional)</span>
           <input type="date" value={form.fechaNacimiento} onChange={(e) => set('fechaNacimiento', e.target.value)} />
+        </label>
+        <label className={s.campo}>
+          <span>Categoría por edad (automática)</span>
+          <input value={subPorEdad(form.fechaNacimiento || null) ?? 'Adulto'} disabled readOnly />
         </label>
         <label className={s.campo}>
           <span>&nbsp;</span>
@@ -159,10 +176,43 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
           />
         </label>
 
+        {esMenor && alumno.tutorId && (
+          <div className={s.span2} style={{ color: '#0e6b3c', fontSize: 13, fontWeight: 600 }}>
+            ✓ Ya tiene un tutor cargado.
+          </div>
+        )}
         {esMenor && !alumno.tutorId && (
-          <div className={`${s.span2} ${s.error}`}>
-            Marcaste al alumno como menor y no tiene tutor cargado: el backend
-            va a rechazar el cambio.
+          <div className={`${s.span2} ${s.bloqueTutor}`}>
+            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}>
+              Datos del tutor (opcional — podés cargarlo ahora o después)
+            </div>
+            <div className={s.grid}>
+              <label className={s.campo}>
+                <span>Nombre del tutor</span>
+                <input value={form.tutorNombre} onChange={(e) => set('tutorNombre', e.target.value)} maxLength={80} />
+              </label>
+              <label className={s.campo}>
+                <span>Apellido del tutor</span>
+                <input value={form.tutorApellido} onChange={(e) => set('tutorApellido', e.target.value)} maxLength={80} />
+              </label>
+              <label className={s.campo}>
+                <span>DNI del tutor</span>
+                <input value={form.tutorDni} onChange={(e) => set('tutorDni', e.target.value)} maxLength={15} />
+              </label>
+              <label className={s.campo}>
+                <span>Teléfono del tutor</span>
+                <input value={form.tutorTelefono} onChange={(e) => set('tutorTelefono', e.target.value)} maxLength={25} />
+              </label>
+              <label className={s.campo}>
+                <span>Relación</span>
+                <select value={form.tutorRelacion} onChange={(e) => set('tutorRelacion', e.target.value)}>
+                  <option value="Padre">Padre</option>
+                  <option value="Madre">Madre</option>
+                  <option value="TutorLegal">Tutor legal</option>
+                  <option value="Otro">Otro</option>
+                </select>
+              </label>
+            </div>
           </div>
         )}
         {error && <div className={`${s.span2} ${s.error}`}>{error}</div>}

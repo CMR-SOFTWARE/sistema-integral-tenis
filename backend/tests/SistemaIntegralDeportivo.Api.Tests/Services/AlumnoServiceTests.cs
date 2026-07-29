@@ -439,14 +439,32 @@ public class AlumnoServiceTests
     }
 
     [Fact]
-    public async Task EditarAsync_MarcarloMenorSinTutor_Lanza()
+    public async Task EditarAsync_MarcarloMenorSinTutor_NoLanza()
     {
-        // Marcarlo menor no puede dejarlo sin tutor (Ley 25.326)
+        // Ahora se puede marcar menor SIN tutor y completarlo después (no bloquea).
         var ficha = FichaExistente(); // sin tutor
         var dto = Edicion();
         dto.EsMenor = true;
 
-        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.EditarAsync(ficha.Id, dto));
+        var result = await _service.EditarAsync(ficha.Id, dto);
+
+        Assert.True(result.EsMenor);
+        _repo.Verify(r => r.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task EditarAsync_ConTutorNuevo_LoVinculaPorElRepo()
+    {
+        var ficha = FichaExistente(); // sin tutor (TutorId null)
+        var dto = Edicion();
+        dto.EsMenor = true;
+        dto.Tutor = TutorValido(); // Marta Gómez, DNI 22555666
+
+        await _service.EditarAsync(ficha.Id, dto);
+
+        // El repo hace la vinculación (reusa el tutor por DNI si ya existe en el tenant).
+        _repo.Verify(r => r.VincularTutorAsync(
+            ficha, It.Is<Tutor>(t => t.Dni == "22555666"), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

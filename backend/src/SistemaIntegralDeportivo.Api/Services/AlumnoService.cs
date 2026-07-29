@@ -162,11 +162,8 @@ public class AlumnoService : IAlumnoService
                 throw new ReglaDeNegocioException($"Ya existe un alumno con DNI {dto.Dni}.");
         }
 
-        // Marcarlo menor no puede dejarlo sin tutor (Ley 25.326)
-        if (dto.EsMenor && alumno.TutorId is null && alumno.Tutor is null)
-            throw new ReglaDeNegocioException(
-                "Marcado como menor: necesita un tutor cargado.");
-
+        // Se puede marcar menor SIN tutor y completarlo después (ver más abajo): no
+        // bloquea. La ficha muestra "falta tutor" como recordatorio (Ley 25.326).
         if (dto.ProfesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))
             throw new ReglaDeNegocioException("Ese profe no es de tu club.");
 
@@ -183,6 +180,21 @@ public class AlumnoService : IAlumnoService
         alumno.ProfesorUserId = dto.ProfesorUserId;
         alumno.Notas = string.IsNullOrWhiteSpace(dto.Notas) ? null : dto.Notas;
         alumno.ActualizadoEl = DateTime.UtcNow;
+
+        // El profe puede completar el tutor DESPUÉS de marcar menor: si viene uno y el
+        // alumno todavía no tenía, se vincula (el repo reusa el tutor por DNI si ya
+        // existe en el tenant, para no violar el índice único).
+        if (dto.Tutor is not null && alumno.TutorId is null)
+        {
+            await _repo.VincularTutorAsync(alumno, new Tutor
+            {
+                Nombre = dto.Tutor.Nombre,
+                Apellido = dto.Tutor.Apellido,
+                Dni = dto.Tutor.Dni,
+                Telefono = dto.Tutor.Telefono,
+                Relacion = dto.Tutor.Relacion,
+            }, ct);
+        }
 
         await _repo.GuardarCambiosAsync(ct);
         return Mapear(alumno);
