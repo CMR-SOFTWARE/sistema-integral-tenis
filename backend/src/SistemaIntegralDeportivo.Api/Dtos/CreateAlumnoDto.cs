@@ -156,9 +156,23 @@ public class CrearAccesoDto
     public string? Telefono { get; set; }
 }
 
-/// <summary>Respuesta de "Crear acceso": credenciales para pasarle al alumno.</summary>
+/// <summary>
+/// Respuesta de "Crear acceso": credenciales para pasarle al alumno. Si el celular
+/// ya era de una cuenta (la misma persona que es staff, un hermano, el tutor…), la
+/// ficha se VINCULA a ese login en vez de crear uno nuevo: entonces no hay clave
+/// temporal y se avisa a quién se vinculó.
+/// </summary>
 public class AccesoCreadoDto
 {
-    public required string Usuario { get; set; }
-    public required string PasswordTemporal { get; set; }
+    /// <summary>Usuario (el celular) para pasarle al alumno; null si se vinculó a una cuenta existente.</summary>
+    public string? Usuario { get; set; }
+
+    /// <summary>Contraseña inicial (el mismo celular); null si se vinculó a una cuenta existente.</summary>
+    public string? PasswordTemporal { get; set; }
+
+    /// <summary>Se vinculó a una cuenta existente (mismo celular): entra con ESE login.</summary>
+    public bool Vinculado { get; set; }
+
+    /// <summary>Nombre del titular de la cuenta a la que se vinculó (para el aviso al profe).</summary>
+    public string? Titular { get; set; }
 }

@@ -41,11 +41,13 @@ function RequiereProfesor() {
 }
 
 /** Portal: alcanza con ser jugador logueado (con o SIN ficha vinculada —
- *  el portal muestra el estado "sin club" y deja solicitar un profe). */
+ *  el portal muestra el estado "sin club" y deja solicitar un profe).
+ *  Un profe (dueño/staff) que ADEMÁS es alumno (tiene ficha) puede entrar a
+ *  su portal con el switcher; el profe SIN ficha no tiene lado de alumno. */
 function RequiereJugador() {
   const sesion = obtenerSesion();
   if (!obtenerToken() || !sesion) return <Navigate to="/login" replace />;
-  if (sesion.esProfesor) return <Navigate to="/dashboard" replace />;
+  if (sesion.esProfesor && !sesion.alumno) return <Navigate to="/dashboard" replace />;
   if (sesion.estadoTenant === 'PendientePago') return <Navigate to="/checkout" replace />;
   return <Outlet />;
 }

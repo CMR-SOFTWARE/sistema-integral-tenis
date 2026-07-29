@@ -4,16 +4,21 @@ import s from './NuevoAlumnoModal.module.css';
 
 interface Props {
   nombre: string;
-  usuario: string;
-  passwordTemporal: string;
+  usuario: string | null;
+  passwordTemporal: string | null;
+  /** El celular ya era de una cuenta: la ficha se vinculó a ESE login (sin credenciales nuevas). */
+  vinculado: boolean;
+  titular: string | null;
   onClose: () => void;
 }
 
 /**
- * Credenciales del alumno recién creado: entra con su número de celular como
- * usuario y también como contraseña (después puede cambiarla desde su perfil).
+ * Resultado de "Crear acceso":
+ * - Cuenta NUEVA: entra con su número de celular como usuario y como contraseña.
+ * - VINCULADO: el celular ya era de una cuenta (la misma persona que es staff, un
+ *   hermano, el tutor…) → la ficha quedó bajo ESE login; no hay credenciales nuevas.
  */
-export default function AccesoCreadoModal({ nombre, usuario, passwordTemporal, onClose }: Props) {
+export default function AccesoCreadoModal({ nombre, usuario, passwordTemporal, vinculado, titular, onClose }: Props) {
   const [copiado, setCopiado] = useState(false);
 
   const copiar = async () => {
@@ -23,6 +28,23 @@ export default function AccesoCreadoModal({ nombre, usuario, passwordTemporal, o
     setCopiado(true);
     setTimeout(() => setCopiado(false), 2000);
   };
+
+  // Se vinculó a una cuenta existente: no hay clave para mostrar, solo el aviso.
+  if (vinculado) {
+    return (
+      <Modal
+        titulo={`Acceso vinculado para ${nombre}`}
+        subtitulo="Ya tenía una cuenta en la plataforma: se usó esa."
+        onClose={onClose}
+        footer={<button className={s.btnPrimario} onClick={onClose}>Entendido</button>}
+      >
+        <p className={s.credAviso}>
+          El celular ya era de la cuenta de <strong>{titular}</strong>. La ficha quedó
+          vinculada a ESE login (no se creó uno nuevo): entra con su celular de siempre.
+        </p>
+      </Modal>
+    );
+  }
 
   return (
     <Modal

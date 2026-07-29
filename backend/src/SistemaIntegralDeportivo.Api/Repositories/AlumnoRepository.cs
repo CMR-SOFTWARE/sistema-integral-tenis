@@ -22,6 +22,9 @@ public class AlumnoRepository : IAlumnoRepository
     public Task<bool> ExisteDniAsync(string dni, CancellationToken ct = default) =>
         _db.Alumnos.AnyAsync(a => a.TenantId == TenantId && a.Dni == dni, ct);
 
+    public Task<bool> EsAlumnoDelTenantAsync(Guid userId, CancellationToken ct = default) =>
+        _db.Alumnos.AnyAsync(a => a.TenantId == TenantId && a.UserId == userId, ct);
+
     public Task<Alumno?> ObtenerPorDniAsync(string dni, CancellationToken ct = default) =>
         _db.Alumnos.FirstOrDefaultAsync(a => a.TenantId == TenantId && a.Dni == dni, ct);
 

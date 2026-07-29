@@ -245,6 +245,8 @@ export default function ProfesoresPage() {
           nombre={credenciales.nombre}
           usuario={credenciales.usuario}
           passwordTemporal={credenciales.passwordTemporal}
+          vinculado={false}
+          titular={null}
           onClose={() => setCredenciales(null)}
         />
       )}

@@ -110,8 +110,13 @@ export interface AlumnoCreado {
 
 /** Espejo de AccesoCreadoDto (botón "Crear acceso" en fichas sin login). */
 export interface AccesoCreado {
-  usuario: string;
-  passwordTemporal: string;
+  /** Credenciales nuevas; null si se vinculó a una cuenta existente. */
+  usuario: string | null;
+  passwordTemporal: string | null;
+  /** Se vinculó a una cuenta existente (mismo celular): entra con ESE login. */
+  vinculado: boolean;
+  /** Titular de la cuenta a la que se vinculó (para el aviso al profe). */
+  titular: string | null;
 }
 
 /** Espejo de AlumnoHorarioDto: un horario asignado del alumno (para la ficha). */

@@ -327,6 +327,28 @@ public class AlumnoServiceTests
             () => _service.CrearAccesoAsync(ficha.Id, telefonoAlternativo: null));
     }
 
+    [Fact]
+    public async Task CrearAcceso_CelularYaEsDeUnaCuenta_VinculaSinCrearLogin()
+    {
+        // El celular de la ficha ya es de una cuenta (la misma persona que es staff,
+        // un hermano, el tutor…): la ficha se VINCULA a ese login, no se crea otro.
+        var ficha = FichaExistente(); // Telefono = "+5491155551234"
+        var titularId = Guid.NewGuid();
+        _credenciales.Setup(c => c.BuscarTitularPorTelefonoAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new TitularInfo(titularId, "Ana", "Gómez"));
+
+        var acceso = await _service.CrearAccesoAsync(ficha.Id, telefonoAlternativo: null);
+
+        Assert.True(acceso.Vinculado);
+        Assert.Equal("Ana Gómez", acceso.Titular);
+        Assert.Null(acceso.PasswordTemporal);
+        Assert.Equal(titularId, ficha.UserId); // vinculada a la cuenta existente
+        _credenciales.Verify(c => c.CrearConTemporalAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(),
+            It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+        _repo.Verify(r => r.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     // ─────────────────────────────────────────────
     // Crear VINCULADO (aprobación de solicitudes): sin credenciales nuevas
     // ─────────────────────────────────────────────

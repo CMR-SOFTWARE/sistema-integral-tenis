@@ -164,6 +164,12 @@ export default function PortalLayout() {
             <h1 className={s.pageTitle}>{title}</h1>
             <div className={s.pageDate}>{fechaDeHoy()}</div>
           </div>
+          {/* Es alumno pero ADEMÁS profe (dueño/staff): vuelve a su panel. */}
+          {sesion?.esProfesor && (
+            <button className={s.switcher} onClick={() => navigate('/dashboard')}>
+              ← Panel de profe
+            </button>
+          )}
           <SelectorMiembro />
         </header>
 

@@ -41,15 +41,17 @@ public class StaffService : IStaffService
     private readonly ITenantRepository _tenants;
     private readonly ICredencialesService _credenciales;
     private readonly IUsuarioActual _usuario;
+    private readonly IAlumnoRepository _alumnos;
 
     public StaffService(
         IMembresiaTenantRepository membresias, ITenantRepository tenants,
-        ICredencialesService credenciales, IUsuarioActual usuario)
+        ICredencialesService credenciales, IUsuarioActual usuario, IAlumnoRepository alumnos)
     {
         _membresias = membresias;
         _tenants = tenants;
         _credenciales = credenciales;
         _usuario = usuario;
+        _alumnos = alumnos;
     }
 
     public async Task<IReadOnlyList<StaffDto>> ListarAsync(CancellationToken ct = default)
@@ -83,7 +85,19 @@ public class StaffService : IStaffService
                 return new StaffCreadoDto { Staff = Mapear(membresia, existente), Usuario = null, PasswordTemporal = null };
             }
 
-            // Existe una cuenta con ese celular pero no es (ni fue) profe acá: no la pisamos
+            // Existe una cuenta con ese celular pero no es (ni fue) profe acá.
+            // Si esa persona YA es alumno de esta academia, es la misma persona con
+            // otra faceta (el empleado que también toma clases): la sumamos como Staff
+            // reusando su login (un usuario, varios roles), sin crear otra cuenta ni
+            // clave. Una cuenta ajena sin relación con el club NO se toca.
+            if (await _alumnos.EsAlumnoDelTenantAsync(existente.Id, ct))
+            {
+                var reuso = new MembresiaTenant { UserId = existente.Id, Rol = RolTenant.Staff, ValorHora = dto.ValorHora };
+                await _membresias.AgregarAsync(reuso, ct);
+                await _membresias.GuardarCambiosAsync(ct);
+                return new StaffCreadoDto { Staff = Mapear(reuso, existente), Usuario = null, PasswordTemporal = null };
+            }
+
             throw new ReglaDeNegocioException(
                 $"El celular {telefono} ya tiene una cuenta en la plataforma. Creá el profe con otro número, así tiene su cuenta propia de profesor.");
         }

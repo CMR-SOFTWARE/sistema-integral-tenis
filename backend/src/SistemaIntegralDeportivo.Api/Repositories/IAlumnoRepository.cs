@@ -11,6 +11,13 @@ public interface IAlumnoRepository
     /// <summary>¿Ya existe un alumno con este DNI en el tenant?</summary>
     Task<bool> ExisteDniAsync(string dni, CancellationToken ct = default);
 
+    /// <summary>
+    /// ¿Ese usuario tiene una ficha de alumno EN ESTE tenant? Se usa para reusar la
+    /// persona como Staff sin crear otra cuenta (un usuario, varias facetas): solo
+    /// si ya es alumno de la academia (relación conocida), no una cuenta ajena.
+    /// </summary>
+    Task<bool> EsAlumnoDelTenantAsync(Guid userId, CancellationToken ct = default);
+
     /// <summary>Persiste el alumno (y su tutor, si viene en el grafo).</summary>
     Task<Alumno> AgregarAsync(Alumno alumno, CancellationToken ct = default);
 
