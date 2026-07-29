@@ -1,24 +1,28 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
 import { CAT_COLOR, CAT_LABEL, avatarColor, iniciales } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import type { SolicitudPendiente } from './types';
+import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import s from './SolicitudesPage.module.css';
 
 /**
- * Solicitudes de alumnos que quieren tomar clases con vos (plan v2).
- * Aprobar crea su ficha en tu club con los datos de su registro.
+ * Lista de espera: los que se unieron a la academia (o cargó el profe) y todavía
+ * NO tienen clase. Son miembros, no alumnos: se vuelven alumnos cuando se les
+ * asigna una clase (un grupo o un horario). El profe los puede quitar.
  */
 export default function SolicitudesPage() {
-  const [solicitudes, setSolicitudes] = useState<SolicitudPendiente[] | null>(null);
+  const [espera, setEspera] = useState<SolicitudPendiente[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [procesando, setProcesando] = useState<string | null>(null); // id en curso
+  const confirmar = useConfirmar();
 
   const cargar = useCallback(() => {
     api.get<SolicitudPendiente[]>('/solicitudes')
-      .then(setSolicitudes)
-      .catch((e) => setError(e instanceof Error ? e.message : 'Error cargando solicitudes'));
+      .then(setEspera)
+      .catch((e) => setError(e instanceof Error ? e.message : 'Error cargando la lista de espera'));
   }, []);
 
   useEffect(() => {
@@ -30,40 +34,46 @@ export default function SolicitudesPage() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  const resolver = async (sol: SolicitudPendiente, accion: 'aprobar' | 'rechazar') => {
+  const quitar = async (sol: SolicitudPendiente) => {
+    const ok = await confirmar({
+      titulo: `¿Quitar a ${sol.nombre} ${sol.apellido}?`,
+      mensaje: 'Sale de la lista de espera. Su cuenta se conserva (puede volver a unirse).',
+      confirmar: 'Quitar',
+      peligro: true,
+    });
+    if (!ok) return;
     setProcesando(sol.id);
     try {
-      await api.post(`/solicitudes/${sol.id}/${accion}`, {});
-      avisar(accion === 'aprobar'
-        ? `${sol.nombre} ${sol.apellido} ya es alumno de tu club 🎾`
-        : `Solicitud de ${sol.nombre} rechazada.`);
+      await api.post(`/solicitudes/${sol.id}/quitar`, {});
+      avisar(`${sol.nombre} ${sol.apellido} salió de la lista de espera.`);
       cargar();
     } catch (e) {
-      avisar(e instanceof ApiError ? e.message : 'No se pudo resolver la solicitud.');
+      avisar(e instanceof ApiError ? e.message : 'No se pudo quitar.');
     } finally {
       setProcesando(null);
     }
   };
 
   if (error) return <div className={s.error}>{error} — ¿está corriendo la API?</div>;
-  if (!solicitudes) return <div className={s.vacio}>Cargando…</div>;
+  if (!espera) return <div className={s.vacio}>Cargando…</div>;
 
   return (
     <div>
       <div className={s.intro}>
-        Jugadores que quieren tomar clases con vos. Al aprobar, su ficha se
-        crea sola con los datos de su registro (o se vincula si ya lo tenías cargado).
+        Los que se unieron a tu academia (o cargaste) y todavía no tienen clase. Son
+        miembros, todavía no alumnos: <b>se vuelven alumnos cuando les asignás una
+        clase</b> — un grupo o un horario.
       </div>
 
-      {solicitudes.length === 0 && (
+      {espera.length === 0 && (
         <div className={s.vacioCard}>
-          No hay solicitudes pendientes. Cuando un alumno te busque desde su
-          portal, la vas a ver acá.
+          No hay nadie en la lista de espera. Cuando alguien se una desde su portal
+          —o lo cargues sin asignarle clase— aparece acá.
         </div>
       )}
 
       <div className={s.lista}>
-        {solicitudes.map((sol) => {
+        {espera.map((sol) => {
           const av = avatarColor(sol.nombre + sol.apellido);
           const cat = sol.categoria ? CAT_COLOR[sol.categoria as Categoria] : null;
           return (
@@ -89,19 +99,14 @@ export default function SolicitudesPage() {
                 {sol.mensaje && <div className={s.mensaje}>"{sol.mensaje}"</div>}
               </div>
               <div className={s.acciones}>
+                <Link to="/grupos" className={s.btnAprobar}>A un grupo</Link>
+                <Link to="/horarios" className={s.btnAprobar}>A un horario</Link>
                 <button
                   className={s.btnRechazar}
                   disabled={procesando === sol.id}
-                  onClick={() => void resolver(sol, 'rechazar')}
+                  onClick={() => void quitar(sol)}
                 >
-                  Rechazar
-                </button>
-                <button
-                  className={s.btnAprobar}
-                  disabled={procesando === sol.id}
-                  onClick={() => void resolver(sol, 'aprobar')}
-                >
-                  {procesando === sol.id ? '…' : 'Aprobar'}
+                  {procesando === sol.id ? '…' : 'Quitar'}
                 </button>
               </div>
             </div>

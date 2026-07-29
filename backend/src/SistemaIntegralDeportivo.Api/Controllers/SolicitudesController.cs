@@ -19,37 +19,23 @@ public class SolicitudesController : ControllerBase
         _service = service;
     }
 
-    /// <summary>Pendientes de MI club, con los datos del solicitante.</summary>
+    /// <summary>La lista de espera de MI club (fichas EnEspera), con sus datos.</summary>
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<SolicitudPendienteDto>>> Pendientes(CancellationToken ct) =>
         Ok(await _service.PendientesAsync(ct));
 
-    /// <summary>Conteo para el badge del sidebar.</summary>
+    /// <summary>Conteo para el badge del sidebar (cuántos hay en espera).</summary>
     [HttpGet("conteo")]
     public async Task<ActionResult<ConteoSolicitudesDto>> Conteo(CancellationToken ct) =>
         Ok(new ConteoSolicitudesDto { Pendientes = await _service.ContarPendientesAsync(ct) });
 
-    /// <summary>Aprueba: crea/vincula la ficha en mi club.</summary>
-    [HttpPost("{id:guid}/aprobar")]
-    public async Task<ActionResult<AlumnoResponseDto>> Aprobar(Guid id, CancellationToken ct)
+    /// <summary>Quitar de la lista de espera (borra la ficha; conserva su login).</summary>
+    [HttpPost("{id:guid}/quitar")]
+    public async Task<IActionResult> Quitar(Guid id, CancellationToken ct)
     {
         try
         {
-            return Ok(await _service.AprobarAsync(id, ct));
-        }
-        catch (ReglaDeNegocioException ex)
-        {
-            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
-        }
-    }
-
-    /// <summary>Rechaza (el alumno puede volver a solicitar).</summary>
-    [HttpPost("{id:guid}/rechazar")]
-    public async Task<IActionResult> Rechazar(Guid id, CancellationToken ct)
-    {
-        try
-        {
-            await _service.RechazarAsync(id, ct);
+            await _service.QuitarDeEsperaAsync(id, ct);
             return NoContent();
         }
         catch (ReglaDeNegocioException ex)

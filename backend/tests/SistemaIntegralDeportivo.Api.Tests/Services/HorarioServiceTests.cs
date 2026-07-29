@@ -23,6 +23,7 @@ public class HorarioServiceTests
     private readonly Mock<ICargoRepository> _cargos;
     private readonly Mock<IBloqueoRepository> _bloqueos;
     private readonly Mock<IStaffService> _staff;
+    private readonly Mock<IAlumnoRepository> _alumnos;
     private readonly HorarioService _service;
 
     public HorarioServiceTests()
@@ -32,7 +33,8 @@ public class HorarioServiceTests
         _cargos = new Mock<ICargoRepository>();
         _bloqueos = new Mock<IBloqueoRepository>();
         _staff = new Mock<IStaffService>();
-        _service = new HorarioService(_repo.Object, _turnos.Object, _cargos.Object, _bloqueos.Object, _staff.Object);
+        _alumnos = new Mock<IAlumnoRepository>();
+        _service = new HorarioService(_repo.Object, _turnos.Object, _cargos.Object, _bloqueos.Object, _staff.Object, _alumnos.Object);
 
         // Por defecto: cualquier profe asignado es válido (los tests que prueban la
         // regla lo pisan con false)

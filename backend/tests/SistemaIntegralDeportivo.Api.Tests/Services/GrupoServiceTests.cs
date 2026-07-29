@@ -120,6 +120,23 @@ public class GrupoServiceTests
     }
 
     [Fact]
+    public async Task Asignar_AlumnoEnEspera_SumaYLoPromociona()
+    {
+        // Un miembro de la lista de espera: sumarlo a un grupo es darle su primera
+        // clase → deja de estar en espera y se vuelve alumno (Activo).
+        var enEspera = AlumnoActivo();
+        enEspera.Estado = EstadoAlumno.EnEspera;
+        _alumnos.Setup(a => a.ObtenerAsync(AlumnoId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(enEspera);
+
+        await _service.AsignarAlumnoAsync(GrupoId, AlumnoId);
+
+        _grupos.Verify(g => g.AgregarMembresiaAsync(
+            It.Is<AlumnoGrupo>(m => m.AlumnoId == AlumnoId), It.IsAny<CancellationToken>()), Times.Once);
+        _alumnos.Verify(a => a.PromoverDeEsperaAsync(AlumnoId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task Asignar_ConCuotaVencida_Lanza()
     {
         // Debe una clase de hace 2 meses: no puede sumarse a clases nuevas

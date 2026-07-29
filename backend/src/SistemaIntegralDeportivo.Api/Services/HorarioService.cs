@@ -12,16 +12,18 @@ public class HorarioService : IHorarioService
     private readonly ICargoRepository _cargos;
     private readonly IBloqueoRepository _bloqueos;
     private readonly IStaffService _staff;
+    private readonly IAlumnoRepository _alumnos;
 
     public HorarioService(
         IHorarioRepository horarios, ITurnoRepository turnos, ICargoRepository cargos,
-        IBloqueoRepository bloqueos, IStaffService staff)
+        IBloqueoRepository bloqueos, IStaffService staff, IAlumnoRepository alumnos)
     {
         _horarios = horarios;
         _turnos = turnos;
         _cargos = cargos;
         _bloqueos = bloqueos;
         _staff = staff;
+        _alumnos = alumnos;
     }
 
     public async Task<HorarioResponseDto> CrearAsync(CreateHorarioDto dto, CancellationToken ct = default)
@@ -64,6 +66,12 @@ public class HorarioService : IHorarioService
         };
 
         var creado = await _horarios.AgregarAsync(horario, ct);
+
+        // Un horario individual es "darle su primera clase": si el alumno estaba en
+        // la lista de espera, ahora es alumno de verdad (Activo).
+        if (dto.AlumnoId is { } alumnoId)
+            await _alumnos.PromoverDeEsperaAsync(alumnoId, ct);
+
         return Mapear(creado);
     }
 

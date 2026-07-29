@@ -6,6 +6,8 @@ export interface Ficha {
   nombre: string;
   apellido: string;
   club: string;
+  /** Está en la lista de espera del club (todavía sin clase → aún no es alumno pleno). */
+  enEspera: boolean;
 }
 
 export interface Sesion {

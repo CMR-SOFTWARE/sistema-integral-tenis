@@ -98,6 +98,8 @@ public class FichaDto
     public string Nombre { get; set; } = string.Empty;
     public string Apellido { get; set; } = string.Empty;
     public string Club { get; set; } = string.Empty;
+    /// <summary>Está en la LISTA DE ESPERA del club (todavía sin clase → aún no es alumno pleno).</summary>
+    public bool EnEspera { get; set; }
 }
 
 /// <summary>

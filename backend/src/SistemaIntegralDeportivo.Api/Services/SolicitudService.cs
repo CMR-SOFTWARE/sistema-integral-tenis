@@ -5,21 +5,26 @@ using SistemaIntegralDeportivo.Api.Repositories;
 
 namespace SistemaIntegralDeportivo.Api.Services;
 
+/// <summary>
+/// Lista de espera (antes "solicitudes"): el jugador se UNE a un club y su ficha
+/// nace directo en espera (<see cref="EstadoAlumno.EnEspera"/>), sin aprobación.
+/// El profe la ve, la puede quitar, y se vuelve alumno cuando le asigna una clase.
+/// </summary>
 public class SolicitudService : ISolicitudService
 {
-    private readonly ISolicitudRepository _solicitudes;
     private readonly IAlumnoService _alumnos;
     private readonly IAlumnoRepository _alumnoRepo;
     private readonly ITenantRepository _tenants;
+    private readonly ITenantActual _tenantActual;
 
     public SolicitudService(
-        ISolicitudRepository solicitudes, IAlumnoService alumnos,
-        IAlumnoRepository alumnoRepo, ITenantRepository tenants)
+        IAlumnoService alumnos, IAlumnoRepository alumnoRepo,
+        ITenantRepository tenants, ITenantActual tenantActual)
     {
-        _solicitudes = solicitudes;
         _alumnos = alumnos;
         _alumnoRepo = alumnoRepo;
         _tenants = tenants;
+        _tenantActual = tenantActual;
     }
 
     public async Task<IReadOnlyList<MiSolicitudDto>> CrearAsync(
@@ -29,114 +34,75 @@ public class SolicitudService : ISolicitudService
         if (club is null || club.Estado != EstadoTenant.Activo)
             throw new ReglaDeNegocioException("Ese club no existe o no está disponible.");
 
-        // Un club por alumno POR AHORA (multi-club llega con la reserva de turnos)
+        // Un club por persona POR AHORA (identidad global, sin scopear por tenant)
         if (await _alumnoRepo.ObtenerPorUserIdAsync(usuario.Id, ct) is not null)
             throw new ReglaDeNegocioException(
                 "Ya estás vinculado a un club. Por ahora se puede pertenecer a uno solo.");
-
-        if (await _solicitudes.ExistePendienteAsync(usuario.Id, dto.TenantId, ct))
-            throw new ReglaDeNegocioException("Ya tenés una solicitud pendiente en ese club.");
 
         // La ficha se arma con TUS datos: tienen que estar completos
         if (string.IsNullOrWhiteSpace(usuario.Dni) ||
             string.IsNullOrWhiteSpace(usuario.PhoneNumber) ||
             usuario.FechaNacimiento is null)
             throw new ReglaDeNegocioException(
-                "Completá tu DNI, teléfono y fecha de nacimiento antes de solicitar (Mi perfil).");
+                "Completá tu DNI, teléfono y fecha de nacimiento antes de unirte (Mi perfil).");
 
-        await _solicitudes.AgregarAsync(new Solicitud
+        // Unirse = entrar a la LISTA DE ESPERA de ese club (sin aprobar). La ficha
+        // nace EnEspera (Construir) en el tenant elegido; se vuelve alumno cuando el
+        // profe le asigna una clase. El mensaje opcional queda como nota.
+        _tenantActual.Establecer(dto.TenantId);
+        await _alumnos.CrearVinculadoAsync(new CreateAlumnoDto
         {
-            UserId = usuario.Id,
-            TenantId = dto.TenantId,
-            Mensaje = string.IsNullOrWhiteSpace(dto.Mensaje) ? null : dto.Mensaje.Trim(),
-        }, ct);
-        await _solicitudes.GuardarCambiosAsync(ct);
+            Nombre = usuario.Nombre,
+            Apellido = usuario.Apellido,
+            Dni = usuario.Dni,
+            Telefono = usuario.PhoneNumber ?? string.Empty, // validado no-vacío arriba
+            Email = usuario.Email ?? string.Empty,
+            FechaNacimiento = usuario.FechaNacimiento.Value,
+            Categoria = usuario.Categoria ?? CategoriaAlumno.SinCategoria,
+            ConsentimientoDatos = true, // lo dio él mismo al registrarse
+            Notas = string.IsNullOrWhiteSpace(dto.Mensaje) ? null : dto.Mensaje.Trim(),
+        }, usuario.Id, ct);
 
         return await MisAsync(usuario.Id, ct);
     }
 
-    public async Task<IReadOnlyList<MiSolicitudDto>> MisAsync(
-        Guid userId, CancellationToken ct = default) =>
-        (await _solicitudes.ListarPorUsuarioAsync(userId, ct))
-            .Select(s => new MiSolicitudDto
-            {
-                Id = s.Id,
-                Club = s.Tenant?.Nombre ?? string.Empty,
-                Estado = s.Estado.ToString(),
-                Mensaje = s.Mensaje,
-                CreadoEl = s.CreadoEl,
-                ResueltoEl = s.ResueltoEl,
-            })
-            .ToList();
+    // Ya no hay solicitudes con estado: unirse deja la ficha en espera directo.
+    // El portal se entera por su sesión (la ficha aparece EnEspera).
+    public Task<IReadOnlyList<MiSolicitudDto>> MisAsync(Guid userId, CancellationToken ct = default) =>
+        Task.FromResult<IReadOnlyList<MiSolicitudDto>>([]);
 
+    /// <summary>Lista de espera del club: las fichas EnEspera (miembros sin clase todavía).</summary>
     public async Task<IReadOnlyList<SolicitudPendienteDto>> PendientesAsync(
         CancellationToken ct = default) =>
-        (await _solicitudes.ListarPendientesConUsuarioAsync(ct))
-            .Select(x => new SolicitudPendienteDto
+        (await _alumnoRepo.ListarAsync(null, EstadoAlumno.EnEspera, ct))
+            .Select(a => new SolicitudPendienteDto
             {
-                Id = x.Solicitud.Id,
-                Nombre = x.Solicitante.Nombre,
-                Apellido = x.Solicitante.Apellido,
-                Email = x.Solicitante.Email ?? string.Empty,
-                Dni = x.Solicitante.Dni,
-                Telefono = x.Solicitante.PhoneNumber,
-                FechaNacimiento = x.Solicitante.FechaNacimiento,
-                EsMenor = x.Solicitante.FechaNacimiento is { } fn && CalcularEdad(fn) < 18,
-                Categoria = x.Solicitante.Categoria?.ToString(),
-                Mensaje = x.Solicitud.Mensaje,
-                CreadoEl = x.Solicitud.CreadoEl,
+                Id = a.Id, // ahora es el id de la FICHA (para quitarla de la lista)
+                Nombre = a.Nombre,
+                Apellido = a.Apellido,
+                Email = a.Email ?? string.Empty,
+                Dni = a.Dni,
+                Telefono = a.Telefono,
+                FechaNacimiento = a.FechaNacimiento,
+                EsMenor = a.EsMenor,
+                Categoria = a.Categoria.ToString(),
+                Mensaje = a.Notas,
+                CreadoEl = a.CreadoEl,
             })
             .ToList();
 
     public Task<int> ContarPendientesAsync(CancellationToken ct = default) =>
-        _solicitudes.ContarPendientesAsync(ct);
+        _alumnoRepo.ContarPorEstadoAsync(EstadoAlumno.EnEspera, ct);
 
-    public async Task<AlumnoResponseDto> AprobarAsync(
-        Guid solicitudId, CancellationToken ct = default)
+    /// <summary>Quitar de la lista de espera: borra la ficha EnEspera (conserva su login).</summary>
+    public async Task QuitarDeEsperaAsync(Guid alumnoId, CancellationToken ct = default)
     {
-        var fila = await _solicitudes.ObtenerPendienteConUsuarioAsync(solicitudId, ct)
-            ?? throw new ReglaDeNegocioException("La solicitud no existe o ya fue resuelta.");
-        var (solicitud, solicitante) = fila;
+        var ficha = await _alumnoRepo.ObtenerAsync(alumnoId, ct);
+        if (ficha is null || ficha.Estado != EstadoAlumno.EnEspera)
+            throw new ReglaDeNegocioException("Ese registro no está en la lista de espera.");
 
-        // Los datos del registro viajan a la ficha. Si algo falla (p.ej.
-        // menor sin tutor), la excepción sube y la solicitud QUEDA pendiente.
-        var ficha = await _alumnos.CrearVinculadoAsync(new CreateAlumnoDto
-        {
-            Nombre = solicitante.Nombre,
-            Apellido = solicitante.Apellido,
-            Dni = solicitante.Dni ?? string.Empty,
-            Telefono = solicitante.PhoneNumber ?? string.Empty,
-            Email = solicitante.Email ?? string.Empty,
-            FechaNacimiento = solicitante.FechaNacimiento
-                ?? throw new ReglaDeNegocioException(
-                    "El solicitante no cargó su fecha de nacimiento."),
-            Categoria = solicitante.Categoria ?? CategoriaAlumno.SinCategoria,
-            ConsentimientoDatos = true, // lo dio él mismo al registrarse
-        }, solicitud.UserId, ct);
-
-        solicitud.Estado = EstadoSolicitud.Aprobada;
-        solicitud.AlumnoId = ficha.Id;
-        solicitud.ResueltoEl = DateTime.UtcNow;
-        await _solicitudes.GuardarCambiosAsync(ct);
-
-        return ficha;
-    }
-
-    public async Task RechazarAsync(Guid solicitudId, CancellationToken ct = default)
-    {
-        var fila = await _solicitudes.ObtenerPendienteConUsuarioAsync(solicitudId, ct)
-            ?? throw new ReglaDeNegocioException("La solicitud no existe o ya fue resuelta.");
-
-        fila.Solicitud.Estado = EstadoSolicitud.Rechazada;
-        fila.Solicitud.ResueltoEl = DateTime.UtcNow;
-        await _solicitudes.GuardarCambiosAsync(ct);
-    }
-
-    private static int CalcularEdad(DateTime nacimiento)
-    {
-        var hoy = DateTime.UtcNow.Date;
-        var edad = hoy.Year - nacimiento.Year;
-        if (nacimiento.Date > hoy.AddYears(-edad)) edad--;
-        return edad;
+        // Borra la ficha y su historial (que no tiene, es un miembro sin clase). El
+        // Usuario NO se toca: la persona puede unirse a otro club o volver a intentar.
+        await _alumnoRepo.EliminarDefinitivoAsync(ficha, ct);
     }
 }
