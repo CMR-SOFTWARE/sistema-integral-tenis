@@ -79,6 +79,8 @@ export interface Turno {
   sede: string;
   /** Profe a cargo (del horario); null = suelto o sin asignar. Para el filtro por profe. */
   profesorUserId: string | null;
+  /** El horario (plantilla) del que salió; null = clase suelta. Habilita las acciones de horario. */
+  horarioId: string | null;
   participantes: ParticipanteTurno[];
 }
 

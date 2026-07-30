@@ -7,6 +7,32 @@
   flex-wrap: wrap;
 }
 
+/* "Nuevo horario": la acción principal de la agenda, empujada a la derecha. */
+.btnNuevo {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border: none;
+  border-radius: 10px;
+  background: var(--color-primary-dark);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btnNuevo:hover {
+  filter: brightness(1.05);
+}
+
+.btnNuevo:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 .nav {
   width: 36px;
   height: 36px;
@@ -153,6 +179,14 @@
 .turnoDetalle {
   color: var(--color-text-faint);
   font-size: 11px;
+}
+
+/* Profe a cargo del turno (más info en la card). */
+.turnoProfe {
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-primary-dark);
 }
 
 /* ── Franjas bloqueadas y leyenda ── */

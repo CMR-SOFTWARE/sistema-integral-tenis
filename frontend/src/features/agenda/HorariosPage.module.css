@@ -84,10 +84,37 @@
   font-size: 12px;
 }
 
-.slot:hover .slotBaja,
-.slot:hover .slotEditar,
-.slot:hover .slotDuplicar {
-  opacity: 1;
+/* Fila de acciones del slot: siempre visibles, con borde y área de click amplia. */
+.slotAcciones {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  justify-content: flex-end;
+}
+
+.slotBtn,
+.slotBtnBaja {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.slotBtn:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.slotBtnBaja:hover {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  border-color: var(--color-danger-border);
 }
 
 .slotHora {
@@ -136,57 +163,6 @@
   background: var(--color-surface);
   color: var(--color-text);
   cursor: pointer;
-}
-
-.slotBaja {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  border: none;
-  background: none;
-  color: var(--color-text-faint);
-  cursor: pointer;
-  padding: 2px;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.slotBaja:hover {
-  color: var(--color-danger);
-}
-
-.slotEditar {
-  position: absolute;
-  top: 6px;
-  right: 26px;
-  border: none;
-  background: none;
-  color: var(--color-text-faint);
-  cursor: pointer;
-  padding: 2px;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.slotEditar:hover {
-  color: var(--color-primary);
-}
-
-.slotDuplicar {
-  position: absolute;
-  top: 6px;
-  right: 46px;
-  border: none;
-  background: none;
-  color: var(--color-text-faint);
-  cursor: pointer;
-  padding: 2px;
-  opacity: 0;
-  transition: opacity 0.15s;
-}
-
-.slotDuplicar:hover {
-  color: var(--color-primary);
 }
 
 .error {

@@ -13,11 +13,9 @@ import CambiarPasswordPage from './features/auth/CambiarPasswordPage';
 import { obtenerSesion, obtenerToken } from './features/auth/sesion';
 import DashboardPage from './features/dashboard/DashboardPage';
 import StaffDashboardPage from './features/staff/StaffDashboardPage';
-import GruposPage from './features/grupos/GruposPage';
 import MiAcademiaPage from './features/miacademia/MiAcademiaPage';
 import PlataformaPage from './features/admin/PlataformaPage';
-import CalendarioPage from './features/agenda/CalendarioPage';
-import HorariosPage from './features/agenda/HorariosPage';
+import AgendaSeccionPage from './features/agenda/AgendaSeccionPage';
 import CuotasPage from './features/cuotas/CuotasPage';
 import AvisosPage from './features/avisos/AvisosPage';
 import BloqueosPage from './features/bloqueos/BloqueosPage';
@@ -98,10 +96,12 @@ export default function App() {
             <Route index element={<InicioProfesor />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/alumnos" element={<AlumnosSeccionPage />} />
-            <Route path="/calendario" element={<CalendarioPage />} />
-            <Route path="/grupos" element={<GruposPage />} />
+            <Route path="/agenda" element={<AgendaSeccionPage />} />
+            {/* Compat: los links viejos entran a la Agenda en el tab correcto */}
+            <Route path="/calendario" element={<Navigate to="/agenda?tab=calendario" replace />} />
+            <Route path="/horarios" element={<Navigate to="/agenda?tab=horarios" replace />} />
+            <Route path="/grupos" element={<Navigate to="/agenda?tab=grupos" replace />} />
             <Route path="/mi-academia" element={<MiAcademiaPage />} />
-            <Route path="/horarios" element={<HorariosPage />} />
             <Route path="/cuotas" element={<CuotasPage />} />
             <Route path="/avisos" element={<AvisosPage />} />
             <Route path="/bloqueos" element={<BloqueosPage />} />
