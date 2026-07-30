@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Modal from '../../components/Modal';
 import Avatar from '../../components/Avatar';
@@ -15,13 +16,33 @@ interface Props {
   onClose: () => void;
   /** "Crear acceso" para fichas sin usuario (genera credenciales del portal). */
   onCrearAcceso?: (alumno: Alumno) => void;
+  /** Cambia el profe titular desde la ficha; devuelve la ficha actualizada. */
+  onCambiarProfe?: (id: string, profesorUserId: string | null) => Promise<Alumno>;
 }
 
-/** Ficha del alumno con sus horarios asignados y su cuenta corriente reales. */
-export default function DetalleAlumnoModal({ alumno, hermanos, onClose, onCrearAcceso }: Props) {
+/** Ficha del alumno: datos, roles (Director + Profe titular), horarios y cuenta. */
+export default function DetalleAlumnoModal({ alumno, hermanos, onClose, onCrearAcceso, onCambiarProfe }: Props) {
   const cat = CAT_COLOR[alumno.categoria];
   const estado = ESTADO_UI[alumno.estado];
-  const { nombreDe } = useProfesores();
+  const { profes } = useProfesores();
+
+  // El Director es el dueño de la academia (fijo); el Profe titular se asigna acá.
+  const director = profes.find((p) => p.esDueño);
+  const [profeId, setProfeId] = useState(alumno.profesorUserId ?? '');
+  const [club, setClub] = useState(alumno.sedeNombre);
+  const [guardandoProfe, setGuardandoProfe] = useState(false);
+
+  const cambiarProfe = async (nuevo: string) => {
+    if (!onCambiarProfe) return;
+    setGuardandoProfe(true);
+    try {
+      const act = await onCambiarProfe(alumno.id, nuevo || null);
+      setProfeId(act.profesorUserId ?? '');
+      setClub(act.sedeNombre); // el club sigue al profe titular
+    } finally {
+      setGuardandoProfe(false);
+    }
+  };
 
   const horarios = useQuery({
     queryKey: ['alumno-horarios', alumno.id],
@@ -41,8 +62,8 @@ export default function DetalleAlumnoModal({ alumno, hermanos, onClose, onCrearA
       : '—'],
     ['Categoría por edad', subPorEdad(alumno.fechaNacimiento) ?? 'Adulto'],
     ['Es menor', alumno.esMenor ? (alumno.tutorId ? 'Sí (con tutor)' : 'Sí — falta cargar el tutor') : 'No'],
-    ['Profe de cabecera', nombreDe(alumno.profesorUserId) ?? 'Sin asignar'],
-    ['Club', alumno.sedeNombre ?? 'Sin asignar'],
+    ['Director', director ? director.nombre : '—'],
+    ['Club', club ?? 'Sin asignar'],
     ['Cuota mensual', formatoPlata(alumno.arancel)],
     ['Alta en el sistema', new Date(alumno.creadoEl).toLocaleDateString('es-AR')],
   ];
@@ -73,6 +94,26 @@ export default function DetalleAlumnoModal({ alumno, hermanos, onClose, onCrearA
               <span className={s.filaV}>{v}</span>
             </div>
           ))}
+          {/* Profe titular: se asigna/cambia desde la ficha (el club lo sigue). */}
+          <div className={s.fila}>
+            <span className={s.filaK}>Profe titular</span>
+            <span className={s.filaV}>
+              {onCambiarProfe ? (
+                <select
+                  value={profeId}
+                  disabled={guardandoProfe}
+                  onChange={(e) => void cambiarProfe(e.target.value)}
+                  style={{ padding: '4px 8px', borderRadius: 8, border: '1px solid #dde5da', fontWeight: 600, maxWidth: 190 }}
+                >
+                  <option value="">Sin asignar</option>
+                  {profes.map((p) => <option key={p.userId} value={p.userId}>{p.nombre}</option>)}
+                </select>
+              ) : (
+                profes.find((p) => p.userId === profeId)?.nombre ?? 'Sin asignar'
+              )}
+            </span>
+          </div>
+
           <div className={s.seccion} style={{ marginTop: 18 }}>Observaciones del profesor</div>
           <div className={s.obs}>{alumno.notas ?? 'Sin observaciones.'}</div>
 

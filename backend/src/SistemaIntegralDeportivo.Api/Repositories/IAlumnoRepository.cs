@@ -66,6 +66,12 @@ public interface IAlumnoRepository
     /// <summary>Confirma en la base los cambios hechos a entidades trackeadas.</summary>
     Task GuardarCambiosAsync(CancellationToken ct = default);
 
+    /// <summary>
+    /// Recarga la navegación <see cref="Alumno.Sede"/> desde su FK actual (tras
+    /// cambiar <see cref="Alumno.SedeId"/>), para que el mapeo devuelva el club nuevo.
+    /// </summary>
+    Task RecargarSedeAsync(Alumno alumno, CancellationToken ct = default);
+
     /// <summary>La ficha del tenant con ese DNI (para vincular al aprobar solicitudes).</summary>
     Task<Alumno?> ObtenerPorDniAsync(string dni, CancellationToken ct = default);
 

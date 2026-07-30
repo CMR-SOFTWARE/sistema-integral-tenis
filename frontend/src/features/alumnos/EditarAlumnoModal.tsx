@@ -157,7 +157,7 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
           </select>
         </label>
         <label className={s.campo}>
-          <span>Profe de cabecera</span>
+          <span>Profe titular</span>
           <select value={form.profesorId} onChange={(e) => set('profesorId', e.target.value)}>
             <option value="">Sin asignar</option>
             {profes.map((p) => (

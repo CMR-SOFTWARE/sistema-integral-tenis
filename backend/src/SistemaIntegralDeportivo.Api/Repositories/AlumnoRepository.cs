@@ -150,6 +150,9 @@ public class AlumnoRepository : IAlumnoRepository
     public Task GuardarCambiosAsync(CancellationToken ct = default) =>
         _db.SaveChangesAsync(ct);
 
+    public Task RecargarSedeAsync(Alumno alumno, CancellationToken ct = default) =>
+        _db.Entry(alumno).Reference(a => a.Sede).LoadAsync(ct);
+
     // ── Auth / portal: GLOBAL a propósito (no scopea por tenant): la
     //    identidad cruza negocios (ADR-0007) ──
 

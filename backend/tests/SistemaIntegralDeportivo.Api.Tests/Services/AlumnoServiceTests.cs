@@ -235,6 +235,49 @@ public class AlumnoServiceTests
             It.Is<Alumno>(a => a.SedeId == sedeId), It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    // ── Cambiar el profe titular desde la ficha ──
+
+    [Fact]
+    public async Task CambiarProfesor_Asigna_YHeredaSuClub()
+    {
+        var ficha = FichaExistente();
+        var profeId = Guid.NewGuid();
+        var sedeId = Guid.NewGuid();
+        _staff.Setup(x => x.EsAsignableAsync(profeId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _staff.Setup(x => x.SedeDelProfeAsync(profeId, It.IsAny<CancellationToken>())).ReturnsAsync(sedeId);
+
+        var res = await _service.CambiarProfesorAsync(ficha.Id, profeId);
+
+        Assert.NotNull(res);
+        Assert.Equal(profeId, ficha.ProfesorUserId);
+        Assert.Equal(sedeId, ficha.SedeId); // el club sigue al profe
+        _repo.Verify(r => r.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CambiarProfesor_NoAsignable_Lanza()
+    {
+        var ficha = FichaExistente();
+        _staff.Setup(x => x.EsAsignableAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(false);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.CambiarProfesorAsync(ficha.Id, Guid.NewGuid()));
+        _repo.Verify(r => r.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task CambiarProfesor_Null_DesasignaYLimpiaElClub()
+    {
+        var ficha = FichaExistente();
+        ficha.ProfesorUserId = Guid.NewGuid();
+        ficha.SedeId = Guid.NewGuid();
+
+        await _service.CambiarProfesorAsync(ficha.Id, null);
+
+        Assert.Null(ficha.ProfesorUserId);
+        Assert.Null(ficha.SedeId);
+    }
+
     [Fact]
     public async Task CrearAsync_CelularDeUnTitular_SumaLaFichaALaFamilia()
     {

@@ -317,6 +317,28 @@ public class AlumnoService : IAlumnoService
         return Mapear(alumno);
     }
 
+    public async Task<AlumnoResponseDto?> CambiarProfesorAsync(
+        Guid id, Guid? profesorUserId, CancellationToken ct = default)
+    {
+        var alumno = await _repo.ObtenerAsync(id, ct);
+        if (alumno is null) return null;
+
+        // Validar el profe titular (null = desasignar). El dueño también es asignable.
+        if (profesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))
+            throw new ReglaDeNegocioException("Ese profe no es de tu club.");
+
+        alumno.ProfesorUserId = profesorUserId;
+        // El club de la ficha sigue al profe titular (igual que en EditarAsync).
+        alumno.SedeId = profesorUserId is { } titular
+            ? await _staff.SedeDelProfeAsync(titular, ct)
+            : null;
+        alumno.ActualizadoEl = DateTime.UtcNow;
+
+        await _repo.GuardarCambiosAsync(ct);
+        await _repo.RecargarSedeAsync(alumno, ct); // el club nuevo, para la respuesta
+        return Mapear(alumno);
+    }
+
     public async Task<bool> DarDeBajaAsync(Guid id, CancellationToken ct = default)
     {
         // Baja LÓGICA (regla no negociable: estados, no borrados)
