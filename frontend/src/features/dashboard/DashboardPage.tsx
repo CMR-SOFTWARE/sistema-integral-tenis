@@ -106,7 +106,7 @@ export default function DashboardPage() {
   return (
     <div>
       {pedidosPend > 0 && (
-        <Link to="/cuotas" className={s.avisoPedidos}>
+        <Link to="/finanzas?tab=cuotas" className={s.avisoPedidos}>
           <span className={s.avisoPedidosBadge}>{pedidosPend}</span>
           {pedidosPend === 1 ? 'pedido de servicio sin resolver' : 'pedidos de servicios sin resolver'} — resolvé en Cuotas
         </Link>
@@ -185,7 +185,7 @@ export default function DashboardPage() {
         <div className={s.tarjeta}>
           <div className={s.tarjetaHeader}>
             <h3 className={s.tarjetaTitulo}>Cuotas pendientes</h3>
-            <Link to="/cuotas" className={s.linkReal}>Ver cuotas →</Link>
+            <Link to="/finanzas?tab=cuotas" className={s.linkReal}>Ver cuotas →</Link>
           </div>
           {cuotas.alumnosPendientes === 0 && cuotas.alumnosVencidos === 0 ? (
             <div className={s.vacio}>Nadie debe nada este mes. 🎾</div>

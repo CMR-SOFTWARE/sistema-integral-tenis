@@ -1,0 +1,39 @@
+/* Barra superior de Finanzas: sub-tabs Cuotas | Reportes. */
+.barra {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+}
+
+.tab,
+.tabActivo {
+  border: none;
+  background: none;
+  padding: 12px 18px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px; /* pisa el borde inferior del contenedor */
+  transition: color 0.15s;
+}
+
+.tab:hover {
+  color: var(--color-text);
+}
+
+.tabActivo {
+  color: var(--color-primary-dark);
+  border-bottom-color: var(--color-primary);
+}
