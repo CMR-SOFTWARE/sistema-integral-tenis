@@ -33,6 +33,23 @@
   cursor: default;
 }
 
+/* Vista "por profe": cada profesor con su semana/mes apilada. */
+.porProfe {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.grupoProfeTitulo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--color-primary-dark);
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--color-border);
+}
+
 .nav {
   width: 36px;
   height: 36px;

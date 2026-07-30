@@ -5,15 +5,15 @@ import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { useHorarios, useMes, useSedes, useSemana } from './hooks';
 import TurnoModal from './TurnoModal';
 import VistaMes from './VistaMes';
+import GrillaSemana from './GrillaSemana';
 import PanelClasesSueltas from './PanelClasesSueltas';
 import PanelSolicitudesHorario from './PanelSolicitudesHorario';
 import NuevoHorarioModal from './NuevoHorarioModal';
 import EditarHorarioModal from './EditarHorarioModal';
-import { aISO, fechaCorta, horaCorta, lunesDe, rangoSemana, sumarDias } from './types';
+import { lunesDe, rangoSemana, sumarDias } from './types';
 import type { CreateHorario, Horario, Turno, UpdateHorario } from './types';
 import { MESES } from '../cuotas/types';
 import { useBloqueos } from '../bloqueos/useBloqueos';
-import { cubreFecha, franjaLegible } from '../bloqueos/types';
 import s from './CalendarioPage.module.css';
 
 type Vista = 'semana' | 'mes';
@@ -41,7 +41,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
   const activo = vista === 'semana' ? semana : mes;
 
   const { bloqueos } = useBloqueos();
-  const { nombreDe } = useProfesores();
+  const { profes, nombreDe } = useProfesores();
   const confirmar = useConfirmar();
   const { sedes } = useSedes();
   const { horarios, crear: crearH, editar: editarH, desactivar: desactivarH, recargar: recargarH } = useHorarios();
@@ -49,11 +49,19 @@ export default function CalendarioPage({ sede, profe }: Props) {
   const [modalHorario, setModalHorario] = useState(false);
   const [editandoHorario, setEditandoHorario] = useState<Horario | null>(null);
   const [duplicandoHorario, setDuplicandoHorario] = useState<Horario | null>(null);
+  const [porProfe, setPorProfe] = useState(false); // ver la semana/mes agrupada por profesor
   const esOwner = obtenerSesion()?.rol === 'owner';
 
   const visibles = activo.turnos.filter(
     (t) => (sede === '' || t.sede === sede) && (profe === '' || t.profesorUserId === profe),
   );
+
+  // Modo "por profe": los profes CON turnos en el período (el filtro de profe ya colapsa a uno).
+  // Los turnos sin profe van a su propia sección (solo cuando no se filtró por uno).
+  const gruposProfe = porProfe
+    ? profes.filter((p) => (profe === '' || p.userId === profe) && visibles.some((t) => t.profesorUserId === p.userId))
+    : [];
+  const haySinProfe = porProfe && profe === '' && visibles.some((t) => t.profesorUserId === null);
 
   const dias = useMemo(() => Array.from({ length: 7 }, (_, i) => sumarDias(lunes, i)), [lunes]);
   const semanaActual = lunesDe(new Date()) === lunes;
@@ -115,6 +123,13 @@ export default function CalendarioPage({ sede, profe }: Props) {
           <button className={vista === 'mes' ? s.toggleActivo : s.toggleBtn} onClick={() => setVista('mes')}>Mes</button>
         </div>
 
+        {esOwner && profes.length >= 2 && (
+          <div className={s.toggle}>
+            <button className={!porProfe ? s.toggleActivo : s.toggleBtn} onClick={() => setPorProfe(false)}>Todos</button>
+            <button className={porProfe ? s.toggleActivo : s.toggleBtn} onClick={() => setPorProfe(true)}>Por profe</button>
+          </div>
+        )}
+
         {esOwner && (
           <button
             className={s.btnNuevo}
@@ -139,53 +154,12 @@ export default function CalendarioPage({ sede, profe }: Props) {
       {activo.error && <div className={s.error}>{activo.error} — ¿está corriendo la API?</div>}
       {activo.cargando && <div className={s.vacio}>Cargando…</div>}
 
-      {!activo.cargando && !activo.error && vista === 'semana' && (
-        <div className={s.grilla}>
-          {dias.map((fecha) => {
-            const delDia = visibles.filter((t) => t.fecha === fecha);
-            const bloqueosDia = bloqueos.filter((b) => cubreFecha(b, fecha));
-            const hoyCol = fecha === aISO(new Date());
-            return (
-              <div key={fecha} className={`${s.columna} ${hoyCol ? s.columnaHoy : ''}`}>
-                <div className={s.columnaTitulo}>{fechaCorta(fecha)}</div>
-                {bloqueosDia.map((b) => (
-                  <div key={b.id} className={s.franjaBloqueada}>
-                    <div className={s.turnoHora}>{franjaLegible(b.horaInicio, b.horaFin)}</div>
-                    <div className={s.franjaMotivo}>
-                      {b.motivo ?? 'Bloqueo fijo'}{b.cancha ? ` · ${b.cancha}` : ''}
-                    </div>
-                  </div>
-                ))}
-                {delDia.length === 0 && bloqueosDia.length === 0 && <div className={s.libre}>—</div>}
-                {delDia.map((t) => {
-                  const cancelado = t.estado === 'Cancelado';
-                  const ausentes = t.participantes.filter((p) => !p.presente).length;
-                  return (
-                    <button
-                      key={t.id}
-                      className={`${s.turno} ${cancelado ? s.turnoCancelado : ''}`}
-                      onClick={() => setAbierto(t.id)}
-                    >
-                      <div className={s.turnoHora}>{horaCorta(t.horaInicio)}</div>
-                      <div className={s.turnoTitulo}>{t.titulo}</div>
-                      <div className={s.turnoDetalle}>
-                        {cancelado
-                          ? `Cancelado: ${t.canceladoMotivo}`
-                          : `${t.cancha} · ${t.participantes.length} 👤${ausentes > 0 ? ` · ${ausentes} falta${ausentes > 1 ? 's' : ''}` : ''}`}
-                      </div>
-                      {!cancelado && t.profesorUserId && (
-                        <div className={s.turnoProfe}>{nombreDe(t.profesorUserId)}</div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
+      {/* Modo TODOS: una sola grilla (Semana) o un solo mes. */}
+      {!activo.cargando && !activo.error && !porProfe && vista === 'semana' && (
+        <GrillaSemana dias={dias} turnos={visibles} bloqueos={bloqueos} onAbrirTurno={setAbierto} nombreDe={nombreDe} />
       )}
 
-      {!activo.cargando && !activo.error && vista === 'mes' && (
+      {!activo.cargando && !activo.error && !porProfe && vista === 'mes' && (
         <VistaMes
           key={`${mesCursor.anio}-${mesCursor.mes}`}
           anio={mesCursor.anio}
@@ -196,7 +170,49 @@ export default function CalendarioPage({ sede, profe }: Props) {
         />
       )}
 
-      {!activo.cargando && !activo.error && vista === 'semana' && activo.turnos.length === 0 && (
+      {/* Modo POR PROFE: la semana/mes de cada profe, apilada. */}
+      {!activo.cargando && !activo.error && porProfe && (
+        <div className={s.porProfe}>
+          {gruposProfe.map((p) => {
+            const suyos = visibles.filter((t) => t.profesorUserId === p.userId);
+            return (
+              <div key={p.userId} className={s.grupoProfe}>
+                <div className={s.grupoProfeTitulo}>{p.nombre}{p.esDueño ? ' (vos)' : ''}</div>
+                {vista === 'semana' ? (
+                  <GrillaSemana dias={dias} turnos={suyos} bloqueos={bloqueos} onAbrirTurno={setAbierto} nombreDe={nombreDe} />
+                ) : (
+                  <VistaMes
+                    key={`${mesCursor.anio}-${mesCursor.mes}-${p.userId}`}
+                    anio={mesCursor.anio} mes={mesCursor.mes} turnos={suyos}
+                    bloqueos={bloqueos} onAbrirTurno={(t) => setAbierto(t.id)}
+                  />
+                )}
+              </div>
+            );
+          })}
+          {haySinProfe && (
+            <div className={s.grupoProfe}>
+              <div className={s.grupoProfeTitulo}>Sin profe</div>
+              {vista === 'semana' ? (
+                <GrillaSemana dias={dias} turnos={visibles.filter((t) => !t.profesorUserId)} bloqueos={bloqueos} onAbrirTurno={setAbierto} nombreDe={nombreDe} />
+              ) : (
+                <VistaMes
+                  key={`${mesCursor.anio}-${mesCursor.mes}-sin`}
+                  anio={mesCursor.anio} mes={mesCursor.mes} turnos={visibles.filter((t) => !t.profesorUserId)}
+                  bloqueos={bloqueos} onAbrirTurno={(t) => setAbierto(t.id)}
+                />
+              )}
+            </div>
+          )}
+          {gruposProfe.length === 0 && !haySinProfe && (
+            <div className={s.vacioCard}>
+              No hay turnos de {profe === '' ? 'ningún profe' : 'este profe'} en este período.
+            </div>
+          )}
+        </div>
+      )}
+
+      {!activo.cargando && !activo.error && !porProfe && vista === 'semana' && activo.turnos.length === 0 && (
         <div className={s.vacioCard}>
           No hay turnos esta semana. Los turnos nacen de los <b>horarios</b>: tocá
           <b> "+ Nuevo horario" </b> para armar una clase y esta pantalla la genera sola.
