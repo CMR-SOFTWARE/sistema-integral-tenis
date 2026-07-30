@@ -20,15 +20,11 @@ export const profNav: NavItem[] = [
     icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
   },
   {
-    to: '/calendario',
-    label: 'Calendario',
+    // Agenda: Calendario (turnos) + Horarios (plantillas) + Grupos en sub-tabs.
+    // Visible a ambos roles como antes Calendario; el staff ve solo el tab Calendario.
+    to: '/agenda',
+    label: 'Agenda',
     icon: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4',
-  },
-  {
-    to: '/grupos',
-    label: 'Grupos',
-    icon: 'M18 21a6 6 0 0 0-12 0M12 13a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM21 10h-4M19 8v4',
-    soloOwner: true,
   },
   {
     // "Mi academia" agrupa la gestión del negocio: Profesores + Sueldos + Configuración (pestañas).
@@ -37,7 +33,6 @@ export const profNav: NavItem[] = [
     icon: 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6M9 11h.01M15 11h.01',
     soloOwner: true,
   },
-  { to: '/horarios', label: 'Horarios', icon: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM12 7v5l3 3', soloOwner: true },
   {
     to: '/cuotas',
     label: 'Cuotas',

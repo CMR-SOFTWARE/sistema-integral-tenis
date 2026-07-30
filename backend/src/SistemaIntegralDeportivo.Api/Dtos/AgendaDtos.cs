@@ -101,6 +101,8 @@ public class TurnoResponseDto
     public string Sede { get; set; } = string.Empty;
     /// <summary>Profe a cargo (del horario); null = suelto o sin asignar. Para el filtro por profe.</summary>
     public Guid? ProfesorUserId { get; set; }
+    /// <summary>El horario (plantilla) del que salió; null = clase suelta. Habilita las acciones de horario desde el turno.</summary>
+    public Guid? HorarioId { get; set; }
     public List<ParticipanteTurnoDto> Participantes { get; set; } = [];
 }
 

@@ -8,6 +8,51 @@
   margin-bottom: 10px;
 }
 
+/* Acciones del horario recurrente (editar/duplicar/desactivar la plantilla). */
+.horarioBox {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border);
+}
+
+.horarioAcciones {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.btnHorario,
+.btnHorarioBaja {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.btnHorario:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+.btnHorarioBaja:hover {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  border-color: var(--color-danger-border);
+}
+
+.notaMini {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--color-text-faint);
+}
+
 .lista {
   display: flex;
   flex-direction: column;

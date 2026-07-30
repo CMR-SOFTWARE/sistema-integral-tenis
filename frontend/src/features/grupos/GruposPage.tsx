@@ -11,7 +11,12 @@ import { CAT_COLOR, CAT_LABEL } from '../alumnos/types';
 import type { Grupo } from './types';
 import s from './GruposPage.module.css';
 
-export default function GruposPage() {
+interface Props {
+  /** Filtro compartido de la Agenda por profe (userId); '' = todos. */
+  profe: string;
+}
+
+export default function GruposPage({ profe }: Props) {
   const { grupos, cargando, error, crear, editar, eliminar, asignar, quitar, recargar } = useGrupos();
   const [modalNuevo, setModalNuevo] = useState(false);
   const [grupoAsignar, setGrupoAsignar] = useState<Grupo | null>(null);
@@ -19,6 +24,9 @@ export default function GruposPage() {
   const [toast, setToast] = useState<string | null>(null);
   const confirmar = useConfirmar();
   const { profes } = useProfesores();
+
+  // Filtro compartido de la Agenda: los grupos del profe elegido ('' = todos).
+  const visibles = grupos.filter((g) => profe === '' || g.profesorUserId === profe);
 
   const avisar = (msg: string) => {
     setToast(msg);
@@ -62,7 +70,7 @@ export default function GruposPage() {
     <div>
       <div className={s.toolbar}>
         <div className={s.spacer} />
-        <div className={s.contador}>{grupos.length} grupos</div>
+        <div className={s.contador}>{visibles.length} grupos</div>
         <button className={s.btnNuevo} onClick={() => setModalNuevo(true)}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
             <path d="M12 5v14M5 12h14" />
@@ -84,7 +92,7 @@ export default function GruposPage() {
       )}
 
       <div className={s.grilla}>
-        {grupos.map((g) => {
+        {visibles.map((g) => {
           const cat = g.categoria ? CAT_COLOR[g.categoria] : null;
           const lleno = g.cupoMaximo !== null && g.miembrosActivos >= g.cupoMaximo;
           return (

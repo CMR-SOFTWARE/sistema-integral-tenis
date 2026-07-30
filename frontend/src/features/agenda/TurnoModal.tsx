@@ -2,19 +2,30 @@ import { useState } from 'react';
 import Modal from '../../components/Modal';
 import { ApiError } from '../../lib/api';
 import { fechaCorta, horaCorta } from './types';
-import type { Turno } from './types';
+import type { Horario, Turno } from './types';
 import s from './TurnoModal.module.css';
 import m from '../alumnos/NuevoAlumnoModal.module.css';
 
 interface Props {
   turno: Turno;
+  /** La plantilla del turno (null = clase suelta o sin permisos): habilita las acciones de horario. */
+  horario: Horario | null;
   onClose: () => void;
   onAsistencia: (turnoId: string, alumnoId: string, presente: boolean) => Promise<void>;
   onCancelar: (turnoId: string, motivo: string) => Promise<void>;
+  onEditarHorario?: (h: Horario) => void;
+  onDuplicarHorario?: (h: Horario) => void;
+  onDesactivarHorario?: (h: Horario) => void;
 }
 
-/** Detalle del turno: asistencia (un tap marca la falta) y cancelación con motivo. */
-export default function TurnoModal({ turno, onClose, onAsistencia, onCancelar }: Props) {
+/**
+ * Detalle del turno: asistencia y cancelación de ESTE día, más las acciones de su
+ * horario recurrente (editar/duplicar/desactivar la plantilla) — todo en un lugar.
+ */
+export default function TurnoModal({
+  turno, horario, onClose, onAsistencia, onCancelar,
+  onEditarHorario, onDuplicarHorario, onDesactivarHorario,
+}: Props) {
   const [cancelando, setCancelando] = useState(false);
   const [motivo, setMotivo] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -107,6 +118,19 @@ export default function TurnoModal({ turno, onClose, onAsistencia, onCancelar }:
         La asistencia no cambia lo que se cobra: el que falta paga igual
         (la recuperación queda a tu criterio).
       </p>
+
+      {horario && onEditarHorario && (
+        <div className={s.horarioBox}>
+          <div className={s.seccion}>Este horario (todas las semanas)</div>
+          <div className={s.horarioAcciones}>
+            <button className={s.btnHorario} onClick={() => onEditarHorario(horario)}>Editar</button>
+            <button className={s.btnHorario} onClick={() => onDuplicarHorario?.(horario)}>Duplicar</button>
+            <button className={s.btnHorarioBaja} onClick={() => onDesactivarHorario?.(horario)}>Desactivar</button>
+          </div>
+          <p className={s.notaMini}>Afecta la clase recurrente (todas las semanas), no solo este día.</p>
+        </div>
+      )}
+
       {error && <div className={s.error}>{error}</div>}
     </Modal>
   );

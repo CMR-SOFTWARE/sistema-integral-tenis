@@ -233,6 +233,7 @@ public class TurnoService : ITurnoService
         Cancha = t.Cancha?.Nombre ?? string.Empty,
         Sede = t.Cancha?.Sede?.Nombre ?? string.Empty,
         ProfesorUserId = t.Horario?.ProfesorUserId,
+        HorarioId = t.HorarioId,
         Participantes = t.Participantes.Select(p => new ParticipanteTurnoDto
         {
             AlumnoId = p.AlumnoId,
