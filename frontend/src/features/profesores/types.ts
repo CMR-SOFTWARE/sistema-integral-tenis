@@ -14,6 +14,9 @@ export interface Staff {
   activo: boolean;
   /** Valor hora base (para el sueldo); null = sin definir. */
   valorHora: number | null;
+  /** Club (sede) donde trabaja; null = sin asignar. */
+  sedeId: string | null;
+  sedeNombre: string | null;
   creadoEl: string;
 }
 
@@ -32,4 +35,6 @@ export interface UpdateEmpleado {
   dni?: string;
   fechaNacimiento?: string;
   valorHora?: number;
+  /** Club (sede) donde trabaja; omitir = sin club. */
+  sedeId?: string;
 }

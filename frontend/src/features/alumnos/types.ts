@@ -40,6 +40,9 @@ export interface Alumno {
   fotoUrl: string | null;
   /** Profe de cabecera (dueño o staff); null = sin asignar. */
   profesorUserId: string | null;
+  /** Club (sede) de la ficha, heredado del profe de cabecera; null = sin club. */
+  sedeId: string | null;
+  sedeNombre: string | null;
 }
 
 /** Espejo de CreateAlumnoDto. Mínimo: nombre, apellido y teléfono (el usuario). */

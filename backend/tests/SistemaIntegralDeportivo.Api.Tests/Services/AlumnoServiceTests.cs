@@ -219,6 +219,23 @@ public class AlumnoServiceTests
     }
 
     [Fact]
+    public async Task CrearAsync_HeredaElClubDelProfeDeCabecera()
+    {
+        // "El profe carga la ficha con su club": el alumno hereda la sede del profe.
+        var profeId = Guid.NewGuid();
+        var sedeId = Guid.NewGuid();
+        _staff.Setup(x => x.EsAsignableAsync(profeId, It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _staff.Setup(x => x.SedeDelProfeAsync(profeId, It.IsAny<CancellationToken>())).ReturnsAsync(sedeId);
+        var dto = AlumnoMayor();
+        dto.ProfesorUserId = profeId;
+
+        await _service.CrearAsync(dto);
+
+        _repo.Verify(r => r.AgregarAsync(
+            It.Is<Alumno>(a => a.SedeId == sedeId), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
     public async Task CrearAsync_CelularDeUnTitular_SumaLaFichaALaFamilia()
     {
         // Ej. hermano con el mismo celu del tutor: la ficha se suma a la cuenta del titular

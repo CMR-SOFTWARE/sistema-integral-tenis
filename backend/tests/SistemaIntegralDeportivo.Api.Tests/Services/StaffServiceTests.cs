@@ -22,6 +22,7 @@ public class StaffServiceTests
     private readonly Mock<ICredencialesService> _credenciales;
     private readonly Mock<IUsuarioActual> _usuario;
     private readonly Mock<IAlumnoRepository> _alumnos;
+    private readonly Mock<ISedeRepository> _sedes;
     private readonly StaffService _service;
 
     public StaffServiceTests()
@@ -31,13 +32,18 @@ public class StaffServiceTests
         _credenciales = new Mock<ICredencialesService>();
         _usuario = new Mock<IUsuarioActual>();
         _alumnos = new Mock<IAlumnoRepository>();
-        _service = new StaffService(_repo.Object, _tenants.Object, _credenciales.Object, _usuario.Object, _alumnos.Object);
+        _sedes = new Mock<ISedeRepository>();
+        _service = new StaffService(_repo.Object, _tenants.Object, _credenciales.Object, _usuario.Object, _alumnos.Object, _sedes.Object);
 
         _tenants.Setup(t => t.ObtenerActualAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new Tenant { Subdominio = "d", Nombre = "Academia", OwnerUserId = OwnerId });
         // Por defecto: no hay cuenta con ese email
         _repo.Setup(r => r.BuscarUsuarioPorTelefonoAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
              .ReturnsAsync((Usuario?)null);
+        // Por defecto: no hay sedes cargadas y cualquier sede pedida existe en el tenant
+        _sedes.Setup(r => r.ListarAsync(It.IsAny<CancellationToken>())).ReturnsAsync([]);
+        _sedes.Setup(r => r.ObtenerAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+              .ReturnsAsync((Guid id, CancellationToken _) => new Sede { Id = id, Nombre = "Club Norte" });
     }
 
     private static AgregarStaffDto Dto(string email = "ana@mail.com") => new()
@@ -71,6 +77,42 @@ public class StaffServiceTests
         Assert.Equal("1122334455", res.PasswordTemporal); // se muestra una vez
         Assert.Equal("Ana", res.Staff.Nombre);
         Assert.Equal(uid, res.Staff.UserId);
+    }
+
+    [Fact]
+    public async Task Agregar_ConClub_LoAsignaALaMembresia()
+    {
+        var sedeId = Guid.NewGuid();
+        _credenciales.Setup(c => c.CrearConTemporalAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(),
+                It.IsAny<string?>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new CredencialesCreadas(Guid.NewGuid(), "1122334455"));
+        MembresiaTenant? creada = null;
+        _repo.Setup(r => r.AgregarAsync(It.IsAny<MembresiaTenant>(), It.IsAny<CancellationToken>()))
+             .Callback((MembresiaTenant m, CancellationToken _) => creada = m).Returns(Task.CompletedTask);
+
+        var dto = Dto();
+        dto.SedeId = sedeId;
+        var res = await _service.AgregarAsync(dto);
+
+        Assert.Equal(sedeId, creada!.SedeId);
+        Assert.Equal(sedeId, res.Staff.SedeId);
+        Assert.Equal("Club Norte", res.Staff.SedeNombre);
+    }
+
+    [Fact]
+    public async Task Agregar_ClubDeOtroTenant_Lanza()
+    {
+        // La sede no está en mi academia (el repo, scopeado, la devuelve null)
+        _sedes.Setup(r => r.ObtenerAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+              .ReturnsAsync((Sede?)null);
+        var dto = Dto();
+        dto.SedeId = Guid.NewGuid();
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.AgregarAsync(dto));
+        _credenciales.Verify(c => c.CrearConTemporalAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string?>(),
+            It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

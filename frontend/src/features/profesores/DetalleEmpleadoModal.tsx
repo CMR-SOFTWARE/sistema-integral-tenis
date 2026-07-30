@@ -1,6 +1,10 @@
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Modal from '../../components/Modal';
 import Avatar from '../../components/Avatar';
+import { api } from '../../lib/api';
 import { edad, formatoPlata } from '../alumnos/types';
+import type { Alumno } from '../alumnos/types';
 import type { Staff } from './types';
 import s from '../alumnos/DetalleAlumnoModal.module.css';
 
@@ -9,13 +13,22 @@ interface Props {
   onClose: () => void;
 }
 
-/** Ficha del profe empleado: datos personales + valor hora + estado. */
+/** Ficha del profe empleado: datos + su club + sus alumnos + acceso a sus horarios. */
 export default function DetalleEmpleadoModal({ empleado, onClose }: Props) {
+  // Sus alumnos = los que lo tienen de profe de cabecera (filtro client-side).
+  const [alumnos, setAlumnos] = useState<Alumno[] | null>(null);
+  useEffect(() => {
+    void api.get<Alumno[]>('/alumnos')
+      .then((xs) => setAlumnos(xs.filter((a) => a.profesorUserId === empleado.userId)))
+      .catch(() => setAlumnos([]));
+  }, [empleado.userId]);
+
   const nac = empleado.fechaNacimiento
     ? `${new Date(empleado.fechaNacimiento).toLocaleDateString('es-AR')} (${edad(empleado.fechaNacimiento)} años)`
     : '—';
 
   const datos: [string, string][] = [
+    ['Club', empleado.sedeNombre ?? 'Sin asignar'],
     ['Celular (login)', empleado.telefono || '—'],
     ['Email', empleado.email || '—'],
     ['DNI', empleado.dni ?? '—'],
@@ -32,6 +45,9 @@ export default function DetalleEmpleadoModal({ empleado, onClose }: Props) {
           <div className={s.nombre}>{empleado.nombre} {empleado.apellido}</div>
           <div className={s.chips}>
             <span className={s.chip} style={{ background: '#e8f0fe', color: '#1a56db' }}>Profesor</span>
+            {empleado.sedeNombre && (
+              <span className={s.chip} style={{ background: '#eef7f0', color: '#0e6b3c' }}>{empleado.sedeNombre}</span>
+            )}
             <span
               className={s.chip}
               style={empleado.activo
@@ -52,9 +68,23 @@ export default function DetalleEmpleadoModal({ empleado, onClose }: Props) {
         </div>
       ))}
 
-      <div className={s.seccion} style={{ marginTop: 18 }}>Acceso a la app</div>
+      <div className={s.seccion} style={{ marginTop: 18 }}>Sus alumnos</div>
+      {alumnos === null ? (
+        <div className={s.obs}>Cargando…</div>
+      ) : alumnos.length === 0 ? (
+        <div className={s.obs}>Todavía no tiene alumnos con él como profe de cabecera.</div>
+      ) : (
+        <div className={s.obs}>
+          <b>{alumnos.length}</b> alumno{alumnos.length === 1 ? '' : 's'}:{' '}
+          {alumnos.map((a) => `${a.nombre} ${a.apellido}`).join(', ')}.
+        </div>
+      )}
+
+      <div className={s.seccion} style={{ marginTop: 18 }}>Sus horarios</div>
       <div className={s.obs}>
-        Entra con su celular como usuario. Ve su agenda y sus alumnos (vista reducida del panel). ✅
+        Mirá su agenda en el{' '}
+        <Link to="/calendario" onClick={onClose}>calendario</Link>{' '}
+        (filtrá por {empleado.nombre} arriba).
       </div>
     </Modal>
   );

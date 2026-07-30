@@ -83,7 +83,7 @@ public class AlumnoRepository : IAlumnoRepository
     public async Task<IReadOnlyList<Alumno>> ListarAsync(
         CategoriaAlumno? categoria, EstadoAlumno? estado, CancellationToken ct = default)
     {
-        var query = _db.Alumnos.AsNoTracking().Where(a => a.TenantId == TenantId);
+        var query = _db.Alumnos.AsNoTracking().Include(a => a.Sede).Where(a => a.TenantId == TenantId);
 
         if (categoria is not null) query = query.Where(a => a.Categoria == categoria);
         if (estado is not null) query = query.Where(a => a.Estado == estado);
@@ -109,7 +109,7 @@ public class AlumnoRepository : IAlumnoRepository
     }
 
     public Task<Alumno?> ObtenerAsync(Guid id, CancellationToken ct = default) =>
-        _db.Alumnos.FirstOrDefaultAsync(a => a.TenantId == TenantId && a.Id == id, ct);
+        _db.Alumnos.Include(a => a.Sede).FirstOrDefaultAsync(a => a.TenantId == TenantId && a.Id == id, ct);
 
     public async Task<HashSet<Guid>> ListarConClaseAsync(CancellationToken ct = default)
     {

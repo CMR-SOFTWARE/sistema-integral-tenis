@@ -138,6 +138,13 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
             .HasForeignKey(a => a.SedeId)
             .OnDelete(DeleteBehavior.SetNull);
 
+        // MembresiaTenant.SedeId (el club del empleado): borrar la sede no borra la membresía
+        modelBuilder.Entity<MembresiaTenant>()
+            .HasOne(m => m.Sede)
+            .WithMany()
+            .HasForeignKey(m => m.SedeId)
+            .OnDelete(DeleteBehavior.SetNull);
+
         modelBuilder.Entity<Turno>().Property(t => t.Estado).HasConversion<string>();
         modelBuilder.Entity<Turno>().Property(t => t.CanceladoPor).HasConversion<string>();
         // Idempotencia de la generación: UN turno por horario y fecha

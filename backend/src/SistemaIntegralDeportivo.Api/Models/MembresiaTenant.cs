@@ -19,6 +19,14 @@ public class MembresiaTenant
     public RolTenant Rol { get; set; } = RolTenant.Staff;
 
     /// <summary>
+    /// El club (sede) donde trabaja el empleado. Uno por profe (decisión de producto);
+    /// opcional. Al cargar un alumno con este profe de cabecera, la ficha hereda esta
+    /// sede. El dueño no tiene membresía → no tiene sede fija (trabaja donde asigne).
+    /// </summary>
+    public Guid? SedeId { get; set; }
+    public Sede? Sede { get; set; }
+
+    /// <summary>
     /// Valor hora BASE del empleado (lo que el head pro le paga por hora de clase).
     /// Se setea una vez y se propaga: cada horario que se le asigna lo toma como
     /// default, salvo que se ponga un <see cref="Horario.ValorHoraProfe"/> propio

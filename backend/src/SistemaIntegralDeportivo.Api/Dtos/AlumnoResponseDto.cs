@@ -41,6 +41,10 @@ public class AlumnoResponseDto
 
     /// <summary>Profe de cabecera (dueño o staff); null = sin asignar. El front mapea el nombre.</summary>
     public Guid? ProfesorUserId { get; set; }
+
+    /// <summary>Club (sede) de la ficha, heredado del profe de cabecera; null = sin club.</summary>
+    public Guid? SedeId { get; set; }
+    public string? SedeNombre { get; set; }
 }
 
 /// <summary>Un horario asignado del alumno, para la ficha del profe (día/hora/cancha).</summary>
