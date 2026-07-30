@@ -34,8 +34,9 @@ export const profNav: NavItem[] = [
     soloOwner: true,
   },
   {
-    to: '/cuotas',
-    label: 'Cuotas',
+    // Finanzas agrupa Cuotas (operación del mes) + Reportes (analítica) en sub-tabs.
+    to: '/finanzas',
+    label: 'Finanzas',
     icon: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
     soloOwner: true,
   },
@@ -52,7 +53,6 @@ export const profNav: NavItem[] = [
     icon: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM15 9l-6 6M9 9l6 6',
     soloOwner: true,
   },
-  { to: '/reportes', label: 'Reportes', icon: 'M18 20V10M12 20V4M6 20v-6', soloOwner: true },
   {
     to: '/plataforma',
     label: 'Plataforma',

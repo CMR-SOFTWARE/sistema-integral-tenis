@@ -16,11 +16,10 @@ import StaffDashboardPage from './features/staff/StaffDashboardPage';
 import MiAcademiaPage from './features/miacademia/MiAcademiaPage';
 import PlataformaPage from './features/admin/PlataformaPage';
 import AgendaSeccionPage from './features/agenda/AgendaSeccionPage';
-import CuotasPage from './features/cuotas/CuotasPage';
+import FinanzasSeccionPage from './features/finanzas/FinanzasSeccionPage';
 import AvisosPage from './features/avisos/AvisosPage';
 import BloqueosPage from './features/bloqueos/BloqueosPage';
 import CancelacionesPage from './features/cancelaciones/CancelacionesPage';
-import ReportesPage from './features/reportes/ReportesPage';
 import PortalLayout from './features/portal/PortalLayout';
 import InicioPage from './features/portal/InicioPage';
 import MisTurnosPage from './features/portal/MisTurnosPage';
@@ -102,11 +101,13 @@ export default function App() {
             <Route path="/horarios" element={<Navigate to="/agenda?tab=horarios" replace />} />
             <Route path="/grupos" element={<Navigate to="/agenda?tab=grupos" replace />} />
             <Route path="/mi-academia" element={<MiAcademiaPage />} />
-            <Route path="/cuotas" element={<CuotasPage />} />
+            <Route path="/finanzas" element={<FinanzasSeccionPage />} />
+            {/* Compat: los links viejos entran a Finanzas en el tab correcto */}
+            <Route path="/cuotas" element={<Navigate to="/finanzas?tab=cuotas" replace />} />
+            <Route path="/reportes" element={<Navigate to="/finanzas?tab=reportes" replace />} />
             <Route path="/avisos" element={<AvisosPage />} />
             <Route path="/bloqueos" element={<BloqueosPage />} />
             <Route path="/cancelaciones" element={<CancelacionesPage />} />
-            <Route path="/reportes" element={<ReportesPage />} />
             <Route path="/plataforma" element={<PlataformaPage />} />
           </Route>
         </Route>
