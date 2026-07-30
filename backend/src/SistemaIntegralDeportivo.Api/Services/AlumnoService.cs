@@ -40,6 +40,12 @@ public class AlumnoService : IAlumnoService
         if (dto.ProfesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))
             throw new ReglaDeNegocioException("Ese profe no es de tu club.");
 
+        // La ficha hereda el club (sede) de su profe de cabecera: "el profe la carga
+        // con su club". El dueño no tiene sede fija → queda null.
+        var sedeProfe = dto.ProfesorUserId is { } cabecera
+            ? await _staff.SedeDelProfeAsync(cabecera, ct)
+            : null;
+
         // El celular es la cuenta del portal. Si ya es de un titular (ej. hermano con
         // el celu del tutor, o el padre que ya carga otro hijo), sumamos ESTA ficha a
         // su FAMILIA (comparte el login). Si el celular está libre, creamos el titular.
@@ -48,6 +54,7 @@ public class AlumnoService : IAlumnoService
         {
             var ficha = Construir(dto);
             ficha.UserId = titular.UserId; // la ficha nace bajo la cuenta del titular
+            ficha.SedeId = sedeProfe;      // el club del profe de cabecera
             var creada = await _repo.AgregarAsync(ficha, ct);
             return new AlumnoCreadoDto
             {
@@ -73,6 +80,7 @@ public class AlumnoService : IAlumnoService
         {
             var alumno = Construir(dto);
             alumno.UserId = cred.UserId;
+            alumno.SedeId = sedeProfe; // el club del profe de cabecera
             var creado = await _repo.AgregarAsync(alumno, ct);
             return new AlumnoCreadoDto
             {
@@ -194,6 +202,10 @@ public class AlumnoService : IAlumnoService
         alumno.Modalidad = dto.Modalidad;
         alumno.Arancel = dto.Arancel;
         alumno.ProfesorUserId = dto.ProfesorUserId;
+        // El club sigue al profe de cabecera (cambiar de profe reubica el club).
+        alumno.SedeId = dto.ProfesorUserId is { } cabecera
+            ? await _staff.SedeDelProfeAsync(cabecera, ct)
+            : null;
         alumno.Notas = string.IsNullOrWhiteSpace(dto.Notas) ? null : dto.Notas;
         alumno.ActualizadoEl = DateTime.UtcNow;
 
@@ -599,5 +611,7 @@ public class AlumnoService : IAlumnoService
         FamiliaId = a.UserId,
         FotoUrl = a.FotoUrl,
         ProfesorUserId = a.ProfesorUserId,
+        SedeId = a.SedeId,
+        SedeNombre = a.Sede?.Nombre,
     };
 }

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Modal from '../../components/Modal';
-import { ApiError } from '../../lib/api';
+import { api, ApiError } from '../../lib/api';
 import type { Staff, UpdateEmpleado } from './types';
 import s from '../alumnos/NuevoAlumnoModal.module.css';
 
@@ -9,6 +9,8 @@ interface Props {
   onClose: () => void;
   onEditar: (id: string, dto: UpdateEmpleado) => Promise<unknown>;
 }
+
+type SedeMin = { id: string; nombre: string; activo: boolean };
 
 /** El dueño corrige la ficha del profe. El celular (login) no se toca acá. */
 export default function EditarEmpleadoModal({ empleado, onClose, onEditar }: Props) {
@@ -19,10 +21,16 @@ export default function EditarEmpleadoModal({ empleado, onClose, onEditar }: Pro
     dni: empleado.dni ?? '',
     fechaNacimiento: empleado.fechaNacimiento?.slice(0, 10) ?? '',
     valorHora: empleado.valorHora?.toString() ?? '',
+    sedeId: empleado.sedeId ?? '',
   });
   const set = (campo: keyof typeof form, valor: string) => setForm((f) => ({ ...f, [campo]: valor }));
+  const [sedes, setSedes] = useState<SedeMin[]>([]);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    void api.get<SedeMin[]>('/sedes').then((xs) => setSedes(xs.filter((x) => x.activo)));
+  }, []);
 
   const guardar = async () => {
     setError(null);
@@ -35,6 +43,7 @@ export default function EditarEmpleadoModal({ empleado, onClose, onEditar }: Pro
         dni: form.dni.trim() || undefined,
         fechaNacimiento: form.fechaNacimiento || undefined,
         valorHora: form.valorHora.trim() === '' ? undefined : Number(form.valorHora),
+        sedeId: form.sedeId || undefined,
       });
       onClose();
     } catch (e) {
@@ -96,6 +105,13 @@ export default function EditarEmpleadoModal({ empleado, onClose, onEditar }: Pro
             onWheel={(e) => e.currentTarget.blur()}
             placeholder="Ej: 8000"
           />
+        </label>
+        <label className={s.campo}>
+          <span>Club (sede)</span>
+          <select value={form.sedeId} onChange={(e) => set('sedeId', e.target.value)}>
+            <option value="">Sin asignar</option>
+            {sedes.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}
+          </select>
         </label>
         {error && <div className={`${s.span2} ${s.error}`}>{error}</div>}
       </div>

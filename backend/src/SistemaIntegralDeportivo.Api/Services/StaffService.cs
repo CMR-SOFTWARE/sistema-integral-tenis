@@ -31,6 +31,9 @@ public interface IStaffService
     Task<IReadOnlyList<ProfesorAsignableDto>> ListarAsignablesAsync(CancellationToken ct = default);
     /// <summary>¿Ese usuario es asignable en este club? (el dueño o un staff activo).</summary>
     Task<bool> EsAsignableAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>La sede (club) del profe, para que la ficha del alumno la herede. Null si es el dueño o no tiene club.</summary>
+    Task<Guid?> SedeDelProfeAsync(Guid userId, CancellationToken ct = default);
     /// <summary>El propio profe empleado se da de baja del club (pasa a ser un usuario normal).</summary>
     Task DesvincularmeAsync(CancellationToken ct = default);
 }
@@ -42,22 +45,38 @@ public class StaffService : IStaffService
     private readonly ICredencialesService _credenciales;
     private readonly IUsuarioActual _usuario;
     private readonly IAlumnoRepository _alumnos;
+    private readonly ISedeRepository _sedes;
 
     public StaffService(
         IMembresiaTenantRepository membresias, ITenantRepository tenants,
-        ICredencialesService credenciales, IUsuarioActual usuario, IAlumnoRepository alumnos)
+        ICredencialesService credenciales, IUsuarioActual usuario, IAlumnoRepository alumnos,
+        ISedeRepository sedes)
     {
         _membresias = membresias;
         _tenants = tenants;
         _credenciales = credenciales;
         _usuario = usuario;
         _alumnos = alumnos;
+        _sedes = sedes;
     }
 
     public async Task<IReadOnlyList<StaffDto>> ListarAsync(CancellationToken ct = default)
     {
         var lista = await _membresias.ListarConUsuarioAsync(ct);
-        return lista.Select(x => Mapear(x.Membresia, x.Usuario)).ToList();
+        var sedes = (await _sedes.ListarAsync(ct)).ToDictionary(x => x.Id, x => x.Nombre);
+        return lista.Select(x => Mapear(x.Membresia, x.Usuario, NombreSede(x.Membresia.SedeId, sedes))).ToList();
+    }
+
+    /// <summary>Nombre de la sede desde el diccionario cargado (null si sin sede/desconocida).</summary>
+    private static string? NombreSede(Guid? sedeId, IReadOnlyDictionary<Guid, string> sedes) =>
+        sedeId is { } id && sedes.TryGetValue(id, out var n) ? n : null;
+
+    /// <summary>Valida que la sede (si viene) sea del tenant; devuelve la entidad para el nombre.</summary>
+    private async Task<Sede?> ValidarSedeAsync(Guid? sedeId, CancellationToken ct)
+    {
+        if (sedeId is not { } id) return null;
+        return await _sedes.ObtenerAsync(id, ct) // el repo scopea por tenant → null si es de otro
+            ?? throw new ReglaDeNegocioException("La sede no existe en tu academia.");
     }
 
     public async Task<StaffCreadoDto> AgregarAsync(AgregarStaffDto dto, CancellationToken ct = default)
@@ -65,6 +84,7 @@ public class StaffService : IStaffService
         var telefono = dto.Telefono.Trim();
         var email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
         var tenant = await _tenants.ObtenerActualAsync(ct);
+        var sede = await ValidarSedeAsync(dto.SedeId, ct); // el club donde va a trabajar (opcional)
 
         // ¿Ya hay una cuenta con ese celular? (el dueño, un ex-staff, u otro usuario)
         var existente = await _membresias.BuscarUsuarioPorTelefonoAsync(telefono, ct);
@@ -81,8 +101,9 @@ public class StaffService : IStaffService
                 // Ya tuvo cuenta de profe acá y quedó inactivo: se reactiva (sin recrear ni nueva clave)
                 membresia.Activo = true;
                 if (dto.ValorHora is not null) membresia.ValorHora = dto.ValorHora;
+                membresia.SedeId = dto.SedeId;
                 await _membresias.GuardarCambiosAsync(ct);
-                return new StaffCreadoDto { Staff = Mapear(membresia, existente), Usuario = null, PasswordTemporal = null };
+                return new StaffCreadoDto { Staff = Mapear(membresia, existente, sede?.Nombre), Usuario = null, PasswordTemporal = null };
             }
 
             // Existe una cuenta con ese celular pero no es (ni fue) profe acá.
@@ -92,10 +113,10 @@ public class StaffService : IStaffService
             // clave. Una cuenta ajena sin relación con el club NO se toca.
             if (await _alumnos.EsAlumnoDelTenantAsync(existente.Id, ct))
             {
-                var reuso = new MembresiaTenant { UserId = existente.Id, Rol = RolTenant.Staff, ValorHora = dto.ValorHora };
+                var reuso = new MembresiaTenant { UserId = existente.Id, Rol = RolTenant.Staff, ValorHora = dto.ValorHora, SedeId = dto.SedeId };
                 await _membresias.AgregarAsync(reuso, ct);
                 await _membresias.GuardarCambiosAsync(ct);
-                return new StaffCreadoDto { Staff = Mapear(reuso, existente), Usuario = null, PasswordTemporal = null };
+                return new StaffCreadoDto { Staff = Mapear(reuso, existente, sede?.Nombre), Usuario = null, PasswordTemporal = null };
             }
 
             throw new ReglaDeNegocioException(
@@ -106,7 +127,7 @@ public class StaffService : IStaffService
         var cred = await _credenciales.CrearConTemporalAsync(
             telefono, dto.Nombre, dto.Apellido, dni: null, email: email, ct);
 
-        var nueva = new MembresiaTenant { UserId = cred.UserId, Rol = RolTenant.Staff, ValorHora = dto.ValorHora };
+        var nueva = new MembresiaTenant { UserId = cred.UserId, Rol = RolTenant.Staff, ValorHora = dto.ValorHora, SedeId = dto.SedeId };
         await _membresias.AgregarAsync(nueva, ct);
         await _membresias.GuardarCambiosAsync(ct);
 
@@ -120,6 +141,8 @@ public class StaffService : IStaffService
             Telefono = telefono,
             Activo = true,
             ValorHora = dto.ValorHora,
+            SedeId = dto.SedeId,
+            SedeNombre = sede?.Nombre,
             CreadoEl = nueva.CreadoEl,
         };
         return new StaffCreadoDto { Staff = staff, Usuario = cred.PasswordTemporal, PasswordTemporal = cred.PasswordTemporal };
@@ -178,6 +201,7 @@ public class StaffService : IStaffService
                 Nombre = $"{u.Nombre} {u.Apellido}",
                 EsDueño = false,
                 ValorHora = m.ValorHora,
+                SedeId = m.SedeId,
             });
         }
 
@@ -190,6 +214,13 @@ public class StaffService : IStaffService
         if (tenant.OwnerUserId == userId) return true;
         var membresia = await _membresias.ObtenerPorUserIdAsync(userId, ct);
         return membresia is { Activo: true };
+    }
+
+    public async Task<Guid?> SedeDelProfeAsync(Guid userId, CancellationToken ct = default)
+    {
+        // El dueño no tiene membresía (trabaja en cualquier sede) → null.
+        var membresia = await _membresias.ObtenerPorUserIdAsync(userId, ct);
+        return membresia?.SedeId;
     }
 
     public async Task DesvincularmeAsync(CancellationToken ct = default)
@@ -225,6 +256,8 @@ public class StaffService : IStaffService
         if (dto.ValorHora is < 0)
             throw new ReglaDeNegocioException("El valor hora no puede ser negativo.");
 
+        await ValidarSedeAsync(dto.SedeId, ct); // el club, si viene, tiene que ser del tenant
+
         // Los datos personales viven en el Usuario (identidad global). El celular
         // (login) NO se toca acá. La entidad viene trackeada → persiste con Guardar.
         var usuario = await _membresias.ObtenerUsuarioAsync(membresia.UserId, ct)
@@ -239,14 +272,17 @@ public class StaffService : IStaffService
         usuario.FechaNacimiento = dto.FechaNacimiento;
 
         membresia.ValorHora = dto.ValorHora; // el valor hora es del tenant (membresía)
+        membresia.SedeId = dto.SedeId;       // el club donde trabaja
 
         await _membresias.GuardarCambiosAsync(ct);
     }
 
-    private static StaffDto Mapear(MembresiaTenant m, Usuario u) => new()
+    private static StaffDto Mapear(MembresiaTenant m, Usuario u, string? sedeNombre = null) => new()
     {
         Id = m.Id,
         UserId = m.UserId,
+        SedeId = m.SedeId,
+        SedeNombre = sedeNombre,
         Nombre = u.Nombre,
         Apellido = u.Apellido,
         Email = u.Email ?? string.Empty,

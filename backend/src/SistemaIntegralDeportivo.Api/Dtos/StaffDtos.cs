@@ -17,6 +17,9 @@ public class StaffDto
     public bool Activo { get; set; }
     /// <summary>Valor hora base (lo que se le paga por hora de clase); null = sin definir.</summary>
     public decimal? ValorHora { get; set; }
+    /// <summary>El club (sede) donde trabaja; null = sin asignar.</summary>
+    public Guid? SedeId { get; set; }
+    public string? SedeNombre { get; set; }
     /// <summary>Alta del profe en el club (para la ficha).</summary>
     public DateTime CreadoEl { get; set; }
 }
@@ -40,6 +43,9 @@ public class UpdateStaffDto
 
     [Range(0, 99_999_999)]
     public decimal? ValorHora { get; set; }
+
+    /// <summary>El club (sede) donde trabaja; null = sin asignar.</summary>
+    public Guid? SedeId { get; set; }
 }
 
 /// <summary>
@@ -66,6 +72,9 @@ public class AgregarStaffDto
     /// <summary>Valor hora base del profe (opcional; se puede cargar/editar después).</summary>
     [Range(0, 99_999_999)]
     public decimal? ValorHora { get; set; }
+
+    /// <summary>El club (sede) donde va a trabajar; opcional.</summary>
+    public Guid? SedeId { get; set; }
 }
 
 /// <summary>Respuesta del alta: el profe + su usuario/clave temporal (null si se reactivó una cuenta existente).</summary>
@@ -92,6 +101,8 @@ public class ProfesorAsignableDto
     public bool EsDueño { get; set; }
     /// <summary>Valor hora base del empleado (para pre-cargar el del horario); null en el dueño.</summary>
     public decimal? ValorHora { get; set; }
+    /// <summary>El club (sede) del empleado, para defaultear la sede del horario; null en el dueño.</summary>
+    public Guid? SedeId { get; set; }
 }
 
 /// <summary>Body para (re)asignar el profe de un horario o grupo (null = sacar la asignación).</summary>

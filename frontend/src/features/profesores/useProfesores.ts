@@ -8,6 +8,8 @@ export interface ProfesorAsignable {
   esDueño: boolean;
   /** Valor hora base del empleado (para pre-cargar el del horario); null en el dueño. */
   valorHora: number | null;
+  /** Club (sede) del empleado, para defaultear la sede del horario; null en el dueño. */
+  sedeId: string | null;
 }
 
 /**

@@ -52,7 +52,7 @@ export default function ProfesoresPage() {
     || p.telefono.toLowerCase().includes(termino),
   );
 
-  const crear = (dto: { nombre: string; apellido: string; telefono: string; email?: string; valorHora?: number }) =>
+  const crear = (dto: { nombre: string; apellido: string; telefono: string; email?: string; valorHora?: number; sedeId?: string }) =>
     api.post<StaffCreado>('/staff', dto);
 
   const editar = async (id: string, dto: UpdateEmpleado) => {
@@ -126,6 +126,7 @@ export default function ProfesoresPage() {
             <thead>
               <tr>
                 <th>Profe</th>
+                <th>Club</th>
                 <th>Valor hora</th>
                 <th>Celular</th>
                 <th>Estado</th>
@@ -144,6 +145,7 @@ export default function ProfesoresPage() {
                       </div>
                     </div>
                   </td>
+                  <td>{p.sedeNombre ?? '—'}</td>
                   <td>{p.valorHora != null ? `${formatoPlata(p.valorHora)}/h` : '—'}</td>
                   <td className={s.tel}>{p.telefono || '—'}</td>
                   <td>

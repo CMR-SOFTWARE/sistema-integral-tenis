@@ -160,6 +160,11 @@ export default function NuevoHorarioModal({ sedes, onClose, onCrear, base }: Pro
               // pisar para esta clase, ej. menores que se pagan menos).
               const p = profes.find((x) => x.userId === id);
               setValorHora(p?.valorHora != null ? String(p.valorHora) : '');
+              // Y su CLUB: la sede se pone sola en la del profe (podés cambiarla).
+              if (p?.sedeId && sedes.some((x) => x.id === p.sedeId)) {
+                setSedeId(p.sedeId);
+                setCanchaId('');
+              }
             }}
           >
             <option value="">Sin asignar</option>
