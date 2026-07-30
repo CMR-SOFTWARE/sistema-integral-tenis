@@ -56,6 +56,13 @@ public interface IAlumnoService
     Task<AlumnoResponseDto?> CambiarEstadoAsync(Guid id, EstadoAlumno estado, CancellationToken ct = default);
 
     /// <summary>
+    /// Asigna/cambia el PROFE TITULAR del alumno desde su ficha (null = desasignar).
+    /// El club de la ficha sigue al profe (hereda su sede). Null si el alumno no existe.
+    /// </summary>
+    /// <exception cref="Common.ReglaDeNegocioException">El profe no es asignable en el club.</exception>
+    Task<AlumnoResponseDto?> CambiarProfesorAsync(Guid id, Guid? profesorUserId, CancellationToken ct = default);
+
+    /// <summary>
     /// Baja lógica: estado → Inactivo, nunca DELETE físico. Además de sacarlo
     /// del calendario, LIBERA su lugar (sale de sus grupos y se desactivan sus
     /// horarios individuales). False si no existe.

@@ -25,7 +25,7 @@ interface Credenciales {
 export default function AlumnosPage() {
   const [filtro, setFiltro] = useState<Categoria | 'todas'>('todas');
   const [filtroEstado, setFiltroEstado] = useState<Estado | 'todos'>('todos');
-  const { alumnos, cargando, error, crear, crearAcceso, editar, cambiarEstado, darDeBaja, eliminarDefinitivo } =
+  const { alumnos, cargando, error, crear, crearAcceso, editar, cambiarEstado, cambiarProfe, darDeBaja, eliminarDefinitivo } =
     useAlumnos(filtro, filtroEstado);
   const [busqueda, setBusqueda] = useState('');
   const [filtroProfe, setFiltroProfe] = useState<string>('todos');
@@ -343,6 +343,7 @@ export default function AlumnosPage() {
           hermanos={hermanosDe(detalle)}
           onClose={() => setDetalle(null)}
           onCrearAcceso={esOwner ? accesoParaFicha : undefined}
+          onCambiarProfe={esOwner ? cambiarProfe : undefined}
         />
       )}
       {credenciales && (

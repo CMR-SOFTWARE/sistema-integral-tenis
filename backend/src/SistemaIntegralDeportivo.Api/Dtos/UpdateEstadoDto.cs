@@ -9,3 +9,9 @@ public class UpdateEstadoDto
     [Required]
     public EstadoAlumno Estado { get; set; }
 }
+
+/// <summary>Cambio del profe titular desde la ficha (null = desasignar).</summary>
+public class CambiarProfesorDto
+{
+    public Guid? ProfesorUserId { get; set; }
+}

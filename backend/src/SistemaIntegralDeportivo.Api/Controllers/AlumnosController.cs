@@ -108,6 +108,23 @@ public class AlumnosController : ControllerBase
         return actualizado is null ? NotFound() : Ok(actualizado);
     }
 
+    /// <summary>PATCH api/alumnos/{id}/profesor — asigna/cambia el profe titular desde la ficha.</summary>
+    [HttpPatch("{id:guid}/profesor")]
+    [Authorize(Policy = "Owner")]
+    public async Task<ActionResult<AlumnoResponseDto>> CambiarProfesor(
+        Guid id, CambiarProfesorDto dto, CancellationToken ct)
+    {
+        try
+        {
+            var actualizado = await _service.CambiarProfesorAsync(id, dto.ProfesorUserId, ct);
+            return actualizado is null ? NotFound() : Ok(actualizado);
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     /// <summary>DELETE api/alumnos/{id} — baja LÓGICA (estado → Inactivo).</summary>
     [HttpDelete("{id:guid}")]
     [Authorize(Policy = "Owner")]

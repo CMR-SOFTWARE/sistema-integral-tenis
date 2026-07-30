@@ -149,7 +149,7 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
           />
         </label>
         <label className={s.campo}>
-          <span>Profe de cabecera (opcional)</span>
+          <span>Profe titular (opcional)</span>
           <select value={form.profesorId} onChange={(e) => set('profesorId', e.target.value)}>
             <option value="">Sin asignar</option>
             {profes.map((p) => (

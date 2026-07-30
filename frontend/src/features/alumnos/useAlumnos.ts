@@ -54,6 +54,13 @@ export function useAlumnos(categoria: Categoria | 'todas', estado: Estado | 'tod
     await invalidar();
   };
 
+  /** Asigna/cambia el profe titular desde la ficha (null = desasignar). Devuelve la ficha actualizada. */
+  const cambiarProfe = async (id: string, profesorUserId: string | null) => {
+    const actualizado = await api.patch<Alumno>(`/alumnos/${id}/profesor`, { profesorUserId });
+    await invalidar();
+    return actualizado;
+  };
+
   const darDeBaja = async (id: string) => {
     await api.delete<void>(`/alumnos/${id}`);
     await invalidar();
@@ -69,6 +76,6 @@ export function useAlumnos(categoria: Categoria | 'todas', estado: Estado | 'tod
     alumnos: query.data ?? [],
     cargando: query.isLoading,
     error: query.error ? (query.error.message || 'Error cargando alumnos') : null,
-    crear, crearAcceso, editar, cambiarEstado, darDeBaja, eliminarDefinitivo,
+    crear, crearAcceso, editar, cambiarEstado, cambiarProfe, darDeBaja, eliminarDefinitivo,
   };
 }

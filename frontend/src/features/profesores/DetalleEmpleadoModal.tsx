@@ -72,7 +72,7 @@ export default function DetalleEmpleadoModal({ empleado, onClose }: Props) {
       {alumnos === null ? (
         <div className={s.obs}>Cargando…</div>
       ) : alumnos.length === 0 ? (
-        <div className={s.obs}>Todavía no tiene alumnos con él como profe de cabecera.</div>
+        <div className={s.obs}>Todavía no tiene alumnos con él como profe titular.</div>
       ) : (
         <div className={s.obs}>
           <b>{alumnos.length}</b> alumno{alumnos.length === 1 ? '' : 's'}:{' '}
