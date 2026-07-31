@@ -65,7 +65,7 @@ export default function BloqueosPage() {
         <button className={s.btnNuevo} onClick={() => setModalNuevo(true)}>+ Nuevo bloqueo</button>
       </div>
 
-      {error && <div className={s.error}>{error} — ¿está corriendo la API?</div>}
+      {error && <div className={s.error}>{error}</div>}
       {cargando && <div className={s.vacio}>Cargando…</div>}
 
       {!cargando && !error && bloqueos.length === 0 && (

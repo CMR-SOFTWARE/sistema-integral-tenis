@@ -35,7 +35,7 @@ export default function ReportesPage() {
       .catch((e) => setError(e instanceof Error ? e.message : 'Error cargando reportes'));
   }, []);
 
-  if (error) return <div className={s.error}>{error} — ¿está corriendo la API?</div>;
+  if (error) return <div className={s.error}>{error}</div>;
   if (!reportes) return <div className={s.cargando}>Cargando…</div>;
 
   const maxMes = Math.max(1, ...reportes.recaudacionMensual.map((m) => m.total));

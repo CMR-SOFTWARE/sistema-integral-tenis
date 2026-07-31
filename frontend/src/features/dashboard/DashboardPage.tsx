@@ -62,7 +62,7 @@ export default function DashboardPage() {
 
   if (resumenQuery.error) {
     const msg = resumenQuery.error.message || 'Error cargando el dashboard';
-    return <div className={s.error}>{msg} — ¿está corriendo la API? (dotnet run)</div>;
+    return <div className={s.error}>{msg}</div>;
   }
   const resumen = resumenQuery.data;
   if (!resumen) {

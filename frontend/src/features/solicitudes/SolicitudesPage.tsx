@@ -57,7 +57,7 @@ export default function SolicitudesPage() {
     }
   };
 
-  if (error) return <div className={s.error}>{error} — ¿está corriendo la API?</div>;
+  if (error) return <div className={s.error}>{error}</div>;
   if (!espera) return <div className={s.vacio}>Cargando…</div>;
 
   return (

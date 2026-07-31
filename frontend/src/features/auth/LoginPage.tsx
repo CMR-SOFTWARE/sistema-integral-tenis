@@ -60,8 +60,6 @@ export default function LoginPage() {
       <Link to="/registro" className={s.linkCambio}>
         ¿No tenés cuenta? <b>Creá una gratis</b>
       </Link>
-
-      <div className={s.pie}>Demo profesor: 1122334455 · profe1234</div>
     </AuthShell>
   );
 }

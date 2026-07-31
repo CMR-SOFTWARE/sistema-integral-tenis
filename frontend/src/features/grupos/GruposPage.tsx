@@ -81,7 +81,7 @@ export default function GruposPage({ profe }: Props) {
 
       <PanelSolicitudes onCambio={() => void recargar()} />
 
-      {error && <div className={s.error}>{error} — ¿está corriendo la API? (dotnet run)</div>}
+      {error && <div className={s.error}>{error}</div>}
       {cargando && !error && <div className={s.vacio}>Cargando…</div>}
 
       {!cargando && !error && grupos.length === 0 && (
