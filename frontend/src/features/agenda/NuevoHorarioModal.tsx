@@ -39,10 +39,15 @@ export default function NuevoHorarioModal({ sedes, onClose, onCrear, base }: Pro
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Opciones para el roster: grupos y alumnos activos
+  // Opciones para el roster: grupos + alumnos a los que asignarles una clase.
+  // Individual: el alumno puede estar ACTIVO o EN ESPERA — asignarle la clase es
+  // justo lo que lo convierte en alumno (sin esto, el recién cargado no aparecía nunca).
   useEffect(() => {
     void api.get<Grupo[]>('/grupos').then(setGrupos);
-    void api.get<Alumno[]>('/alumnos?estado=Activo').then(setAlumnos);
+    void Promise.all([
+      api.get<Alumno[]>('/alumnos?estado=Activo'),
+      api.get<Alumno[]>('/alumnos?estado=EnEspera'),
+    ]).then(([activos, espera]) => setAlumnos([...activos, ...espera]));
   }, []);
 
   const canchas = useMemo(
@@ -127,7 +132,10 @@ export default function NuevoHorarioModal({ sedes, onClose, onCrear, base }: Pro
             <select value={alumnoId} onChange={(e) => setAlumnoId(e.target.value)}>
               <option value="">Elegí un alumno…</option>
               {alumnos.map((a) => (
-                <option key={a.id} value={a.id}>{a.apellido}, {a.nombre}</option>
+                <option key={a.id} value={a.id}>
+                  {/* El tipo Estado del front lista solo los "reales"; en espera viene igual del back. */}
+                  {a.apellido}, {a.nombre}{(a.estado as string) === 'EnEspera' ? ' (en espera)' : ''}
+                </option>
               ))}
             </select>
           </label>
