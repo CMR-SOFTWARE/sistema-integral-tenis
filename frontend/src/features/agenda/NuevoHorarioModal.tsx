@@ -16,23 +16,27 @@ interface Props {
   onCrear: (dto: CreateHorario) => Promise<void>;
   /** Al duplicar: horario del que se copian los datos (roster incluido). */
   base?: Horario;
+  /** Abierto desde la ficha de un alumno: la clase es individual y para ESE alumno (bloqueado). */
+  alumnoFijo?: { id: string; nombre: string; apellido: string; profesorUserId?: string | null };
 }
 
 /** Alta de horario recurrente: cancha + (grupo XOR alumno) + día/hora/duración. */
-export default function NuevoHorarioModal({ sedes, onClose, onCrear, base }: Props) {
+export default function NuevoHorarioModal({ sedes, onClose, onCrear, base, alumnoFijo }: Props) {
   // Al duplicar, los estados arrancan con los datos del horario base.
   const sedeInicial = base
     ? sedes.find((x) => x.canchas.some((c) => c.id === base.canchaId))?.id ?? sedes[0]?.id ?? ''
     : sedes[0]?.id ?? '';
   const [sedeId, setSedeId] = useState(sedeInicial);
   const [canchaId, setCanchaId] = useState(base?.canchaId ?? '');
-  const [tipo, setTipo] = useState<'grupo' | 'individual'>(base?.esIndividual ? 'individual' : 'grupo');
+  const [tipo, setTipo] = useState<'grupo' | 'individual'>(
+    alumnoFijo || base?.esIndividual ? 'individual' : 'grupo',
+  );
   const [grupoId, setGrupoId] = useState(base && !base.esIndividual ? base.grupoId ?? '' : '');
-  const [alumnoId, setAlumnoId] = useState(base?.esIndividual ? base.alumnoId ?? '' : '');
+  const [alumnoId, setAlumnoId] = useState(alumnoFijo?.id ?? (base?.esIndividual ? base.alumnoId ?? '' : ''));
   const [dia, setDia] = useState<DiaSemana>(base?.dia ?? 'Monday');
   const [hora, setHora] = useState(base ? horaCorta(base.horaInicio) : '18:00');
   const [duracion, setDuracion] = useState(base?.duracionMinutos ?? 60);
-  const [profesorId, setProfesorId] = useState(base?.profesorUserId ?? '');
+  const [profesorId, setProfesorId] = useState(alumnoFijo?.profesorUserId ?? base?.profesorUserId ?? '');
   const [valorHora, setValorHora] = useState(base?.valorHoraProfe?.toString() ?? '');
   const { profes } = useProfesores();
   // El profe empleado da SUS clases: el horario queda a su nombre (lo asigna el back).
@@ -46,11 +50,14 @@ export default function NuevoHorarioModal({ sedes, onClose, onCrear, base }: Pro
   // Individual: el alumno puede estar ACTIVO o EN ESPERA — asignarle la clase es
   // justo lo que lo convierte en alumno (sin esto, el recién cargado no aparecía nunca).
   useEffect(() => {
+    if (alumnoFijo) return; // el alumno ya viene fijo: no hace falta cargar las listas
     void api.get<Grupo[]>('/grupos').then(setGrupos);
     void Promise.all([
       api.get<Alumno[]>('/alumnos?estado=Activo'),
       api.get<Alumno[]>('/alumnos?estado=EnEspera'),
     ]).then(([activos, espera]) => setAlumnos([...activos, ...espera]));
+    // alumnoFijo es estable durante la vida del modal (se fija al abrir).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const canchas = useMemo(
@@ -112,36 +119,46 @@ export default function NuevoHorarioModal({ sedes, onClose, onCrear, base }: Pro
           </select>
         </label>
 
-        <label className={s.campo}>
-          <span>Tipo de clase</span>
-          <select value={tipo} onChange={(e) => setTipo(e.target.value as 'grupo' | 'individual')}>
-            <option value="grupo">Grupal (grupo fijo)</option>
-            <option value="individual">Individual (un alumno)</option>
-          </select>
-        </label>
-        {tipo === 'grupo' ? (
-          <label className={s.campo}>
-            <span>Grupo</span>
-            <select value={grupoId} onChange={(e) => setGrupoId(e.target.value)}>
-              <option value="">Elegí un grupo…</option>
-              {grupos.map((g) => (
-                <option key={g.id} value={g.id}>{g.nombre} ({g.miembrosActivos})</option>
-              ))}
-            </select>
-          </label>
-        ) : (
+        {alumnoFijo ? (
+          /* Abierto desde la ficha: el alumno viene fijo, clase individual. */
           <label className={s.campo}>
             <span>Alumno</span>
-            <select value={alumnoId} onChange={(e) => setAlumnoId(e.target.value)}>
-              <option value="">Elegí un alumno…</option>
-              {alumnos.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {/* El tipo Estado del front lista solo los "reales"; en espera viene igual del back. */}
-                  {a.apellido}, {a.nombre}{(a.estado as string) === 'EnEspera' ? ' (en espera)' : ''}
-                </option>
-              ))}
-            </select>
+            <input type="text" value={`${alumnoFijo.apellido}, ${alumnoFijo.nombre}`} disabled />
           </label>
+        ) : (
+          <>
+            <label className={s.campo}>
+              <span>Tipo de clase</span>
+              <select value={tipo} onChange={(e) => setTipo(e.target.value as 'grupo' | 'individual')}>
+                <option value="grupo">Grupal (grupo fijo)</option>
+                <option value="individual">Individual (un alumno)</option>
+              </select>
+            </label>
+            {tipo === 'grupo' ? (
+              <label className={s.campo}>
+                <span>Grupo</span>
+                <select value={grupoId} onChange={(e) => setGrupoId(e.target.value)}>
+                  <option value="">Elegí un grupo…</option>
+                  {grupos.map((g) => (
+                    <option key={g.id} value={g.id}>{g.nombre} ({g.miembrosActivos})</option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <label className={s.campo}>
+                <span>Alumno</span>
+                <select value={alumnoId} onChange={(e) => setAlumnoId(e.target.value)}>
+                  <option value="">Elegí un alumno…</option>
+                  {alumnos.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {/* El tipo Estado del front lista solo los "reales"; en espera viene igual del back. */}
+                      {a.apellido}, {a.nombre}{(a.estado as string) === 'EnEspera' ? ' (en espera)' : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </>
         )}
 
         <label className={s.campo}>
