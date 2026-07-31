@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Modal from '../../components/Modal';
 import Avatar from '../../components/Avatar';
 import NotasAlumnoSection from './NotasAlumnoSection';
@@ -7,6 +7,9 @@ import { api } from '../../lib/api';
 import { CAT_COLOR, CAT_LABEL, ESTADO_UI, formatoPlata, subPorEdad } from './types';
 import type { Alumno, AlumnoCuenta, AlumnoHorario } from './types';
 import { useProfesores } from '../profesores/useProfesores';
+import { useSedes } from '../agenda/hooks';
+import NuevoHorarioModal from '../agenda/NuevoHorarioModal';
+import { obtenerSesion } from '../auth/sesion';
 import s from './DetalleAlumnoModal.module.css';
 
 interface Props {
@@ -25,6 +28,15 @@ export default function DetalleAlumnoModal({ alumno, hermanos, onClose, onCrearA
   const cat = CAT_COLOR[alumno.categoria];
   const estado = ESTADO_UI[alumno.estado];
   const { profes } = useProfesores();
+  const qc = useQueryClient();
+
+  // "Asignar horario" desde la ficha: reusa el modal de horario con el alumno fijo.
+  const [asignando, setAsignando] = useState(false);
+  const sesion = obtenerSesion();
+  const miSedeId = sesion?.rol === 'staff' ? sesion.sedeId : null; // el staff solo su club
+  const { sedes } = useSedes();
+  const disponibles = sedes.filter((x) => x.activo);
+  const sedesParaHorario = miSedeId ? disponibles.filter((x) => x.id === miSedeId) : disponibles;
 
   // El Director es el dueño de la academia (fijo); el Profe titular se asigna acá.
   const director = profes.find((p) => p.esDueño);
@@ -141,7 +153,19 @@ export default function DetalleAlumnoModal({ alumno, hermanos, onClose, onCrearA
           )}
         </div>
         <div>
-          <div className={s.seccion}>Horarios asignados</div>
+          <div className={s.seccion} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>Horarios asignados</span>
+            <button
+              onClick={() => setAsignando(true)}
+              style={{
+                marginLeft: 'auto', padding: '4px 10px', borderRadius: 8,
+                border: '1px solid var(--color-primary)', background: 'transparent',
+                color: 'var(--color-primary-dark)', fontWeight: 700, fontSize: 12, cursor: 'pointer',
+              }}
+            >
+              + Asignar horario
+            </button>
+          </div>
           {horarios.isLoading ? (
             <div className={s.placeholder}>Cargando…</div>
           ) : (horarios.data?.length ?? 0) === 0 ? (
@@ -207,6 +231,28 @@ export default function DetalleAlumnoModal({ alumno, hermanos, onClose, onCrearA
       <div className={s.seguimiento}>
         <NotasAlumnoSection alumnoId={alumno.id} />
       </div>
+
+      {asignando && (
+        <NuevoHorarioModal
+          sedes={sedesParaHorario}
+          alumnoFijo={{
+            id: alumno.id,
+            nombre: alumno.nombre,
+            apellido: alumno.apellido,
+            profesorUserId: alumno.profesorUserId,
+          }}
+          onClose={() => setAsignando(false)}
+          onCrear={async (dto) => {
+            await api.post('/horarios', dto);
+            // Refrescamos los horarios de la ficha + la lista (puede pasar de espera a alumno).
+            await Promise.all([
+              qc.invalidateQueries({ queryKey: ['alumno-horarios', alumno.id] }),
+              qc.invalidateQueries({ queryKey: ['alumnos'] }),
+              qc.invalidateQueries({ queryKey: ['dashboard'] }),
+            ]);
+          }}
+        />
+      )}
     </Modal>
   );
 }

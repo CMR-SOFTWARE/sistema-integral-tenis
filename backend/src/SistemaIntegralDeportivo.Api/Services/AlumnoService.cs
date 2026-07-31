@@ -67,7 +67,8 @@ public class AlumnoService : IAlumnoService
         var titular = await _credenciales.BuscarTitularPorTelefonoAsync(dto.Telefono, ct);
         if (titular is not null)
         {
-            var ficha = Construir(dto);
+            // El profe carga al alumno: va DIRECTO a Alumnos (Activo), no a la espera.
+            var ficha = Construir(dto, EstadoAlumno.Activo);
             ficha.UserId = titular.UserId; // la ficha nace bajo la cuenta del titular
             ficha.SedeId = sedeProfe;      // el club del profe de cabecera
             var creada = await _repo.AgregarAsync(ficha, ct);
@@ -93,7 +94,7 @@ public class AlumnoService : IAlumnoService
 
         try
         {
-            var alumno = Construir(dto);
+            var alumno = Construir(dto, EstadoAlumno.Activo);
             alumno.UserId = cred.UserId;
             alumno.SedeId = sedeProfe; // el club del profe de cabecera
             var creado = await _repo.AgregarAsync(alumno, ct);
@@ -181,7 +182,9 @@ public class AlumnoService : IAlumnoService
 
         ValidarMenor(dto);
 
-        var alumno = Construir(dto);
+        // Auto-registro (se unió desde el portal): entra a la LISTA DE ESPERA hasta
+        // que el profe le asigne una clase.
+        var alumno = Construir(dto, EstadoAlumno.EnEspera);
         alumno.UserId = userId;
         var creado = await _repo.AgregarAsync(alumno, ct);
         return Mapear(creado);
@@ -573,8 +576,13 @@ public class AlumnoService : IAlumnoService
                 "Un alumno menor requiere el consentimiento de datos otorgado por su tutor.");
     }
 
-    /// <summary>La entidad desde el DTO (consentimientos con timestamp del server).</summary>
-    private static Alumno Construir(CreateAlumnoDto dto)
+    /// <summary>
+    /// La entidad desde el DTO (consentimientos con timestamp del server). El estado
+    /// inicial lo decide el caller: el alta del profe nace <b>Activo</b> (va directo a
+    /// Alumnos); el auto-registro del portal nace <b>EnEspera</b> (lista de espera,
+    /// hasta que el profe le asigne una clase).
+    /// </summary>
+    private static Alumno Construir(CreateAlumnoDto dto, EstadoAlumno estadoInicial)
     {
         var ahora = DateTime.UtcNow;
         return new Alumno
@@ -587,10 +595,8 @@ public class AlumnoService : IAlumnoService
             FechaNacimiento = dto.FechaNacimiento,
             EsMenor = dto.EsMenor,
             Categoria = dto.Categoria,
-            // Nace en la LISTA DE ESPERA: es alumno recién cuando se le asigna la
-            // primera clase (grupo u horario). Vale para el alta manual, la familia
-            // y el auto-registro (todos pasan por acá).
-            Estado = EstadoAlumno.EnEspera,
+            // El estado lo decide el caller (ver doc): alta del profe = Activo, auto-registro = EnEspera.
+            Estado = estadoInicial,
             Arancel = dto.Arancel,
             ProfesorUserId = dto.ProfesorUserId,
             Notas = dto.Notas,

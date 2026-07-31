@@ -224,11 +224,23 @@ public class AlumnoServiceTests
     }
 
     [Fact]
-    public async Task CrearAsync_LaFichaNaceEnListaDeEspera()
+    public async Task CrearAsync_NaceActivo()
     {
-        // "Alumno = el que tiene clase": toda ficha nueva arranca EnEspera hasta que
-        // se le asigne la primera clase (grupo u horario), que la promueve a Activo.
+        // El profe carga al alumno: va DIRECTO a Alumnos (Activo). La lista de espera
+        // quedó solo para el auto-registro del portal (ver CrearVinculado).
         await _service.CrearAsync(AlumnoMayor());
+
+        _repo.Verify(r => r.AgregarAsync(
+            It.Is<Alumno>(a => a.Estado == EstadoAlumno.Activo),
+            It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task CrearVinculado_NaceEnEspera()
+    {
+        // Auto-registro (se unió desde el portal): entra a la LISTA DE ESPERA hasta que
+        // el profe le asigne una clase.
+        await _service.CrearVinculadoAsync(AlumnoMayor(), Guid.NewGuid());
 
         _repo.Verify(r => r.AgregarAsync(
             It.Is<Alumno>(a => a.Estado == EstadoAlumno.EnEspera),

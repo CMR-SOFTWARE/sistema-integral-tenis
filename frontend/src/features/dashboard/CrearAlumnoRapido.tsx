@@ -56,7 +56,7 @@ export default function CrearAlumnoRapido() {
           passwordTemporal: creado.passwordTemporal,
         });
       } else {
-        avisar(`${creado.alumno.nombre} quedó en la lista de espera.`);
+        avisar(`${creado.alumno.nombre} quedó cargado en Alumnos.`);
       }
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo crear el alumno.');
@@ -69,7 +69,7 @@ export default function CrearAlumnoRapido() {
     <div className={s.card}>
       <div className={s.head}>
         <h3 className={s.titulo}>Cargar un alumno rápido</h3>
-        <span className={s.hint}>Queda en la lista de espera hasta que le asignes una clase.</span>
+        <span className={s.hint}>Queda cargado en Alumnos; podés asignarle un horario desde su ficha.</span>
       </div>
       {error && <div className={s.error}>{error}</div>}
       <div className={s.form}>
