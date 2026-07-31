@@ -22,6 +22,18 @@ public class AlumnoRepository : IAlumnoRepository
     public Task<bool> ExisteDniAsync(string dni, CancellationToken ct = default) =>
         _db.Alumnos.AnyAsync(a => a.TenantId == TenantId && a.Dni == dni, ct);
 
+    public Task<bool> ExisteFichaConNombreYTelefonoAsync(
+        string nombre, string apellido, string telefono, CancellationToken ct = default)
+    {
+        var n = nombre.Trim().ToLower();
+        var a = apellido.Trim().ToLower();
+        return _db.Alumnos.AnyAsync(x =>
+            x.TenantId == TenantId
+            && x.Telefono == telefono
+            && x.Nombre.ToLower() == n
+            && x.Apellido.ToLower() == a, ct);
+    }
+
     public Task<bool> EsAlumnoDelTenantAsync(Guid userId, CancellationToken ct = default) =>
         _db.Alumnos.AnyAsync(a => a.TenantId == TenantId && a.UserId == userId, ct);
 

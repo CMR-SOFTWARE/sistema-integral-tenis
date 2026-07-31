@@ -889,6 +889,24 @@ public class AlumnoServiceTests
     }
 
     [Fact]
+    public async Task CrearAsync_MismoNombreYCelular_LanzaDuplicado()
+    {
+        // Sin DNI no se puede dedupe por DNI: si ya hay una ficha con el mismo nombre
+        // y celular en el club, es la misma persona (la cargó el director y ahora el
+        // staff). La cuenta familiar (mismo celu, OTRO nombre) sigue permitida.
+        _repo.Setup(r => r.ExisteFichaConNombreYTelefonoAsync(
+                "Juan", "Pérez", "+5491155551234", It.IsAny<CancellationToken>()))
+             .ReturnsAsync(true);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.CrearAsync(AlumnoMayor()));
+
+        _repo.Verify(r => r.AgregarAsync(It.IsAny<Alumno>(), It.IsAny<CancellationToken>()), Times.Never);
+        _credenciales.Verify(c => c.CrearConTemporalAsync(
+            It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(),
+            It.IsAny<string?>(), It.IsAny<string?>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
     public async Task CrearAsync_DniYaExistenteEnElTenant_LanzaReglaDeNegocio()
     {
         _repo.Setup(r => r.ExisteDniAsync("30111222", It.IsAny<CancellationToken>()))

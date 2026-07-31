@@ -33,6 +33,11 @@ public class HorarioService : IHorarioService
 
     public async Task<HorarioResponseDto> CrearAsync(CreateHorarioDto dto, CancellationToken ct = default)
     {
+        // El profe EMPLEADO da SUS clases: el horario que crea queda a su nombre (su
+        // agenda muestra las clases propias, así que si no, no lo vería). El dueño elige.
+        if (_usuario.EsStaff)
+            dto.ProfesorUserId = _usuario.UserId;
+
         // Regla: grupal XOR individual — exactamente uno de los dos
         var tieneGrupo = dto.GrupoId is not null;
         var tieneAlumno = dto.AlumnoId is not null;

@@ -12,6 +12,14 @@ public interface IAlumnoRepository
     Task<bool> ExisteDniAsync(string dni, CancellationToken ct = default);
 
     /// <summary>
+    /// ¿Ya existe una ficha con el MISMO nombre y celular en el tenant? Detecta el
+    /// duplicado de la misma persona cuando no hay DNI (la cuenta familiar comparte
+    /// celular pero con distinto nombre, así que no la frena).
+    /// </summary>
+    Task<bool> ExisteFichaConNombreYTelefonoAsync(
+        string nombre, string apellido, string telefono, CancellationToken ct = default);
+
+    /// <summary>
     /// ¿Ese usuario tiene una ficha de alumno EN ESTE tenant? Se usa para reusar la
     /// persona como Staff sin crear otra cuenta (un usuario, varias facetas): solo
     /// si ya es alumno de la academia (relación conocida), no una cuenta ajena.

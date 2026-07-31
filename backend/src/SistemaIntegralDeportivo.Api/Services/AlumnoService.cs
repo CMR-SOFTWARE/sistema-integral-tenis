@@ -42,6 +42,15 @@ public class AlumnoService : IAlumnoService
         // Reglas de la ficha ANTES de tocar Identity (si algo falla acá, no nace usuario)
         if (!string.IsNullOrWhiteSpace(dto.Dni) && await _repo.ExisteDniAsync(dto.Dni, ct))
             throw new ReglaDeNegocioException($"Ya existe un alumno con DNI {dto.Dni}.");
+
+        // Duplicado de la MISMA persona (sin DNI): mismo nombre + mismo celular en el
+        // club. La cuenta familiar comparte celular pero con DISTINTO nombre, así que
+        // sigue permitida; lo que se frena es cargar dos veces a la misma persona
+        // (p. ej. la cargó el director y después el staff).
+        if (await _repo.ExisteFichaConNombreYTelefonoAsync(dto.Nombre, dto.Apellido, dto.Telefono, ct))
+            throw new ReglaDeNegocioException(
+                $"Ya existe una ficha de {dto.Nombre.Trim()} {dto.Apellido.Trim()} con ese celular en el club.");
+
         ValidarMenor(dto);
         if (dto.ProfesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))
             throw new ReglaDeNegocioException("Ese profe no es de tu club.");
