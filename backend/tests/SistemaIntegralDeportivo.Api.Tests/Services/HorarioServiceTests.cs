@@ -24,6 +24,8 @@ public class HorarioServiceTests
     private readonly Mock<IBloqueoRepository> _bloqueos;
     private readonly Mock<IStaffService> _staff;
     private readonly Mock<IAlumnoRepository> _alumnos;
+    private readonly Mock<ISedeRepository> _sedes;
+    private readonly Mock<IUsuarioActual> _usuario;
     private readonly HorarioService _service;
 
     public HorarioServiceTests()
@@ -34,7 +36,11 @@ public class HorarioServiceTests
         _bloqueos = new Mock<IBloqueoRepository>();
         _staff = new Mock<IStaffService>();
         _alumnos = new Mock<IAlumnoRepository>();
-        _service = new HorarioService(_repo.Object, _turnos.Object, _cargos.Object, _bloqueos.Object, _staff.Object, _alumnos.Object);
+        _sedes = new Mock<ISedeRepository>();
+        _usuario = new Mock<IUsuarioActual>(); // por defecto: no es staff → sin límite de club
+        _service = new HorarioService(
+            _repo.Object, _turnos.Object, _cargos.Object, _bloqueos.Object,
+            _staff.Object, _alumnos.Object, _sedes.Object, _usuario.Object);
 
         // Por defecto: cualquier profe asignado es válido (los tests que prueban la
         // regla lo pisan con false)
@@ -432,5 +438,78 @@ public class HorarioServiceTests
         var dto = Update(Cancha2, DayOfWeek.Wednesday, new TimeOnly(10, 0), 60);
 
         await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.EditarAsync(Guid.NewGuid(), dto));
+    }
+
+    // ─────────────────────────────────────────────
+    // El profe EMPLEADO solo gestiona canchas de SU club (sede)
+    // ─────────────────────────────────────────────
+
+    /// <summary>Marca al usuario del request como staff de la sede dada.</summary>
+    private Guid ComoStaffDe(Guid sede)
+    {
+        var yo = Guid.NewGuid();
+        _usuario.Setup(u => u.EsStaff).Returns(true);
+        _usuario.Setup(u => u.UserId).Returns(yo);
+        _staff.Setup(s => s.SedeDelProfeAsync(yo, It.IsAny<CancellationToken>())).ReturnsAsync(sede);
+        return yo;
+    }
+
+    [Fact]
+    public async Task Crear_Staff_EnCanchaDeSuClub_Crea()
+    {
+        var miSede = Guid.NewGuid();
+        ComoStaffDe(miSede);
+        _sedes.Setup(s => s.SedeDeCanchaAsync(Cancha2, It.IsAny<CancellationToken>())).ReturnsAsync(miSede);
+
+        await _service.CrearAsync(Dto(Cancha2, new TimeOnly(10, 0)));
+
+        _repo.Verify(r => r.AgregarAsync(It.IsAny<Horario>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Crear_Staff_EnCanchaDeOtroClub_Lanza()
+    {
+        ComoStaffDe(Guid.NewGuid());
+        _sedes.Setup(s => s.SedeDeCanchaAsync(Cancha2, It.IsAny<CancellationToken>())).ReturnsAsync(Guid.NewGuid());
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.CrearAsync(Dto(Cancha2, new TimeOnly(10, 0))));
+        _repo.Verify(r => r.AgregarAsync(It.IsAny<Horario>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Editar_Staff_MoverACanchaDeOtroClub_Lanza()
+    {
+        var horario = HorarioEditable(); // Cancha2
+        var miSede = Guid.NewGuid();
+        ComoStaffDe(miSede);
+        _sedes.Setup(s => s.SedeDeCanchaAsync(Cancha2, It.IsAny<CancellationToken>())).ReturnsAsync(miSede);        // origen: su club
+        _sedes.Setup(s => s.SedeDeCanchaAsync(Cancha1, It.IsAny<CancellationToken>())).ReturnsAsync(Guid.NewGuid()); // destino: otro
+        var dto = Update(Cancha1, DayOfWeek.Tuesday, new TimeOnly(8, 0), 60);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.EditarAsync(horario.Id, dto));
+        _repo.Verify(r => r.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Listar_Staff_SoloVeLosHorariosDeSuClub()
+    {
+        var miSede = Guid.NewGuid();
+        ComoStaffDe(miSede);
+        var mio = new Horario
+        {
+            GrupoId = GrupoId, Dia = DayOfWeek.Monday, HoraInicio = new TimeOnly(9, 0),
+            DuracionMinutos = 60, Cancha = new Cancha { Nombre = "Cancha 1", SedeId = miSede },
+        };
+        var ajeno = new Horario
+        {
+            GrupoId = GrupoId, Dia = DayOfWeek.Monday, HoraInicio = new TimeOnly(9, 0),
+            DuracionMinutos = 60, Cancha = new Cancha { Nombre = "Cancha 2", SedeId = Guid.NewGuid() },
+        };
+        _repo.Setup(r => r.ListarActivosAsync(It.IsAny<CancellationToken>())).ReturnsAsync([mio, ajeno]);
+
+        var res = await _service.ListarAsync();
+
+        Assert.Single(res);
     }
 }

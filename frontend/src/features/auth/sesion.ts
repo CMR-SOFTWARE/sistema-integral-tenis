@@ -22,6 +22,8 @@ export interface Sesion {
   esAdmin: boolean;
   /** Estado del club propio; "PendientePago" manda al checkout. */
   estadoTenant: 'PendientePago' | 'Activo' | 'Suspendido' | null;
+  /** Club (sede) del profe empleado; el front le ofrece solo esas canchas. Null para el dueño. */
+  sedeId: string | null;
   /** Nació con contraseña inicial del profe (informativo). */
   debeCambiarPassword: boolean;
   /** Mis datos deportivos (el jugador sin club los completa en su perfil). */

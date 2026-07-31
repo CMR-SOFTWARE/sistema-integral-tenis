@@ -50,7 +50,10 @@ export default function CalendarioPage({ sede, profe }: Props) {
   const [editandoHorario, setEditandoHorario] = useState<Horario | null>(null);
   const [duplicandoHorario, setDuplicandoHorario] = useState<Horario | null>(null);
   const [porProfe, setPorProfe] = useState(false); // ver la semana/mes agrupada por profesor
-  const esOwner = obtenerSesion()?.rol === 'owner';
+  const sesion = obtenerSesion();
+  const esOwner = sesion?.rol === 'owner';
+  const esStaff = sesion?.rol === 'staff';
+  const miSedeId = sesion?.sedeId ?? null; // el club del empleado (acota sus canchas)
 
   const visibles = activo.turnos.filter(
     (t) => (sede === '' || t.sede === sede) && (profe === '' || t.profesorUserId === profe),
@@ -72,8 +75,11 @@ export default function CalendarioPage({ sede, profe }: Props) {
     ? horarios.find((h) => h.id === turnoAbierto.horarioId) ?? null
     : null;
 
-  // Para dar de alta solo se ofrecen las sedes con canchas.
-  const disponibles = sedes.filter((x) => x.activo);
+  // Para dar de alta solo se ofrecen las sedes con canchas. El profe EMPLEADO ve
+  // solo SU club (el dueño, todas): las canchas que puede tocar están acotadas.
+  const soloMiClub = (lista: typeof sedes) =>
+    esStaff && miSedeId ? lista.filter((x) => x.id === miSedeId) : lista;
+  const disponibles = soloMiClub(sedes.filter((x) => x.activo));
   const sinCanchas = disponibles.every((x) => x.canchas.length === 0);
 
   const cambiarMes = (delta: number) =>
@@ -130,7 +136,8 @@ export default function CalendarioPage({ sede, profe }: Props) {
           </div>
         )}
 
-        {esOwner && (
+        {/* Dueño Y staff pueden armar horarios (el staff, solo en canchas de su club). */}
+        {(esOwner || esStaff) && (
           <button
             className={s.btnNuevo}
             onClick={() => setModalHorario(true)}
@@ -222,13 +229,13 @@ export default function CalendarioPage({ sede, profe }: Props) {
       {turnoAbierto && (
         <TurnoModal
           turno={turnoAbierto}
-          horario={esOwner ? horarioDelTurno : null}
+          horario={esOwner || esStaff ? horarioDelTurno : null}
           onClose={() => setAbierto(null)}
           onAsistencia={activo.marcarAsistencia}
           onCancelar={activo.cancelar}
           onEditarHorario={(h) => { setAbierto(null); setEditandoHorario(h); }}
           onDuplicarHorario={(h) => { setAbierto(null); setDuplicandoHorario(h); }}
-          onDesactivarHorario={desactivarHorario}
+          onDesactivarHorario={esOwner ? desactivarHorario : undefined}
         />
       )}
 
@@ -244,7 +251,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
       {editandoHorario && (
         <EditarHorarioModal
           horario={editandoHorario}
-          sedes={sedes}
+          sedes={soloMiClub(sedes)}
           onClose={() => setEditandoHorario(null)}
           onEditar={editarHorario}
         />

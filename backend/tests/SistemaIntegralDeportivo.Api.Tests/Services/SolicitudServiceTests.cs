@@ -21,6 +21,7 @@ public class SolicitudServiceTests
     private readonly Mock<IAlumnoRepository> _alumnoRepo;
     private readonly Mock<ITenantRepository> _tenants;
     private readonly Mock<ITenantActual> _tenantActual;
+    private readonly Mock<IUsuarioActual> _usuario;
     private readonly SolicitudService _service;
 
     public SolicitudServiceTests()
@@ -29,8 +30,9 @@ public class SolicitudServiceTests
         _alumnoRepo = new Mock<IAlumnoRepository>();
         _tenants = new Mock<ITenantRepository>();
         _tenantActual = new Mock<ITenantActual>();
+        _usuario = new Mock<IUsuarioActual>(); // por defecto: no es staff (dueño ve toda la espera)
         _service = new SolicitudService(
-            _alumnos.Object, _alumnoRepo.Object, _tenants.Object, _tenantActual.Object);
+            _alumnos.Object, _alumnoRepo.Object, _tenants.Object, _tenantActual.Object, _usuario.Object);
 
         // Por defecto: el club existe y está activo, sin ficha previa
         _tenants.Setup(t => t.ObtenerPorIdAsync(TenantId, It.IsAny<CancellationToken>()))
@@ -152,6 +154,44 @@ public class SolicitudServiceTests
         var item = Assert.Single(lista);
         Assert.Equal("Ana", item.Nombre);
         Assert.Equal("Los jueves", item.Mensaje);
+    }
+
+    [Fact]
+    public async Task Pendientes_Staff_SoloVeLosSuyos()
+    {
+        var yo = Guid.NewGuid();
+        _usuario.Setup(u => u.EsStaff).Returns(true);
+        _usuario.Setup(u => u.UserId).Returns(yo);
+        _alumnoRepo.Setup(a => a.ListarAsync(null, EstadoAlumno.EnEspera, It.IsAny<CancellationToken>()))
+                   .ReturnsAsync(new[]
+                   {
+                       new Alumno { Nombre = "Mío", Apellido = "A", Dni = "1", Telefono = "+1",
+                                    Estado = EstadoAlumno.EnEspera, ProfesorUserId = yo },
+                       new Alumno { Nombre = "Ajeno", Apellido = "B", Dni = "2", Telefono = "+2",
+                                    Estado = EstadoAlumno.EnEspera, ProfesorUserId = Guid.NewGuid() },
+                   });
+
+        var lista = await _service.PendientesAsync();
+
+        var item = Assert.Single(lista);
+        Assert.Equal("Mío", item.Nombre);
+    }
+
+    [Fact]
+    public async Task Quitar_Staff_FichaDeOtroProfe_Lanza()
+    {
+        var yo = Guid.NewGuid();
+        _usuario.Setup(u => u.EsStaff).Returns(true);
+        _usuario.Setup(u => u.UserId).Returns(yo);
+        var ajena = new Alumno
+        {
+            Nombre = "Ajeno", Apellido = "B", Dni = "2", Telefono = "+2",
+            Estado = EstadoAlumno.EnEspera, ProfesorUserId = Guid.NewGuid(),
+        };
+        _alumnoRepo.Setup(a => a.ObtenerAsync(ajena.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ajena);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.QuitarDeEsperaAsync(ajena.Id));
+        _alumnoRepo.Verify(a => a.EliminarDefinitivoAsync(It.IsAny<Alumno>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

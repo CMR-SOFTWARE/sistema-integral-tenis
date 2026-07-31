@@ -32,6 +32,13 @@ public class SedeRepository : ISedeRepository
             .Include(s => s.Canchas)
             .FirstOrDefaultAsync(s => s.TenantId == TenantId && s.Id == id, ct);
 
+    public Task<Guid?> SedeDeCanchaAsync(Guid canchaId, CancellationToken ct = default) =>
+        _db.Sedes
+            .AsNoTracking()
+            .Where(s => s.TenantId == TenantId && s.Canchas.Any(c => c.Id == canchaId))
+            .Select(s => (Guid?)s.Id)
+            .FirstOrDefaultAsync(ct);
+
     public async Task<Sede> AgregarAsync(Sede sede, CancellationToken ct = default)
     {
         sede.TenantId = TenantId;

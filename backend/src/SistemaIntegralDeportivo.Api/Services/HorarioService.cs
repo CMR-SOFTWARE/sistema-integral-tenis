@@ -13,10 +13,13 @@ public class HorarioService : IHorarioService
     private readonly IBloqueoRepository _bloqueos;
     private readonly IStaffService _staff;
     private readonly IAlumnoRepository _alumnos;
+    private readonly ISedeRepository _sedes;
+    private readonly IUsuarioActual _usuario;
 
     public HorarioService(
         IHorarioRepository horarios, ITurnoRepository turnos, ICargoRepository cargos,
-        IBloqueoRepository bloqueos, IStaffService staff, IAlumnoRepository alumnos)
+        IBloqueoRepository bloqueos, IStaffService staff, IAlumnoRepository alumnos,
+        ISedeRepository sedes, IUsuarioActual usuario)
     {
         _horarios = horarios;
         _turnos = turnos;
@@ -24,6 +27,8 @@ public class HorarioService : IHorarioService
         _bloqueos = bloqueos;
         _staff = staff;
         _alumnos = alumnos;
+        _sedes = sedes;
+        _usuario = usuario;
     }
 
     public async Task<HorarioResponseDto> CrearAsync(CreateHorarioDto dto, CancellationToken ct = default)
@@ -43,6 +48,9 @@ public class HorarioService : IHorarioService
                 throw new ReglaDeNegocioException(
                     "El alumno tiene la cuota vencida: registrá el pago en Cuotas antes de asignarle clases nuevas.");
         }
+
+        // Regla: el profe EMPLEADO solo arma horarios en canchas de SU club.
+        await ValidarCanchaDeSuClubAsync(dto.CanchaId, ct);
 
         // Regla: la franja tiene que estar libre en esa cancha (sin solapar otro
         // horario ni pisar un bloqueo fijo).
@@ -81,6 +89,8 @@ public class HorarioService : IHorarioService
         var horario = await _horarios.ObtenerAsync(id, ct)
             ?? throw new ReglaDeNegocioException("El horario no existe.");
 
+        await ValidarCanchaDeSuClubAsync(horario.CanchaId, ct);
+
         if (profesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))
             throw new ReglaDeNegocioException("Ese profe no es de tu club.");
 
@@ -97,6 +107,11 @@ public class HorarioService : IHorarioService
     {
         var horario = await _horarios.ObtenerAsync(id, ct)
             ?? throw new ReglaDeNegocioException("El horario no existe.");
+
+        // El staff solo toca horarios de su club: la cancha ACTUAL y la DESTINO
+        // deben ser de su sede (no puede sacar una clase de otro club ni meterla en él).
+        await ValidarCanchaDeSuClubAsync(horario.CanchaId, ct);
+        await ValidarCanchaDeSuClubAsync(dto.CanchaId, ct);
 
         // La franja destino tiene que estar libre (excluyéndose a sí mismo, así
         // editar sin moverlo no se marca como "se pisa con otro").
@@ -128,7 +143,15 @@ public class HorarioService : IHorarioService
 
     public async Task<IReadOnlyList<HorarioResponseDto>> ListarAsync(CancellationToken ct = default)
     {
-        var horarios = await _horarios.ListarActivosAsync(ct);
+        IEnumerable<Horario> horarios = await _horarios.ListarActivosAsync(ct);
+
+        // El profe EMPLEADO ve solo los horarios de SU club; el dueño, todos.
+        if (_usuario.EsStaff)
+        {
+            var sede = await _staff.SedeDelProfeAsync(_usuario.UserId!.Value, ct);
+            horarios = horarios.Where(h => h.Cancha?.SedeId == sede);
+        }
+
         return horarios.Select(Mapear).ToList();
     }
 
@@ -140,6 +163,21 @@ public class HorarioService : IHorarioService
         horario.Activo = false;
         await LimpiarTurnosFuturosAsync(id, ct);
         await _horarios.GuardarCambiosAsync(ct); // mismo DbContext: persiste todo junto
+    }
+
+    /// <summary>
+    /// El profe EMPLEADO solo gestiona horarios en canchas de SU club (sede). El
+    /// dueño trabaja en cualquiera. Si el staff no tiene sede, o la cancha es de
+    /// otra, se rechaza. (La granularidad de "no pisar" ya la da la cancha.)
+    /// </summary>
+    private async Task ValidarCanchaDeSuClubAsync(Guid canchaId, CancellationToken ct)
+    {
+        if (!_usuario.EsStaff) return;
+
+        var sedeStaff = await _staff.SedeDelProfeAsync(_usuario.UserId!.Value, ct);
+        var sedeCancha = await _sedes.SedeDeCanchaAsync(canchaId, ct);
+        if (sedeStaff is null || sedeCancha != sedeStaff)
+            throw new ReglaDeNegocioException("Esa cancha no es de tu club.");
     }
 
     /// <summary>

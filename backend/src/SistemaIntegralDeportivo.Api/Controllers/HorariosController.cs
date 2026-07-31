@@ -7,7 +7,7 @@ using SistemaIntegralDeportivo.Api.Services;
 namespace SistemaIntegralDeportivo.Api.Controllers;
 
 [ApiController]
-[Authorize(Policy = "Owner")]
+[Authorize(Policy = "Profesor")] // dueño Y staff; el staff queda acotado a su club en el service
 [Route("api/horarios")]
 public class HorariosController : ControllerBase
 {
@@ -69,6 +69,7 @@ public class HorariosController : ControllerBase
 
     /// <summary>DELETE api/horarios/{id} — desactiva la plantilla (turnos generados intactos).</summary>
     [HttpDelete("{id:guid}")]
+    [Authorize(Policy = "Owner")] // desactivar un horario es del dueño; el staff solo crea/edita/reasigna
     public async Task<IActionResult> Desactivar(Guid id, CancellationToken ct)
     {
         try
@@ -83,19 +84,23 @@ public class HorariosController : ControllerBase
     }
 
     // ── Solicitudes de clase individual fija de los alumnos (M5b) ──
+    // Resolverlas es del dueño (el staff no ve el panel de solicitudes).
 
     /// <summary>GET api/horarios/solicitudes — solicitudes de clase individual pendientes.</summary>
     [HttpGet("solicitudes")]
+    [Authorize(Policy = "Owner")]
     public async Task<ActionResult<IReadOnlyList<SolicitudHorarioDto>>> Solicitudes(CancellationToken ct) =>
         Ok(await _solicitudes.ListarPendientesAsync(ct));
 
     /// <summary>GET api/horarios/solicitudes/{id}/canchas-libres — canchas libres de la SEDE que pidió el alumno.</summary>
     [HttpGet("solicitudes/{id:guid}/canchas-libres")]
+    [Authorize(Policy = "Owner")]
     public async Task<ActionResult<IReadOnlyList<CanchaLibreDto>>> CanchasLibres(Guid id, CancellationToken ct) =>
         Ok(await _solicitudes.CanchasLibresParaSolicitudAsync(id, ct));
 
     /// <summary>POST api/horarios/solicitudes/{id}/aceptar — acepto eligiendo una cancha: crea el horario.</summary>
     [HttpPost("solicitudes/{id:guid}/aceptar")]
+    [Authorize(Policy = "Owner")]
     public async Task<IActionResult> AceptarSolicitud(Guid id, AceptarHorarioDto dto, CancellationToken ct)
     {
         try
@@ -111,6 +116,7 @@ public class HorariosController : ControllerBase
 
     /// <summary>POST api/horarios/solicitudes/{id}/rechazar — rechazo la solicitud.</summary>
     [HttpPost("solicitudes/{id:guid}/rechazar")]
+    [Authorize(Policy = "Owner")]
     public async Task<IActionResult> RechazarSolicitud(Guid id, CancellationToken ct)
     {
         try
