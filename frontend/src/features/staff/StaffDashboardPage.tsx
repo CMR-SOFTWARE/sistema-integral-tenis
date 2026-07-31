@@ -7,9 +7,19 @@ import { useAlumnos } from '../alumnos/useAlumnos';
 import { useMiSueldo } from '../sueldos/useMiSueldo';
 import { formatoPlata } from '../alumnos/types';
 import { MESES } from '../cuotas/types';
+import AccesosRapidos from '../dashboard/AccesosRapidos';
+import type { Acceso } from '../dashboard/AccesosRapidos';
+import CrearAlumnoRapido from '../dashboard/CrearAlumnoRapido';
 import s from './StaffDashboardPage.module.css';
 
 const DIA_LABEL: Record<string, string> = Object.fromEntries(DIAS.map((d) => [d.valor, d.corto]));
+
+/** Accesos del profe empleado: crear/ver lo suyo (el alta rápida queda a su nombre). */
+const ACCESOS: Acceso[] = [
+  { to: '/agenda?tab=calendario&nuevo=1', label: 'Nuevo horario', color: '#178a4c', icon: 'M12 5v14M5 12h14' },
+  { to: '/agenda?tab=calendario', label: 'Mi agenda', color: '#2563eb', icon: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4' },
+  { to: '/alumnos', label: 'Mis alumnos', color: '#0e6b3c', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
+];
 
 /**
  * Inicio del profe EMPLEADO: un resumen de su semana (clases a dar, horas,
@@ -44,6 +54,11 @@ export default function StaffDashboardPage() {
   if (cargando) return <div className={s.vacio}>Cargando tu semana…</div>;
 
   return (
+    <div>
+      {/* ── Accesos directos + alta rápida ── */}
+      <AccesosRapidos accesos={ACCESOS} />
+      <CrearAlumnoRapido />
+
     <div className={s.grilla}>
       {/* ── Hero: tu próxima clase (mismo look que el Inicio del alumno) ── */}
       <div className={s.hero}>
@@ -79,7 +94,7 @@ export default function StaffDashboardPage() {
             <div className={s.metricaLabel}>alumnos</div>
           </div>
         </div>
-        <Link to="/calendario" className={s.btnPrimario}>Ver mi calendario</Link>
+        <Link to="/agenda?tab=calendario" className={s.btnPrimario}>Ver mi calendario</Link>
       </div>
 
       {/* ── Mi sueldo del mes (horas dadas × valor hora) ── */}
@@ -162,6 +177,7 @@ export default function StaffDashboardPage() {
           ))}
         </div>
       </div>
+    </div>
     </div>
   );
 }

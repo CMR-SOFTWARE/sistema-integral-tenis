@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { obtenerSesion } from '../auth/sesion';
 import { useProfesores } from '../profesores/useProfesores';
 import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
@@ -43,7 +44,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
   const { bloqueos } = useBloqueos();
   const { profes, nombreDe } = useProfesores();
   const confirmar = useConfirmar();
-  const { sedes } = useSedes();
+  const { sedes, cargando: sedesCargando } = useSedes();
   const { horarios, crear: crearH, editar: editarH, desactivar: desactivarH, recargar: recargarH } = useHorarios();
   const [abierto, setAbierto] = useState<string | null>(null); // turnoId
   const [modalHorario, setModalHorario] = useState(false);
@@ -81,6 +82,18 @@ export default function CalendarioPage({ sede, profe }: Props) {
     esStaff && miSedeId ? lista.filter((x) => x.id === miSedeId) : lista;
   const disponibles = soloMiClub(sedes.filter((x) => x.activo));
   const sinCanchas = disponibles.every((x) => x.canchas.length === 0);
+
+  // Deep-link desde el inicio (Accesos directos): /agenda?tab=calendario&nuevo=1
+  // abre "Nuevo horario". Solo si hay canchas (si no, el modal no tendría dónde crear).
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    // Esperamos a que carguen las sedes: si no, sinCanchas arranca en true.
+    if (params.get('nuevo') !== '1' || sedesCargando) return;
+    if ((esOwner || esStaff) && !sinCanchas) setModalHorario(true);
+    const next = new URLSearchParams(params);
+    next.delete('nuevo');
+    setParams(next, { replace: true });
+  }, [params, setParams, esOwner, esStaff, sinCanchas, sedesCargando]);
 
   const cambiarMes = (delta: number) =>
     setMesCursor(({ anio, mes: m }) => {

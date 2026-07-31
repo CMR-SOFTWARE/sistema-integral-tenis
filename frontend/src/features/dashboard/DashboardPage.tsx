@@ -1,10 +1,21 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { api } from '../../lib/api';
-import { CAT_COLOR, CAT_LABEL, formatoPlata } from '../alumnos/types';
+import { formatoPlata } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import { fechaCorta, horaCorta } from '../agenda/types';
+import AccesosRapidos from './AccesosRapidos';
+import type { Acceso } from './AccesosRapidos';
+import CrearAlumnoRapido from './CrearAlumnoRapido';
 import s from './DashboardPage.module.css';
+
+/** Accesos directos del dueño: llevan a la acción con un toque (algunos abren el modal). */
+const ACCESOS: Acceso[] = [
+  { to: '/agenda?tab=calendario&nuevo=1', label: 'Nuevo horario', color: '#178a4c', icon: 'M12 5v14M5 12h14' },
+  { to: '/finanzas?tab=cuotas', label: 'Cobrar cuotas', color: '#7c3aed', icon: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' },
+  { to: '/agenda?tab=calendario', label: 'Ver agenda', color: '#2563eb', icon: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4' },
+  { to: '/alumnos', label: 'Ver alumnos', color: '#0e6b3c', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
+];
 
 interface CategoriaConteo {
   categoria: Categoria;
@@ -69,39 +80,7 @@ export default function DashboardPage() {
     return <div className={s.cargando}>Cargando…</div>;
   }
 
-  const maxCategoria = Math.max(1, ...resumen.porCategoria.map((c) => c.cantidad));
   const { cuotasPendientes: cuotas } = resumen;
-
-  const metricas = [
-    {
-      label: 'Alumnos activos',
-      valor: String(resumen.alumnosActivos),
-      iconBg: '#e7f6ec',
-      iconColor: '#0e6b3c',
-      icono: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
-    },
-    {
-      label: 'Nuevos este mes',
-      valor: String(resumen.nuevosEsteMes),
-      iconBg: '#eef2fe',
-      iconColor: '#2563eb',
-      icono: 'M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M8.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM20 8v6M23 11h-6',
-    },
-    {
-      label: 'Pausados',
-      valor: String(resumen.pausados),
-      iconBg: '#fef6e7',
-      iconColor: '#b7791f',
-      icono: 'M10 4H6v16h4zM18 4h-4v16h4z',
-    },
-    {
-      label: 'Recaudación del mes',
-      valor: formatoPlata(resumen.recaudacionDelMes),
-      iconBg: '#f3eefe',
-      iconColor: '#7c3aed',
-      icono: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
-    },
-  ];
 
   return (
     <div>
@@ -112,72 +91,34 @@ export default function DashboardPage() {
         </Link>
       )}
 
-      {/* ── Métricas (datos reales) ── */}
-      <div className={s.metricas}>
-        {metricas.map((m) => (
-          <div key={m.label} className={s.metrica}>
-            <div className={s.metricaIcono} style={{ background: m.iconBg }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={m.iconColor} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d={m.icono} />
-              </svg>
-            </div>
-            <div className={s.metricaValor}>{m.valor}</div>
-            <div className={s.metricaLabel}>{m.label}</div>
-          </div>
-        ))}
-      </div>
+      {/* ── Accesos directos + alta rápida (lo accionable, arriba de todo) ── */}
+      <AccesosRapidos accesos={ACCESOS} />
+      <CrearAlumnoRapido />
 
-      <div className={s.filaPrincipal}>
-        {/* ── Clases de hoy (datos reales) ── */}
-        <div className={s.tarjeta}>
-          <div className={s.tarjetaHeader}>
-            <h3 className={s.tarjetaTitulo}>Próximas clases de hoy</h3>
-            <Link to="/calendario" className={s.linkReal}>Ver calendario →</Link>
-          </div>
-          {resumen.clasesHoy.length === 0 ? (
-            <div className={s.vacio}>Hoy no hay clases programadas.</div>
-          ) : (
-            <div className={s.lista}>
-              {resumen.clasesHoy.map((c) => (
-                <div key={c.turnoId} className={c.estado === 'Cancelado' ? s.filaCancelada : s.fila}>
-                  <span className={s.filaHora}>{horaCorta(c.horaInicio)}</span>
-                  <div className={s.filaCuerpo}>
-                    <div className={s.filaTitulo}>{c.titulo}</div>
-                    <div className={s.filaMeta}>
-                      {c.cancha} · {c.participantes} 👤 · {c.duracionMinutos}'
-                      {c.estado === 'Cancelado' && ' · Cancelada'}
-                    </div>
+      {/* ── Clases de hoy (a lo ancho) ── */}
+      <div className={`${s.tarjeta} ${s.tarjetaSola}`}>
+        <div className={s.tarjetaHeader}>
+          <h3 className={s.tarjetaTitulo}>Próximas clases de hoy</h3>
+          <Link to="/agenda?tab=calendario" className={s.linkReal}>Ver calendario →</Link>
+        </div>
+        {resumen.clasesHoy.length === 0 ? (
+          <div className={s.vacio}>Hoy no hay clases programadas.</div>
+        ) : (
+          <div className={s.lista}>
+            {resumen.clasesHoy.map((c) => (
+              <div key={c.turnoId} className={c.estado === 'Cancelado' ? s.filaCancelada : s.fila}>
+                <span className={s.filaHora}>{horaCorta(c.horaInicio)}</span>
+                <div className={s.filaCuerpo}>
+                  <div className={s.filaTitulo}>{c.titulo}</div>
+                  <div className={s.filaMeta}>
+                    {c.cancha} · {c.participantes} 👤 · {c.duracionMinutos}'
+                    {c.estado === 'Cancelado' && ' · Cancelada'}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* ── Ranking por categoría (datos reales) ── */}
-        <div className={s.tarjeta}>
-          <h3 className={s.tarjetaTitulo}>Alumnos por categoría</h3>
-          <div className={s.ranking}>
-            {resumen.porCategoria.map((c) => {
-              const color = CAT_COLOR[c.categoria];
-              return (
-                <div key={c.categoria} className={s.rankingFila}>
-                  <span className={s.chip} style={{ background: `${color}1a`, color }}>
-                    {CAT_LABEL[c.categoria]}
-                  </span>
-                  <div className={s.barraFondo}>
-                    <div
-                      className={s.barra}
-                      style={{ width: `${Math.round((c.cantidad / maxCategoria) * 100)}%`, background: color }}
-                    />
-                  </div>
-                  <span className={s.rankingNum}>{c.cantidad}</span>
-                </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
-          <Link to="/alumnos" className={s.linkReal}>Ver alumnos →</Link>
-        </div>
+        )}
       </div>
 
       <div className={s.filaSecundaria}>
