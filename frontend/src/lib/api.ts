@@ -28,16 +28,38 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * Mensaje amigable cuando el error NO trae uno propio (nuestras reglas de negocio
+ * mandan `detail` legible; esto cubre el resto: 500, 403, red, etc.). La idea es que
+ * el usuario nunca vea un "Error 500" pelado.
+ */
+function mensajeAmigable(status: number): string {
+  if (status === 0) return 'No pudimos conectar. Revisá tu internet e intentá de nuevo.';
+  if (status === 402) return 'Tu club tiene un pago pendiente. Regularizalo para seguir.';
+  if (status === 403) return 'No tenés permiso para hacer esto.';
+  if (status === 404) return 'No encontramos lo que buscabas.';
+  if (status === 409) return 'Ese dato ya existe o hubo un cambio; recargá e intentá de nuevo.';
+  if (status >= 500) return 'Tuvimos un problema de nuestro lado. Probá de nuevo en un momento.';
+  return 'Algo salió mal. Revisá los datos e intentá de nuevo.';
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = obtenerToken();
-  const res = await fetch(`${BASE}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(fichaActivaId ? { 'X-Alumno-Id': fichaActivaId } : {}),
-    },
-    ...init,
-  });
+
+  let res: Response;
+  try {
+    res = await fetch(`${BASE}${path}`, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(fichaActivaId ? { 'X-Alumno-Id': fichaActivaId } : {}),
+      },
+      ...init,
+    });
+  } catch {
+    // fetch rechaza solo por RED (server caído, sin internet), no por status HTTP.
+    throw new ApiError(0, mensajeAmigable(0));
+  }
 
   // Token vencido o inválido: a login de nuevo (si NO había token era un
   // login fallido y el error se muestra en el formulario, no acá)
@@ -47,13 +69,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   }
 
   if (!res.ok) {
-    // ASP.NET devuelve ProblemDetails (JSON) en errores; intentamos leerlo
+    // ASP.NET devuelve ProblemDetails (JSON) en errores de negocio con un `detail`
+    // legible (en español): ese lo mostramos tal cual. Para el resto (500 sin detalle,
+    // 403, etc.) usamos un mensaje amigable en vez del "Error 500" técnico.
     const body = await res.json().catch(() => undefined);
-    const message =
-      (body as { title?: string; detail?: string } | undefined)?.detail ??
-      (body as { title?: string } | undefined)?.title ??
-      `Error ${res.status}`;
-    throw new ApiError(res.status, message, body);
+    const detail = (body as { detail?: string } | undefined)?.detail;
+    throw new ApiError(res.status, detail ?? mensajeAmigable(res.status), body);
   }
 
   // 204 No Content no trae body

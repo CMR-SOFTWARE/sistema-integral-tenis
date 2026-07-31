@@ -16,7 +16,7 @@ export default function CancelacionesPage() {
       .catch((e) => setError(e instanceof Error ? e.message : 'Error cargando cancelaciones'));
   }, []);
 
-  if (error) return <div className={s.error}>{error} — ¿está corriendo la API?</div>;
+  if (error) return <div className={s.error}>{error}</div>;
   if (!cancelaciones) return <div className={s.vacio}>Cargando…</div>;
 
   const textoWhatsapp = (c: Cancelacion) =>

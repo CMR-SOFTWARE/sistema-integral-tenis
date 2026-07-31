@@ -50,13 +50,18 @@ export default function AlumnosPage() {
   // Buscador (nombre/apellido/DNI) + filtro por profe de cabecera: client-side
   // sobre la lista ya cargada (categoría/estado siguen filtrándose en el back).
   const termino = busqueda.trim().toLowerCase();
-  const visibles = alumnos.filter((a) => {
-    const coincideTexto = termino === ''
-      || `${a.nombre} ${a.apellido}`.toLowerCase().includes(termino)
-      || (a.dni ?? '').toLowerCase().includes(termino);
-    const coincideProfe = filtroProfe === 'todos' || a.profesorUserId === filtroProfe;
-    return coincideTexto && coincideProfe;
-  });
+  const visibles = alumnos
+    .filter((a) => {
+      const coincideTexto = termino === ''
+        || `${a.nombre} ${a.apellido}`.toLowerCase().includes(termino)
+        || (a.dni ?? '').toLowerCase().includes(termino);
+      const coincideProfe = filtroProfe === 'todos' || a.profesorUserId === filtroProfe;
+      return coincideTexto && coincideProfe;
+    })
+    // Orden alfabético por apellido y después nombre (es-AR, sin distinguir acentos/mayús).
+    .sort((a, b) =>
+      a.apellido.localeCompare(b.apellido, 'es', { sensitivity: 'base' })
+      || a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
 
   const avisar = (msg: string) => {
     setToast(msg);
@@ -186,7 +191,7 @@ export default function AlumnosPage() {
       </div>
 
       <div className={s.tarjeta}>
-        {error && <div className={s.error}>{error} — ¿está corriendo la API? (dotnet run)</div>}
+        {error && <div className={s.error}>{error}</div>}
         {cargando && !error && <div className={s.vacio}>Cargando…</div>}
         {!cargando && !error && (
           <table className={s.tabla}>
@@ -211,7 +216,7 @@ export default function AlumnosPage() {
                       <div className={s.celdaAlumno}>
                         <Avatar nombre={a.nombre} apellido={a.apellido} fotoUrl={a.fotoUrl} size={40} radius={12} />
                         <div>
-                          <div className={s.nombre}>{a.nombre} {a.apellido}</div>
+                          <div className={s.nombre}>{a.apellido}, {a.nombre}</div>
                           <div className={s.dni}>
                             {a.dni ? `DNI ${a.dni}` : 'Sin DNI'}{a.esMenor ? (a.tutorId ? ' · menor' : ' · menor (falta tutor)') : ''}
                             {enFamilia(a) ? ` · 👪 Familia (${conteoFamilia.get(a.familiaId!)})` : ''}

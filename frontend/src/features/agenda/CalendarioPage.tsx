@@ -158,7 +158,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
       {esOwner && <PanelSolicitudesHorario onCambio={() => void refrescar()} />}
       {esOwner && <PanelClasesSueltas onCambio={() => void activo.recargar()} />}
 
-      {activo.error && <div className={s.error}>{activo.error} — ¿está corriendo la API?</div>}
+      {activo.error && <div className={s.error}>{activo.error}</div>}
       {activo.cargando && <div className={s.vacio}>Cargando…</div>}
 
       {/* Modo TODOS: una sola grilla (Semana) o un solo mes. */}
