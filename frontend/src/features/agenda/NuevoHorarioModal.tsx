@@ -7,6 +7,7 @@ import type { Grupo } from '../grupos/types';
 import { DIAS, horaCorta } from './types';
 import type { CreateHorario, DiaSemana, Horario, Sede } from './types';
 import { useProfesores } from '../profesores/useProfesores';
+import { obtenerSesion } from '../auth/sesion';
 import s from '../alumnos/NuevoAlumnoModal.module.css';
 
 interface Props {
@@ -34,6 +35,8 @@ export default function NuevoHorarioModal({ sedes, onClose, onCrear, base }: Pro
   const [profesorId, setProfesorId] = useState(base?.profesorUserId ?? '');
   const [valorHora, setValorHora] = useState(base?.valorHoraProfe?.toString() ?? '');
   const { profes } = useProfesores();
+  // El profe empleado da SUS clases: el horario queda a su nombre (lo asigna el back).
+  const esStaff = obtenerSesion()?.rol === 'staff';
   const [grupos, setGrupos] = useState<Grupo[]>([]);
   const [alumnos, setAlumnos] = useState<Alumno[]>([]);
   const [enviando, setEnviando] = useState(false);
@@ -157,31 +160,39 @@ export default function NuevoHorarioModal({ sedes, onClose, onCrear, base }: Pro
             {[30, 45, 60, 90, 120].map((m) => <option key={m} value={m}>{m}'</option>)}
           </select>
         </label>
-        <label className={s.campo}>
-          <span>Profe (opcional)</span>
-          <select
-            value={profesorId}
-            onChange={(e) => {
-              const id = e.target.value;
-              setProfesorId(id);
-              // Al elegir un profe, pre-cargamos su valor hora base (lo podés
-              // pisar para esta clase, ej. menores que se pagan menos).
-              const p = profes.find((x) => x.userId === id);
-              setValorHora(p?.valorHora != null ? String(p.valorHora) : '');
-              // Y su CLUB: la sede se pone sola en la del profe (podés cambiarla).
-              if (p?.sedeId && sedes.some((x) => x.id === p.sedeId)) {
-                setSedeId(p.sedeId);
-                setCanchaId('');
-              }
-            }}
-          >
-            <option value="">Sin asignar</option>
-            {profes.map((p) => (
-              <option key={p.userId} value={p.userId}>{p.nombre}{p.esDueño ? ' (vos)' : ''}</option>
-            ))}
-          </select>
-        </label>
-        {profesorId && (
+        {/* El staff no elige profe: la clase queda a su nombre (la asigna el back). */}
+        {esStaff ? (
+          <label className={s.campo}>
+            <span>Profe</span>
+            <input type="text" value="Vos (queda a tu nombre)" disabled />
+          </label>
+        ) : (
+          <label className={s.campo}>
+            <span>Profe (opcional)</span>
+            <select
+              value={profesorId}
+              onChange={(e) => {
+                const id = e.target.value;
+                setProfesorId(id);
+                // Al elegir un profe, pre-cargamos su valor hora base (lo podés
+                // pisar para esta clase, ej. menores que se pagan menos).
+                const p = profes.find((x) => x.userId === id);
+                setValorHora(p?.valorHora != null ? String(p.valorHora) : '');
+                // Y su CLUB: la sede se pone sola en la del profe (podés cambiarla).
+                if (p?.sedeId && sedes.some((x) => x.id === p.sedeId)) {
+                  setSedeId(p.sedeId);
+                  setCanchaId('');
+                }
+              }}
+            >
+              <option value="">Sin asignar</option>
+              {profes.map((p) => (
+                <option key={p.userId} value={p.userId}>{p.nombre}{p.esDueño ? ' (vos)' : ''}</option>
+              ))}
+            </select>
+          </label>
+        )}
+        {!esStaff && profesorId && (
           <label className={s.campo}>
             <span>Valor hora del profe</span>
             <input

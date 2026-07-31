@@ -467,6 +467,23 @@ public class HorarioServiceTests
     }
 
     [Fact]
+    public async Task Crear_Staff_QuedaAsuNombre()
+    {
+        // El horario que crea un empleado queda a SU nombre (así aparece en su agenda,
+        // que muestra las clases propias), aunque no elija profe.
+        var miSede = Guid.NewGuid();
+        var yo = ComoStaffDe(miSede);
+        _sedes.Setup(s => s.SedeDeCanchaAsync(Cancha2, It.IsAny<CancellationToken>())).ReturnsAsync(miSede);
+        Horario? creado = null;
+        _repo.Setup(r => r.AgregarAsync(It.IsAny<Horario>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync((Horario h, CancellationToken _) => { creado = h; return h; });
+
+        await _service.CrearAsync(Dto(Cancha2, new TimeOnly(10, 0)));
+
+        Assert.Equal(yo, creado!.ProfesorUserId);
+    }
+
+    [Fact]
     public async Task Crear_Staff_EnCanchaDeOtroClub_Lanza()
     {
         ComoStaffDe(Guid.NewGuid());
