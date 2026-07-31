@@ -176,14 +176,13 @@ export default function AlumnosPage() {
 
         <div className={s.spacer} />
         <div className={s.contador}>{visibles.length} alumnos</div>
-        {esOwner && (
-          <button className={s.btnNuevo} onClick={() => setModalNuevo(true)}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            Nuevo alumno
-          </button>
-        )}
+        {/* El dueño Y el profe empleado pueden cargar alumnos (el staff queda auto-asignado). */}
+        <button className={s.btnNuevo} onClick={() => setModalNuevo(true)}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Nuevo alumno
+        </button>
       </div>
 
       <div className={s.tarjeta}>

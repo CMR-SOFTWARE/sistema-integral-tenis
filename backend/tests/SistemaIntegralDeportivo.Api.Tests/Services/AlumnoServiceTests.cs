@@ -139,6 +139,23 @@ public class AlumnoServiceTests
         Assert.Equal(mio.Id, unico.Id);
     }
 
+    [Fact]
+    public async Task CrearAsync_Staff_SeAutoAsignaComoTitular_IgnorandoLoQueMande()
+    {
+        // El profe EMPLEADO solo carga alumnos PROPIos: la ficha queda con él como
+        // titular aunque el DTO traiga otro profe (no puede regalar el alumno a otro).
+        var yo = Guid.NewGuid();
+        _usuario.Setup(u => u.EsStaff).Returns(true);
+        _usuario.Setup(u => u.UserId).Returns(yo);
+        var dto = AlumnoMayor();
+        dto.ProfesorUserId = Guid.NewGuid(); // intenta asignarlo a otro
+
+        await _service.CrearAsync(dto);
+
+        _repo.Verify(r => r.AgregarAsync(
+            It.Is<Alumno>(a => a.ProfesorUserId == yo), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
     // ─────────────────────────────────────────────
     // Regla del menor (modelo-alumnos.md §3.2, Ley 25.326)
     // ─────────────────────────────────────────────
