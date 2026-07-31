@@ -33,6 +33,12 @@ public class AlumnoService : IAlumnoService
 
     public async Task<AlumnoCreadoDto> CrearAsync(CreateAlumnoDto dto, CancellationToken ct = default)
     {
+        // El profe EMPLEADO solo carga alumnos PROPIos: se auto-asigna como titular,
+        // ignorando lo que venga (no puede regalarle el alumno a otro profe). El dueño
+        // elige libremente. La ficha del staff hereda su club en las reglas de abajo.
+        if (_usuario.EsStaff)
+            dto.ProfesorUserId = _usuario.UserId;
+
         // Reglas de la ficha ANTES de tocar Identity (si algo falla acá, no nace usuario)
         if (!string.IsNullOrWhiteSpace(dto.Dni) && await _repo.ExisteDniAsync(dto.Dni, ct))
             throw new ReglaDeNegocioException($"Ya existe un alumno con DNI {dto.Dni}.");

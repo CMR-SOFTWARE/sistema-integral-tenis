@@ -49,9 +49,12 @@ public class AlumnosController : ControllerBase
         return alumno is null ? NotFound() : Ok(alumno);
     }
 
-    /// <summary>POST api/alumnos — alta CON credenciales (la temporal viaja una sola vez).</summary>
+    /// <summary>
+    /// POST api/alumnos — alta CON credenciales (la temporal viaja una sola vez).
+    /// El dueño Y el profe empleado pueden crear; el staff queda auto-asignado como
+    /// titular del alumno (lo fuerza el service). Editar/cambiar profe siguen siendo del dueño.
+    /// </summary>
     [HttpPost]
-    [Authorize(Policy = "Owner")]
     public async Task<ActionResult<AlumnoCreadoDto>> Crear(CreateAlumnoDto dto, CancellationToken ct)
     {
         try

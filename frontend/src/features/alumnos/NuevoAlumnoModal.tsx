@@ -4,6 +4,7 @@ import { ApiError } from '../../lib/api';
 import CategoriaOptions from './CategoriaOptions';
 import type { AlumnoCreado, Categoria, CreateAlumno, RelacionTutor } from './types';
 import { useProfesores } from '../profesores/useProfesores';
+import { obtenerSesion } from '../auth/sesion';
 import s from './NuevoAlumnoModal.module.css';
 
 interface Props {
@@ -32,6 +33,8 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { profes } = useProfesores();
+  // El profe empleado no elige titular: el back lo auto-asigna a él mismo.
+  const esStaff = obtenerSesion()?.rol === 'staff';
 
   // Ahora lo marca el profe con un checkbox (la fecha es opcional)
   const esMenor = form.esMenor;
@@ -148,15 +151,17 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
             placeholder="Ej: 30000"
           />
         </label>
-        <label className={s.campo}>
-          <span>Profe titular (opcional)</span>
-          <select value={form.profesorId} onChange={(e) => set('profesorId', e.target.value)}>
-            <option value="">Sin asignar</option>
-            {profes.map((p) => (
-              <option key={p.userId} value={p.userId}>{p.nombre}{p.esDueño ? ' (vos)' : ''}</option>
-            ))}
-          </select>
-        </label>
+        {!esStaff && (
+          <label className={s.campo}>
+            <span>Profe titular (opcional)</span>
+            <select value={form.profesorId} onChange={(e) => set('profesorId', e.target.value)}>
+              <option value="">Sin asignar</option>
+              {profes.map((p) => (
+                <option key={p.userId} value={p.userId}>{p.nombre}{p.esDueño ? ' (vos)' : ''}</option>
+              ))}
+            </select>
+          </label>
+        )}
         <label className={s.campo}>
           <span>&nbsp;</span>
           <label className={s.check}>
