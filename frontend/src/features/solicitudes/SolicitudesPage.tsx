@@ -5,6 +5,7 @@ import { CAT_COLOR, CAT_LABEL, avatarColor, iniciales } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import type { SolicitudPendiente } from './types';
 import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
+import { obtenerSesion } from '../auth/sesion';
 import s from './SolicitudesPage.module.css';
 
 /**
@@ -18,6 +19,8 @@ export default function SolicitudesPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [procesando, setProcesando] = useState<string | null>(null); // id en curso
   const confirmar = useConfirmar();
+  // Los grupos son del dueño: el staff promueve al alumno asignándole un horario.
+  const esStaff = obtenerSesion()?.rol === 'staff';
 
   const cargar = useCallback(() => {
     api.get<SolicitudPendiente[]>('/solicitudes')
@@ -99,8 +102,8 @@ export default function SolicitudesPage() {
                 {sol.mensaje && <div className={s.mensaje}>"{sol.mensaje}"</div>}
               </div>
               <div className={s.acciones}>
-                <Link to="/grupos" className={s.btnAprobar}>A un grupo</Link>
-                <Link to="/horarios" className={s.btnAprobar}>A un horario</Link>
+                {!esStaff && <Link to="/agenda?tab=grupos" className={s.btnAprobar}>A un grupo</Link>}
+                <Link to="/agenda?tab=calendario" className={s.btnAprobar}>A un horario</Link>
                 <button
                   className={s.btnRechazar}
                   disabled={procesando === sol.id}

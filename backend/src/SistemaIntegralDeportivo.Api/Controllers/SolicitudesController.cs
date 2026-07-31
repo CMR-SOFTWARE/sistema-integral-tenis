@@ -8,7 +8,7 @@ namespace SistemaIntegralDeportivo.Api.Controllers;
 
 /// <summary>Lado PROFE de las solicitudes: ver pendientes, aprobar, rechazar.</summary>
 [ApiController]
-[Authorize(Policy = "Owner")]
+[Authorize(Policy = "Profesor")] // dueño Y staff; el service acota al staff a SU lista de espera
 [Route("api/solicitudes")]
 public class SolicitudesController : ControllerBase
 {

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { obtenerSesion } from '../auth/sesion';
 import { api } from '../../lib/api';
 import AlumnosPage from './AlumnosPage';
 import SolicitudesPage from '../solicitudes/SolicitudesPage';
@@ -10,24 +9,20 @@ type Tab = 'alumnos' | 'espera';
 /**
  * Sección Alumnos con pestañas (como "Mi academia"): "Alumnos" (los que tienen
  * clase) y "Lista de espera" (miembros sin clase todavía). Solo se monta la
- * pestaña activa. El profe empleado (staff) solo ve su lista de alumnos.
+ * pestaña activa. El profe empleado (staff) ve las mismas pestañas, pero acotadas
+ * a SUS alumnos (el back filtra por profe): así ve al que recién cargó (nace EnEspera).
  */
 export default function AlumnosSeccionPage() {
-  const esOwner = obtenerSesion()?.rol === 'owner';
   const [tab, setTab] = useState<Tab>('alumnos');
   const [enEspera, setEnEspera] = useState(0);
 
   // Contador para el badge de la pestaña (barato: un COUNT). Se refresca al
   // cambiar de pestaña (p. ej. tras quitar a alguien de la espera).
   useEffect(() => {
-    if (!esOwner) return;
     api.get<{ pendientes: number }>('/solicitudes/conteo')
       .then((c) => setEnEspera(c.pendientes))
       .catch(() => setEnEspera(0));
-  }, [tab, esOwner]);
-
-  // Staff: la lista de espera es del dueño → solo mostramos Alumnos, sin pestañas.
-  if (!esOwner) return <AlumnosPage />;
+  }, [tab]);
 
   return (
     <div>

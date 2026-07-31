@@ -157,6 +157,9 @@ public class SesionDto
     /// <summary>Estado del club propio ("PendientePago" manda al checkout); null si no tiene.</summary>
     public string? EstadoTenant { get; set; }
 
+    /// <summary>El club (sede) del profe EMPLEADO; el front le ofrece solo esas canchas. Null para el dueño.</summary>
+    public Guid? SedeId { get; set; }
+
     /// <summary>Nació con contraseña inicial del profe (informativo).</summary>
     public bool DebeCambiarPassword { get; set; }
 

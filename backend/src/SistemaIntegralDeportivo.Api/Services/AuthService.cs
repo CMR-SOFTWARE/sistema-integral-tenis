@@ -36,6 +36,7 @@ public class AuthService : IAuthService
 
         Tenant? tenantDeTrabajo = null;
         RolTenant? rol = null;
+        Guid? sedeStaff = null; // el club del empleado (el dueño no tiene sede fija)
         var estadoTenant = tenantPropio?.Estado.ToString();
 
         if (tenantPropio?.Estado == EstadoTenant.Activo)
@@ -56,6 +57,7 @@ public class AuthService : IAuthService
                     tenantDeTrabajo = academia;
                     rol = RolTenant.Staff;
                     estadoTenant = academia.Estado.ToString();
+                    sedeStaff = membresia.SedeId; // su club, para acotarle las canchas
                 }
             }
         }
@@ -81,6 +83,7 @@ public class AuthService : IAuthService
             },
             EsAdmin = usuario.EsAdminPlataforma,
             EstadoTenant = estadoTenant,
+            SedeId = sedeStaff,
             DebeCambiarPassword = usuario.DebeCambiarPassword,
             Dni = usuario.Dni,
             Telefono = usuario.PhoneNumber,

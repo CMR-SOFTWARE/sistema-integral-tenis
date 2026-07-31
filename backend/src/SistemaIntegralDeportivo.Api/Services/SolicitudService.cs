@@ -16,15 +16,17 @@ public class SolicitudService : ISolicitudService
     private readonly IAlumnoRepository _alumnoRepo;
     private readonly ITenantRepository _tenants;
     private readonly ITenantActual _tenantActual;
+    private readonly IUsuarioActual _usuario;
 
     public SolicitudService(
         IAlumnoService alumnos, IAlumnoRepository alumnoRepo,
-        ITenantRepository tenants, ITenantActual tenantActual)
+        ITenantRepository tenants, ITenantActual tenantActual, IUsuarioActual usuario)
     {
         _alumnos = alumnos;
         _alumnoRepo = alumnoRepo;
         _tenants = tenants;
         _tenantActual = tenantActual;
+        _usuario = usuario;
     }
 
     public async Task<IReadOnlyList<MiSolicitudDto>> CrearAsync(
@@ -73,8 +75,15 @@ public class SolicitudService : ISolicitudService
 
     /// <summary>Lista de espera del club: las fichas EnEspera (miembros sin clase todavía).</summary>
     public async Task<IReadOnlyList<SolicitudPendienteDto>> PendientesAsync(
-        CancellationToken ct = default) =>
-        (await _alumnoRepo.ListarAsync(null, EstadoAlumno.EnEspera, ct))
+        CancellationToken ct = default)
+    {
+        IEnumerable<Alumno> fichas = await _alumnoRepo.ListarAsync(null, EstadoAlumno.EnEspera, ct);
+
+        // El profe EMPLEADO ve solo SU lista de espera (los que él cargó); el dueño, toda.
+        if (_usuario.EsStaff)
+            fichas = fichas.Where(a => a.ProfesorUserId == _usuario.UserId);
+
+        return fichas
             .Select(a => new SolicitudPendienteDto
             {
                 Id = a.Id, // ahora es el id de la FICHA (para quitarla de la lista)
@@ -90,9 +99,13 @@ public class SolicitudService : ISolicitudService
                 CreadoEl = a.CreadoEl,
             })
             .ToList();
+    }
 
-    public Task<int> ContarPendientesAsync(CancellationToken ct = default) =>
-        _alumnoRepo.ContarPorEstadoAsync(EstadoAlumno.EnEspera, ct);
+    public async Task<int> ContarPendientesAsync(CancellationToken ct = default) =>
+        // El staff cuenta solo los suyos (reusa el filtro de arriba); el dueño, un COUNT directo.
+        _usuario.EsStaff
+            ? (await PendientesAsync(ct)).Count
+            : await _alumnoRepo.ContarPorEstadoAsync(EstadoAlumno.EnEspera, ct);
 
     /// <summary>Quitar de la lista de espera: borra la ficha EnEspera (conserva su login).</summary>
     public async Task QuitarDeEsperaAsync(Guid alumnoId, CancellationToken ct = default)
@@ -100,6 +113,10 @@ public class SolicitudService : ISolicitudService
         var ficha = await _alumnoRepo.ObtenerAsync(alumnoId, ct);
         if (ficha is null || ficha.Estado != EstadoAlumno.EnEspera)
             throw new ReglaDeNegocioException("Ese registro no está en la lista de espera.");
+
+        // El staff solo quita de SU lista de espera.
+        if (_usuario.EsStaff && ficha.ProfesorUserId != _usuario.UserId)
+            throw new ReglaDeNegocioException("Ese registro no es de tu lista de espera.");
 
         // Borra la ficha y su historial (que no tiene, es un miembro sin clase). El
         // Usuario NO se toca: la persona puede unirse a otro club o volver a intentar.

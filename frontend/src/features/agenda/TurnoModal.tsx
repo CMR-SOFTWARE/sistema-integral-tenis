@@ -125,7 +125,10 @@ export default function TurnoModal({
           <div className={s.horarioAcciones}>
             <button className={s.btnHorario} onClick={() => onEditarHorario(horario)}>Editar</button>
             <button className={s.btnHorario} onClick={() => onDuplicarHorario?.(horario)}>Duplicar</button>
-            <button className={s.btnHorarioBaja} onClick={() => onDesactivarHorario?.(horario)}>Desactivar</button>
+            {/* Desactivar es del dueño: al staff no se le pasa la callback. */}
+            {onDesactivarHorario && (
+              <button className={s.btnHorarioBaja} onClick={() => onDesactivarHorario(horario)}>Desactivar</button>
+            )}
           </div>
           <p className={s.notaMini}>Afecta la clase recurrente (todas las semanas), no solo este día.</p>
         </div>
