@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useAlumnos } from './useAlumnos';
 import NuevoAlumnoModal from './NuevoAlumnoModal';
 import EditarAlumnoModal from './EditarAlumnoModal';
@@ -38,6 +39,16 @@ export default function AlumnosPage() {
   const { profes } = useProfesores();
   // El profe empleado ve la lista y la ficha, pero no gestiona alumnos (eso es del dueño).
   const esOwner = obtenerSesion()?.rol === 'owner';
+
+  // Deep-link desde el inicio (Accesos directos): /alumnos?nuevo=1 abre el alta.
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    if (params.get('nuevo') !== '1') return;
+    setModalNuevo(true);
+    const next = new URLSearchParams(params);
+    next.delete('nuevo');
+    setParams(next, { replace: true });
+  }, [params, setParams]);
 
   // Cuenta familiar: fichas que comparten familiaId (mismo login) son una familia.
   // Se calcula sobre la lista COMPLETA (el vínculo no depende de los filtros).

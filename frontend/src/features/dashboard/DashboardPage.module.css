@@ -91,6 +91,9 @@
   padding: 20px;
 }
 
+/* Card que va sola en su fila (a lo ancho): necesita separación de la fila siguiente. */
+.tarjetaSola { margin-bottom: 16px; }
+
 .tarjetaHeader {
   display: flex;
   align-items: center;
