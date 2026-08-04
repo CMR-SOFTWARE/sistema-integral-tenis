@@ -27,14 +27,18 @@ export default function DetalleEmpleadoModal({ empleado, onClose }: Props) {
     ? `${new Date(empleado.fechaNacimiento).toLocaleDateString('es-AR')} (${edad(empleado.fechaNacimiento)} años)`
     : '—';
 
+  // El director trabaja en todos los clubes y no cobra valor hora: esas dos filas
+  // solo tienen sentido para un empleado.
   const datos: [string, string][] = [
-    ['Club', empleado.sedeNombre ?? 'Sin asignar'],
+    ['Club', empleado.esDueño ? 'Todos' : empleado.sedeNombre ?? 'Sin asignar'],
     ['Celular (login)', empleado.telefono || '—'],
     ['Email', empleado.email || '—'],
     ['DNI', empleado.dni ?? '—'],
     ['Nacimiento', nac],
-    ['Valor hora', empleado.valorHora != null ? `${formatoPlata(empleado.valorHora)} / hora` : 'Sin definir'],
-    ['Alta en el club', new Date(empleado.creadoEl).toLocaleDateString('es-AR')],
+    ...(empleado.esDueño
+      ? []
+      : [['Valor hora', empleado.valorHora != null ? `${formatoPlata(empleado.valorHora)} / hora` : 'Sin definir'] as [string, string]]),
+    [empleado.esDueño ? 'Club creado el' : 'Alta en el club', new Date(empleado.creadoEl).toLocaleDateString('es-AR')],
   ];
 
   return (
@@ -44,18 +48,31 @@ export default function DetalleEmpleadoModal({ empleado, onClose }: Props) {
         <div>
           <div className={s.nombre}>{empleado.nombre} {empleado.apellido}</div>
           <div className={s.chips}>
-            <span className={s.chip} style={{ background: '#e8f0fe', color: '#1a56db' }}>Profesor</span>
+            <span className={s.chip} style={{ background: '#e8f0fe', color: '#1a56db' }}>
+              {empleado.esDueño ? 'Director' : 'Profesor'}
+            </span>
             {empleado.sedeNombre && (
               <span className={s.chip} style={{ background: '#eef7f0', color: '#0e6b3c' }}>{empleado.sedeNombre}</span>
             )}
-            <span
-              className={s.chip}
-              style={empleado.activo
-                ? { background: '#e7f6ec', color: '#0e6b3c' }
-                : { background: '#f3f4f6', color: '#6b7280' }}
-            >
-              {empleado.activo ? 'Activo' : 'Inactivo'}
-            </span>
+            {empleado.esDueño ? (
+              <span
+                className={s.chip}
+                style={empleado.daClases
+                  ? { background: '#e7f6ec', color: '#0e6b3c' }
+                  : { background: '#eef2ff', color: '#4f46e5' }}
+              >
+                {empleado.daClases ? 'Da clases' : 'Solo gestiona'}
+              </span>
+            ) : (
+              <span
+                className={s.chip}
+                style={empleado.activo
+                  ? { background: '#e7f6ec', color: '#0e6b3c' }
+                  : { background: '#f3f4f6', color: '#6b7280' }}
+              >
+                {empleado.activo ? 'Activo' : 'Inactivo'}
+              </span>
+            )}
           </div>
         </div>
       </div>

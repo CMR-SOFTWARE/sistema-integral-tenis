@@ -11,13 +11,13 @@ import PanelClasesSueltas from './PanelClasesSueltas';
 import PanelSolicitudesHorario from './PanelSolicitudesHorario';
 import NuevoHorarioModal from './NuevoHorarioModal';
 import EditarHorarioModal from './EditarHorarioModal';
-import { lunesDe, rangoSemana, sumarDias } from './types';
+import { aISO, fechaLarga, lunesDe, rangoSemana, sumarDias } from './types';
 import type { CreateHorario, Horario, Turno, UpdateHorario } from './types';
 import { MESES } from '../cuotas/types';
 import { useBloqueos } from '../bloqueos/useBloqueos';
 import s from './CalendarioPage.module.css';
 
-type Vista = 'semana' | 'mes';
+type Vista = 'dia' | 'semana' | 'mes';
 
 interface Props {
   /** Filtros compartidos de la Agenda: sede (nombre) y profe (userId); '' = todos. */
@@ -34,12 +34,17 @@ export default function CalendarioPage({ sede, profe }: Props) {
   const ahora = new Date();
   const [vista, setVista] = useState<Vista>('semana');
   const [lunes, setLunes] = useState(() => lunesDe(new Date()));
+  const [dia, setDia] = useState(() => aISO(new Date())); // cursor de la vista Día
   const [mesCursor, setMesCursor] = useState({ anio: ahora.getFullYear(), mes: ahora.getMonth() + 1 });
 
+  // La vista Día se sirve de la MISMA semana que ya pide el backend: se pide la
+  // semana que contiene al día y se muestra esa sola columna. Un endpoint menos.
+  const lunesActivo = vista === 'dia' ? lunesDe(new Date(`${dia}T00:00:00`)) : lunes;
+
   // Solo la vista activa consulta (la otra queda deshabilitada).
-  const semana = useSemana(lunes, vista === 'semana');
+  const semana = useSemana(lunesActivo, vista !== 'mes');
   const mes = useMes(mesCursor.anio, mesCursor.mes, vista === 'mes');
-  const activo = vista === 'semana' ? semana : mes;
+  const activo = vista === 'mes' ? mes : semana;
 
   const { bloqueos } = useBloqueos();
   const { profes, nombreDe } = useProfesores();
@@ -67,7 +72,11 @@ export default function CalendarioPage({ sede, profe }: Props) {
     : [];
   const haySinProfe = porProfe && profe === '' && visibles.some((t) => t.profesorUserId === null);
 
-  const dias = useMemo(() => Array.from({ length: 7 }, (_, i) => sumarDias(lunes, i)), [lunes]);
+  // En vista Día, una sola columna; en Semana, las siete.
+  const dias = useMemo(
+    () => (vista === 'dia' ? [dia] : Array.from({ length: 7 }, (_, i) => sumarDias(lunes, i))),
+    [vista, dia, lunes],
+  );
   const semanaActual = lunesDe(new Date()) === lunes;
   const mesActual = mesCursor.anio === ahora.getFullYear() && mesCursor.mes === ahora.getMonth() + 1;
   const turnoAbierto: Turno | null = activo.turnos.find((t) => t.id === abierto) ?? null;
@@ -101,13 +110,19 @@ export default function CalendarioPage({ sede, profe }: Props) {
       return { anio: Math.floor(total / 12), mes: (total % 12) + 1 };
     });
 
-  const retroceder = () => (vista === 'semana' ? setLunes(sumarDias(lunes, -7)) : cambiarMes(-1));
-  const avanzar = () => (vista === 'semana' ? setLunes(sumarDias(lunes, 7)) : cambiarMes(1));
-  const volverAHoy = () =>
-    vista === 'semana'
-      ? setLunes(lunesDe(new Date()))
-      : setMesCursor({ anio: ahora.getFullYear(), mes: ahora.getMonth() + 1 });
-  const esHoy = vista === 'semana' ? semanaActual : mesActual;
+  const mover = (pasos: number) => {
+    if (vista === 'dia') setDia(sumarDias(dia, pasos));
+    else if (vista === 'semana') setLunes(sumarDias(lunes, pasos * 7));
+    else cambiarMes(pasos);
+  };
+  const retroceder = () => mover(-1);
+  const avanzar = () => mover(1);
+  const volverAHoy = () => {
+    if (vista === 'dia') setDia(aISO(new Date()));
+    else if (vista === 'semana') setLunes(lunesDe(new Date()));
+    else setMesCursor({ anio: ahora.getFullYear(), mes: ahora.getMonth() + 1 });
+  };
+  const esHoy = vista === 'dia' ? dia === aISO(new Date()) : vista === 'semana' ? semanaActual : mesActual;
 
   // Tocar un horario cambia los turnos generados → refrescamos la semana/mes también.
   const refrescar = async () => { await recargarH(); await activo.recargar(); };
@@ -130,7 +145,11 @@ export default function CalendarioPage({ sede, profe }: Props) {
       <div className={s.toolbar}>
         <button className={s.nav} onClick={retroceder}>‹</button>
         <div className={s.rango}>
-          {vista === 'semana' ? `Semana del ${rangoSemana(lunes)}` : `${MESES[mesCursor.mes - 1]} ${mesCursor.anio}`}
+          {vista === 'dia'
+            ? fechaLarga(dia)
+            : vista === 'semana'
+              ? `Semana del ${rangoSemana(lunes)}`
+              : `${MESES[mesCursor.mes - 1]} ${mesCursor.anio}`}
           {!esHoy && (
             <button className={s.hoy} onClick={volverAHoy}>volver a hoy</button>
           )}
@@ -138,6 +157,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
         <button className={s.nav} onClick={avanzar}>›</button>
 
         <div className={s.toggle}>
+          <button className={vista === 'dia' ? s.toggleActivo : s.toggleBtn} onClick={() => setVista('dia')}>Día</button>
           <button className={vista === 'semana' ? s.toggleActivo : s.toggleBtn} onClick={() => setVista('semana')}>Semana</button>
           <button className={vista === 'mes' ? s.toggleActivo : s.toggleBtn} onClick={() => setVista('mes')}>Mes</button>
         </div>
@@ -174,8 +194,8 @@ export default function CalendarioPage({ sede, profe }: Props) {
       {activo.error && <div className={s.error}>{activo.error}</div>}
       {activo.cargando && <div className={s.vacio}>Cargando…</div>}
 
-      {/* Modo TODOS: una sola grilla (Semana) o un solo mes. */}
-      {!activo.cargando && !activo.error && !porProfe && vista === 'semana' && (
+      {/* Modo TODOS: una sola grilla (Día o Semana) o un solo mes. */}
+      {!activo.cargando && !activo.error && !porProfe && vista !== 'mes' && (
         <GrillaSemana dias={dias} turnos={visibles} bloqueos={bloqueos} onAbrirTurno={setAbierto} nombreDe={nombreDe} />
       )}
 
@@ -198,7 +218,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
             return (
               <div key={p.userId} className={s.grupoProfe}>
                 <div className={s.grupoProfeTitulo}>{p.nombre}{p.esDueño ? ' (vos)' : ''}</div>
-                {vista === 'semana' ? (
+                {vista !== 'mes' ? (
                   <GrillaSemana dias={dias} turnos={suyos} bloqueos={bloqueos} onAbrirTurno={setAbierto} nombreDe={nombreDe} />
                 ) : (
                   <VistaMes
@@ -213,7 +233,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
           {haySinProfe && (
             <div className={s.grupoProfe}>
               <div className={s.grupoProfeTitulo}>Sin profe</div>
-              {vista === 'semana' ? (
+              {vista !== 'mes' ? (
                 <GrillaSemana dias={dias} turnos={visibles.filter((t) => !t.profesorUserId)} bloqueos={bloqueos} onAbrirTurno={setAbierto} nombreDe={nombreDe} />
               ) : (
                 <VistaMes
@@ -232,10 +252,12 @@ export default function CalendarioPage({ sede, profe }: Props) {
         </div>
       )}
 
-      {!activo.cargando && !activo.error && !porProfe && vista === 'semana' && activo.turnos.length === 0 && (
+      {!activo.cargando && !activo.error && !porProfe && vista !== 'mes' &&
+       (vista === 'dia' ? !visibles.some((t) => t.fecha === dia) : activo.turnos.length === 0) && (
         <div className={s.vacioCard}>
-          No hay turnos esta semana. Los turnos nacen de los <b>horarios</b>: tocá
-          <b> "+ Nuevo horario" </b> para armar una clase y esta pantalla la genera sola.
+          No hay turnos {vista === 'dia' ? 'este día' : 'esta semana'}. Los turnos nacen
+          de los <b>horarios</b>: tocá <b>"+ Nuevo horario"</b> para armar una clase y
+          esta pantalla la genera sola.
         </div>
       )}
 

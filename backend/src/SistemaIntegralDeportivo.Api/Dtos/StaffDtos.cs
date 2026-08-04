@@ -15,6 +15,14 @@ public class StaffDto
     public string? Dni { get; set; }
     public DateTime? FechaNacimiento { get; set; }
     public bool Activo { get; set; }
+    /// <summary>
+    /// Es el DUEÑO del club (el Director), no un empleado: aparece en el listado como
+    /// uno más pero no tiene membresía (Id vacío), ni valor hora, ni club fijo, y no
+    /// se lo puede desactivar ni eliminar.
+    /// </summary>
+    public bool EsDueño { get; set; }
+    /// <summary>¿Da clases además de gestionar? (solo aplica al dueño; sale del tenant)</summary>
+    public bool DaClases { get; set; }
     /// <summary>Valor hora base (lo que se le paga por hora de clase); null = sin definir.</summary>
     public decimal? ValorHora { get; set; }
     /// <summary>El club (sede) donde trabaja; null = sin asignar.</summary>

@@ -5,6 +5,7 @@ import CategoriaOptions from './CategoriaOptions';
 import { subPorEdad } from './types';
 import type { Alumno, Categoria, Modalidad, RelacionTutor, UpdateAlumno } from './types';
 import { useProfesores } from '../profesores/useProfesores';
+import { useSedes } from '../agenda/hooks';
 import s from './NuevoAlumnoModal.module.css';
 
 interface Props {
@@ -29,6 +30,7 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
     categoria: alumno.categoria,
     modalidad: alumno.modalidad ?? 'Mensual',
     arancel: alumno.arancel?.toString() ?? '',
+    sedeId: alumno.sedeId ?? '',
     profesorId: alumno.profesorUserId ?? '',
     notas: alumno.notas ?? '',
     tutorNombre: '', tutorApellido: '', tutorDni: '', tutorTelefono: '',
@@ -38,7 +40,9 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
     setForm((f) => ({ ...f, [campo]: valor }));
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { profes } = useProfesores();
+  // El club acota los profes asignables (el dueño aparece siempre).
+  const { sedes } = useSedes();
+  const { profes } = useProfesores(form.sedeId || null);
 
   const esMenor = form.esMenor;
 
@@ -57,6 +61,7 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
         categoria: form.categoria as Categoria,
         modalidad: form.modalidad as Modalidad,
         arancel: form.arancel.trim() === '' ? undefined : Number(form.arancel),
+        sedeId: form.sedeId || undefined,
         profesorUserId: form.profesorId || undefined,
         notas: form.notas.trim() || undefined,
         // Tutor: solo si es menor, todavía no tiene uno, y cargaste al menos el nombre.
@@ -154,6 +159,19 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
           <select value={form.modalidad} onChange={(e) => set('modalidad', e.target.value)}>
             <option value="Mensual">Mensual (vence el 10)</option>
             <option value="PorClase">Por clase</option>
+          </select>
+        </label>
+        {/* El club primero: cambiarlo limpia el profe, porque puede no dar clases ahí. */}
+        <label className={s.campo}>
+          <span>Club</span>
+          <select
+            value={form.sedeId}
+            onChange={(e) => { set('sedeId', e.target.value); set('profesorId', ''); }}
+          >
+            <option value="">Sin asignar</option>
+            {sedes.filter((x) => x.activo).map((x) => (
+              <option key={x.id} value={x.id}>{x.nombre}</option>
+            ))}
           </select>
         </label>
         <label className={s.campo}>

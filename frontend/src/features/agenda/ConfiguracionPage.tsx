@@ -73,16 +73,18 @@ function DirectorCard() {
   );
 }
 
-/** Card de precios del profe (la base de la fórmula de cuotas). */
+/**
+ * Precio de la clase suelta. Es el ÚNICO precio que el profe configura acá: la cuota
+ * mensual no sale de este número sino del arancel de cada alumno (ADR-0011), y el
+ * valor hora grupal se sacó porque solo servía para un precio estimado en el portal.
+ */
 function PreciosCard() {
-  const [grupal, setGrupal] = useState('');
   const [individual, setIndividual] = useState('');
   const [guardado, setGuardado] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     void api.get<Precios>('/configuracion/precios').then((p) => {
-      setGrupal(p.valorHoraGrupal?.toString() ?? '');
       setIndividual(p.valorClaseIndividual?.toString() ?? '');
     });
   }, []);
@@ -92,37 +94,32 @@ function PreciosCard() {
     setGuardado(false);
     try {
       await api.put<Precios>('/configuracion/precios', {
-        valorHoraGrupal: grupal === '' ? null : Number(grupal),
         valorClaseIndividual: individual === '' ? null : Number(individual),
       });
       setGuardado(true);
       setTimeout(() => setGuardado(false), 2500);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'No se pudieron guardar los precios.');
+      setError(e instanceof ApiError ? e.message : 'No se pudo guardar el precio.');
     }
   };
 
   return (
     <div className={s.tarjeta}>
-      <h3 className={s.titulo}>Precios</h3>
+      <h3 className={s.titulo}>Precio de una clase suelta</h3>
       <p className={s.bajada}>
-        La base de la liquidación: ambos valores son <b>por hora</b> y se prorratean
-        por la duración del turno (30' = la mitad). La <b>grupal</b> además se divide
-        entre los asignados del turno. Los cargos ya generados no cambian si
-        actualizás estos valores.
+        Solo se usa cuando un alumno te pide una clase por su cuenta desde el portal:
+        es el valor <b>por hora</b> y se prorratea por la duración (30' = la mitad).
+        Si lo dejás vacío, nadie puede pedir clases sueltas. <b>La cuota mensual no
+        sale de acá</b>: esa es el arancel que le cargás a cada alumno.
       </p>
       {error && <div className={s.error}>{error}</div>}
       <div className={s.precios}>
         <label className={s.precio}>
-          <span>Valor hora grupal</span>
-          <input type="number" min={0} value={grupal} onChange={(e) => setGrupal(e.target.value)} placeholder="16000" />
-        </label>
-        <label className={s.precio}>
-          <span>Valor hora individual</span>
+          <span>Valor por hora</span>
           <input type="number" min={0} value={individual} onChange={(e) => setIndividual(e.target.value)} placeholder="16000" />
         </label>
         <button className={s.btnPrimario} onClick={() => void guardar()}>
-          {guardado ? '✓ Guardado' : 'Guardar precios'}
+          {guardado ? '✓ Guardado' : 'Guardar precio'}
         </button>
       </div>
     </div>

@@ -95,24 +95,30 @@ export default function EditarEmpleadoModal({ empleado, onClose, onEditar }: Pro
           <span>Fecha de nacimiento (opcional)</span>
           <input type="date" value={form.fechaNacimiento} onChange={(e) => set('fechaNacimiento', e.target.value)} />
         </label>
-        <label className={s.campo}>
-          <span>Valor hora (opcional)</span>
-          <input
-            type="number"
-            min={0}
-            value={form.valorHora}
-            onChange={(e) => set('valorHora', e.target.value)}
-            onWheel={(e) => e.currentTarget.blur()}
-            placeholder="Ej: 8000"
-          />
-        </label>
-        <label className={s.campo}>
-          <span>Club (sede)</span>
-          <select value={form.sedeId} onChange={(e) => set('sedeId', e.target.value)}>
-            <option value="">Sin asignar</option>
-            {sedes.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}
-          </select>
-        </label>
+        {/* El director no lleva valor hora (no se paga sueldo a sí mismo) ni club
+            fijo (trabaja en todos): esos campos son solo para los empleados. */}
+        {!empleado.esDueño && (
+          <>
+            <label className={s.campo}>
+              <span>Valor hora (opcional)</span>
+              <input
+                type="number"
+                min={0}
+                value={form.valorHora}
+                onChange={(e) => set('valorHora', e.target.value)}
+                onWheel={(e) => e.currentTarget.blur()}
+                placeholder="Ej: 8000"
+              />
+            </label>
+            <label className={s.campo}>
+              <span>Club (sede)</span>
+              <select value={form.sedeId} onChange={(e) => set('sedeId', e.target.value)}>
+                <option value="">Sin asignar</option>
+                {sedes.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}
+              </select>
+            </label>
+          </>
+        )}
         {error && <div className={`${s.span2} ${s.error}`}>{error}</div>}
       </div>
     </Modal>

@@ -182,6 +182,89 @@
 
 /* ── Acceso al portal (plan v2) ── */
 
+/* Motivo por el que no se pudo cambiar el profe (ej: no da clases en ese club). */
+.errorProfe {
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+  border-radius: var(--radius-sm);
+  padding: 7px 10px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  margin-top: 6px;
+}
+
+/* Editar datos: vive en la cabecera de la ficha desde que el listado dejó de
+   tener su propio lápiz. */
+.btnEditar {
+  margin-left: auto;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-soft);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btnEditar:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border-color: var(--color-primary);
+}
+
+/* Zona de peligro: el borrado real, al fondo y despegado del resto. */
+.zonaPeligro {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+  padding: 14px 16px;
+  border: 1px solid var(--color-danger-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-danger-soft);
+}
+
+.zonaPeligroTitulo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13.5px;
+  color: var(--color-danger);
+}
+
+.zonaPeligroTexto {
+  font-size: 12.5px;
+  color: var(--color-text-soft);
+  line-height: 1.5;
+  margin-top: 2px;
+  max-width: 46ch;
+}
+
+.btnEliminar {
+  margin-left: auto;
+  padding: 9px 16px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-danger);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.btnEliminar:hover {
+  background: #b91c1c;
+}
+
 .btnAcceso {
   margin-top: 8px;
   padding: 9px 14px;

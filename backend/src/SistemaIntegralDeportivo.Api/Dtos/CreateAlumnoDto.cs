@@ -58,6 +58,12 @@ public class CreateAlumnoDto
     [Range(0, 99_999_999)]
     public decimal? Arancel { get; set; }
 
+    /// <summary>
+    /// El club (sede) donde entrena; opcional. Se elige explícitamente y NO se mueve
+    /// al cambiarle el profe: el profe que se le asigne tiene que trabajar acá.
+    /// </summary>
+    public Guid? SedeId { get; set; }
+
     /// <summary>Profe de cabecera (dueño o staff); opcional.</summary>
     public Guid? ProfesorUserId { get; set; }
 
@@ -107,6 +113,12 @@ public class UpdateAlumnoDto
     /// <summary>Cuota mensual del alumno (la fuente de verdad del cobro mensual).</summary>
     [Range(0, 99_999_999)]
     public decimal? Arancel { get; set; }
+
+    /// <summary>
+    /// El club (sede) donde entrena; opcional. Se elige explícitamente y NO se mueve
+    /// al cambiarle el profe: el profe que se le asigne tiene que trabajar acá.
+    /// </summary>
+    public Guid? SedeId { get; set; }
 
     /// <summary>Profe de cabecera (dueño o staff); opcional.</summary>
     public Guid? ProfesorUserId { get; set; }

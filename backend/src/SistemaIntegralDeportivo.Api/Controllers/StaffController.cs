@@ -26,10 +26,14 @@ public class StaffController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<StaffDto>>> Listar(CancellationToken ct) =>
         Ok(await _staff.ListarAsync(ct));
 
-    /// <summary>Profes a los que asignar horarios/grupos/alumnos: el dueño + los staff activos.</summary>
+    /// <summary>
+    /// Profes a los que asignar horarios/grupos/alumnos: el dueño + los staff activos.
+    /// Con ?sedeId= se acota a los que dan clases en ese club.
+    /// </summary>
     [HttpGet("asignables")]
-    public async Task<ActionResult<IReadOnlyList<ProfesorAsignableDto>>> Asignables(CancellationToken ct) =>
-        Ok(await _staff.ListarAsignablesAsync(ct));
+    public async Task<ActionResult<IReadOnlyList<ProfesorAsignableDto>>> Asignables(
+        CancellationToken ct, [FromQuery] Guid? sedeId = null) =>
+        Ok(await _staff.ListarAsignablesAsync(sedeId, ct));
 
     [HttpPost]
     public async Task<ActionResult<StaffCreadoDto>> Agregar(AgregarStaffDto dto, CancellationToken ct)
@@ -96,6 +100,21 @@ public class StaffController : ControllerBase
         try
         {
             await _staff.EditarAsync(id, dto, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>PUT api/staff/director — el dueño edita sus propios datos (sin valor hora ni club).</summary>
+    [HttpPut("director")]
+    public async Task<IActionResult> EditarDirector(UpdateStaffDto dto, CancellationToken ct)
+    {
+        try
+        {
+            await _staff.EditarDirectorAsync(dto, ct);
             return NoContent();
         }
         catch (ReglaDeNegocioException ex)

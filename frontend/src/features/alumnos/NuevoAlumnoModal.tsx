@@ -4,6 +4,7 @@ import { ApiError } from '../../lib/api';
 import CategoriaOptions from './CategoriaOptions';
 import type { AlumnoCreado, Categoria, CreateAlumno, RelacionTutor } from './types';
 import { useProfesores } from '../profesores/useProfesores';
+import { useSedes } from '../agenda/hooks';
 import { obtenerSesion } from '../auth/sesion';
 import s from './NuevoAlumnoModal.module.css';
 
@@ -24,6 +25,7 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
     nombre: '', apellido: '', dni: '', telefono: '', email: '',
     fechaNacimiento: '', esMenor: false, categoria: 'SinCategoria' as Categoria,
     arancel: '',
+    sedeId: '',
     profesorId: '',
     notas: '',
     consentimientoWhatsapp: false, consentimientoDatos: false,
@@ -32,7 +34,9 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
   });
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { profes } = useProfesores();
+  // Primero el club, y el selector de profe se acota a los que dan clases ahí.
+  const { sedes } = useSedes();
+  const { profes } = useProfesores(form.sedeId || null);
   // El profe empleado no elige titular: el back lo auto-asigna a él mismo.
   const esStaff = obtenerSesion()?.rol === 'staff';
 
@@ -56,6 +60,7 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
         esMenor: form.esMenor,
         categoria: form.categoria,
         arancel: form.arancel.trim() === '' ? undefined : Number(form.arancel),
+        sedeId: form.sedeId || undefined,
         profesorUserId: form.profesorId || undefined,
         notas: form.notas.trim() || undefined,
         consentimientoWhatsapp: form.consentimientoWhatsapp,
@@ -152,15 +157,31 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
           />
         </label>
         {!esStaff && (
-          <label className={s.campo}>
-            <span>Profe titular (opcional)</span>
-            <select value={form.profesorId} onChange={(e) => set('profesorId', e.target.value)}>
-              <option value="">Sin asignar</option>
-              {profes.map((p) => (
-                <option key={p.userId} value={p.userId}>{p.nombre}{p.esDueño ? ' (vos)' : ''}</option>
-              ))}
-            </select>
-          </label>
+          <>
+            {/* El club va ANTES que el profe: al elegirlo, abajo quedan solo los
+                profes que dan clases ahí. */}
+            <label className={s.campo}>
+              <span>Club (opcional)</span>
+              <select
+                value={form.sedeId}
+                onChange={(e) => { set('sedeId', e.target.value); set('profesorId', ''); }}
+              >
+                <option value="">Sin asignar</option>
+                {sedes.filter((x) => x.activo).map((x) => (
+                  <option key={x.id} value={x.id}>{x.nombre}</option>
+                ))}
+              </select>
+            </label>
+            <label className={s.campo}>
+              <span>Profe titular (opcional)</span>
+              <select value={form.profesorId} onChange={(e) => set('profesorId', e.target.value)}>
+                <option value="">Sin asignar</option>
+                {profes.map((p) => (
+                  <option key={p.userId} value={p.userId}>{p.nombre}{p.esDueño ? ' (vos)' : ''}</option>
+                ))}
+              </select>
+            </label>
+          </>
         )}
         <label className={s.campo}>
           <span>&nbsp;</span>

@@ -3,11 +3,12 @@ using SistemaIntegralDeportivo.Api.Repositories;
 
 namespace SistemaIntegralDeportivo.Api.Services;
 
+/// <summary>
+/// El precio de la clase suelta que pide el alumno desde el portal. Es lo único que
+/// se configura acá: la cuota mensual sale del arancel de cada alumno (ADR-0011).
+/// </summary>
 public class PreciosDto
 {
-    [Range(0, 10_000_000)]
-    public decimal? ValorHoraGrupal { get; set; }
-
     [Range(0, 10_000_000)]
     public decimal? ValorClaseIndividual { get; set; }
 }
@@ -56,7 +57,6 @@ public class ConfigService : IConfigService
         var tenant = await _tenant.ObtenerActualAsync(ct);
         return new PreciosDto
         {
-            ValorHoraGrupal = tenant.ValorHoraGrupal,
             ValorClaseIndividual = tenant.ValorClaseIndividual,
         };
     }
@@ -64,8 +64,8 @@ public class ConfigService : IConfigService
     public async Task<PreciosDto> ActualizarPreciosAsync(PreciosDto dto, CancellationToken ct = default)
     {
         var tenant = await _tenant.ObtenerActualAsync(ct);
-        // Solo cambia los precios FUTUROS: los cargos ya generados son snapshot
-        tenant.ValorHoraGrupal = dto.ValorHoraGrupal;
+        // Solo cambia los precios FUTUROS: los cargos ya generados son snapshot.
+        // ValorHoraGrupal ya no se toca desde acá (se va con los grupos).
         tenant.ValorClaseIndividual = dto.ValorClaseIndividual;
         await _tenant.GuardarCambiosAsync(ct);
         return dto;

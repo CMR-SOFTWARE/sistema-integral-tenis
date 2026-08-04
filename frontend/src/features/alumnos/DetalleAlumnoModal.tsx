@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Modal from '../../components/Modal';
 import Avatar from '../../components/Avatar';
 import NotasAlumnoSection from './NotasAlumnoSection';
-import { api } from '../../lib/api';
+import { api, ApiError } from '../../lib/api';
 import { CAT_COLOR, CAT_LABEL, ESTADO_UI, formatoPlata, subPorEdad } from './types';
 import type { Alumno, AlumnoCuenta, AlumnoHorario } from './types';
 import { useProfesores } from '../profesores/useProfesores';
@@ -21,13 +21,20 @@ interface Props {
   onCrearAcceso?: (alumno: Alumno) => void;
   /** Cambia el profe titular desde la ficha; devuelve la ficha actualizada. */
   onCambiarProfe?: (id: string, profesorUserId: string | null) => Promise<Alumno>;
+  /** Abre la edición de datos (el listado ya no tiene su propio botón). */
+  onEditar?: (alumno: Alumno) => void;
+  /** Borrado REAL. Vive acá adentro y no en la fila: es el que no se deshace. */
+  onEliminar?: (alumno: Alumno) => void;
 }
 
 /** Ficha del alumno: datos, roles (Director + Profe titular), horarios y cuenta. */
-export default function DetalleAlumnoModal({ alumno, hermanos, onClose, onCrearAcceso, onCambiarProfe }: Props) {
+export default function DetalleAlumnoModal({
+  alumno, hermanos, onClose, onCrearAcceso, onCambiarProfe, onEditar, onEliminar,
+}: Props) {
   const cat = CAT_COLOR[alumno.categoria];
   const estado = ESTADO_UI[alumno.estado];
-  const { profes } = useProfesores();
+  // Solo los profes que dan clases en el club del alumno (el director, siempre).
+  const { profes } = useProfesores(alumno.sedeId);
   const qc = useQueryClient();
 
   // "Asignar horario" desde la ficha: reusa el modal de horario con el alumno fijo.
@@ -41,16 +48,20 @@ export default function DetalleAlumnoModal({ alumno, hermanos, onClose, onCrearA
   // El Director es el dueño de la academia (fijo); el Profe titular se asigna acá.
   const director = profes.find((p) => p.esDueño);
   const [profeId, setProfeId] = useState(alumno.profesorUserId ?? '');
-  const [club, setClub] = useState(alumno.sedeNombre);
   const [guardandoProfe, setGuardandoProfe] = useState(false);
+  const [errorProfe, setErrorProfe] = useState<string | null>(null);
 
+  // El club NO se mueve al cambiar de profe: es donde entrena el alumno. Si el profe
+  // elegido no da clases ahí, el back lo rechaza y se muestra el motivo.
   const cambiarProfe = async (nuevo: string) => {
     if (!onCambiarProfe) return;
     setGuardandoProfe(true);
+    setErrorProfe(null);
     try {
       const act = await onCambiarProfe(alumno.id, nuevo || null);
       setProfeId(act.profesorUserId ?? '');
-      setClub(act.sedeNombre); // el club sigue al profe titular
+    } catch (e) {
+      setErrorProfe(e instanceof ApiError ? e.message : 'No se pudo cambiar el profe.');
     } finally {
       setGuardandoProfe(false);
     }
@@ -75,7 +86,7 @@ export default function DetalleAlumnoModal({ alumno, hermanos, onClose, onCrearA
     ['Categoría por edad', subPorEdad(alumno.fechaNacimiento) ?? 'Adulto'],
     ['Es menor', alumno.esMenor ? (alumno.tutorId ? 'Sí (con tutor)' : 'Sí — falta cargar el tutor') : 'No'],
     ['Director', director ? director.nombre : '—'],
-    ['Club', club ?? 'Sin asignar'],
+    ['Club', alumno.sedeNombre ?? 'Sin asignar'],
     ['Cuota mensual', formatoPlata(alumno.arancel)],
     ['Alta en el sistema', new Date(alumno.creadoEl).toLocaleDateString('es-AR')],
   ];
@@ -95,6 +106,15 @@ export default function DetalleAlumnoModal({ alumno, hermanos, onClose, onCrearA
             </span>
           </div>
         </div>
+        {/* La edición se hace desde acá: el listado dejó de tener su propio lápiz */}
+        {onEditar && (
+          <button className={s.btnEditar} onClick={() => onEditar(alumno)}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 4H4v16h16v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z" />
+            </svg>
+            Editar datos
+          </button>
+        )}
       </div>
 
       <div className={s.columnas}>
@@ -106,7 +126,8 @@ export default function DetalleAlumnoModal({ alumno, hermanos, onClose, onCrearA
               <span className={s.filaV}>{v}</span>
             </div>
           ))}
-          {/* Profe titular: se asigna/cambia desde la ficha (el club lo sigue). */}
+          {/* Profe titular: se cambia desde acá, entre los que dan clases en su club.
+              Para mudarlo de club hay que ir a "Editar datos". */}
           <div className={s.fila}>
             <span className={s.filaK}>Profe titular</span>
             <span className={s.filaV}>
@@ -125,6 +146,7 @@ export default function DetalleAlumnoModal({ alumno, hermanos, onClose, onCrearA
               )}
             </span>
           </div>
+          {errorProfe && <div className={s.errorProfe}>{errorProfe}</div>}
 
           <div className={s.seccion} style={{ marginTop: 18 }}>Observaciones del profesor</div>
           <div className={s.obs}>{alumno.notas ?? 'Sin observaciones.'}</div>
@@ -231,6 +253,23 @@ export default function DetalleAlumnoModal({ alumno, hermanos, onClose, onCrearA
       <div className={s.seguimiento}>
         <NotasAlumnoSection alumnoId={alumno.id} />
       </div>
+
+      {/* Zona de peligro: bien al fondo y separada de todo lo demás, porque esto
+          borra la ficha con su historial y no se puede deshacer (CLAUDE.md §6). */}
+      {onEliminar && (
+        <div className={s.zonaPeligro}>
+          <div>
+            <div className={s.zonaPeligroTitulo}>Eliminar definitivamente</div>
+            <div className={s.zonaPeligroTexto}>
+              Borra la ficha y todo su historial. Si solo dejó de venir, usá "dar de
+              baja" en el listado: eso se puede revertir.
+            </div>
+          </div>
+          <button className={s.btnEliminar} onClick={() => onEliminar(alumno)}>
+            Eliminar
+          </button>
+        </div>
+      )}
 
       {asignando && (
         <NuevoHorarioModal

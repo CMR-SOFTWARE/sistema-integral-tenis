@@ -55,8 +55,9 @@ export default function ProfesoresPage() {
   const crear = (dto: { nombre: string; apellido: string; telefono: string; email?: string; valorHora?: number; sedeId?: string }) =>
     api.post<StaffCreado>('/staff', dto);
 
+  // El director no tiene membresía: su ficha se edita por su propia ruta.
   const editar = async (id: string, dto: UpdateEmpleado) => {
-    await api.put(`/staff/${id}`, dto);
+    await api.put(editando?.esDueño ? '/staff/director' : `/staff/${id}`, dto);
     cargar();
   };
 
@@ -135,28 +136,44 @@ export default function ProfesoresPage() {
             </thead>
             <tbody>
               {visibles.map((p) => (
-                <tr key={p.id}>
+                <tr key={p.esDueño ? 'director' : p.id}>
                   <td>
                     <div className={s.celdaAlumno}>
                       <Avatar nombre={p.nombre} apellido={p.apellido} size={40} radius={12} />
                       <div>
-                        <div className={s.nombre}>{p.nombre} {p.apellido}</div>
+                        <div className={s.nombre}>
+                          {p.nombre} {p.apellido}
+                          {p.esDueño && <span className={s.insignia}>Director</span>}
+                        </div>
                         <div className={s.dni}>{p.dni ? `DNI ${p.dni}` : 'Sin DNI'}</div>
                       </div>
                     </div>
                   </td>
-                  <td>{p.sedeNombre ?? '—'}</td>
+                  {/* El director no tiene club fijo ni valor hora: trabaja donde haga
+                      falta y no se paga sueldo a sí mismo. */}
+                  <td>{p.esDueño ? 'Todos' : p.sedeNombre ?? '—'}</td>
                   <td>{p.valorHora != null ? `${formatoPlata(p.valorHora)}/h` : '—'}</td>
                   <td className={s.tel}>{p.telefono || '—'}</td>
                   <td>
-                    <span
-                      className={s.chip}
-                      style={p.activo
-                        ? { background: '#e7f6ec', color: '#0e6b3c' }
-                        : { background: '#f3f4f6', color: '#6b7280' }}
-                    >
-                      {p.activo ? 'Activo' : 'Inactivo'}
-                    </span>
+                    {p.esDueño ? (
+                      <span
+                        className={s.chip}
+                        style={p.daClases
+                          ? { background: '#e7f6ec', color: '#0e6b3c' }
+                          : { background: '#eef2ff', color: '#4f46e5' }}
+                      >
+                        {p.daClases ? 'Da clases' : 'Solo gestiona'}
+                      </span>
+                    ) : (
+                      <span
+                        className={s.chip}
+                        style={p.activo
+                          ? { background: '#e7f6ec', color: '#0e6b3c' }
+                          : { background: '#f3f4f6', color: '#6b7280' }}
+                      >
+                        {p.activo ? 'Activo' : 'Inactivo'}
+                      </span>
+                    )}
                   </td>
                   <td>
                     <div className={s.acciones}>
@@ -172,6 +189,10 @@ export default function ProfesoresPage() {
                               <path d="M11 4H4v16h16v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z" />
                             </svg>
                           </button>
+                          {/* Al director no se lo saca del equipo ni se lo elimina:
+                              es el dueño del club. */}
+                          {!p.esDueño && (
+                          <>
                           <button
                             className={`${s.accion} ${s.accionBaja}`}
                             title={p.activo ? 'Sacar del equipo (se puede reactivar)' : 'Reactivar'}
@@ -193,6 +214,8 @@ export default function ProfesoresPage() {
                               <path d="M15 9l-6 6M9 9l6 6" />
                             </svg>
                           </button>
+                          </>
+                          )}
                         </>
                       )}
                     </div>

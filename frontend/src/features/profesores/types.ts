@@ -12,6 +12,13 @@ export interface Staff {
   dni: string | null;
   fechaNacimiento: string | null;
   activo: boolean;
+  /**
+   * Es el DUEÑO del club (el Director): aparece en el listado como uno más, pero no
+   * tiene membresía (id vacío) ni valor hora ni club, y no se lo puede dar de baja.
+   */
+  esDueño: boolean;
+  /** Solo para el dueño: si además de gestionar, da clases. */
+  daClases: boolean;
   /** Valor hora base (para el sueldo); null = sin definir. */
   valorHora: number | null;
   /** Club (sede) donde trabaja; null = sin asignar. */

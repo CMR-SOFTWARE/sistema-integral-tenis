@@ -123,6 +123,11 @@
   gap: 10px;
 }
 
+/* Vista Día: la única columna ocupa todo el ancho disponible. */
+.grillaUnDia {
+  grid-template-columns: 1fr;
+}
+
 .columna {
   background: var(--color-surface);
   border: 1px solid var(--color-border);

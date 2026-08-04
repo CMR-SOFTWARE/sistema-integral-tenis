@@ -51,8 +51,8 @@ export interface LiquidacionMes {
   liquidaciones: Liquidacion[];
 }
 
+/** El precio de la clase suelta del portal; la cuota mensual sale del arancel del alumno. */
 export interface Precios {
-  valorHoraGrupal: number | null;
   valorClaseIndividual: number | null;
 }
 
