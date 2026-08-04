@@ -1,0 +1,533 @@
+/* El editor del perfil. Comparte los tokens con el resto de la app; la vista
+   de lectura vive en PerfilVista.module.css. */
+
+.pagina {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 900px;
+}
+
+/* ── Barra superior: publicar + vista previa ── */
+
+.barra {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 14px 18px;
+}
+
+.barraTexto {
+  flex: 1;
+  min-width: 200px;
+}
+
+.barraTitulo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--color-text);
+}
+
+.barraAyuda {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+  line-height: 1.45;
+}
+
+/* Interruptor de "Publicado" */
+.switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.pista {
+  width: 44px;
+  height: 25px;
+  border-radius: 999px;
+  background: var(--color-border);
+  position: relative;
+  transition: background 0.2s ease;
+  flex-shrink: 0;
+}
+
+.pista::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 19px;
+  height: 19px;
+  border-radius: 999px;
+  background: var(--color-surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease;
+}
+
+.switch input:checked + .pista {
+  background: var(--color-primary);
+}
+
+.switch input:checked + .pista::after {
+  transform: translateX(19px);
+}
+
+.switch input:focus-visible + .pista {
+  box-shadow: var(--focus-ring);
+}
+
+/* ── Tarjetas del editor ── */
+
+.tarjeta {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 20px 22px;
+}
+
+.tarjetaTitulo {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin: 0 0 14px;
+}
+
+.tarjetaTitulo::before {
+  content: '';
+  width: 4px;
+  height: 15px;
+  border-radius: 2px;
+  background: var(--color-lime);
+  flex-shrink: 0;
+}
+
+.campos {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.campo > span {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-soft);
+}
+
+.campo input[type='text'],
+.campo input[type='number'],
+.campo textarea {
+  width: 100%;
+  font: inherit;
+  font-size: 14.5px;
+  color: var(--color-text);
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.campo textarea {
+  resize: vertical;
+  min-height: 130px;
+  line-height: 1.6;
+}
+
+.campo input:focus,
+.campo textarea:focus {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.contador {
+  font-size: 12px;
+  color: var(--color-text-faint);
+  text-align: right;
+}
+
+.contadorLleno {
+  color: var(--color-warning);
+  font-weight: 700;
+}
+
+/* ── Chips de especialidades ── */
+
+.chipsEdit {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  align-items: center;
+}
+
+.chipEdit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-lime);
+  color: var(--color-text);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 5px 8px 5px 12px;
+  border-radius: 999px;
+}
+
+.chipQuitar {
+  border: none;
+  background: rgba(0, 0, 0, 0.14);
+  color: var(--color-text);
+  width: 17px;
+  height: 17px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  font-size: 13px;
+}
+
+.chipQuitar:hover {
+  background: rgba(0, 0, 0, 0.26);
+}
+
+/* ── Imágenes (portada y avatar) ── */
+
+.imagenes {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.bloqueImagen {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.previaPortada {
+  width: 340px;
+  max-width: 100%;
+  aspect-ratio: 16 / 9; /* el mismo recorte que va a ver el alumno */
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--color-primary-deep), var(--color-primary));
+  border: 1px solid var(--color-border);
+}
+
+.previaAvatar {
+  width: 104px;
+  height: 104px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.previaPortada img,
+.previaAvatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.acciones {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Botones ── */
+
+.btnPrimario {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--color-primary-dark);
+  border: none;
+  border-radius: var(--radius-md);
+  padding: 10px 18px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btnPrimario:hover:not(:disabled) {
+  background: var(--color-primary-darker);
+}
+
+.btnPrimario:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.btnSuave {
+  font-family: var(--font-display);
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--color-text);
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btnSuave:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+
+.btnSuave:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.btnPeligro {
+  composes: btnSuave;
+  color: var(--color-danger);
+  border-color: var(--color-danger-border);
+  background: var(--color-danger-soft);
+}
+
+.btnPeligro:hover:not(:disabled) {
+  background: #fde8e8;
+}
+
+.btnIcono {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-soft);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.btnIcono:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+.btnIcono:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.pieAcciones {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  flex-wrap: wrap;
+}
+
+.guardado {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.error {
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: 9px 12px;
+  font-size: 13.5px;
+  margin-bottom: 12px;
+}
+
+.ayuda {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 1.5;
+  margin: -4px 0 14px;
+}
+
+/* ── Lista de hitos ── */
+
+.filas {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.fila {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  background: var(--color-surface-subtle);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  padding: 11px 13px;
+}
+
+.filaAnio {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13.5px;
+  color: var(--color-primary);
+  min-width: 40px;
+}
+
+.filaTexto {
+  flex: 1;
+  min-width: 0;
+}
+
+.filaTitulo {
+  font-weight: 700;
+  font-size: 14.5px;
+  color: var(--color-text);
+}
+
+.filaDetalle {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+  line-height: 1.45;
+}
+
+.filaBotones {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+
+/* ── Galería del editor ── */
+
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(195px, 1fr));
+  gap: 12px;
+}
+
+.celda {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: var(--color-surface-subtle);
+  display: flex;
+  flex-direction: column;
+}
+
+/* En el editor la foto va ENTERA dentro de un marco fijo (no recortada): el profe
+   necesita ver qué subió, y con marcos iguales las filas de controles quedan
+   alineadas. En el perfil, en cambio, se muestra en mosaico con su proporción. */
+.celdaFoto {
+  aspect-ratio: 4 / 3;
+  background: var(--color-surface-hover);
+}
+
+.celdaFoto img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.celdaCuerpo {
+  padding: 9px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.celdaCuerpo input {
+  width: 100%;
+  font: inherit;
+  font-size: 13px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 7px 9px;
+  outline: none;
+}
+
+.celdaCuerpo input:focus {
+  border-color: var(--color-primary);
+  box-shadow: var(--focus-ring);
+}
+
+.celdaBotones {
+  display: flex;
+  gap: 5px;
+  justify-content: space-between;
+}
+
+/* Zona para sumar una foto: ocupa una celda más de la grilla */
+.sumar {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--color-text-muted);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13.5px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 170px;
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.sumar:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.sumar:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+@media (max-width: 640px) {
+  .tarjeta { padding: 16px; }
+  .previaPortada { width: 100%; }
+  .grilla { grid-template-columns: 1fr 1fr; }
+}

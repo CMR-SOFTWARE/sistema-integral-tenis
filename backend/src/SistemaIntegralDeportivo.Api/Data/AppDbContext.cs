@@ -46,6 +46,9 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
     public DbSet<NotaAlumno> NotasAlumno => Set<NotaAlumno>();
     public DbSet<MembresiaTenant> MembresiasTenant => Set<MembresiaTenant>();
     public DbSet<PagoEmpleado> PagosEmpleado => Set<PagoEmpleado>();
+    public DbSet<PerfilProfesor> PerfilesProfesor => Set<PerfilProfesor>();
+    public DbSet<FotoPerfil> FotosPerfil => Set<FotoPerfil>();
+    public DbSet<HitoTrayectoria> HitosTrayectoria => Set<HitoTrayectoria>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -334,6 +337,27 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
         // Si se borrara el alumno, se van sus notas (hoy la baja es lógica).
         modelBuilder.Entity<NotaAlumno>()
             .HasOne(n => n.Alumno).WithMany().HasForeignKey(n => n.AlumnoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ── Perfil público del profe: su carta de presentación en el club ──
+
+        // Un perfil por persona y por club. Sirve igual para el dueño (que no tiene
+        // membresía) y para el staff, porque la llave es el par tenant+usuario.
+        modelBuilder.Entity<PerfilProfesor>()
+            .HasIndex(p => new { p.TenantId, p.UserId })
+            .IsUnique();
+
+        // El listado que ve el alumno: los perfiles publicados de su club
+        modelBuilder.Entity<PerfilProfesor>()
+            .HasIndex(p => new { p.TenantId, p.Publicado });
+
+        // Si se borra el perfil se van sus fotos e hitos (las filas; los archivos
+        // del storage los borra el service, que es el único que sabe de rutas)
+        modelBuilder.Entity<FotoPerfil>()
+            .HasOne(f => f.Perfil).WithMany(p => p.Fotos).HasForeignKey(f => f.PerfilProfesorId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<HitoTrayectoria>()
+            .HasOne(h => h.Perfil).WithMany(p => p.Hitos).HasForeignKey(h => h.PerfilProfesorId)
             .OnDelete(DeleteBehavior.Cascade);
 
         // ── Bloqueos de agenda ──

@@ -168,6 +168,7 @@ public class AuthService : IAuthService
     private static FichaDto Mapear(Alumno a) => new()
     {
         AlumnoId = a.Id,
+        TenantId = a.TenantId,
         Nombre = a.Nombre,
         Apellido = a.Apellido,
         Club = a.Tenant?.Nombre ?? string.Empty,

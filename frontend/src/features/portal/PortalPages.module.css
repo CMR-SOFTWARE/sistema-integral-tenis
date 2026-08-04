@@ -517,6 +517,26 @@
   cursor: default;
 }
 
+/* Acción acompañante del botón principal (ej: "Conocerlos" al lado de "Unirme") */
+.btnSecundario {
+  padding: 9px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text-soft);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btnSecundario:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border-color: var(--color-primary);
+}
+
 .perfilEdicion {
   display: flex;
   flex-direction: column;
