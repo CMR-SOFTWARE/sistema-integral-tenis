@@ -61,6 +61,8 @@ export interface CreateAlumno {
   esMenor: boolean;
   categoria: Categoria;
   arancel?: number;
+  /** El club donde entrena; acota los profes que se le pueden asignar. */
+  sedeId?: string;
   profesorUserId?: string;
   notas?: string;
   consentimientoWhatsapp: boolean;
@@ -87,6 +89,8 @@ export interface UpdateAlumno {
   modalidad: Modalidad;
   /** Cuota mensual del alumno (la fuente de verdad del cobro). */
   arancel?: number;
+  /** El club donde entrena; acota los profes que se le pueden asignar. */
+  sedeId?: string;
   profesorUserId?: string;
   notas?: string;
   /** Tutor a cargar DESPUÉS (opcional): solo si el alumno todavía no tiene uno. */

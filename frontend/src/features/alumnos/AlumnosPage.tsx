@@ -210,7 +210,6 @@ export default function AlumnosPage() {
               <tr>
                 <th>Alumno</th>
                 <th>Categoría</th>
-                <th>Teléfono</th>
                 <th>Cuota</th>
                 <th>Estado</th>
                 <th className={s.thAcciones}>Acciones</th>
@@ -245,7 +244,6 @@ export default function AlumnosPage() {
                         </span>
                       )}
                     </td>
-                    <td className={s.tel}>{a.telefono}</td>
                     <td>
                       {a.deudaVencida ? (
                         <span className={s.chip} style={{ background: '#fdeaea', color: '#b91c1c' }}>
@@ -269,13 +267,10 @@ export default function AlumnosPage() {
                             <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z" /><circle cx="12" cy="12" r="3" />
                           </svg>
                         </button>
+                        {/* Editar y eliminar viven adentro de la ficha: la fila se
+                            queda con lo que se usa a diario. */}
                         {esOwner && (
                         <>
-                        <button className={s.accion} title="Editar datos" onClick={() => setEditando(a)}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M11 4H4v16h16v-7M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z" />
-                          </svg>
-                        </button>
                         <button
                           className={`${s.accion} ${s.accionPausa}`}
                           title={a.estado === 'Activo' ? 'Pausar' : 'Reactivar'}
@@ -294,12 +289,6 @@ export default function AlumnosPage() {
                         <button className={`${s.accion} ${s.accionBaja}`} title="Dar de baja (se puede reactivar)" onClick={() => void baja(a)}>
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                             <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
-                          </svg>
-                        </button>
-                        <button className={`${s.accion} ${s.accionEliminar}`} title="Eliminar definitivamente (no se deshace)" onClick={() => void eliminar(a)}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86" />
-                            <path d="M15 9l-6 6M9 9l6 6" />
                           </svg>
                         </button>
                         </>
@@ -359,6 +348,8 @@ export default function AlumnosPage() {
           onClose={() => setDetalle(null)}
           onCrearAcceso={esOwner ? accesoParaFicha : undefined}
           onCambiarProfe={esOwner ? cambiarProfe : undefined}
+          onEditar={esOwner ? (a) => { setDetalle(null); setEditando(a); } : undefined}
+          onEliminar={esOwner ? (a) => { setDetalle(null); void eliminar(a); } : undefined}
         />
       )}
       {credenciales && (

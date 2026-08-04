@@ -21,19 +21,35 @@ public interface IStaffService
     Task EditarAsync(Guid id, UpdateStaffDto dto, CancellationToken ct = default);
 
     /// <summary>
+    /// Edita los datos del DIRECTOR (el dueño). Va aparte porque no tiene membresía:
+    /// solo se tocan sus datos personales, sin valor hora ni club.
+    /// </summary>
+    Task EditarDirectorAsync(UpdateStaffDto dto, CancellationToken ct = default);
+
+    /// <summary>
     /// Borrado REAL del profe empleado (el dueño se equivocó al cargarlo y lo quiere
     /// eliminar, no solo desactivar). Saca la membresía, deja "sin asignar" lo que lo
     /// tenía de profe (grupos/horarios/alumnos), y borra su login si no cumple otro rol.
     /// </summary>
     Task EliminarDefinitivoAsync(Guid id, CancellationToken ct = default);
 
-    /// <summary>Los profes a los que el dueño puede asignar clases: el dueño + los staff ACTIVOS.</summary>
-    Task<IReadOnlyList<ProfesorAsignableDto>> ListarAsignablesAsync(CancellationToken ct = default);
+    /// <summary>
+    /// Los profes a los que el dueño puede asignar clases: el dueño + los staff ACTIVOS.
+    /// Con <paramref name="sedeId"/> se acota a los que dan clases en ese club (el
+    /// dueño siempre entra: trabaja en todos).
+    /// </summary>
+    Task<IReadOnlyList<ProfesorAsignableDto>> ListarAsignablesAsync(Guid? sedeId = null, CancellationToken ct = default);
     /// <summary>¿Ese usuario es asignable en este club? (el dueño o un staff activo).</summary>
     Task<bool> EsAsignableAsync(Guid userId, CancellationToken ct = default);
 
-    /// <summary>La sede (club) del profe, para que la ficha del alumno la herede. Null si es el dueño o no tiene club.</summary>
+    /// <summary>La sede (club) del profe. Null si es el dueño o no tiene club.</summary>
     Task<Guid?> SedeDelProfeAsync(Guid userId, CancellationToken ct = default);
+
+    /// <summary>
+    /// ¿Ese profe da clases en ese club? El DUEÑO trabaja en todos, y un empleado sin
+    /// club asignado también (todavía no se le fijó uno). Sin sede pedida, siempre sí.
+    /// </summary>
+    Task<bool> TrabajaEnSedeAsync(Guid userId, Guid? sedeId, CancellationToken ct = default);
     /// <summary>El propio profe empleado se da de baja del club (pasa a ser un usuario normal).</summary>
     Task DesvincularmeAsync(CancellationToken ct = default);
 }
@@ -66,7 +82,55 @@ public class StaffService : IStaffService
     {
         var lista = await _membresias.ListarConUsuarioAsync(ct);
         var sedes = (await _sedes.ListarAsync(ct)).ToDictionary(x => x.Id, x => x.Nombre);
-        return lista.Select(x => Mapear(x.Membresia, x.Usuario, NombreSede(x.Membresia.SedeId, sedes))).ToList();
+        var equipo = new List<StaffDto>();
+
+        // El Director va PRIMERO y como uno más del equipo: no tiene membresía, así
+        // que se resuelve por Tenant.OwnerUserId y su ficha se arma a mano.
+        var tenant = await _tenants.ObtenerActualAsync(ct);
+        if (tenant.OwnerUserId is { } ownerId &&
+            await _membresias.ObtenerUsuarioAsync(ownerId, ct) is { } dueño)
+        {
+            equipo.Add(new StaffDto
+            {
+                Id = Guid.Empty, // no hay membresía que identificar
+                UserId = dueño.Id,
+                Nombre = dueño.Nombre,
+                Apellido = dueño.Apellido,
+                Email = dueño.Email ?? string.Empty,
+                Telefono = dueño.PhoneNumber ?? dueño.UserName ?? string.Empty,
+                Dni = dueño.Dni,
+                FechaNacimiento = dueño.FechaNacimiento,
+                Activo = true, // el dueño no se da de baja de su propio club
+                EsDueño = true,
+                DaClases = tenant.DirectorDaClases,
+                CreadoEl = tenant.CreadoEl,
+            });
+        }
+
+        equipo.AddRange(lista.Select(x => Mapear(x.Membresia, x.Usuario, NombreSede(x.Membresia.SedeId, sedes))));
+        return equipo;
+    }
+
+    public async Task EditarDirectorAsync(UpdateStaffDto dto, CancellationToken ct = default)
+    {
+        var tenant = await _tenants.ObtenerActualAsync(ct);
+        var ownerId = tenant.OwnerUserId
+            ?? throw new ReglaDeNegocioException("El club todavía no tiene un director asignado.");
+
+        // Solo los datos personales: el director no tiene valor hora (no se paga
+        // sueldo a sí mismo) ni club fijo (trabaja donde haga falta).
+        var usuario = await _membresias.ObtenerUsuarioAsync(ownerId, ct)
+            ?? throw new ReglaDeNegocioException("No se encontró la cuenta del director.");
+
+        usuario.Nombre = dto.Nombre.Trim();
+        usuario.Apellido = dto.Apellido.Trim();
+        var email = string.IsNullOrWhiteSpace(dto.Email) ? null : dto.Email.Trim();
+        usuario.Email = email;
+        usuario.NormalizedEmail = email?.ToUpperInvariant(); // Identity busca por el normalizado
+        usuario.Dni = string.IsNullOrWhiteSpace(dto.Dni) ? null : dto.Dni.Trim();
+        usuario.FechaNacimiento = dto.FechaNacimiento;
+
+        await _membresias.GuardarCambiosAsync(ct);
     }
 
     /// <summary>Nombre de la sede desde el diccionario cargado (null si sin sede/desconocida).</summary>
@@ -179,7 +243,8 @@ public class StaffService : IStaffService
             await _credenciales.EliminarAsync(userId, ct);
     }
 
-    public async Task<IReadOnlyList<ProfesorAsignableDto>> ListarAsignablesAsync(CancellationToken ct = default)
+    public async Task<IReadOnlyList<ProfesorAsignableDto>> ListarAsignablesAsync(
+        Guid? sedeId = null, CancellationToken ct = default)
     {
         var tenant = await _tenants.ObtenerActualAsync(ct);
         var lista = new List<ProfesorAsignableDto>();
@@ -197,10 +262,12 @@ public class StaffService : IStaffService
             });
         }
 
-        // Los staff ACTIVOS
+        // Los staff ACTIVOS; si se pidió un club, solo los que dan clases ahí (los
+        // que todavía no tienen club asignado entran igual).
         foreach (var (m, u) in await _membresias.ListarConUsuarioAsync(ct))
         {
             if (!m.Activo) continue;
+            if (sedeId is { } sede && m.SedeId is not null && m.SedeId != sede) continue;
             lista.Add(new ProfesorAsignableDto
             {
                 UserId = u.Id,
@@ -227,6 +294,18 @@ public class StaffService : IStaffService
         // El dueño no tiene membresía (trabaja en cualquier sede) → null.
         var membresia = await _membresias.ObtenerPorUserIdAsync(userId, ct);
         return membresia?.SedeId;
+    }
+
+    public async Task<bool> TrabajaEnSedeAsync(Guid userId, Guid? sedeId, CancellationToken ct = default)
+    {
+        if (sedeId is not { } sede) return true; // sin club pedido, cualquier profe sirve
+
+        var tenant = await _tenants.ObtenerActualAsync(ct);
+        if (tenant.OwnerUserId == userId) return true; // el director da clases donde haga falta
+
+        var membresia = await _membresias.ObtenerPorUserIdAsync(userId, ct);
+        // Un empleado sin club asignado todavía no está atado a ninguno: se acepta.
+        return membresia is not null && (membresia.SedeId is null || membresia.SedeId == sede);
     }
 
     public async Task DesvincularmeAsync(CancellationToken ct = default)

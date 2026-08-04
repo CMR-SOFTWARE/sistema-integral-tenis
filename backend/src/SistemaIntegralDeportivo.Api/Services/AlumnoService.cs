@@ -15,11 +15,12 @@ public class AlumnoService : IAlumnoService
     private readonly IHorarioRepository _horarios;
     private readonly IStaffService _staff;
     private readonly IUsuarioActual _usuario;
+    private readonly ISedeRepository _sedes;
 
     public AlumnoService(
         IAlumnoRepository repo, ICargoRepository cargos, ICredencialesService credenciales,
         ITurnoRepository turnos, IGrupoRepository grupos, IHorarioRepository horarios,
-        IStaffService staff, IUsuarioActual usuario)
+        IStaffService staff, IUsuarioActual usuario, ISedeRepository sedes)
     {
         _repo = repo;
         _cargos = cargos;
@@ -29,15 +30,43 @@ public class AlumnoService : IAlumnoService
         _horarios = horarios;
         _staff = staff;
         _usuario = usuario;
+        _sedes = sedes;
+    }
+
+    /// <summary>
+    /// El club de la ficha se ELIGE y el profe de cabecera tiene que dar clases ahí
+    /// (antes era al revés: el club se heredaba del profe y cambiar de profe movía al
+    /// alumno de sede). Devuelve el club validado, para asignarlo.
+    /// </summary>
+    private async Task<Guid?> ValidarClubYProfeAsync(Guid? sedeId, Guid? profesorUserId, CancellationToken ct)
+    {
+        if (sedeId is { } sede && await _sedes.ObtenerAsync(sede, ct) is null) // el repo scopea por tenant
+            throw new ReglaDeNegocioException("Ese club no existe en tu academia.");
+
+        if (profesorUserId is { } profe)
+        {
+            if (!await _staff.EsAsignableAsync(profe, ct))
+                throw new ReglaDeNegocioException("Ese profe no es de tu club.");
+            if (!await _staff.TrabajaEnSedeAsync(profe, sedeId, ct))
+                throw new ReglaDeNegocioException(
+                    "Ese profe no da clases en el club elegido: elegí otro club u otro profe.");
+        }
+
+        return sedeId;
     }
 
     public async Task<AlumnoCreadoDto> CrearAsync(CreateAlumnoDto dto, CancellationToken ct = default)
     {
         // El profe EMPLEADO solo carga alumnos PROPIos: se auto-asigna como titular,
         // ignorando lo que venga (no puede regalarle el alumno a otro profe). El dueño
-        // elige libremente. La ficha del staff hereda su club en las reglas de abajo.
-        if (_usuario.EsStaff)
-            dto.ProfesorUserId = _usuario.UserId;
+        // elige libremente.
+        if (_usuario.EsStaff && _usuario.UserId is { } empleado)
+        {
+            dto.ProfesorUserId = empleado;
+            // El staff no elige club en el formulario: sus alumnos entrenan donde
+            // él da clases (el dueño sí lo elige, por eso solo se completa si falta).
+            dto.SedeId ??= await _staff.SedeDelProfeAsync(empleado, ct);
+        }
 
         // Reglas de la ficha ANTES de tocar Identity (si algo falla acá, no nace usuario)
         if (!string.IsNullOrWhiteSpace(dto.Dni) && await _repo.ExisteDniAsync(dto.Dni, ct))
@@ -52,14 +81,8 @@ public class AlumnoService : IAlumnoService
                 $"Ya existe una ficha de {dto.Nombre.Trim()} {dto.Apellido.Trim()} con ese celular en el club.");
 
         ValidarMenor(dto);
-        if (dto.ProfesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))
-            throw new ReglaDeNegocioException("Ese profe no es de tu club.");
-
-        // La ficha hereda el club (sede) de su profe de cabecera: "el profe la carga
-        // con su club". El dueño no tiene sede fija → queda null.
-        var sedeProfe = dto.ProfesorUserId is { } cabecera
-            ? await _staff.SedeDelProfeAsync(cabecera, ct)
-            : null;
+        // El club se ELIGE (no se hereda del profe) y el profe tiene que dar clases ahí.
+        var sede = await ValidarClubYProfeAsync(dto.SedeId, dto.ProfesorUserId, ct);
 
         // El celular es la cuenta del portal. Si ya es de un titular (ej. hermano con
         // el celu del tutor, o el padre que ya carga otro hijo), sumamos ESTA ficha a
@@ -70,7 +93,7 @@ public class AlumnoService : IAlumnoService
             // El profe carga al alumno: va DIRECTO a Alumnos (Activo), no a la espera.
             var ficha = Construir(dto, EstadoAlumno.Activo);
             ficha.UserId = titular.UserId; // la ficha nace bajo la cuenta del titular
-            ficha.SedeId = sedeProfe;      // el club del profe de cabecera
+            ficha.SedeId = sede;           // el club elegido para la ficha
             var creada = await _repo.AgregarAsync(ficha, ct);
             return new AlumnoCreadoDto
             {
@@ -96,7 +119,7 @@ public class AlumnoService : IAlumnoService
         {
             var alumno = Construir(dto, EstadoAlumno.Activo);
             alumno.UserId = cred.UserId;
-            alumno.SedeId = sedeProfe; // el club del profe de cabecera
+            alumno.SedeId = sede; // el club elegido para la ficha
             var creado = await _repo.AgregarAsync(alumno, ct);
             return new AlumnoCreadoDto
             {
@@ -206,8 +229,7 @@ public class AlumnoService : IAlumnoService
 
         // Se puede marcar menor SIN tutor y completarlo después (ver más abajo): no
         // bloquea. La ficha muestra "falta tutor" como recordatorio (Ley 25.326).
-        if (dto.ProfesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))
-            throw new ReglaDeNegocioException("Ese profe no es de tu club.");
+        var sede = await ValidarClubYProfeAsync(dto.SedeId, dto.ProfesorUserId, ct);
 
         alumno.Nombre = dto.Nombre;
         alumno.Apellido = dto.Apellido;
@@ -220,10 +242,7 @@ public class AlumnoService : IAlumnoService
         alumno.Modalidad = dto.Modalidad;
         alumno.Arancel = dto.Arancel;
         alumno.ProfesorUserId = dto.ProfesorUserId;
-        // El club sigue al profe de cabecera (cambiar de profe reubica el club).
-        alumno.SedeId = dto.ProfesorUserId is { } cabecera
-            ? await _staff.SedeDelProfeAsync(cabecera, ct)
-            : null;
+        alumno.SedeId = sede; // el club es del alumno, no del profe
         alumno.Notas = string.IsNullOrWhiteSpace(dto.Notas) ? null : dto.Notas;
         alumno.ActualizadoEl = DateTime.UtcNow;
 
@@ -341,15 +360,19 @@ public class AlumnoService : IAlumnoService
         var alumno = await _repo.ObtenerAsync(id, ct);
         if (alumno is null) return null;
 
-        // Validar el profe titular (null = desasignar). El dueño también es asignable.
-        if (profesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))
-            throw new ReglaDeNegocioException("Ese profe no es de tu club.");
+        // Validar el profe titular (null = desasignar). El dueño también es asignable,
+        // y el profe tiene que dar clases en el club donde YA está la ficha: cambiar
+        // de profe no reubica al alumno.
+        if (profesorUserId is { } profe)
+        {
+            if (!await _staff.EsAsignableAsync(profe, ct))
+                throw new ReglaDeNegocioException("Ese profe no es de tu club.");
+            if (!await _staff.TrabajaEnSedeAsync(profe, alumno.SedeId, ct))
+                throw new ReglaDeNegocioException(
+                    "Ese profe no da clases en el club del alumno. Cambiale el club desde \"Editar datos\" o elegí otro profe.");
+        }
 
         alumno.ProfesorUserId = profesorUserId;
-        // El club de la ficha sigue al profe titular (igual que en EditarAsync).
-        alumno.SedeId = profesorUserId is { } titular
-            ? await _staff.SedeDelProfeAsync(titular, ct)
-            : null;
         alumno.ActualizadoEl = DateTime.UtcNow;
 
         await _repo.GuardarCambiosAsync(ct);

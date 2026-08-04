@@ -127,6 +127,13 @@ export function fechaCorta(iso: string): string {
   return d.toLocaleDateString('es-AR', { weekday: 'short', day: '2-digit', month: '2-digit' });
 }
 
+/** "2026-08-05" → "Miércoles 5 de agosto" (rótulo de la vista Día) */
+export function fechaLarga(iso: string): string {
+  const d = new Date(`${iso}T00:00:00`);
+  const texto = d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' });
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
+}
+
 /** Rango legible de la semana: "13 al 19 de julio de 2026" */
 export function rangoSemana(lunesIso: string): string {
   const lunes = new Date(`${lunesIso}T00:00:00`);

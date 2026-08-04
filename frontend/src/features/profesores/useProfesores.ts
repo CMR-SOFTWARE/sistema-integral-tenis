@@ -15,13 +15,17 @@ export interface ProfesorAsignable {
 /**
  * Trae los profes asignables del club (el dueño + los staff activos) para los
  * selectores de horario/grupo/alumno, y mapea un userId a su nombre.
+ *
+ * Con `sedeId` se acota a los que dan clases en ese club — así la ficha del alumno
+ * ofrece solo los profes de su club. El dueño aparece siempre (trabaja en todos).
  */
-export function useProfesores() {
+export function useProfesores(sedeId?: string | null) {
   const [profes, setProfes] = useState<ProfesorAsignable[]>([]);
 
   useEffect(() => {
-    api.get<ProfesorAsignable[]>('/staff/asignables').then(setProfes).catch(() => setProfes([]));
-  }, []);
+    const query = sedeId ? `?sedeId=${sedeId}` : '';
+    api.get<ProfesorAsignable[]>(`/staff/asignables${query}`).then(setProfes).catch(() => setProfes([]));
+  }, [sedeId]);
 
   const nombreDe = useCallback(
     (userId: string | null | undefined) =>
