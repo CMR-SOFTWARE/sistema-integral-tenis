@@ -1,7 +1,8 @@
-import { aISO, fechaCorta, horaCorta } from './types';
+import { aISO, fechaCorta } from './types';
 import type { Turno } from './types';
 import { cubreFecha, franjaLegible } from '../bloqueos/types';
 import type { Bloqueo } from '../bloqueos/types';
+import TarjetaTurno from './TarjetaTurno';
 import s from './CalendarioPage.module.css';
 
 interface Props {
@@ -35,28 +36,14 @@ export default function GrillaSemana({ dias, turnos, bloqueos, onAbrirTurno, nom
               </div>
             ))}
             {delDia.length === 0 && bloqueosDia.length === 0 && <div className={s.libre}>—</div>}
-            {delDia.map((t) => {
-              const cancelado = t.estado === 'Cancelado';
-              const ausentes = t.participantes.filter((p) => !p.presente).length;
-              return (
-                <button
-                  key={t.id}
-                  className={`${s.turno} ${cancelado ? s.turnoCancelado : ''}`}
-                  onClick={() => onAbrirTurno(t.id)}
-                >
-                  <div className={s.turnoHora}>{horaCorta(t.horaInicio)}</div>
-                  <div className={s.turnoTitulo}>{t.titulo}</div>
-                  <div className={s.turnoDetalle}>
-                    {cancelado
-                      ? `Cancelado: ${t.canceladoMotivo}`
-                      : `${t.cancha} · ${t.participantes.length} 👤${ausentes > 0 ? ` · ${ausentes} falta${ausentes > 1 ? 's' : ''}` : ''}`}
-                  </div>
-                  {!cancelado && t.profesorUserId && (
-                    <div className={s.turnoProfe}>{nombreDe(t.profesorUserId)}</div>
-                  )}
-                </button>
-              );
-            })}
+            {delDia.map((t) => (
+              <TarjetaTurno
+                key={t.id}
+                turno={t}
+                nombreProfe={nombreDe(t.profesorUserId)}
+                onAbrir={(turno) => onAbrirTurno(turno.id)}
+              />
+            ))}
           </div>
         );
       })}

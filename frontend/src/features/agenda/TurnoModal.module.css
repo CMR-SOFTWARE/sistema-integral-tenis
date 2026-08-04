@@ -89,6 +89,31 @@
   font-size: 14px;
 }
 
+/* El nombre lleva a la ficha del alumno: se comporta como link, no como botón. */
+.nombreLink {
+  border: none;
+  background: none;
+  padding: 0;
+  text-align: left;
+  font-family: inherit;
+  color: var(--color-primary-dark);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: text-decoration-color 0.15s;
+}
+
+.nombreLink:hover {
+  text-decoration-color: currentColor;
+}
+
+.nombreLink:focus-visible {
+  outline: none;
+  border-radius: var(--radius-sm);
+  box-shadow: var(--focus-ring);
+}
+
 .deudaBadge {
   margin-left: 8px;
   padding: 2px 8px;

@@ -11,6 +11,7 @@ import PanelClasesSueltas from './PanelClasesSueltas';
 import PanelSolicitudesHorario from './PanelSolicitudesHorario';
 import NuevoHorarioModal from './NuevoHorarioModal';
 import EditarHorarioModal from './EditarHorarioModal';
+import FichaDesdeAgenda from './FichaDesdeAgenda';
 import { aISO, fechaLarga, lunesDe, rangoSemana, sumarDias } from './types';
 import type { CreateHorario, Horario, Turno, UpdateHorario } from './types';
 import { MESES } from '../cuotas/types';
@@ -52,6 +53,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
   const { sedes, cargando: sedesCargando } = useSedes();
   const { horarios, crear: crearH, editar: editarH, desactivar: desactivarH, recargar: recargarH } = useHorarios();
   const [abierto, setAbierto] = useState<string | null>(null); // turnoId
+  const [fichaAlumnoId, setFichaAlumnoId] = useState<string | null>(null); // ficha abierta desde una clase
   const [modalHorario, setModalHorario] = useState(false);
   const [editandoHorario, setEditandoHorario] = useState<Horario | null>(null);
   const [duplicandoHorario, setDuplicandoHorario] = useState<Horario | null>(null);
@@ -207,6 +209,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
           turnos={visibles}
           bloqueos={bloqueos}
           onAbrirTurno={(t) => setAbierto(t.id)}
+          nombreDe={nombreDe}
         />
       )}
 
@@ -225,6 +228,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
                     key={`${mesCursor.anio}-${mesCursor.mes}-${p.userId}`}
                     anio={mesCursor.anio} mes={mesCursor.mes} turnos={suyos}
                     bloqueos={bloqueos} onAbrirTurno={(t) => setAbierto(t.id)}
+                    nombreDe={nombreDe}
                   />
                 )}
               </div>
@@ -240,6 +244,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
                   key={`${mesCursor.anio}-${mesCursor.mes}-sin`}
                   anio={mesCursor.anio} mes={mesCursor.mes} turnos={visibles.filter((t) => !t.profesorUserId)}
                   bloqueos={bloqueos} onAbrirTurno={(t) => setAbierto(t.id)}
+                  nombreDe={nombreDe}
                 />
               )}
             </div>
@@ -271,7 +276,13 @@ export default function CalendarioPage({ sede, profe }: Props) {
           onEditarHorario={(h) => { setAbierto(null); setEditandoHorario(h); }}
           onDuplicarHorario={(h) => { setAbierto(null); setDuplicandoHorario(h); }}
           onDesactivarHorario={esOwner ? desactivarHorario : undefined}
+          // Se cierra el turno en vez de apilar dos modales
+          onAbrirFicha={(alumnoId) => { setAbierto(null); setFichaAlumnoId(alumnoId); }}
         />
+      )}
+
+      {fichaAlumnoId && (
+        <FichaDesdeAgenda alumnoId={fichaAlumnoId} onClose={() => setFichaAlumnoId(null)} />
       )}
 
       {(modalHorario || duplicandoHorario) && (

@@ -3,6 +3,7 @@ import { aISO, DIAS, diaDelMes, diasDelMesGrid, fechaCorta, horaCorta } from './
 import type { Turno } from './types';
 import { cubreFecha, franjaLegible } from '../bloqueos/types';
 import type { Bloqueo } from '../bloqueos/types';
+import TarjetaTurno from './TarjetaTurno';
 import s from './VistaMes.module.css';
 
 interface Props {
@@ -12,12 +13,14 @@ interface Props {
   turnos: Turno[];
   bloqueos: Bloqueo[];
   onAbrirTurno: (turno: Turno) => void;
+  /** Nombre del profe a partir de su userId (para la tarjeta de cada clase). */
+  nombreDe: (userId: string | null | undefined) => string | null;
 }
 
 const MAX_CHIPS = 3;
 
 /** Vista mensual estilo calendario: el mes resumido + detalle del día al hacer click. */
-export default function VistaMes({ anio, mes, turnos, bloqueos, onAbrirTurno }: Props) {
+export default function VistaMes({ anio, mes, turnos, bloqueos, onAbrirTurno, nombreDe }: Props) {
   const dias = diasDelMesGrid(anio, mes);
   const hoyIso = aISO(new Date());
   // Arranca en hoy si el mes mostrado es el actual; si no, en el día 1.
@@ -86,25 +89,17 @@ export default function VistaMes({ anio, mes, turnos, bloqueos, onAbrirTurno }: 
             <span>{b.motivo ?? 'Bloqueo fijo'}{b.cancha ? ` · ${b.cancha}` : ''}</span>
           </div>
         ))}
-        {turnosSel.map((t) => {
-          const cancelado = t.estado === 'Cancelado';
-          const ausentes = t.participantes.filter((p) => !p.presente).length;
-          return (
-            <button
+        {/* Las clases del día, con la misma tarjeta que la semana y el día */}
+        <div className={s.detalleTurnos}>
+          {turnosSel.map((t) => (
+            <TarjetaTurno
               key={t.id}
-              className={`${s.detalleTurno} ${cancelado ? s.detalleCancelado : ''}`}
-              onClick={() => onAbrirTurno(t)}
-            >
-              <span className={s.detalleHora}>{horaCorta(t.horaInicio)}</span>
-              <span className={s.detalleNombre}>{t.titulo}</span>
-              <span className={s.detalleInfo}>
-                {cancelado
-                  ? `Cancelado: ${t.canceladoMotivo}`
-                  : `${t.cancha} · ${t.participantes.length} 👤${ausentes > 0 ? ` · ${ausentes} falta${ausentes > 1 ? 's' : ''}` : ''}`}
-              </span>
-            </button>
-          );
-        })}
+              turno={t}
+              nombreProfe={nombreDe(t.profesorUserId)}
+              onAbrir={onAbrirTurno}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
