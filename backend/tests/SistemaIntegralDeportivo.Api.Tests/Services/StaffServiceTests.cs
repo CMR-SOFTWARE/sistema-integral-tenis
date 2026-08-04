@@ -23,6 +23,7 @@ public class StaffServiceTests
     private readonly Mock<IUsuarioActual> _usuario;
     private readonly Mock<IAlumnoRepository> _alumnos;
     private readonly Mock<ISedeRepository> _sedes;
+    private readonly Mock<IPerfilProfesorService> _perfiles;
     private readonly StaffService _service;
 
     public StaffServiceTests()
@@ -33,7 +34,8 @@ public class StaffServiceTests
         _usuario = new Mock<IUsuarioActual>();
         _alumnos = new Mock<IAlumnoRepository>();
         _sedes = new Mock<ISedeRepository>();
-        _service = new StaffService(_repo.Object, _tenants.Object, _credenciales.Object, _usuario.Object, _alumnos.Object, _sedes.Object);
+        _perfiles = new Mock<IPerfilProfesorService>();
+        _service = new StaffService(_repo.Object, _tenants.Object, _credenciales.Object, _usuario.Object, _alumnos.Object, _sedes.Object, _perfiles.Object);
 
         _tenants.Setup(t => t.ObtenerActualAsync(It.IsAny<CancellationToken>()))
                 .ReturnsAsync(new Tenant { Subdominio = "d", Nombre = "Academia", OwnerUserId = OwnerId });

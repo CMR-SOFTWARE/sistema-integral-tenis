@@ -13,6 +13,10 @@ obj/
 *.db-shm
 *.db-wal
 
+# ── Archivos subidos en desarrollo (fotos de perfil): en producción viven en
+#    Supabase Storage. Son datos de prueba, no código. ──
+archivos-locales/
+
 # ── Secretos y entorno ──
 .env
 .env.*

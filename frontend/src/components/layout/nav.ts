@@ -27,6 +27,13 @@ export const profNav: NavItem[] = [
     icon: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4',
   },
   {
+    // La carta de presentación del profe. Sin soloOwner a propósito: el empleado
+    // también arma la suya (los alumnos ven a los dos en "Mi club").
+    to: '/mi-perfil',
+    label: 'Mi perfil',
+    icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0',
+  },
+  {
     // "Mi academia" agrupa la gestión del negocio: Profesores + Sueldos + Configuración (pestañas).
     to: '/mi-academia',
     label: 'Mi academia',

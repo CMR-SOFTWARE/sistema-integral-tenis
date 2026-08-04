@@ -95,6 +95,8 @@ public class LoginDto
 public class FichaDto
 {
     public Guid AlumnoId { get; set; }
+    /// <summary>El club de la ficha: con esto el portal pide los profes de SU club.</summary>
+    public Guid TenantId { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public string Apellido { get; set; } = string.Empty;
     public string Club { get; set; } = string.Empty;

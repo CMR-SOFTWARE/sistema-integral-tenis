@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, ApiError } from '../../lib/api';
+import ProfesoresClub from '../perfilprofesor/ProfesoresClub';
 import { datosCompletos, guardarSesion, obtenerSesion } from '../auth/sesion';
 import type { Sesion } from '../auth/sesion';
 import s from './PortalPages.module.css';
@@ -23,6 +24,7 @@ export default function BuscarClubPage() {
   const [mensaje, setMensaje] = useState('');
   const [enviando, setEnviando] = useState<string | null>(null); // tenantId en curso
   const [error, setError] = useState<string | null>(null);
+  const [mirando, setMirando] = useState<ProfesorPublico | null>(null); // club cuyo equipo estoy viendo
 
   // Refresca la sesión: si el profe te asignó una clase (o recién te uniste), la
   // ficha aparece y la vista cambia sin re-loguear.
@@ -66,18 +68,28 @@ export default function BuscarClubPage() {
 
   // Ya estás vinculado a un club (en lista de espera o alumno pleno)
   if (sesion?.alumno) {
+    const ficha = sesion.alumno;
     return (
-      <div className={s.tarjeta}>
-        <h3 className={s.tarjetaTitulo}>Tu club</h3>
-        {sesion.alumno.enEspera ? (
-          <p className={s.sinClubTexto}>
-            Estás en la <b>lista de espera</b> de <b>{sesion.alumno.club}</b>. Cuando tu
-            profe te asigne un horario o un grupo, tu portal se habilita completo.
-          </p>
-        ) : (
-          <p className={s.sinClubTexto}>
-            Estás en <b>{sesion.alumno.club}</b> como {sesion.alumno.nombre} {sesion.alumno.apellido}.
-          </p>
+      <div className={s.perfilCol}>
+        <div className={s.tarjeta}>
+          <h3 className={s.tarjetaTitulo}>Tu club</h3>
+          {ficha.enEspera ? (
+            <p className={s.sinClubTexto}>
+              Estás en la <b>lista de espera</b> de <b>{ficha.club}</b>. Cuando tu
+              profe te asigne un horario o un grupo, tu portal se habilita completo.
+            </p>
+          ) : (
+            <p className={s.sinClubTexto}>
+              Estás en <b>{ficha.club}</b> como {ficha.nombre} {ficha.apellido}.
+            </p>
+          )}
+        </div>
+
+        {/* Las cartas de presentación de los profes del club. La ficha vieja
+            (guardada antes de esta versión) no trae tenantId: se completa sola
+            al refrescar la sesión, arriba. */}
+        {ficha.tenantId && (
+          <ProfesoresClub tenantId={ficha.tenantId} titulo={`Los profes de ${ficha.club}`} />
         )}
       </div>
     );
@@ -134,6 +146,14 @@ export default function BuscarClubPage() {
                       <div className={s.horarioTitulo}>{p.club}</div>
                       <div className={s.horarioDetalle}>Prof. {p.profesor}</div>
                     </div>
+                    {/* Conocer al profe ANTES de mandar la solicitud: es para lo
+                        que existe la carta de presentación. */}
+                    <button
+                      className={s.btnSecundario}
+                      onClick={() => setMirando(p)}
+                    >
+                      Conocerlos
+                    </button>
                     <button
                       className={s.btnGuardar}
                       disabled={enviando !== null}
@@ -148,6 +168,10 @@ export default function BuscarClubPage() {
           </>
         )}
       </div>
+
+      {mirando && (
+        <ProfesoresClub tenantId={mirando.tenantId} titulo={`Los profes de ${mirando.club}`} />
+      )}
     </div>
   );
 }

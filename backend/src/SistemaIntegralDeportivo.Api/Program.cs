@@ -1,5 +1,7 @@
+using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json.Serialization;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -80,6 +82,35 @@ builder.Services.AddScoped<IMembresiaTenantRepository, MembresiaTenantRepository
 builder.Services.AddScoped<IStaffService, StaffService>();
 builder.Services.AddScoped<IAdminRepository, AdminRepository>();
 builder.Services.AddScoped<IAdminService, AdminService>();
+builder.Services.AddScoped<IPerfilProfesorRepository, PerfilProfesorRepository>();
+builder.Services.AddScoped<IPerfilProfesorService, PerfilProfesorService>();
+
+// ── Dónde se guardan las fotos que suben los profes (costura intercambiable) ──
+// En producción, Supabase Storage; en desarrollo, el disco local, así se trabaja
+// sin credenciales y sin apuntar dev a producción.
+var proveedorStorage = builder.Configuration["Storage:Proveedor"] ?? "Local";
+if (proveedorStorage.Equals("Supabase", StringComparison.OrdinalIgnoreCase))
+{
+    var urlSupabase = builder.Configuration["Storage:Supabase:Url"]
+        ?? throw new InvalidOperationException("Falta Storage:Supabase:Url en la configuración.");
+    var keySupabase = builder.Configuration["Storage:Supabase:ServiceRoleKey"]
+        ?? throw new InvalidOperationException("Falta Storage:Supabase:ServiceRoleKey en la configuración.");
+
+    builder.Services.AddHttpClient<AlmacenamientoSupabase>(http =>
+    {
+        http.BaseAddress = new Uri($"{urlSupabase.TrimEnd('/')}/storage/v1/");
+        // El gateway de Supabase pide "apikey" además del Bearer, aunque sean la misma key
+        http.DefaultRequestHeaders.Add("apikey", keySupabase);
+        http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", keySupabase);
+        http.Timeout = TimeSpan.FromSeconds(30);
+    });
+    // AddHttpClient registra la clase como transient; acá se expone por su interfaz
+    builder.Services.AddScoped<IAlmacenamientoArchivos>(sp => sp.GetRequiredService<AlmacenamientoSupabase>());
+}
+else
+{
+    builder.Services.AddScoped<IAlmacenamientoArchivos, AlmacenamientoLocal>();
+}
 
 // Base de datos: EF Core sobre PostgreSQL (Supabase). La connection string real
 // vive en user-secrets en desarrollo, y en la variable de entorno ConnectionStrings__Default
@@ -169,6 +200,20 @@ app.UseCors("Frontend");
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Con el storage local, Kestrel sirve las fotos subidas desde /archivos. No se usa
+// wwwroot: se monta solo esta carpeta y solo cuando el proveedor es Local (en
+// producción las imágenes las sirve el CDN de Supabase, no la API).
+if (!proveedorStorage.Equals("Supabase", StringComparison.OrdinalIgnoreCase))
+{
+    var raizArchivos = AlmacenamientoLocal.RaizDe(app.Configuration, app.Environment);
+    Directory.CreateDirectory(raizArchivos);
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(raizArchivos),
+        RequestPath = "/archivos",
+    });
+}
 
 app.MapControllers();
 

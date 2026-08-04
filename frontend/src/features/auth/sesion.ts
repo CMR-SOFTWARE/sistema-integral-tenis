@@ -3,6 +3,8 @@
 
 export interface Ficha {
   alumnoId: string;
+  /** El club de la ficha: con esto el portal pide los profes de SU club. */
+  tenantId: string;
   nombre: string;
   apellido: string;
   club: string;

@@ -46,11 +46,12 @@ public class StaffService : IStaffService
     private readonly IUsuarioActual _usuario;
     private readonly IAlumnoRepository _alumnos;
     private readonly ISedeRepository _sedes;
+    private readonly IPerfilProfesorService _perfiles;
 
     public StaffService(
         IMembresiaTenantRepository membresias, ITenantRepository tenants,
         ICredencialesService credenciales, IUsuarioActual usuario, IAlumnoRepository alumnos,
-        ISedeRepository sedes)
+        ISedeRepository sedes, IPerfilProfesorService perfiles)
     {
         _membresias = membresias;
         _tenants = tenants;
@@ -58,6 +59,7 @@ public class StaffService : IStaffService
         _usuario = usuario;
         _alumnos = alumnos;
         _sedes = sedes;
+        _perfiles = perfiles;
     }
 
     public async Task<IReadOnlyList<StaffDto>> ListarAsync(CancellationToken ct = default)
@@ -163,6 +165,10 @@ public class StaffService : IStaffService
             ?? throw new ReglaDeNegocioException("Ese profe no está en tu equipo.");
 
         var userId = membresia.UserId;
+
+        // Su carta de presentación en ESTE club se va con él, fotos incluidas
+        // (si da clases en otro club, ese perfil no se toca).
+        await _perfiles.EliminarPerfilDeUsuarioAsync(userId, ct);
 
         // Saca la membresía y libera lo que lo tenía de profe (queda sin asignar).
         await _membresias.EliminarConReferenciasAsync(membresia, ct);

@@ -45,12 +45,16 @@ function mensajeAmigable(status: number): string {
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const token = obtenerToken();
+  // Subida de archivos: el Content-Type lo pone el navegador, porque tiene que
+  // incluir el `boundary` del multipart. Si lo forzamos acá, el back no puede
+  // separar las partes y la subida falla.
+  const esArchivo = init?.body instanceof FormData;
 
   let res: Response;
   try {
     res = await fetch(`${BASE}${path}`, {
       headers: {
-        'Content-Type': 'application/json',
+        ...(esArchivo ? {} : { 'Content-Type': 'application/json' }),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(fichaActivaId ? { 'X-Alumno-Id': fichaActivaId } : {}),
       },
@@ -91,4 +95,7 @@ export const api = {
   patch: <T>(path: string, body: unknown) =>
     request<T>(path, { method: 'PATCH', body: JSON.stringify(body) }),
   delete: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
+  /** Sube un archivo (multipart). El resto de los métodos siguen mandando JSON. */
+  postForm: <T>(path: string, form: FormData) =>
+    request<T>(path, { method: 'POST', body: form }),
 };

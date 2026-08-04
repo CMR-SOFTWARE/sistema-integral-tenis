@@ -14,6 +14,7 @@ import { obtenerSesion, obtenerToken } from './features/auth/sesion';
 import DashboardPage from './features/dashboard/DashboardPage';
 import StaffDashboardPage from './features/staff/StaffDashboardPage';
 import MiAcademiaPage from './features/miacademia/MiAcademiaPage';
+import MiPerfilProfesorPage from './features/perfilprofesor/MiPerfilProfesorPage';
 import PlataformaPage from './features/admin/PlataformaPage';
 import AgendaSeccionPage from './features/agenda/AgendaSeccionPage';
 import FinanzasSeccionPage from './features/finanzas/FinanzasSeccionPage';
@@ -101,6 +102,8 @@ export default function App() {
             <Route path="/horarios" element={<Navigate to="/agenda?tab=horarios" replace />} />
             <Route path="/grupos" element={<Navigate to="/agenda?tab=grupos" replace />} />
             <Route path="/mi-academia" element={<MiAcademiaPage />} />
+            {/* Sin soloOwner: el profe empleado también edita SU carta de presentación */}
+            <Route path="/mi-perfil" element={<MiPerfilProfesorPage />} />
             <Route path="/finanzas" element={<FinanzasSeccionPage />} />
             {/* Compat: los links viejos entran a Finanzas en el tab correcto */}
             <Route path="/cuotas" element={<Navigate to="/finanzas?tab=cuotas" replace />} />
