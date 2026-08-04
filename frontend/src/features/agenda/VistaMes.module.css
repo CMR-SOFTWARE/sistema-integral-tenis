@@ -129,6 +129,13 @@
   padding: 6px 0;
 }
 
+/* Las clases del día seleccionado: varias por fila si hay ancho. */
+.detalleTurnos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+  gap: 10px;
+}
+
 .detalleTurno,
 .detalleBloqueo {
   display: flex;

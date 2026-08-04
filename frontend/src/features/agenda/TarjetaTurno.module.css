@@ -1,0 +1,110 @@
+/* La tarjeta de una clase en el calendario. La comparten las tres vistas (día,
+   semana y el detalle del mes), por eso vive en su propio módulo y no en el CSS
+   de una pantalla. Hereda el look que ya tenía la tarjeta de la grilla semanal. */
+
+.tarjeta {
+  display: block;
+  width: 100%;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 10px;
+  padding: 8px 9px;
+  font-size: 12px;
+  text-align: left;
+  background: var(--color-surface);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.tarjeta:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(23, 138, 76, 0.12);
+}
+
+.tarjeta:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.cancelada {
+  opacity: 0.55;
+  background: var(--color-surface-subtle);
+}
+
+.cancelada .tituloTexto {
+  text-decoration: line-through;
+}
+
+.hora {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.titulo {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 3px 0;
+}
+
+.tituloTexto {
+  font-weight: 700;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Alguien de esta clase debe la cuota: se ve sin abrir el turno. */
+.puntoDeuda {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--color-danger);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* Quiénes vienen. Se corta a dos líneas: en la semana las columnas son angostas,
+   en día y mobile entra cómodo. */
+.alumnos {
+  color: var(--color-text-soft);
+  font-size: 11.5px;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.lugar {
+  margin-top: 2px;
+  color: var(--color-text-faint);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pie {
+  margin-top: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.faltas {
+  color: var(--color-warning);
+  margin-left: 4px;
+}
+
+.motivo {
+  color: var(--color-text-faint);
+  font-size: 11px;
+  line-height: 1.35;
+}

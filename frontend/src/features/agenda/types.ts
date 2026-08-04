@@ -100,6 +100,21 @@ export function horaCorta(hora: string): string {
   return hora.slice(0, 5);
 }
 
+/** "18:00:00" + 90 → "19:30" (para mostrar la franja completa de la clase). */
+export function horaFin(horaInicio: string, duracionMinutos: number): string {
+  const [h, m] = horaInicio.split(':').map(Number);
+  const total = h * 60 + m + duracionMinutos;
+  const hh = String(Math.floor(total / 60) % 24).padStart(2, '0');
+  const mm = String(total % 60).padStart(2, '0');
+  return `${hh}:${mm}`;
+}
+
+/** "Martín", "Pérez" → "M. Pérez" (entra en la columna angosta de la semana). */
+export function nombreCorto(nombre: string, apellido: string): string {
+  const inicial = nombre.trim().charAt(0);
+  return inicial ? `${inicial}. ${apellido}` : apellido;
+}
+
 /** Lunes de la semana que contiene a la fecha dada, como "YYYY-MM-DD". */
 export function lunesDe(fecha: Date): string {
   const d = new Date(fecha);

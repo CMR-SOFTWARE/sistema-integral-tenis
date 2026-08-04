@@ -16,6 +16,8 @@ interface Props {
   onEditarHorario?: (h: Horario) => void;
   onDuplicarHorario?: (h: Horario) => void;
   onDesactivarHorario?: (h: Horario) => void;
+  /** Abre la ficha del alumno (con su cuenta corriente) desde la clase. */
+  onAbrirFicha?: (alumnoId: string) => void;
 }
 
 /**
@@ -24,7 +26,7 @@ interface Props {
  */
 export default function TurnoModal({
   turno, horario, onClose, onAsistencia, onCancelar,
-  onEditarHorario, onDuplicarHorario, onDesactivarHorario,
+  onEditarHorario, onDuplicarHorario, onDesactivarHorario, onAbrirFicha,
 }: Props) {
   const [cancelando, setCancelando] = useState(false);
   const [motivo, setMotivo] = useState('');
@@ -93,10 +95,23 @@ export default function TurnoModal({
         {turno.participantes.map((p) => (
           <div key={p.alumnoId} className={s.fila}>
             <span className={`${s.estadoDot} ${p.presente ? s.dotPresente : s.dotAusente}`} />
-            <span className={s.nombre}>
-              {p.nombre} {p.apellido}
-              {p.deudaVencida && <span className={s.deudaBadge}>cuota vencida</span>}
-            </span>
+            {/* El nombre abre la ficha (datos, horarios y cuenta corriente); el
+                botón de asistencia queda aparte para no cambiar el gesto de siempre. */}
+            {onAbrirFicha ? (
+              <button
+                className={`${s.nombre} ${s.nombreLink}`}
+                onClick={() => onAbrirFicha(p.alumnoId)}
+                title="Ver la ficha y la cuota"
+              >
+                {p.nombre} {p.apellido}
+                {p.deudaVencida && <span className={s.deudaBadge}>cuota vencida</span>}
+              </button>
+            ) : (
+              <span className={s.nombre}>
+                {p.nombre} {p.apellido}
+                {p.deudaVencida && <span className={s.deudaBadge}>cuota vencida</span>}
+              </span>
+            )}
             {!cancelado && (
               <button
                 className={p.presente ? s.btnFalto : s.btnVino}
