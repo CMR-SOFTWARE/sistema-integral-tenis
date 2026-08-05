@@ -51,6 +51,7 @@ export function useHorarios() {
   const invalidar = async () => {
     await qc.invalidateQueries({ queryKey: ['horarios'] });
     await qc.invalidateQueries({ queryKey: ['turnos-semana'] });
+    await qc.invalidateQueries({ queryKey: ['turnos-mes'] });
     await qc.invalidateQueries({ queryKey: ['cuotas'] });
     await qc.invalidateQueries({ queryKey: ['sueldos'] });
   };
@@ -70,11 +71,26 @@ export function useHorarios() {
     await invalidar();
   };
 
+  // Sumar/sacar del roster repone o quita al alumno de los turnos futuros y cambia
+  // el divisor de la cuota: el back reconcilia, nosotros invalidamos lo mismo que
+  // al tocar el horario. La ficha del alumno también muestra sus clases.
+  const agregarAlumno = async (horarioId: string, alumnoId: string) => {
+    await api.post(`/horarios/${horarioId}/alumnos`, { alumnoId });
+    await invalidar();
+    await qc.invalidateQueries({ queryKey: ['alumno-horarios'] });
+  };
+
+  const quitarAlumno = async (horarioId: string, alumnoId: string) => {
+    await api.delete(`/horarios/${horarioId}/alumnos/${alumnoId}`);
+    await invalidar();
+    await qc.invalidateQueries({ queryKey: ['alumno-horarios'] });
+  };
+
   return {
     horarios: query.data ?? [],
     cargando: query.isLoading,
     error: query.error ? (query.error.message || 'Error cargando horarios') : null,
-    crear, editar, desactivar,
+    crear, editar, desactivar, agregarAlumno, quitarAlumno,
     recargar: () => qc.invalidateQueries({ queryKey: ['horarios'] }),
   };
 }

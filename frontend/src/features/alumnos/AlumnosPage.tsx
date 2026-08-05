@@ -114,7 +114,7 @@ export default function AlumnosPage() {
   const baja = async (a: Alumno) => {
     if (!(await confirmar({
       titulo: `Dar de baja a ${a.nombre} ${a.apellido}`,
-      mensaje: 'Sale del calendario, de sus grupos (se libera el cupo) y se desactivan sus horarios individuales. El historial se conserva.',
+      mensaje: 'Sale del calendario y de todas sus clases (se libera el cupo en cada una). El historial se conserva.',
       confirmar: 'Dar de baja',
       peligro: true,
     }))) return;
@@ -129,7 +129,7 @@ export default function AlumnosPage() {
       titulo: `Eliminar a ${a.nombre} ${a.apellido}`,
       mensaje: (
         <>
-          Se borra la ficha y <b>todo su historial</b> (cuotas, pagos, asistencia, grupos y
+          Se borra la ficha y <b>todo su historial</b> (cuotas, pagos, asistencia y
           horarios). <b>Esto no se puede deshacer.</b>
           {enFam
             ? ' Su cuenta familiar sigue activa: los demás miembros conservan el login.'

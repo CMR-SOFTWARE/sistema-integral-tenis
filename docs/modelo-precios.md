@@ -128,25 +128,25 @@ posible. Por eso el orden de construcción es:
   resto** (÷4 en vez de ÷3). Ahora:
   - **Pausado** (lesión, viaje): sale de sus turnos futuros y sus cargos
     IMPAGOS de esos turnos se borran (no va → no paga). Se le **guarda el
-    lugar**: sigue en sus grupos y su horario individual queda activo. Al
-    reactivarlo **vuelve solo** a los turnos futuros de sus grupos (los
-    individuales los regenera la generación perezosa).
-  - **Baja**: lo mismo + **libera el lugar** (sale de sus grupos → el cupo
-    queda disponible; sus horarios individuales se desactivan → la cancha se
-    libera). Si vuelve, el profe lo reasigna.
+    lugar**: sigue en el roster de sus clases. Al reactivarlo **vuelve solo**
+    a los turnos futuros de esas clases.
+  - **Baja**: lo mismo + **libera el lugar** (sale del roster de todas sus
+    clases → el cupo queda disponible). La clase **no se desactiva** aunque
+    quede vacía: deja de generar turnos, que es el mismo efecto y no destruye
+    la clase. Si vuelve, el profe lo reasigna.
   - **Lo PAGADO es intocable**: un turno futuro con su cargo ya pagado no se
     toca (mismo criterio que `HorarioService.DesactivarAsync` y bloqueos).
   - La **generación perezosa** ya no incluye en el roster a quien no esté
     `Activo` (ni genera el turno individual de un pausado).
-  - **Entrar o salir de un grupo también sincroniza el calendario**: al
-    sumar a un alumno a un grupo, se lo repone en los turnos futuros YA
-    generados de ese grupo (y se recalcula el divisor); al quitarlo, se lo
-    saca de esos turnos. Antes esto se olvidaba y el que volvía tras una baja
-    no aparecía en el calendario ni se le generaba cuota (bug de Lucas,
-    16/07/2026). Toda la lógica vive en un solo lugar
+  - **Entrar o salir de una clase también sincroniza el calendario**: al
+    sumar a un alumno al roster de un horario, se lo repone en los turnos
+    futuros YA generados de esa clase (y se recalcula el divisor); al
+    quitarlo, se lo saca de esos turnos. Antes esto se olvidaba y el que
+    volvía tras una baja no aparecía en el calendario ni se le generaba cuota
+    (bug de Lucas, 16/07/2026). Toda la lógica vive en un solo lugar
     —`AlumnoService.SincronizarCalendarioAsync`, la reconciliación
     idempotente del estado↔calendario— que llaman por igual el cambio de
-    estado, la baja y `GrupoService` al tocar una membresía. Un solo lugar =
+    estado, la baja y `HorarioService` al tocar una membresía. Un solo lugar =
     el agujero no se repite.
 - ~~¿La morosidad saca del calendario?~~ → **Día 15 (5 días de gracia después
   del vencimiento del 10): NO es automático.** El profe ve un panel en Cuotas

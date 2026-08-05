@@ -5,15 +5,15 @@ import { useFichaActiva } from './FichaActivaContext';
 import type { Servicio, Pedido } from '../cuotas/types';
 import type {
   Aviso,
+  ClaseDisponible,
   ClaseSuelta,
   CuotaFamilia,
-  GrupoDisponible,
   MiLiquidacion,
   MisTurnos,
   NotaProfe,
   Publicidad,
   SedeReserva,
-  SolicitudGrupo,
+  SolicitudCupo,
   SolicitudHorario,
 } from './types';
 
@@ -100,8 +100,8 @@ export function useServiciosYPedidos() {
 }
 
 export interface ReservarData {
-  grupos: GrupoDisponible[];
-  solGrupo: SolicitudGrupo[];
+  clases: ClaseDisponible[];
+  solCupo: SolicitudCupo[];
   solHorario: SolicitudHorario[];
   clasesSueltas: ClaseSuelta[];
 }
@@ -111,13 +111,13 @@ export function useReservarData() {
   return useQuery({
     queryKey: ['portal-reservar', alumnoId],
     queryFn: async (): Promise<ReservarData> => {
-      const [grupos, solGrupo, solHorario, clasesSueltas] = await Promise.all([
-        api.get<GrupoDisponible[]>('/portal/grupos-disponibles'),
-        api.get<SolicitudGrupo[]>('/portal/solicitudes-grupo'),
+      const [clases, solCupo, solHorario, clasesSueltas] = await Promise.all([
+        api.get<ClaseDisponible[]>('/portal/clases-disponibles'),
+        api.get<SolicitudCupo[]>('/portal/solicitudes-cupo'),
         api.get<SolicitudHorario[]>('/portal/solicitudes-horario'),
         api.get<ClaseSuelta[]>('/portal/clases-sueltas'),
       ]);
-      return { grupos, solGrupo, solHorario, clasesSueltas };
+      return { clases, solCupo, solHorario, clasesSueltas };
     },
     enabled: tieneFicha(),
   });

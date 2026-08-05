@@ -97,10 +97,10 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/alumnos" element={<AlumnosSeccionPage />} />
             <Route path="/agenda" element={<AgendaSeccionPage />} />
-            {/* Compat: los links viejos entran a la Agenda en el tab correcto */}
-            <Route path="/calendario" element={<Navigate to="/agenda?tab=calendario" replace />} />
-            <Route path="/horarios" element={<Navigate to="/agenda?tab=horarios" replace />} />
-            <Route path="/grupos" element={<Navigate to="/agenda?tab=grupos" replace />} />
+            {/* Compat: los links viejos (incluido /grupos, que ya no existe) van a la Agenda */}
+            <Route path="/calendario" element={<Navigate to="/agenda" replace />} />
+            <Route path="/horarios" element={<Navigate to="/agenda" replace />} />
+            <Route path="/grupos" element={<Navigate to="/agenda" replace />} />
             <Route path="/mi-academia" element={<MiAcademiaPage />} />
             {/* Sin soloOwner: el profe empleado también edita SU carta de presentación */}
             <Route path="/mi-perfil" element={<MiPerfilProfesorPage />} />

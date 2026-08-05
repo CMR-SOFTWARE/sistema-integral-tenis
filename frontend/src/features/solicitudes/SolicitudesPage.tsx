@@ -5,13 +5,12 @@ import { CAT_COLOR, CAT_LABEL, avatarColor, iniciales } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import type { SolicitudPendiente } from './types';
 import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
-import { obtenerSesion } from '../auth/sesion';
 import s from './SolicitudesPage.module.css';
 
 /**
  * Lista de espera: los que se unieron a la academia (o cargó el profe) y todavía
  * NO tienen clase. Son miembros, no alumnos: se vuelven alumnos cuando se les
- * asigna una clase (un grupo o un horario). El profe los puede quitar.
+ * asigna un horario. El profe los puede quitar.
  */
 export default function SolicitudesPage() {
   const [espera, setEspera] = useState<SolicitudPendiente[] | null>(null);
@@ -19,8 +18,6 @@ export default function SolicitudesPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [procesando, setProcesando] = useState<string | null>(null); // id en curso
   const confirmar = useConfirmar();
-  // Los grupos son del dueño: el staff promueve al alumno asignándole un horario.
-  const esStaff = obtenerSesion()?.rol === 'staff';
 
   const cargar = useCallback(() => {
     api.get<SolicitudPendiente[]>('/solicitudes')
@@ -64,8 +61,8 @@ export default function SolicitudesPage() {
     <div>
       <div className={s.intro}>
         Los que se unieron a tu academia (o cargaste) y todavía no tienen clase. Son
-        miembros, todavía no alumnos: <b>se vuelven alumnos cuando les asignás una
-        clase</b> — un grupo o un horario.
+        miembros, todavía no alumnos: <b>se vuelven alumnos cuando les asignás un
+        horario</b> — desde la Agenda, sumándolos a una clase.
       </div>
 
       {espera.length === 0 && (
@@ -102,8 +99,7 @@ export default function SolicitudesPage() {
                 {sol.mensaje && <div className={s.mensaje}>"{sol.mensaje}"</div>}
               </div>
               <div className={s.acciones}>
-                {!esStaff && <Link to="/agenda?tab=grupos" className={s.btnAprobar}>A un grupo</Link>}
-                <Link to="/agenda?tab=calendario" className={s.btnAprobar}>A un horario</Link>
+                <Link to="/agenda" className={s.btnAprobar}>Asignarle un horario</Link>
                 <button
                   className={s.btnRechazar}
                   disabled={procesando === sol.id}

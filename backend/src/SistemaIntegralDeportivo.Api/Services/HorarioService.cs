@@ -80,9 +80,18 @@ public class HorarioService : IHorarioService
 
         foreach (var alumno in alumnos)
         {
-            await _horarios.AgregarMembresiaAsync(
-                new AlumnoHorario { HorarioId = creado.Id, AlumnoId = alumno.Id }, ct);
-            creado.Alumnos.Add(new AlumnoHorario { HorarioId = creado.Id, AlumnoId = alumno.Id, Alumno = alumno });
+            // UNA sola instancia por membresía: la misma se registra en el repositorio
+            // y se cuelga de la navegación del horario (que ya quedó trackeado al
+            // crearse). Con dos objetos distintos —misma PK compuesta— EF los toma
+            // como dos filas y tira al guardar.
+            var membresia = new AlumnoHorario
+            {
+                HorarioId = creado.Id,
+                AlumnoId = alumno.Id,
+                Alumno = alumno, // para armar el título y los miembros de la respuesta
+            };
+            await _horarios.AgregarMembresiaAsync(membresia, ct);
+            creado.Alumnos.Add(membresia);
         }
         await _horarios.GuardarCambiosAsync(ct);
 

@@ -198,10 +198,14 @@ export default function DetalleAlumnoModal({
                 <div key={i} className={s.itemHorario}>
                   <div className={s.itemPrincipal}>
                     <span className={s.itemDia}>{h.dia} {h.horaInicio}</span>
-                    <span className={s.itemTipo}>{h.grupo ?? h.tipo}</span>
+                    <span className={s.itemTipo}>{h.titulo}</span>
                   </div>
                   <div className={s.itemSub}>
                     {h.cancha}{h.sede ? ` · ${h.sede}` : ''} · {h.duracionMinutos}′
+                    {/* Con cuántos comparte la clase: 0 = la tiene para él solo. */}
+                    {h.companeros > 0
+                      ? ` · con ${h.companeros} más`
+                      : ' · particular'}
                   </div>
                 </div>
               ))}

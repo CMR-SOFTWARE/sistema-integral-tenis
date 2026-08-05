@@ -279,10 +279,14 @@ El alumno administra parte de su propia ficha desde el portal:
   el portal, con regla de **pertenencia**: solo toca las suyas).
 - **Categoría "por ahora" editable por el alumno**: es un solo campo en la
   ficha, así que el cambio se refleja en todos lados (lista del profe, cuotas).
-  **Pendiente para M5**: al cambiar de categoría, validar contra sus grupos
-  (un grupo tendrá categoría requerida; ver la regla de categoría↔grupo).
+  **Pendiente**: al cambiar de categoría, validar contra sus clases (una clase
+  tiene categoría sugerida; ver la regla de categoría↔clase).
 
 ## Changelog
 
 - **12/06/2026**: versión inicial. Multi-tenant, sin login de alumnos, grupos fijos, soporte menores, categorías 7ma-1ra.
 - **17/07/2026 (M3)**: perfil editable por el alumno (contacto + categoría + foto base64 + raquetas). Entidad `Raqueta`.
+- **05/08/2026**: se elimina el concepto `Grupo`. El cupo, la categoría y el
+  roster pasan al `Horario` (`AlumnoHorario` reemplaza a `AlumnoGrupo`, con la
+  misma forma). Lo de `Grupo`/`AlumnoGrupo` de §3 queda como historia: ver
+  `modelo-agenda.md` §2 para el modelo vigente.

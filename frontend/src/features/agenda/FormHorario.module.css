@@ -1,0 +1,26 @@
+/*
+ * La grilla de los formularios de horario (nuevo y editar). Mobile-first de verdad:
+ * la base es UNA columna —el profe carga la clase parado en la cancha— y recién de
+ * tablet para arriba pasa a dos.
+ *
+ * Tiene grilla propia y no la de NuevoAlumnoModal a propósito: aquella arma dos
+ * columnas por defecto y las deshace con un `max-width`, y en el celular seguía
+ * mostrando los campos de a dos. Estos formularios son largos (suman cupo, categoría
+ * y la lista de alumnos), así que se plantan en una columna y no se negocia.
+ */
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+
+.span2 {
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 700px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}

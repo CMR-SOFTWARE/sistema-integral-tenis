@@ -45,7 +45,7 @@ function DirectorCard() {
       <h3 className={s.titulo}>Director de la academia</h3>
       <p className={s.bajada}>
         Sos el <b>Director</b> de tu academia. Si además <b>das clases</b>, aparecés como profe
-        para asignarte a horarios, grupos y alumnos. Si tu academia crece y solo gestionás, apagá
+        para asignarte a horarios y alumnos. Si tu academia crece y solo gestionás, apagá
         esta opción: dejás de aparecer como profe (los horarios que ya tenés asignados no se tocan).
       </p>
       {error && <div className={s.error}>{error}</div>}

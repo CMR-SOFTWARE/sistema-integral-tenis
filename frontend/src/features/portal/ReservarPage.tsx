@@ -9,7 +9,7 @@ import { formatoPlata, CAT_LABEL } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import { aISO, fechaCorta, horaCorta, lunesDe, rangoSemana, sumarDias } from '../agenda/types';
 import { useReservarData, usePortalSedes } from './hooks';
-import type { ClaseSuelta, DatosPago, Disponibilidad } from './types';
+import type { ClaseDisponible, ClaseSuelta, DatosPago, Disponibilidad } from './types';
 import s from './ReservarPage.module.css';
 
 const DIA_IDX: Record<string, number> = {
@@ -26,36 +26,26 @@ const ESTADO_SOL: Record<string, { label: string; cls: string }> = {
 
 const hhmm = (t: string) => t.slice(0, 5);
 
-interface SlotGrupo {
-  grupoId: string;
-  grupoNombre: string;
-  categoria: string | null;
+/** Una clase disponible ya ubicada en la columna de su día. */
+interface SlotClase extends ClaseDisponible {
   diaIdx: number;
-  horaInicio: string;
-  duracionMinutos: number;
-  cancha: string;
-  sede: string;
-  precioEstimado: number | null;
-  miembros: number;
-  cupo: number | null;
-  pendiente: boolean;
 }
 
-/** Reservar: calendario semanal con grupos con cupo + pedir clase individual (M5a/M5b). */
+/** Reservar: calendario semanal con las clases que tienen lugar + pedir clase individual (M5a/M5b). */
 export default function ReservarPage() {
   const conClub = obtenerSesion()?.alumno != null;
   const miCategoria = obtenerSesion()?.categoria ?? null; // para marcar "tu categoría" en el calendario
   const qc = useQueryClient();
   const [lunes, setLunes] = useState(() => lunesDe(new Date()));
 
-  // Lista principal (grupos + solicitudes + clases sueltas) cacheada por React Query.
+  // Lista principal (clases con lugar + solicitudes + clases sueltas) cacheada por React Query.
   const reservarQuery = useReservarData();
-  const { grupos, solGrupo, solHorario, clasesSueltas } =
-    reservarQuery.data ?? { grupos: [], solGrupo: [], solHorario: [], clasesSueltas: [] };
+  const { clases, solCupo, solHorario, clasesSueltas } =
+    reservarQuery.data ?? { clases: [], solCupo: [], solHorario: [], clasesSueltas: [] };
   const cargando = reservarQuery.isLoading;
 
   const [error, setError] = useState<string | null>(null); // errores de acciones
-  const [confirmar, setConfirmar] = useState<SlotGrupo | null>(null);
+  const [confirmar, setConfirmar] = useState<SlotClase | null>(null);
   const [pidiendoIndividual, setPidiendoIndividual] = useState(false);
   const { data: sedes = [] } = usePortalSedes();
   const [formInd, setFormInd] = useState({ sedeId: '', dia: 'Monday', hora: '18:00', duracion: 60 });
@@ -120,27 +110,24 @@ export default function ReservarPage() {
   const sedeNombre = sedes.find((x) => x.id === formInd.sedeId)?.nombre ?? '';
   const sedeNombreSuelta = sedes.find((x) => x.id === formSuelta.sedeId)?.nombre ?? '';
 
-  const slots = useMemo<SlotGrupo[]>(() =>
-    grupos.flatMap((g) =>
-      g.horarios.map((h) => ({
-        grupoId: g.grupoId, grupoNombre: g.nombre, categoria: g.categoria,
-        diaIdx: DIA_IDX[h.dia] ?? 0, horaInicio: h.horaInicio, duracionMinutos: h.duracionMinutos,
-        cancha: h.cancha, sede: h.sede, precioEstimado: h.precioEstimado,
-        miembros: g.miembrosActivos, cupo: g.cupoMaximo, pendiente: g.solicitudPendiente,
-      })),
-    ), [grupos]);
+  // La clase ya es la unidad: cada una es un slot de la grilla (antes había que
+  // aplanar grupo → sus horarios).
+  const slots = useMemo<SlotClase[]>(
+    () => clases.map((c) => ({ ...c, diaIdx: DIA_IDX[c.dia] ?? 0 })),
+    [clases],
+  );
 
   const dias = useMemo(() => Array.from({ length: 7 }, (_, i) => sumarDias(lunes, i)), [lunes]);
   const esHoy = useMemo(() => lunesDe(new Date()) === lunes, [lunes]);
 
   if (!conClub) return <SinClub mensaje="Cuando estés en un club vas a poder reservar tus clases acá." />;
 
-  const pedirGrupo = async () => {
+  const pedirCupo = async () => {
     if (!confirmar) return;
     setEnviando(true); setError(null);
     try {
-      await api.post('/portal/solicitudes-grupo', { grupoId: confirmar.grupoId });
-      setToast(`Pediste sumarte a ${confirmar.grupoNombre}. Tu profe lo va a aprobar.`);
+      await api.post('/portal/solicitudes-cupo', { horarioId: confirmar.horarioId });
+      setToast(`Pediste un lugar en ${confirmar.titulo}. Tu profe lo va a aprobar.`);
       setTimeout(() => setToast(null), 3500);
       setConfirmar(null); recargar();
     } catch (e) {
@@ -197,13 +184,16 @@ export default function ReservarPage() {
   return (
     <div>
       <div className={s.toolbar}>
-        <button className={s.nav} onClick={() => setLunes(sumarDias(lunes, -7))}>‹</button>
-        <div className={s.rango}>
-          Semana del {rangoSemana(lunes)}
-          {!esHoy && <button className={s.hoy} onClick={() => setLunes(lunesDe(new Date()))}>volver a hoy</button>}
+        {/* Las flechas y el período van en un contenedor propio: sueltos en la
+            toolbar, al envolverse la › se caía sola al renglón de abajo. */}
+        <div className={s.navegador}>
+          <button className={s.nav} onClick={() => setLunes(sumarDias(lunes, -7))} aria-label="Semana anterior">‹</button>
+          <div className={s.rango}>
+            Semana del {rangoSemana(lunes)}
+            {!esHoy && <button className={s.hoy} onClick={() => setLunes(lunesDe(new Date()))}>volver a hoy</button>}
+          </div>
+          <button className={s.nav} onClick={() => setLunes(sumarDias(lunes, 7))} aria-label="Semana siguiente">›</button>
         </div>
-        <button className={s.nav} onClick={() => setLunes(sumarDias(lunes, 7))}>›</button>
-        <div style={{ flex: 1 }} />
         <button className={s.btnIndividual} onClick={() => { setError(null); setPidiendoIndividual(true); }}>
           + Pedir clase individual
         </button>
@@ -224,15 +214,15 @@ export default function ReservarPage() {
               <div key={fecha} className={`${s.columna} ${hoyCol ? s.columnaHoy : ''}`}>
                 <div className={s.columnaTitulo}>{fechaCorta(fecha)}</div>
                 {delDia.length === 0 && <div className={s.libre}>—</div>}
-                {delDia.map((sl, j) => (
+                {delDia.map((sl) => (
                   <button
-                    key={`g-${j}`}
-                    className={`${s.slot} ${sl.pendiente ? s.slotPendiente : ''}`}
-                    disabled={sl.pendiente}
+                    key={sl.horarioId}
+                    className={`${s.slot} ${sl.solicitudPendiente ? s.slotPendiente : ''}`}
+                    disabled={sl.solicitudPendiente}
                     onClick={() => { setError(null); setConfirmar(sl); }}
                   >
                     <div className={s.slotHora}>{horaCorta(sl.horaInicio)}</div>
-                    <div className={s.slotTitulo}>{sl.grupoNombre}</div>
+                    <div className={s.slotTitulo}>{sl.titulo}</div>
                     {sl.categoria && sl.categoria !== 'SinCategoria' && (
                       <div
                         className={`${s.slotCat} ${sl.categoria === miCategoria ? s.slotCatMia : ''}`}
@@ -242,12 +232,12 @@ export default function ReservarPage() {
                       </div>
                     )}
                     <div className={s.slotDetalle}>
-                      {sl.miembros}{sl.cupo ? `/${sl.cupo}` : ''} · {sl.cancha || 'cancha'}
+                      {sl.miembrosActivos}{sl.cupoMaximo ? `/${sl.cupoMaximo}` : ''} · {sl.cancha || 'cancha'}
                     </div>
                     {sl.precioEstimado != null && (
                       <div className={s.slotPrecio}>≈ {formatoPlata(sl.precioEstimado)}/clase</div>
                     )}
-                    {sl.pendiente && <div className={s.slotBadge}>Pedido ✓</div>}
+                    {sl.solicitudPendiente && <div className={s.slotBadge}>Pedido ✓</div>}
                   </button>
                 ))}
               </div>
@@ -256,16 +246,16 @@ export default function ReservarPage() {
         </div>
       )}
 
-      {/* ── Mis solicitudes (grupo + individual) ── */}
-      {(solGrupo.length > 0 || solHorario.length > 0) && (
+      {/* ── Mis solicitudes (lugar en una clase + clase individual) ── */}
+      {(solCupo.length > 0 || solHorario.length > 0) && (
         <>
           <h2 className={s.seccion}>Mis solicitudes</h2>
           <div className={s.tarjeta}>
-            {solGrupo.map((sol) => {
+            {solCupo.map((sol) => {
               const e = ESTADO_SOL[sol.estado];
               return (
-                <div key={`g${sol.id}`} className={s.solFila}>
-                  <span className={s.solNombre}>{sol.grupoNombre}</span>
+                <div key={`c${sol.id}`} className={s.solFila}>
+                  <span className={s.solNombre}>{sol.claseNombre}</span>
                   <span className={`${s.chip} ${e.cls}`}>{e.label}</span>
                 </div>
               );
@@ -324,17 +314,17 @@ export default function ReservarPage() {
         </>
       )}
 
-      {/* ── Modal: sumarme a un grupo ── */}
+      {/* ── Modal: pedir un lugar en una clase ── */}
       {confirmar && (
         <Modal
-          titulo="Pedir sumarme al grupo"
-          subtitulo={confirmar.grupoNombre}
+          titulo="Pedir un lugar en la clase"
+          subtitulo={confirmar.titulo}
           onClose={() => { setConfirmar(null); setError(null); }}
           ancho={420}
           footer={
             <>
               <button className={s.btnCancelar} onClick={() => { setConfirmar(null); setError(null); }}>Cancelar</button>
-              <button className={s.btnConfirmar} onClick={() => void pedirGrupo()} disabled={enviando}>
+              <button className={s.btnConfirmar} onClick={() => void pedirCupo()} disabled={enviando}>
                 {enviando ? 'Enviando…' : 'Pedir sumarme'}
               </button>
             </>
@@ -355,6 +345,13 @@ export default function ReservarPage() {
                 <b>{CAT_LABEL[confirmar.categoria as Categoria] ?? confirmar.categoria}</b>
               </div>
             )}
+            <div className={s.resumenFila}>
+              <span>Lugares</span>
+              <b>
+                {confirmar.miembrosActivos}
+                {confirmar.cupoMaximo !== null ? `/${confirmar.cupoMaximo} ocupados` : ' anotados'}
+              </b>
+            </div>
             {confirmar.precioEstimado != null && (
               <div className={s.resumenFila}>
                 <span>Precio estimado</span>
@@ -363,7 +360,7 @@ export default function ReservarPage() {
             )}
           </div>
           {error && <div className={s.errorModal}>{error}</div>}
-          <p className={s.nota}>El profe tiene que aprobar tu pedido antes de sumarte al grupo.</p>
+          <p className={s.nota}>El profe tiene que aprobar tu pedido antes de sumarte a la clase.</p>
         </Modal>
       )}
 

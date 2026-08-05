@@ -2,18 +2,6 @@ using System.ComponentModel.DataAnnotations;
 
 namespace SistemaIntegralDeportivo.Api.Dtos;
 
-/// <summary>Un horario (día/hora) de un grupo disponible, con su precio estimado por clase.</summary>
-public class HorarioDisponibleDto
-{
-    public string Dia { get; set; } = string.Empty; // "Tuesday" → el front lo traduce
-    public TimeOnly HoraInicio { get; set; }
-    public int DuracionMinutos { get; set; }
-    public string Sede { get; set; } = string.Empty;
-    public string Cancha { get; set; } = string.Empty;
-    /// <summary>valorHoraGrupal × (duración/60) ÷ (miembros + el alumno). Null si el profe no configuró precios.</summary>
-    public decimal? PrecioEstimado { get; set; }
-}
-
 /// <summary>
 /// Una clase con lugar libre a la que el alumno PODRÍA sumarse (cupo disponible y
 /// categoría compatible). Antes esto era un grupo con sus horarios adentro; ahora la

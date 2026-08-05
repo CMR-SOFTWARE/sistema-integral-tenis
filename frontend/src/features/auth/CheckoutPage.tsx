@@ -48,7 +48,7 @@ export default function CheckoutPage() {
           <b>$25.000/mes</b>
         </div>
         <div className={s.checkoutDetalle}>
-          Alumnos y grupos ilimitados · agenda con bloqueos · cuotas y
+          Alumnos y clases ilimitadas · agenda con bloqueos · cuotas y
           reportes · portal para tus alumnos.
         </div>
       </div>

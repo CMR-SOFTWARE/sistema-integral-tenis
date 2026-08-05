@@ -76,7 +76,7 @@ export default function BuscarClubPage() {
           {ficha.enEspera ? (
             <p className={s.sinClubTexto}>
               Estás en la <b>lista de espera</b> de <b>{ficha.club}</b>. Cuando tu
-              profe te asigne un horario o un grupo, tu portal se habilita completo.
+              profe te sume a una clase, tu portal se habilita completo.
             </p>
           ) : (
             <p className={s.sinClubTexto}>

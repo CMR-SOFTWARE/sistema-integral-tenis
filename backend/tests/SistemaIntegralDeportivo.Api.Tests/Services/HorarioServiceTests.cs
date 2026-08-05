@@ -246,6 +246,35 @@ public class HorarioServiceTests
         _alumnos.Verify(r => r.PromoverDeEsperaAsync(AlumnoId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
+    /// <summary>
+    /// La membresía que se registra en el repositorio tiene que ser LA MISMA instancia
+    /// que queda colgada del horario. Con dos objetos distintos —misma PK compuesta
+    /// (AlumnoId, HorarioId)— EF los cuenta como dos filas y el alta explota contra la
+    /// base real; con los repos mockeados no se nota, así que se chequea acá.
+    /// </summary>
+    [Fact]
+    public async Task Crear_ConAlumnos_RegistraUnaSolaMembresiaPorAlumno()
+    {
+        var dto = Dto(Cancha2, new TimeOnly(10, 0));
+        dto.AlumnoIds = [AlumnoId];
+
+        Horario? guardado = null;
+        _repo.Setup(r => r.AgregarAsync(It.IsAny<Horario>(), It.IsAny<CancellationToken>()))
+             .Callback<Horario, CancellationToken>((h, _) => guardado = h)
+             .ReturnsAsync((Horario h, CancellationToken _) => h);
+
+        var registradas = new List<AlumnoHorario>();
+        _repo.Setup(r => r.AgregarMembresiaAsync(It.IsAny<AlumnoHorario>(), It.IsAny<CancellationToken>()))
+             .Callback<AlumnoHorario, CancellationToken>((m, _) => registradas.Add(m))
+             .Returns(Task.CompletedTask);
+
+        await _service.CrearAsync(dto);
+
+        var registrada = Assert.Single(registradas);
+        var enElHorario = Assert.Single(guardado!.Alumnos);
+        Assert.Same(registrada, enElHorario);
+    }
+
     [Fact]
     public async Task Crear_ConUnAlumnoConCuotaVencida_NoCreaNada()
     {

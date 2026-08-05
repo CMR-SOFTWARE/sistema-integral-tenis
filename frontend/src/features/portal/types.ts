@@ -90,31 +90,34 @@ export interface Raqueta {
   marcaEncordado: string | null;
 }
 
-export interface HorarioDisponible {
+/**
+ * Espejo de ClaseDisponibleDto: una clase con lugar a la que me podría sumar. Antes
+ * esto era un grupo con sus horarios adentro; ahora la clase ya es la unidad, así
+ * que viene aplanada (un horario = una fila).
+ */
+export interface ClaseDisponible {
+  horarioId: string;
+  titulo: string;
+  categoria: string | null;
+  miembrosActivos: number;
+  cupoMaximo: number | null;
   dia: string; // "Tuesday"
   horaInicio: string; // "18:00:00"
   duracionMinutos: number;
   sede: string;
   cancha: string;
   precioEstimado: number | null;
-}
-
-export interface GrupoDisponible {
-  grupoId: string;
-  nombre: string;
-  categoria: string | null;
-  miembrosActivos: number;
-  cupoMaximo: number | null;
-  horarios: HorarioDisponible[];
+  /** Ya mandé un pedido pendiente para esta clase (el botón queda deshabilitado). */
   solicitudPendiente: boolean;
 }
 
-export interface SolicitudGrupo {
+/** Espejo de SolicitudCupoDto: mi pedido de lugar en una clase. */
+export interface SolicitudCupo {
   id: string;
   alumnoId: string;
   alumnoNombre: string;
-  grupoId: string;
-  grupoNombre: string;
+  horarioId: string;
+  claseNombre: string;
   estado: 'Pendiente' | 'Aceptada' | 'Rechazada';
   creadoEl: string;
   resueltoEl: string | null;

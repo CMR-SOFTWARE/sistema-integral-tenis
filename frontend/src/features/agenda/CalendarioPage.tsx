@@ -9,6 +9,7 @@ import VistaMes from './VistaMes';
 import GrillaSemana from './GrillaSemana';
 import PanelClasesSueltas from './PanelClasesSueltas';
 import PanelSolicitudesHorario from './PanelSolicitudesHorario';
+import PanelSolicitudesCupo from './PanelSolicitudesCupo';
 import NuevoHorarioModal from './NuevoHorarioModal';
 import EditarHorarioModal from './EditarHorarioModal';
 import FichaDesdeAgenda from './FichaDesdeAgenda';
@@ -51,11 +52,16 @@ export default function CalendarioPage({ sede, profe }: Props) {
   const { profes, nombreDe } = useProfesores();
   const confirmar = useConfirmar();
   const { sedes, cargando: sedesCargando } = useSedes();
-  const { horarios, crear: crearH, editar: editarH, desactivar: desactivarH, recargar: recargarH } = useHorarios();
+  const {
+    horarios, crear: crearH, editar: editarH, desactivar: desactivarH,
+    agregarAlumno, quitarAlumno, recargar: recargarH,
+  } = useHorarios();
   const [abierto, setAbierto] = useState<string | null>(null); // turnoId
   const [fichaAlumnoId, setFichaAlumnoId] = useState<string | null>(null); // ficha abierta desde una clase
   const [modalHorario, setModalHorario] = useState(false);
-  const [editandoHorario, setEditandoHorario] = useState<Horario | null>(null);
+  // Se guarda el ID y no el objeto: tocar el roster desde el modal recarga la lista,
+  // y el modal tiene que ver el roster nuevo (un snapshot quedaría viejo).
+  const [editandoId, setEditandoId] = useState<string | null>(null);
   const [duplicandoHorario, setDuplicandoHorario] = useState<Horario | null>(null);
   const [porProfe, setPorProfe] = useState(false); // ver la semana/mes agrupada por profesor
   const sesion = obtenerSesion();
@@ -82,6 +88,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
   const semanaActual = lunesDe(new Date()) === lunes;
   const mesActual = mesCursor.anio === ahora.getFullYear() && mesCursor.mes === ahora.getMonth() + 1;
   const turnoAbierto: Turno | null = activo.turnos.find((t) => t.id === abierto) ?? null;
+  const editandoHorario = editandoId ? horarios.find((h) => h.id === editandoId) ?? null : null;
   // La plantilla de la que salió el turno abierto (null = clase suelta): habilita sus acciones.
   const horarioDelTurno = turnoAbierto?.horarioId
     ? horarios.find((h) => h.id === turnoAbierto.horarioId) ?? null
@@ -195,6 +202,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
       </div>
 
       {esOwner && <PanelSolicitudesHorario onCambio={() => void refrescar()} />}
+      {esOwner && <PanelSolicitudesCupo onCambio={() => void refrescar()} />}
       {esOwner && <PanelClasesSueltas onCambio={() => void activo.recargar()} />}
 
       {activo.error && <div className={s.error}>{activo.error}</div>}
@@ -277,7 +285,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
           onClose={() => setAbierto(null)}
           onAsistencia={activo.marcarAsistencia}
           onCancelar={activo.cancelar}
-          onEditarHorario={(h) => { setAbierto(null); setEditandoHorario(h); }}
+          onEditarHorario={(h) => { setAbierto(null); setEditandoId(h.id); }}
           onDuplicarHorario={(h) => { setAbierto(null); setDuplicandoHorario(h); }}
           onDesactivarHorario={esOwner ? desactivarHorario : undefined}
           // Se cierra el turno en vez de apilar dos modales
@@ -302,8 +310,10 @@ export default function CalendarioPage({ sede, profe }: Props) {
         <EditarHorarioModal
           horario={editandoHorario}
           sedes={soloMiClub(sedes)}
-          onClose={() => setEditandoHorario(null)}
+          onClose={() => setEditandoId(null)}
           onEditar={editarHorario}
+          onAgregarAlumno={agregarAlumno}
+          onQuitarAlumno={quitarAlumno}
         />
       )}
     </div>
