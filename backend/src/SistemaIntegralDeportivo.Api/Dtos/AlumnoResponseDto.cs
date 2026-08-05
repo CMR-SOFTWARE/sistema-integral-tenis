@@ -55,8 +55,10 @@ public class AlumnoHorarioDto
     public int DuracionMinutos { get; set; }
     public string Cancha { get; set; } = string.Empty;
     public string Sede { get; set; } = string.Empty;
-    public string Tipo { get; set; } = string.Empty;       // "Grupal" | "Individual"
-    public string? Grupo { get; set; }                     // nombre del grupo (si es grupal)
+    /// <summary>Cómo se llama la clase (el nombre que le puso el profe, o el automático).</summary>
+    public string Titulo { get; set; } = string.Empty;
+    /// <summary>Con cuántos la comparte (0 = la tiene para él solo).</summary>
+    public int Companeros { get; set; }
 }
 
 /// <summary>La cuenta corriente del alumno vista desde su ficha (deuda + últimos cargos).</summary>

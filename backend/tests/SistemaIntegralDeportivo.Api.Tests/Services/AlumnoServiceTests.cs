@@ -20,7 +20,6 @@ public class AlumnoServiceTests
     private readonly Mock<ICargoRepository> _cargos;
     private readonly Mock<ICredencialesService> _credenciales;
     private readonly Mock<ITurnoRepository> _turnos;
-    private readonly Mock<IGrupoRepository> _grupos;
     private readonly Mock<IHorarioRepository> _horarios;
     private readonly Mock<IStaffService> _staff;
     private readonly Mock<IUsuarioActual> _usuario;
@@ -33,7 +32,6 @@ public class AlumnoServiceTests
         _cargos = new Mock<ICargoRepository>();
         _credenciales = new Mock<ICredencialesService>();
         _turnos = new Mock<ITurnoRepository>();
-        _grupos = new Mock<IGrupoRepository>();
         _horarios = new Mock<IHorarioRepository>();
         _staff = new Mock<IStaffService>();
         _staff.Setup(s => s.EsAsignableAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
@@ -54,9 +52,7 @@ public class AlumnoServiceTests
                .ReturnsAsync([]);
         _cargos.Setup(c => c.ListarPorTurnosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
                .ReturnsAsync([]);
-        _grupos.Setup(g => g.ListarMembresiasActivasDeAlumnoAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
-               .ReturnsAsync([]);
-        _horarios.Setup(h => h.ListarIndividualesDeAlumnoAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+        _horarios.Setup(h => h.ListarMembresiasActivasDeAlumnoAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                  .ReturnsAsync([]);
         _horarios.Setup(h => h.ListarActivosAsync(It.IsAny<CancellationToken>()))
                  .ReturnsAsync([]);
@@ -82,7 +78,7 @@ public class AlumnoServiceTests
 
         _service = new AlumnoService(
             _repo.Object, _cargos.Object, _credenciales.Object,
-            _turnos.Object, _grupos.Object, _horarios.Object, _staff.Object, _usuario.Object,
+            _turnos.Object, _horarios.Object, _staff.Object, _usuario.Object,
             _sedes.Object);
     }
 
@@ -696,61 +692,48 @@ public class AlumnoServiceTests
     }
 
     [Fact]
-    public async Task Pausar_NO_TocaSusGruposNiSuHorarioIndividual()
+    public async Task Pausar_NO_LeQuitaElLugarEnSusClases()
     {
         // La PAUSA le guarda el lugar (lesión/viaje): vuelve solo al reactivarlo
         var ficha = FichaExistente();
-        var membresia = new AlumnoGrupo { AlumnoId = ficha.Id, GrupoId = Guid.NewGuid() };
-        var suHorario = new Horario
-        {
-            CanchaId = Guid.NewGuid(), AlumnoId = ficha.Id, Dia = DayOfWeek.Monday,
-            HoraInicio = new TimeOnly(9, 0), DuracionMinutos = 60,
-        };
-        _grupos.Setup(g => g.ListarMembresiasActivasDeAlumnoAsync(ficha.Id, It.IsAny<CancellationToken>()))
-               .ReturnsAsync([membresia]);
-        _horarios.Setup(h => h.ListarIndividualesDeAlumnoAsync(ficha.Id, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync([suHorario]);
+        var lugar = new AlumnoHorario { AlumnoId = ficha.Id, HorarioId = Guid.NewGuid() };
+        _horarios.Setup(h => h.ListarMembresiasActivasDeAlumnoAsync(ficha.Id, It.IsAny<CancellationToken>()))
+                 .ReturnsAsync([lugar]);
 
         await _service.CambiarEstadoAsync(ficha.Id, EstadoAlumno.Suspendido);
 
-        Assert.Null(membresia.FechaBaja); // sigue en el grupo: nadie le toma el lugar
-        Assert.True(suHorario.Activo);    // su horario sigue reservado
+        Assert.Null(lugar.FechaBaja); // sigue en la clase: nadie le toma el lugar
     }
 
     [Fact]
-    public async Task Baja_LiberaElLugar_SacaDeGruposYDesactivaSuHorario()
+    public async Task Baja_LiberaSuLugarEnTodasSusClases()
     {
         var ficha = FichaExistente();
-        var membresia = new AlumnoGrupo { AlumnoId = ficha.Id, GrupoId = Guid.NewGuid() };
-        var suHorario = new Horario
-        {
-            CanchaId = Guid.NewGuid(), AlumnoId = ficha.Id, Dia = DayOfWeek.Monday,
-            HoraInicio = new TimeOnly(9, 0), DuracionMinutos = 60,
-        };
-        _grupos.Setup(g => g.ListarMembresiasActivasDeAlumnoAsync(ficha.Id, It.IsAny<CancellationToken>()))
-               .ReturnsAsync([membresia]);
-        _horarios.Setup(h => h.ListarIndividualesDeAlumnoAsync(ficha.Id, It.IsAny<CancellationToken>()))
-                 .ReturnsAsync([suHorario]);
+        var unaClase = new AlumnoHorario { AlumnoId = ficha.Id, HorarioId = Guid.NewGuid() };
+        var otraClase = new AlumnoHorario { AlumnoId = ficha.Id, HorarioId = Guid.NewGuid() };
+        _horarios.Setup(h => h.ListarMembresiasActivasDeAlumnoAsync(ficha.Id, It.IsAny<CancellationToken>()))
+                 .ReturnsAsync([unaClase, otraClase]);
 
         await _service.DarDeBajaAsync(ficha.Id);
 
         Assert.Equal(EstadoAlumno.Inactivo, ficha.Estado);
-        Assert.NotNull(membresia.FechaBaja); // libera el cupo del grupo
-        Assert.False(suHorario.Activo);      // libera el slot de la cancha
+        // Un solo mecanismo: antes eran dos (cerrar la membresía del grupo vs.
+        // desactivar el horario individual).
+        Assert.NotNull(unaClase.FechaBaja);
+        Assert.NotNull(otraClase.FechaBaja);
     }
 
     [Fact]
-    public async Task Reactivar_LoRepone_EnLosTurnosFuturosDeSusGrupos()
+    public async Task Reactivar_LoRepone_EnLosTurnosFuturosDeSusClases()
     {
         var ficha = FichaExistente(userId: null);
         ficha.Estado = EstadoAlumno.Suspendido;
-        var grupoId = Guid.NewGuid();
         var horarioGrupal = new Horario
         {
-            CanchaId = Guid.NewGuid(), GrupoId = grupoId, Dia = DayOfWeek.Tuesday,
+            CanchaId = Guid.NewGuid(), Dia = DayOfWeek.Tuesday,
             HoraInicio = new TimeOnly(18, 0), DuracionMinutos = 60,
         };
-        // Turno futuro del grupo SIN él (lo sacamos al pausarlo)
+        // Turno futuro de la clase SIN él (lo sacamos al pausarlo)
         var turnoSinMi = new Turno
         {
             HorarioId = horarioGrupal.Id,
@@ -759,8 +742,8 @@ public class AlumnoServiceTests
         };
         turnoSinMi.Participantes.Add(new TurnoParticipante { Turno = turnoSinMi, AlumnoId = OtroAlumno });
 
-        _grupos.Setup(g => g.ListarMembresiasActivasDeAlumnoAsync(ficha.Id, It.IsAny<CancellationToken>()))
-               .ReturnsAsync([new AlumnoGrupo { AlumnoId = ficha.Id, GrupoId = grupoId }]);
+        _horarios.Setup(h => h.ListarMembresiasActivasDeAlumnoAsync(ficha.Id, It.IsAny<CancellationToken>()))
+                 .ReturnsAsync([new AlumnoHorario { AlumnoId = ficha.Id, HorarioId = horarioGrupal.Id }]);
         _horarios.Setup(h => h.ListarActivosAsync(It.IsAny<CancellationToken>()))
                  .ReturnsAsync([horarioGrupal]);
         _turnos.Setup(t => t.ListarPorHorarioDesdeAsync(horarioGrupal.Id, It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
@@ -791,15 +774,14 @@ public class AlumnoServiceTests
     {
         var ficha = FichaExistente();
         ficha.Estado = EstadoAlumno.Suspendido;
-        var grupoId = Guid.NewGuid();
         var horarioGrupal = new Horario
         {
-            CanchaId = Guid.NewGuid(), GrupoId = grupoId, Dia = DayOfWeek.Tuesday,
+            CanchaId = Guid.NewGuid(), Dia = DayOfWeek.Tuesday,
             HoraInicio = new TimeOnly(18, 0), DuracionMinutos = 60,
         };
         var turnoConMi = TurnoGrupalFuturo(ficha);
-        _grupos.Setup(g => g.ListarMembresiasActivasDeAlumnoAsync(ficha.Id, It.IsAny<CancellationToken>()))
-               .ReturnsAsync([new AlumnoGrupo { AlumnoId = ficha.Id, GrupoId = grupoId }]);
+        _horarios.Setup(h => h.ListarMembresiasActivasDeAlumnoAsync(ficha.Id, It.IsAny<CancellationToken>()))
+                 .ReturnsAsync([new AlumnoHorario { AlumnoId = ficha.Id, HorarioId = horarioGrupal.Id }]);
         _horarios.Setup(h => h.ListarActivosAsync(It.IsAny<CancellationToken>()))
                  .ReturnsAsync([horarioGrupal]);
         _turnos.Setup(t => t.ListarPorHorarioDesdeAsync(horarioGrupal.Id, It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))

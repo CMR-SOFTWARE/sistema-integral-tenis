@@ -146,13 +146,15 @@ public class SolicitudHorarioService : ISolicitudHorarioService
         if (solicitud.Estado != EstadoSolicitudHorario.Pendiente)
             throw new ReglaDeNegocioException("Esa solicitud ya fue resuelta.");
 
-        // Crea el horario individual con el flujo del profe: valida el
-        // solapamiento de ESA cancha y la deuda, y deja los turnos listos para
-        // generarse. Si la cancha se ocupó, tira y la solicitud queda Pendiente.
+        // Crea la clase con el flujo del profe: valida el solapamiento de ESA cancha
+        // y la deuda, y deja los turnos listos para generarse. Si la cancha se ocupó,
+        // tira y la solicitud queda Pendiente. Pidió una clase para él solo: nace con
+        // cupo 1 y él como único alumno.
         var horario = await _horarioService.CrearAsync(new CreateHorarioDto
         {
             CanchaId = canchaId,
-            AlumnoId = solicitud.AlumnoId,
+            AlumnoIds = [solicitud.AlumnoId],
+            CupoMaximo = 1,
             Dia = solicitud.Dia,
             HoraInicio = solicitud.HoraInicio,
             DuracionMinutos = solicitud.DuracionMinutos,

@@ -125,17 +125,15 @@ public class AlumnoRepository : IAlumnoRepository
 
     public async Task<HashSet<Guid>> ListarConClaseAsync(CancellationToken ct = default)
     {
-        // En un grupo activo (membresía sin baja) del tenant
-        var enGrupos = _db.AlumnoGrupos
-            .Where(m => m.FechaBaja == null && m.Grupo.TenantId == TenantId)
-            .Select(m => m.AlumnoId);
+        // Los que tienen un lugar vigente en alguna clase activa del tenant. Antes
+        // era la unión de "está en un grupo" + "tiene horario individual"; con el
+        // roster propio del horario es un solo query.
+        var ids = await _db.AlumnoHorarios
+            .Where(ah => ah.FechaBaja == null && ah.Horario.Activo && ah.Horario.TenantId == TenantId)
+            .Select(ah => ah.AlumnoId)
+            .Distinct()
+            .ToListAsync(ct);
 
-        // Con un horario individual activo del tenant
-        var conHorario = _db.Horarios
-            .Where(h => h.TenantId == TenantId && h.Activo && h.AlumnoId != null)
-            .Select(h => h.AlumnoId!.Value);
-
-        var ids = await enGrupos.Concat(conHorario).Distinct().ToListAsync(ct);
         return ids.ToHashSet();
     }
 

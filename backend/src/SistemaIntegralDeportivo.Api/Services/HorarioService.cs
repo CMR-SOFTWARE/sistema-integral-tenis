@@ -15,11 +15,12 @@ public class HorarioService : IHorarioService
     private readonly IAlumnoRepository _alumnos;
     private readonly ISedeRepository _sedes;
     private readonly IUsuarioActual _usuario;
+    private readonly IAlumnoService _alumnoService;
 
     public HorarioService(
         IHorarioRepository horarios, ITurnoRepository turnos, ICargoRepository cargos,
         IBloqueoRepository bloqueos, IStaffService staff, IAlumnoRepository alumnos,
-        ISedeRepository sedes, IUsuarioActual usuario)
+        ISedeRepository sedes, IUsuarioActual usuario, IAlumnoService alumnoService)
     {
         _horarios = horarios;
         _turnos = turnos;
@@ -29,6 +30,7 @@ public class HorarioService : IHorarioService
         _alumnos = alumnos;
         _sedes = sedes;
         _usuario = usuario;
+        _alumnoService = alumnoService;
     }
 
     public async Task<HorarioResponseDto> CrearAsync(CreateHorarioDto dto, CancellationToken ct = default)
@@ -38,21 +40,10 @@ public class HorarioService : IHorarioService
         if (_usuario.EsStaff)
             dto.ProfesorUserId = _usuario.UserId;
 
-        // Regla: grupal XOR individual — exactamente uno de los dos
-        var tieneGrupo = dto.GrupoId is not null;
-        var tieneAlumno = dto.AlumnoId is not null;
-        if (tieneGrupo == tieneAlumno) // ambos o ninguno
+        // Regla: el cupo no puede nacer más chico que la gente que se está sumando.
+        if (dto.CupoMaximo is { } cupo && dto.AlumnoIds.Count > cupo)
             throw new ReglaDeNegocioException(
-                "El horario debe apuntar a un grupo O a un alumno individual (exactamente uno).");
-
-        // Regla: nadie toma clases NUEVAS con la cuota vencida (las ya asignadas siguen)
-        if (dto.AlumnoId is not null)
-        {
-            var impagos = await _cargos.ListarImpagosAsync([dto.AlumnoId.Value], ct);
-            if (CuotaService.TieneDeudaVencida(impagos, DateOnly.FromDateTime(DateTime.UtcNow)))
-                throw new ReglaDeNegocioException(
-                    "El alumno tiene la cuota vencida: registrá el pago en Cuotas antes de asignarle clases nuevas.");
-        }
+                $"Elegiste {dto.AlumnoIds.Count} alumnos pero el cupo es de {cupo}.");
 
         // Regla: el profe EMPLEADO solo arma horarios en canchas de SU club.
         await ValidarCanchaDeSuClubAsync(dto.CanchaId, ct);
@@ -65,11 +56,18 @@ public class HorarioService : IHorarioService
         if (dto.ProfesorUserId is { } profe && !await _staff.EsAsignableAsync(profe, ct))
             throw new ReglaDeNegocioException("Ese profe no es de tu club.");
 
+        // Los alumnos se validan ANTES de crear nada: si uno no puede, no queda una
+        // clase a medio armar.
+        var alumnos = new List<Alumno>();
+        foreach (var alumnoId in dto.AlumnoIds.Distinct())
+            alumnos.Add(await ValidarAlumnoParaClaseAsync(alumnoId, ct));
+
         var horario = new Horario
         {
             CanchaId = dto.CanchaId,
-            GrupoId = dto.GrupoId,
-            AlumnoId = dto.AlumnoId,
+            Nombre = string.IsNullOrWhiteSpace(dto.Nombre) ? null : dto.Nombre.Trim(),
+            CupoMaximo = dto.CupoMaximo,
+            Categoria = dto.Categoria,
             ProfesorUserId = dto.ProfesorUserId,
             ValorHoraProfe = dto.ValorHoraProfe,
             Dia = dto.Dia,
@@ -80,12 +78,106 @@ public class HorarioService : IHorarioService
 
         var creado = await _horarios.AgregarAsync(horario, ct);
 
-        // Un horario individual es "darle su primera clase": si el alumno estaba en
-        // la lista de espera, ahora es alumno de verdad (Activo).
-        if (dto.AlumnoId is { } alumnoId)
-            await _alumnos.PromoverDeEsperaAsync(alumnoId, ct);
+        foreach (var alumno in alumnos)
+        {
+            await _horarios.AgregarMembresiaAsync(
+                new AlumnoHorario { HorarioId = creado.Id, AlumnoId = alumno.Id }, ct);
+            creado.Alumnos.Add(new AlumnoHorario { HorarioId = creado.Id, AlumnoId = alumno.Id, Alumno = alumno });
+        }
+        await _horarios.GuardarCambiosAsync(ct);
+
+        // Sumarlo a una clase es "darle su primera clase": el que estaba en la lista
+        // de espera ahora es alumno de verdad.
+        foreach (var alumno in alumnos)
+            await _alumnos.PromoverDeEsperaAsync(alumno.Id, ct);
+        await _horarios.GuardarCambiosAsync(ct);
 
         return Mapear(creado);
+    }
+
+    public async Task AgregarAlumnoAsync(Guid horarioId, Guid alumnoId, CancellationToken ct = default)
+    {
+        var horario = await _horarios.ObtenerAsync(horarioId, ct)
+            ?? throw new ReglaDeNegocioException("La clase no existe.");
+
+        var alumno = await ValidarAlumnoParaClaseAsync(alumnoId, ct);
+
+        // Regla: no duplicar un miembro activo; si tuvo baja previa, se reactiva.
+        var membresia = await _horarios.ObtenerMembresiaAsync(horarioId, alumnoId, ct);
+        if (membresia is not null && membresia.FechaBaja is null)
+            throw new ReglaDeNegocioException(
+                $"{alumno.Nombre} {alumno.Apellido} ya está en esta clase.");
+
+        // Regla: respetar el cupo (null = sin límite)
+        if (horario.CupoMaximo is not null)
+        {
+            var activos = await _horarios.ContarActivosAsync(horarioId, ct);
+            if (activos >= horario.CupoMaximo)
+                throw new ReglaDeNegocioException(
+                    $"La clase está completa ({horario.CupoMaximo} lugares).");
+        }
+
+        if (membresia is not null)
+        {
+            // Reactivación: la PK compuesta (AlumnoId, HorarioId) no admite otra fila,
+            // así que se reutiliza. Limitación consciente: se pierde el período anterior.
+            membresia.FechaAlta = DateTime.UtcNow;
+            membresia.FechaBaja = null;
+        }
+        else
+        {
+            await _horarios.AgregarMembresiaAsync(
+                new AlumnoHorario { HorarioId = horarioId, AlumnoId = alumnoId }, ct);
+        }
+
+        // Persistir la membresía ANTES de reconciliar: la reconciliación consulta las
+        // membresías activas del alumno (query a la base) y tiene que ver la nueva.
+        await _horarios.GuardarCambiosAsync(ct);
+
+        await _alumnos.PromoverDeEsperaAsync(alumnoId, ct);
+
+        // Lo repone en los turnos futuros YA generados de esta clase y recalcula el
+        // divisor de la cuota: sin esto, el que vuelve no aparece en el calendario.
+        await _alumnoService.SincronizarCalendarioAsync(alumnoId, ct);
+        await _horarios.GuardarCambiosAsync(ct);
+    }
+
+    public async Task QuitarAlumnoAsync(Guid horarioId, Guid alumnoId, CancellationToken ct = default)
+    {
+        var membresia = await _horarios.ObtenerMembresiaAsync(horarioId, alumnoId, ct);
+        if (membresia is null || membresia.FechaBaja is not null)
+            throw new ReglaDeNegocioException("Ese alumno no está en esta clase.");
+
+        // Baja lógica: se conserva la historia ("estuvo de marzo a junio")
+        membresia.FechaBaja = DateTime.UtcNow;
+        await _horarios.GuardarCambiosAsync(ct);
+
+        // Ya no viene a esta clase: sacarlo de sus turnos futuros (sigue Activo y en
+        // sus OTRAS clases, así que la reconciliación solo lo saca de esta).
+        await _alumnoService.SincronizarCalendarioAsync(alumnoId, ct);
+        await _horarios.GuardarCambiosAsync(ct);
+    }
+
+    /// <summary>
+    /// Las dos reglas que decidían si alguien podía entrar a un grupo, ahora sobre la
+    /// clase: solo entran los ACTIVOS y los de la LISTA DE ESPERA (sumarlos es lo que
+    /// los vuelve alumnos), y nadie toma clases NUEVAS con la cuota vencida.
+    /// </summary>
+    private async Task<Alumno> ValidarAlumnoParaClaseAsync(Guid alumnoId, CancellationToken ct)
+    {
+        var alumno = await _alumnos.ObtenerAsync(alumnoId, ct)
+            ?? throw new ReglaDeNegocioException("El alumno no existe.");
+
+        if (alumno.Estado != EstadoAlumno.Activo && alumno.Estado != EstadoAlumno.EnEspera)
+            throw new ReglaDeNegocioException(
+                $"{alumno.Nombre} {alumno.Apellido} no está activo y no puede sumarse a una clase.");
+
+        var impagos = await _cargos.ListarImpagosAsync([alumnoId], ct);
+        if (CuotaService.TieneDeudaVencida(impagos, DateOnly.FromDateTime(DateTime.UtcNow)))
+            throw new ReglaDeNegocioException(
+                $"{alumno.Nombre} {alumno.Apellido} tiene la cuota vencida: registrá el pago en Cuotas antes de sumarlo a una clase.");
+
+        return alumno;
     }
 
     public async Task<HorarioResponseDto> AsignarProfesorAsync(
@@ -135,7 +227,19 @@ public class HorarioService : IHorarioService
         if (cambioAgenda)
             await LimpiarTurnosFuturosAsync(id, ct);
 
+        // El cupo no puede quedar por debajo de la gente que ya viene.
+        if (dto.CupoMaximo is { } cupo)
+        {
+            var activos = await _horarios.ContarActivosAsync(id, ct);
+            if (activos > cupo)
+                throw new ReglaDeNegocioException(
+                    $"Ya hay {activos} alumnos en esta clase: el cupo no puede ser menor.");
+        }
+
         horario.CanchaId = dto.CanchaId;
+        horario.Nombre = string.IsNullOrWhiteSpace(dto.Nombre) ? null : dto.Nombre.Trim();
+        horario.CupoMaximo = dto.CupoMaximo;
+        horario.Categoria = dto.Categoria;
         horario.ProfesorUserId = dto.ProfesorUserId;
         horario.ValorHoraProfe = dto.ProfesorUserId is null ? null : dto.ValorHoraProfe;
         horario.Dia = dto.Dia;
@@ -143,7 +247,7 @@ public class HorarioService : IHorarioService
         horario.DuracionMinutos = dto.DuracionMinutos;
 
         await _horarios.GuardarCambiosAsync(ct);
-        return Mapear(horario);
+        return Mapear(await _horarios.ObtenerConRosterAsync(id, ct) ?? horario);
     }
 
     public async Task<IReadOnlyList<HorarioResponseDto>> ListarAsync(CancellationToken ct = default)
@@ -242,23 +346,52 @@ public class HorarioService : IHorarioService
         }
     }
 
-    private static HorarioResponseDto Mapear(Horario h) => new()
+    /// <summary>
+    /// Cómo se llama la clase cuando el profe no le puso nombre: si va uno solo, es
+    /// su nombre (era la "clase individual"); si van varios, cuántos son.
+    /// </summary>
+    public static string TituloDe(string? nombre, IEnumerable<AlumnoHorario> roster)
     {
-        Id = h.Id,
-        Titulo = h.Grupo?.Nombre
-            ?? (h.Alumno is not null ? $"{h.Alumno.Nombre} {h.Alumno.Apellido} (individual)" : string.Empty),
-        Categoria = h.Grupo?.Categoria?.ToString() ?? h.Alumno?.Categoria.ToString(),
-        EsIndividual = h.AlumnoId is not null,
-        CanchaId = h.CanchaId,
-        Cancha = h.Cancha?.Nombre ?? string.Empty,
-        Sede = h.Cancha?.Sede?.Nombre ?? string.Empty,
-        Dia = h.Dia,
-        HoraInicio = h.HoraInicio,
-        DuracionMinutos = h.DuracionMinutos,
-        Activo = h.Activo,
-        ProfesorUserId = h.ProfesorUserId,
-        ValorHoraProfe = h.ValorHoraProfe,
-        GrupoId = h.GrupoId,
-        AlumnoId = h.AlumnoId,
-    };
+        if (!string.IsNullOrWhiteSpace(nombre)) return nombre;
+
+        var activos = roster.Where(x => x.FechaBaja is null).ToList();
+        if (activos.Count == 1 && activos[0].Alumno is { } unico)
+            return $"{unico.Nombre} {unico.Apellido}";
+
+        return activos.Count == 0 ? "Clase sin alumnos" : $"Grupo de {activos.Count}";
+    }
+
+    private static HorarioResponseDto Mapear(Horario h)
+    {
+        var activos = h.Alumnos.Where(x => x.FechaBaja is null).ToList();
+        return new HorarioResponseDto
+        {
+            Id = h.Id,
+            Titulo = TituloDe(h.Nombre, h.Alumnos),
+            Nombre = h.Nombre,
+            Categoria = h.Categoria?.ToString(),
+            CupoMaximo = h.CupoMaximo,
+            CanchaId = h.CanchaId,
+            Cancha = h.Cancha?.Nombre ?? string.Empty,
+            Sede = h.Cancha?.Sede?.Nombre ?? string.Empty,
+            Dia = h.Dia,
+            HoraInicio = h.HoraInicio,
+            DuracionMinutos = h.DuracionMinutos,
+            Activo = h.Activo,
+            ProfesorUserId = h.ProfesorUserId,
+            ValorHoraProfe = h.ValorHoraProfe,
+            MiembrosActivos = activos.Count,
+            Miembros = [.. activos
+                .Where(x => x.Alumno is not null)
+                .OrderBy(x => x.Alumno!.Apellido).ThenBy(x => x.Alumno!.Nombre)
+                .Select(x => new MiembroHorarioDto
+                {
+                    AlumnoId = x.AlumnoId,
+                    Nombre = x.Alumno!.Nombre,
+                    Apellido = x.Alumno.Apellido,
+                    Categoria = x.Alumno.Categoria.ToString(),
+                    FechaAlta = x.FechaAlta,
+                })],
+        };
+    }
 }

@@ -46,6 +46,8 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
     public DbSet<NotaAlumno> NotasAlumno => Set<NotaAlumno>();
     public DbSet<MembresiaTenant> MembresiasTenant => Set<MembresiaTenant>();
     public DbSet<PagoEmpleado> PagosEmpleado => Set<PagoEmpleado>();
+    public DbSet<AlumnoHorario> AlumnoHorarios => Set<AlumnoHorario>();
+    public DbSet<SolicitudCupo> SolicitudesCupo => Set<SolicitudCupo>();
     public DbSet<PerfilProfesor> PerfilesProfesor => Set<PerfilProfesor>();
     public DbSet<FotoPerfil> FotosPerfil => Set<FotoPerfil>();
     public DbSet<HitoTrayectoria> HitosTrayectoria => Set<HitoTrayectoria>();
@@ -129,6 +131,31 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
             .IsUnique();
 
         modelBuilder.Entity<Horario>().Property(h => h.Dia).HasConversion<string>();
+        modelBuilder.Entity<Horario>().Property(h => h.Categoria).HasConversion<string>();
+
+        // ── El roster del horario: quiénes toman esa clase ──
+        // Misma forma que la vieja AlumnoGrupo: PK compuesta para que el reingreso
+        // reactive la fila (y no duplique), con FechaAlta/FechaBaja como historia.
+        modelBuilder.Entity<AlumnoHorario>()
+            .HasKey(ah => new { ah.AlumnoId, ah.HorarioId });
+
+        modelBuilder.Entity<AlumnoHorario>()
+            .HasOne(ah => ah.Horario).WithMany(h => h.Alumnos).HasForeignKey(ah => ah.HorarioId)
+            .OnDelete(DeleteBehavior.Cascade); // se borra el horario → se va su roster
+
+        modelBuilder.Entity<AlumnoHorario>()
+            .HasIndex(ah => ah.HorarioId); // "quiénes vienen a esta clase"
+
+        // ── Pedidos de un lugar en una clase (portal del alumno) ──
+        modelBuilder.Entity<SolicitudCupo>().Property(s => s.Estado).HasConversion<string>();
+        modelBuilder.Entity<SolicitudCupo>()
+            .HasIndex(s => new { s.TenantId, s.Estado }); // "las pendientes del profe"
+        modelBuilder.Entity<SolicitudCupo>()
+            .HasOne(s => s.Alumno).WithMany().HasForeignKey(s => s.AlumnoId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<SolicitudCupo>()
+            .HasOne(s => s.Horario).WithMany().HasForeignKey(s => s.HorarioId)
+            .OnDelete(DeleteBehavior.Cascade);
         modelBuilder.Entity<Horario>()
             .HasIndex(h => new { h.TenantId, h.Activo }); // "horarios activos del profe"
         modelBuilder.Entity<Horario>()

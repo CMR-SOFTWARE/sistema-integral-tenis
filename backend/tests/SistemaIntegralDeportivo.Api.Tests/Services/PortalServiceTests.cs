@@ -23,7 +23,7 @@ public class PortalServiceTests
     private readonly Mock<IServicioService> _servicios;
     private readonly Mock<IPedidoService> _pedidos;
     private readonly Mock<IRaquetaService> _raquetas;
-    private readonly Mock<ISolicitudGrupoService> _solicitudesGrupo;
+    private readonly Mock<ISolicitudCupoService> _solicitudesCupo;
     private readonly Mock<ISolicitudHorarioService> _solicitudesHorario;
     private readonly Mock<IClaseSueltaService> _clasesSueltas;
     private readonly Mock<IPublicidadService> _publicidad;
@@ -44,7 +44,7 @@ public class PortalServiceTests
         _servicios = new Mock<IServicioService>();
         _pedidos = new Mock<IPedidoService>();
         _raquetas = new Mock<IRaquetaService>();
-        _solicitudesGrupo = new Mock<ISolicitudGrupoService>();
+        _solicitudesCupo = new Mock<ISolicitudCupoService>();
         _solicitudesHorario = new Mock<ISolicitudHorarioService>();
         _clasesSueltas = new Mock<IClaseSueltaService>();
         _publicidad = new Mock<IPublicidadService>();
@@ -55,7 +55,7 @@ public class PortalServiceTests
         _fichaActual = new Mock<IFichaActual>(); // por defecto AlumnoId = null → ficha default
         _service = new PortalService(
             _alumnos.Object, _turnos.Object, _turnoService.Object, _cuotas.Object,
-            _servicios.Object, _pedidos.Object, _raquetas.Object, _solicitudesGrupo.Object,
+            _servicios.Object, _pedidos.Object, _raquetas.Object, _solicitudesCupo.Object,
             _solicitudesHorario.Object, _clasesSueltas.Object, _publicidad.Object, _avisos.Object,
             _notas.Object, _sedes.Object, _tenantActual.Object, _fichaActual.Object);
         _raquetas.Setup(r => r.MisAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))

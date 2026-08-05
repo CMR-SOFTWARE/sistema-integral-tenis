@@ -14,7 +14,7 @@ public class PortalService : IPortalService
     private readonly IServicioService _servicios;
     private readonly IPedidoService _pedidos;
     private readonly IRaquetaService _raquetas;
-    private readonly ISolicitudGrupoService _solicitudesGrupo;
+    private readonly ISolicitudCupoService _solicitudesCupo;
     private readonly ISolicitudHorarioService _solicitudesHorario;
     private readonly IClaseSueltaService _clasesSueltas;
     private readonly IPublicidadService _publicidad;
@@ -28,7 +28,7 @@ public class PortalService : IPortalService
         IAlumnoRepository alumnos, ITurnoRepository turnos,
         ITurnoService turnoService, ICuotaService cuotas,
         IServicioService servicios, IPedidoService pedidos,
-        IRaquetaService raquetas, ISolicitudGrupoService solicitudesGrupo,
+        IRaquetaService raquetas, ISolicitudCupoService solicitudesCupo,
         ISolicitudHorarioService solicitudesHorario, IClaseSueltaService clasesSueltas,
         IPublicidadService publicidad, IAvisoService avisos, INotaAlumnoService notas,
         ISedeRepository sedes, ITenantActual tenantActual, IFichaActual fichaActual)
@@ -40,7 +40,7 @@ public class PortalService : IPortalService
         _servicios = servicios;
         _pedidos = pedidos;
         _raquetas = raquetas;
-        _solicitudesGrupo = solicitudesGrupo;
+        _solicitudesCupo = solicitudesCupo;
         _solicitudesHorario = solicitudesHorario;
         _clasesSueltas = clasesSueltas;
         _publicidad = publicidad;
@@ -250,27 +250,27 @@ public class PortalService : IPortalService
         return await MiPerfilAsync(userId, ct);
     }
 
-    // ── Reservar horario fijo grupal (M5a) ──
+    // ── Pedir un lugar en una clase fija (M5a) ──
 
-    public async Task<IReadOnlyList<GrupoDisponibleDto>> GruposDisponiblesAsync(
+    public async Task<IReadOnlyList<ClaseDisponibleDto>> ClasesDisponiblesAsync(
         Guid userId, CancellationToken ct = default)
     {
         var ficha = await FichaDeAsync(userId, ct);
-        return await _solicitudesGrupo.DisponiblesParaAlumnoAsync(ficha.Id, ct);
+        return await _solicitudesCupo.DisponiblesParaAlumnoAsync(ficha.Id, ct);
     }
 
-    public async Task<SolicitudGrupoDto> SolicitarGrupoAsync(
-        Guid userId, Guid grupoId, CancellationToken ct = default)
+    public async Task<SolicitudCupoDto> SolicitarCupoAsync(
+        Guid userId, Guid horarioId, CancellationToken ct = default)
     {
         var ficha = await FichaDeAsync(userId, ct);
-        return await _solicitudesGrupo.SolicitarAsync(ficha.Id, grupoId, ct);
+        return await _solicitudesCupo.SolicitarAsync(ficha.Id, horarioId, ct);
     }
 
-    public async Task<IReadOnlyList<SolicitudGrupoDto>> MisSolicitudesGrupoAsync(
+    public async Task<IReadOnlyList<SolicitudCupoDto>> MisSolicitudesCupoAsync(
         Guid userId, CancellationToken ct = default)
     {
         var ficha = await FichaDeAsync(userId, ct);
-        return await _solicitudesGrupo.MisAsync(ficha.Id, ct);
+        return await _solicitudesCupo.MisAsync(ficha.Id, ct);
     }
 
     // ── Clase individual fija (M5b) ──

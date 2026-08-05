@@ -13,11 +13,14 @@ public class HorariosController : ControllerBase
 {
     private readonly IHorarioService _service;
     private readonly ISolicitudHorarioService _solicitudes;
+    private readonly ISolicitudCupoService _cupos;
 
-    public HorariosController(IHorarioService service, ISolicitudHorarioService solicitudes)
+    public HorariosController(
+        IHorarioService service, ISolicitudHorarioService solicitudes, ISolicitudCupoService cupos)
     {
         _service = service;
         _solicitudes = solicitudes;
+        _cupos = cupos;
     }
 
     [HttpGet]
@@ -106,6 +109,78 @@ public class HorariosController : ControllerBase
         try
         {
             await _solicitudes.AceptarAsync(id, dto.CanchaId, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    // ── Pedidos de lugar en una clase (el alumno los manda desde el portal) ──
+
+    /// <summary>GET api/horarios/solicitudes-cupo — pedidos de lugar pendientes.</summary>
+    [HttpGet("solicitudes-cupo")]
+    [Authorize(Policy = "Owner")]
+    public async Task<ActionResult<IReadOnlyList<SolicitudCupoDto>>> SolicitudesCupo(CancellationToken ct) =>
+        Ok(await _cupos.ListarPendientesAsync(ct));
+
+    /// <summary>POST api/horarios/solicitudes-cupo/{id}/aceptar — lo sumo a la clase.</summary>
+    [HttpPost("solicitudes-cupo/{id:guid}/aceptar")]
+    [Authorize(Policy = "Owner")]
+    public async Task<IActionResult> AceptarCupo(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            await _cupos.AceptarAsync(id, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>POST api/horarios/solicitudes-cupo/{id}/rechazar — rechazo el pedido.</summary>
+    [HttpPost("solicitudes-cupo/{id:guid}/rechazar")]
+    [Authorize(Policy = "Owner")]
+    public async Task<IActionResult> RechazarCupo(Guid id, CancellationToken ct)
+    {
+        try
+        {
+            await _cupos.RechazarAsync(id, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    // ── El roster: quiénes vienen a la clase ──
+
+    /// <summary>POST api/horarios/{id}/alumnos — suma un alumno a la clase (respeta el cupo).</summary>
+    [HttpPost("{id:guid}/alumnos")]
+    public async Task<IActionResult> AgregarAlumno(Guid id, AgregarAlumnoHorarioDto dto, CancellationToken ct)
+    {
+        try
+        {
+            await _service.AgregarAlumnoAsync(id, dto.AlumnoId, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>DELETE api/horarios/{id}/alumnos/{alumnoId} — lo saca de la clase (baja lógica).</summary>
+    [HttpDelete("{id:guid}/alumnos/{alumnoId:guid}")]
+    public async Task<IActionResult> QuitarAlumno(Guid id, Guid alumnoId, CancellationToken ct)
+    {
+        try
+        {
+            await _service.QuitarAlumnoAsync(id, alumnoId, ct);
             return NoContent();
         }
         catch (ReglaDeNegocioException ex)

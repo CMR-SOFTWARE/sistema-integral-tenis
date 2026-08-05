@@ -1,15 +1,27 @@
 using System.ComponentModel.DataAnnotations;
+using SistemaIntegralDeportivo.Api.Models;
 
 namespace SistemaIntegralDeportivo.Api.Dtos;
 
-/// <summary>Alta de horario recurrente. Grupal XOR individual (valida el service).</summary>
+/// <summary>Alta de una clase fija: dónde, cuándo, quién la da y quiénes vienen.</summary>
 public class CreateHorarioDto
 {
     [Required]
     public Guid CanchaId { get; set; }
 
-    public Guid? GrupoId { get; set; }
-    public Guid? AlumnoId { get; set; }
+    /// <summary>Cómo se llama la clase ("Intermedios"); vacío = se arma solo con el roster.</summary>
+    [StringLength(80)]
+    public string? Nombre { get; set; }
+
+    /// <summary>Cuántos alumnos entran; null = sin límite.</summary>
+    [Range(1, 50)]
+    public int? CupoMaximo { get; set; }
+
+    /// <summary>Categoría sugerida (para que el portal ofrezca clases parejas).</summary>
+    public CategoriaAlumno? Categoria { get; set; }
+
+    /// <summary>Los alumnos que arrancan en la clase; puede venir vacío y sumarlos después.</summary>
+    public List<Guid> AlumnoIds { get; set; } = [];
 
     /// <summary>Profe que da la clase (dueño o staff); opcional.</summary>
     public Guid? ProfesorUserId { get; set; }
@@ -29,13 +41,22 @@ public class CreateHorarioDto
 }
 
 /// <summary>
-/// Edición de un horario: cambia cancha/día/hora/duración/profe/valor hora. El
-/// grupo o alumno NO se toca (para cambiarlo, se borra y se recrea).
+/// Edición de una clase: cancha, día, hora, duración, profe, nombre y cupo. El
+/// roster se toca con sus propios endpoints (agregar/quitar alumno), que además
+/// reconcilian el calendario.
 /// </summary>
 public class UpdateHorarioDto
 {
     [Required]
     public Guid CanchaId { get; set; }
+
+    [StringLength(80)]
+    public string? Nombre { get; set; }
+
+    [Range(1, 50)]
+    public int? CupoMaximo { get; set; }
+
+    public CategoriaAlumno? Categoria { get; set; }
 
     /// <summary>Profe que da la clase (dueño o staff); null = sin asignar.</summary>
     public Guid? ProfesorUserId { get; set; }
@@ -54,13 +75,26 @@ public class UpdateHorarioDto
     public int DuracionMinutos { get; set; } = 60;
 }
 
-/// <summary>Horario para la grilla semanal del mockup.</summary>
+/// <summary>Un alumno del roster de una clase fija.</summary>
+public class MiembroHorarioDto
+{
+    public Guid AlumnoId { get; set; }
+    public string Nombre { get; set; } = string.Empty;
+    public string Apellido { get; set; } = string.Empty;
+    public string Categoria { get; set; } = string.Empty;
+    public DateTime FechaAlta { get; set; }
+}
+
+/// <summary>Una clase fija: cuándo, dónde, quién la da y quiénes vienen.</summary>
 public class HorarioResponseDto
 {
     public Guid Id { get; set; }
-    public string Titulo { get; set; } = string.Empty; // "Intermedios" o "Juan Pérez (individual)"
+    /// <summary>Lo que se muestra: el nombre cargado, o uno armado con el roster.</summary>
+    public string Titulo { get; set; } = string.Empty;
+    /// <summary>El nombre TAL CUAL lo cargó el profe (null = se arma solo). Para el formulario de edición.</summary>
+    public string? Nombre { get; set; }
     public string? Categoria { get; set; }
-    public bool EsIndividual { get; set; }
+    public int? CupoMaximo { get; set; }
     public Guid CanchaId { get; set; }
     public string Cancha { get; set; } = string.Empty;
     public string Sede { get; set; } = string.Empty;
@@ -72,9 +106,16 @@ public class HorarioResponseDto
     public Guid? ProfesorUserId { get; set; }
     /// <summary>Valor hora del profe para esta clase (override; null = usa el base del profe).</summary>
     public decimal? ValorHoraProfe { get; set; }
-    // Roster (grupal XOR individual): el front los usa para pre-seleccionar al duplicar.
-    public Guid? GrupoId { get; set; }
-    public Guid? AlumnoId { get; set; }
+    /// <summary>Los que vienen hoy (sin los que se dieron de baja).</summary>
+    public List<MiembroHorarioDto> Miembros { get; set; } = [];
+    public int MiembrosActivos { get; set; }
+}
+
+/// <summary>Body para sumar un alumno al roster de una clase.</summary>
+public class AgregarAlumnoHorarioDto
+{
+    [Required]
+    public Guid AlumnoId { get; set; }
 }
 
 /// <summary>Participante del roster de un turno + asistencia.</summary>

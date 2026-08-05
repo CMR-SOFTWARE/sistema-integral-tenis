@@ -209,14 +209,14 @@ public class PortalController : ControllerBase
         }
     }
 
-    /// <summary>GET api/portal/grupos-disponibles — grupos a los que me podría sumar (cupo + mi categoría).</summary>
-    [HttpGet("grupos-disponibles")]
-    public async Task<ActionResult<IReadOnlyList<GrupoDisponibleDto>>> GruposDisponibles(CancellationToken ct)
+    /// <summary>GET api/portal/clases-disponibles — clases con lugar para mi categoría.</summary>
+    [HttpGet("clases-disponibles")]
+    public async Task<ActionResult<IReadOnlyList<ClaseDisponibleDto>>> ClasesDisponibles(CancellationToken ct)
     {
         if (UserId() is not { } userId) return Unauthorized();
         try
         {
-            return Ok(await _portal.GruposDisponiblesAsync(userId, ct));
+            return Ok(await _portal.ClasesDisponiblesAsync(userId, ct));
         }
         catch (ReglaDeNegocioException ex)
         {
@@ -224,14 +224,14 @@ public class PortalController : ControllerBase
         }
     }
 
-    /// <summary>POST api/portal/solicitudes-grupo — pido sumarme a un grupo (pendiente del profe).</summary>
-    [HttpPost("solicitudes-grupo")]
-    public async Task<ActionResult<SolicitudGrupoDto>> SolicitarGrupo(SolicitarGrupoDto dto, CancellationToken ct)
+    /// <summary>POST api/portal/solicitudes-cupo — pido un lugar en una clase (pendiente del profe).</summary>
+    [HttpPost("solicitudes-cupo")]
+    public async Task<ActionResult<SolicitudCupoDto>> SolicitarCupo(SolicitarCupoDto dto, CancellationToken ct)
     {
         if (UserId() is not { } userId) return Unauthorized();
         try
         {
-            return Ok(await _portal.SolicitarGrupoAsync(userId, dto.GrupoId, ct));
+            return Ok(await _portal.SolicitarCupoAsync(userId, dto.HorarioId, ct));
         }
         catch (ReglaDeNegocioException ex)
         {
@@ -239,14 +239,14 @@ public class PortalController : ControllerBase
         }
     }
 
-    /// <summary>GET api/portal/solicitudes-grupo — mis solicitudes de grupo con su estado.</summary>
-    [HttpGet("solicitudes-grupo")]
-    public async Task<ActionResult<IReadOnlyList<SolicitudGrupoDto>>> MisSolicitudesGrupo(CancellationToken ct)
+    /// <summary>GET api/portal/solicitudes-cupo — mis pedidos de lugar con su estado.</summary>
+    [HttpGet("solicitudes-cupo")]
+    public async Task<ActionResult<IReadOnlyList<SolicitudCupoDto>>> MisSolicitudesCupo(CancellationToken ct)
     {
         if (UserId() is not { } userId) return Unauthorized();
         try
         {
-            return Ok(await _portal.MisSolicitudesGrupoAsync(userId, ct));
+            return Ok(await _portal.MisSolicitudesCupoAsync(userId, ct));
         }
         catch (ReglaDeNegocioException ex)
         {
