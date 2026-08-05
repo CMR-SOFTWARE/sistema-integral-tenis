@@ -40,6 +40,16 @@ Reglas que se respetan siempre:
 - **Frontend:** React + TypeScript + Vite + **React Query** (caché; las query keys incluyen
   el recurso y el alumno activo cuando aplica) + **CSS Modules**. Los tipos del front son
   **espejo de los DTOs** del back.
+- **MOBILE FIRST, siempre.** El profe usa la app **parado en la cancha, con el celular**:
+  esa es la pantalla real, la de escritorio es la excepción. Reglas concretas:
+  - Los estilos **base** son los del celular; lo de escritorio se agrega con
+    `@media (min-width: ...)`, nunca al revés (`max-width` es parche, no diseño).
+  - **Nada desborda la pantalla.** Lo ancho (tablas, grillas, filas de filtros) va en un
+    contenedor con `overflow-x: auto` — `overflow: hidden` corta el contenido y lo deja
+    inalcanzable.
+  - En una barra de herramientas, los controles que se leen juntos (‹ período ›) van en
+    **un contenedor propio**: sueltos con `flex-wrap` se desparraman al envolverse.
+  - Toda pantalla nueva se revisa a **~390 px** antes de darla por terminada.
 - **Comentarios** que explican el **por qué** (no el qué), en español, con la densidad del
   código de al lado.
 

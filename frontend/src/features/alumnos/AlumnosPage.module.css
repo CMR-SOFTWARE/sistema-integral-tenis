@@ -100,15 +100,20 @@
   background: var(--color-primary-darker);
 }
 
+/* La tabla no entra en un celular: se desliza en horizontal. Antes era
+   `overflow: hidden` y las últimas columnas quedaban cortadas, sin forma de
+   llegar a ellas. Este contenedor lo comparten Alumnos y Profesores. */
 .tarjeta {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .tabla {
   width: 100%;
+  /* Por debajo de esto las columnas se aplastan y no se lee nada: mejor scrollear */
+  min-width: 560px;
   border-collapse: collapse;
   font-size: 14px;
 }

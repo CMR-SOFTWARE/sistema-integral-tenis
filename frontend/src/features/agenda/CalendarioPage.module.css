@@ -1,10 +1,21 @@
+/* Mobile primero: la toolbar se apila y cada bloque ocupa el ancho que necesita.
+   El de arriba a la derecha se acomoda solo cuando hay lugar. */
 .toolbar {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
+  gap: 10px;
   margin-bottom: 18px;
   flex-wrap: wrap;
+}
+
+/* Las flechas y el período viajan JUNTOS. Antes eran tres hijos sueltos de la
+   toolbar y al envolverse quedaban desparramados: la ‹ en una fila, el texto en
+   otra y la › pegada al toggle. */
+.navegador {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
 }
 
 /* "Nuevo horario": la acción principal de la agenda, empujada a la derecha. */
@@ -53,6 +64,7 @@
 .nav {
   width: 36px;
   height: 36px;
+  flex-shrink: 0; /* la flecha nunca se achica: el que cede es el texto */
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   border-radius: 10px;
@@ -67,13 +79,19 @@
   color: var(--color-primary);
 }
 
+/* El período ocupa lo que sobra entre las dos flechas y se centra. */
 .rango {
+  flex: 1;
+  min-width: 0;
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 16px;
+  font-size: 15px;
   display: flex;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  text-align: center;
 }
 
 .hoy {
@@ -117,15 +135,25 @@
   color: #fff;
 }
 
+/* Mobile primero: los días se recorren de a uno con scroll horizontal. El ancho
+   de columna tiene que dar para el club y los nombres de los alumnos, si no la
+   tarjeta se corta toda con puntos suspensivos. */
 .grilla {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-auto-flow: column;
+  grid-auto-columns: 215px;
   gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 8px; /* aire para la barra de scroll */
 }
 
-/* Vista Día: la única columna ocupa todo el ancho disponible. */
+/* Vista Día: una sola columna, a todo el ancho y sin scroll lateral. */
 .grillaUnDia {
+  grid-auto-flow: row;
   grid-template-columns: 1fr;
+  grid-auto-columns: auto;
+  overflow-x: visible;
+  padding-bottom: 0;
 }
 
 .columna {
@@ -301,20 +329,27 @@
 }
 
 /* ── Móvil: la semana se desliza de lado (7 columnas no entran) ── */
-@media (max-width: 900px) {
+/* De acá para arriba hay lugar para la semana completa en pantalla. */
+@media (min-width: 900px) {
   .grilla {
-    overflow-x: auto;
-    grid-template-columns: none;
-    grid-auto-flow: column;
-    grid-auto-columns: 150px;
-    padding-bottom: 8px; /* aire para la barra de scroll */
+    grid-auto-flow: row;
+    grid-template-columns: repeat(7, 1fr);
+    grid-auto-columns: auto;
+    overflow-x: visible;
+    padding-bottom: 0;
   }
 
   .toolbar {
-    gap: 8px;
+    gap: 14px;
+  }
+
+  /* El bloque de navegación deja de ocupar la fila entera y convive con los toggles */
+  .navegador {
+    width: auto;
   }
 
   .rango {
-    font-size: 14px;
+    flex: initial;
+    font-size: 16px;
   }
 }
