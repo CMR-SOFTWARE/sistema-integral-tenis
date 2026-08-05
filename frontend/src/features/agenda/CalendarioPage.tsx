@@ -145,18 +145,22 @@ export default function CalendarioPage({ sede, profe }: Props) {
   return (
     <div>
       <div className={s.toolbar}>
-        <button className={s.nav} onClick={retroceder}>‹</button>
-        <div className={s.rango}>
-          {vista === 'dia'
-            ? fechaLarga(dia)
-            : vista === 'semana'
-              ? `Semana del ${rangoSemana(lunes)}`
-              : `${MESES[mesCursor.mes - 1]} ${mesCursor.anio}`}
-          {!esHoy && (
-            <button className={s.hoy} onClick={volverAHoy}>volver a hoy</button>
-          )}
+        {/* Las flechas y el período van juntos en un bloque: sueltos en la toolbar,
+            el texto largo del rango los separaba al envolverse en pantallas chicas. */}
+        <div className={s.navegador}>
+          <button className={s.nav} onClick={retroceder} aria-label="Anterior">‹</button>
+          <div className={s.rango}>
+            {vista === 'dia'
+              ? fechaLarga(dia)
+              : vista === 'semana'
+                ? `Semana del ${rangoSemana(lunes)}`
+                : `${MESES[mesCursor.mes - 1]} ${mesCursor.anio}`}
+            {!esHoy && (
+              <button className={s.hoy} onClick={volverAHoy}>volver a hoy</button>
+            )}
+          </div>
+          <button className={s.nav} onClick={avanzar} aria-label="Siguiente">›</button>
         </div>
-        <button className={s.nav} onClick={avanzar}>›</button>
 
         <div className={s.toggle}>
           <button className={vista === 'dia' ? s.toggleActivo : s.toggleBtn} onClick={() => setVista('dia')}>Día</button>
