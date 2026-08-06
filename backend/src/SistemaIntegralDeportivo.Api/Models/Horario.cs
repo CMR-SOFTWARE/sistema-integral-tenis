@@ -3,8 +3,10 @@ namespace SistemaIntegralDeportivo.Api.Models;
 /// <summary>
 /// Plantilla RECURRENTE semanal: "Intermedios, martes 18:00, 60', Cancha 1".
 /// Dura toda la temporada; el cambio de temporada = editar/desactivar.
-/// Apunta a un GRUPO (clase grupal) o a un ALUMNO (individual) — exactamente
-/// uno de los dos (regla validada en el service).
+///
+/// El horario es la UNIDAD: tiene su nombre, su cupo y su lista de alumnos
+/// (<see cref="Alumnos"/>). Una clase particular no es un caso especial, es un
+/// horario con cupo 1 — antes había dos conceptos (grupo XOR alumno) para lo mismo.
 /// </summary>
 public class Horario
 {
@@ -26,7 +28,26 @@ public class Horario
     /// </summary>
     public decimal? ValorHoraProfe { get; set; }
 
-    // ── Grupal XOR individual ──
+    // ── Quiénes toman esta clase ──
+
+    /// <summary>
+    /// Cómo se llama la clase ("Intermedios"). Opcional: si está vacío, el título se
+    /// arma solo con el roster (el nombre del alumno, o "Grupo de N").
+    /// </summary>
+    public string? Nombre { get; set; }
+
+    /// <summary>Cuántos alumnos entran; null = sin límite. Una clase particular es cupo 1.</summary>
+    public int? CupoMaximo { get; set; }
+
+    /// <summary>Categoría sugerida, para que el portal ofrezca clases parejas. Opcional.</summary>
+    public CategoriaAlumno? Categoria { get; set; }
+
+    /// <summary>El roster: quiénes toman esta clase (con su historia de alta y baja).</summary>
+    public ICollection<AlumnoHorario> Alumnos { get; set; } = new List<AlumnoHorario>();
+
+    // ── Restos del modelo viejo (grupo XOR alumno) ──
+    // Ya NO se leen: el roster es Alumnos. Las columnas quedan hasta la migración de
+    // limpieza, para poder volver atrás si la copia de datos hubiera salido mal.
     public Guid? GrupoId { get; set; }
     public Grupo? Grupo { get; set; }
     public Guid? AlumnoId { get; set; }

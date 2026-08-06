@@ -133,8 +133,10 @@ export interface AlumnoHorario {
   duracionMinutos: number;
   cancha: string;
   sede: string;
-  tipo: string;        // "Grupal" | "Individual"
-  grupo: string | null;
+  /** Cómo se llama la clase (el nombre que le puso el profe, o el automático). */
+  titulo: string;
+  /** Con cuántos la comparte (0 = la tiene para él solo). */
+  companeros: number;
 }
 
 /** Espejo de CargoResumenDto. */

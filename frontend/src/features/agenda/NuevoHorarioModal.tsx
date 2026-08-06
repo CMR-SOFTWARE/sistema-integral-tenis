@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Modal from '../../components/Modal';
 import HoraSelect from '../../components/HoraSelect';
-import { api, ApiError } from '../../lib/api';
-import type { Alumno } from '../alumnos/types';
-import type { Grupo } from '../grupos/types';
+import { ApiError } from '../../lib/api';
+import CategoriaOptions from '../alumnos/CategoriaOptions';
+import type { Categoria } from '../alumnos/types';
+import SelectorAlumnos from './SelectorAlumnos';
 import { DIAS, horaCorta } from './types';
 import type { CreateHorario, DiaSemana, Horario, Sede } from './types';
 import { useProfesores } from '../profesores/useProfesores';
 import { obtenerSesion } from '../auth/sesion';
 import s from '../alumnos/NuevoAlumnoModal.module.css';
+import g from './FormHorario.module.css';
 
 interface Props {
   sedes: Sede[];
@@ -16,11 +18,15 @@ interface Props {
   onCrear: (dto: CreateHorario) => Promise<void>;
   /** Al duplicar: horario del que se copian los datos (roster incluido). */
   base?: Horario;
-  /** Abierto desde la ficha de un alumno: la clase es individual y para ESE alumno (bloqueado). */
+  /** Abierto desde la ficha de un alumno: arranca con ESE alumno tildado. */
   alumnoFijo?: { id: string; nombre: string; apellido: string; profesorUserId?: string | null };
 }
 
-/** Alta de horario recurrente: cancha + (grupo XOR alumno) + día/hora/duración. */
+/**
+ * Alta de una clase fija: profe → club → cancha, cómo se llama, cuántos entran y
+ * quiénes vienen, más día/hora/duración. El profe va PRIMERO porque elegirlo
+ * completa el club y el valor hora: es el dato del que cuelga el resto.
+ */
 export default function NuevoHorarioModal({ sedes, onClose, onCrear, base, alumnoFijo }: Props) {
   // Al duplicar, los estados arrancan con los datos del horario base.
   const sedeInicial = base
@@ -28,11 +34,15 @@ export default function NuevoHorarioModal({ sedes, onClose, onCrear, base, alumn
     : sedes[0]?.id ?? '';
   const [sedeId, setSedeId] = useState(sedeInicial);
   const [canchaId, setCanchaId] = useState(base?.canchaId ?? '');
-  const [tipo, setTipo] = useState<'grupo' | 'individual'>(
-    alumnoFijo || base?.esIndividual ? 'individual' : 'grupo',
+  const [nombre, setNombre] = useState(base?.nombre ?? '');
+  const [cupo, setCupo] = useState(base?.cupoMaximo?.toString() ?? '');
+  // 'SinCategoria' (herencia de los grupos migrados) es lo mismo que sin elegir.
+  const [categoria, setCategoria] = useState<Categoria | ''>(
+    base?.categoria && base.categoria !== 'SinCategoria' ? base.categoria : '',
   );
-  const [grupoId, setGrupoId] = useState(base && !base.esIndividual ? base.grupoId ?? '' : '');
-  const [alumnoId, setAlumnoId] = useState(alumnoFijo?.id ?? (base?.esIndividual ? base.alumnoId ?? '' : ''));
+  const [alumnoIds, setAlumnoIds] = useState<string[]>(
+    alumnoFijo ? [alumnoFijo.id] : base?.miembros.map((m) => m.alumnoId) ?? [],
+  );
   const [dia, setDia] = useState<DiaSemana>(base?.dia ?? 'Monday');
   const [hora, setHora] = useState(base ? horaCorta(base.horaInicio) : '18:00');
   const [duracion, setDuracion] = useState(base?.duracionMinutos ?? 60);
@@ -41,32 +51,18 @@ export default function NuevoHorarioModal({ sedes, onClose, onCrear, base, alumn
   const { profes } = useProfesores();
   // El profe empleado da SUS clases: el horario queda a su nombre (lo asigna el back).
   const esStaff = obtenerSesion()?.rol === 'staff';
-  const [grupos, setGrupos] = useState<Grupo[]>([]);
-  const [alumnos, setAlumnos] = useState<Alumno[]>([]);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Opciones para el roster: grupos + alumnos a los que asignarles una clase.
-  // Individual: el alumno puede estar ACTIVO o EN ESPERA — asignarle la clase es
-  // justo lo que lo convierte en alumno (sin esto, el recién cargado no aparecía nunca).
-  useEffect(() => {
-    if (alumnoFijo) return; // el alumno ya viene fijo: no hace falta cargar las listas
-    void api.get<Grupo[]>('/grupos').then(setGrupos);
-    void Promise.all([
-      api.get<Alumno[]>('/alumnos?estado=Activo'),
-      api.get<Alumno[]>('/alumnos?estado=EnEspera'),
-    ]).then(([activos, espera]) => setAlumnos([...activos, ...espera]));
-    // alumnoFijo es estable durante la vida del modal (se fija al abrir).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const canchas = useMemo(
     () => sedes.find((x) => x.id === sedeId)?.canchas ?? [],
     [sedes, sedeId],
   );
 
-  const valido =
-    canchaId !== '' && (tipo === 'grupo' ? grupoId !== '' : alumnoId !== '');
+  const cupoNum = cupo === '' ? null : Number(cupo);
+  // Bajar el cupo por debajo de los ya tildados lo rechaza el back: lo avisamos antes.
+  const cupoCorto = cupoNum !== null && alumnoIds.length > cupoNum;
+  const valido = canchaId !== '' && !cupoCorto;
 
   const guardar = async () => {
     setError(null);
@@ -74,8 +70,10 @@ export default function NuevoHorarioModal({ sedes, onClose, onCrear, base, alumn
     try {
       await onCrear({
         canchaId,
-        grupoId: tipo === 'grupo' ? grupoId : undefined,
-        alumnoId: tipo === 'individual' ? alumnoId : undefined,
+        nombre: nombre.trim() || undefined,
+        cupoMaximo: cupoNum ?? undefined,
+        categoria: categoria || undefined,
+        alumnoIds,
         profesorUserId: profesorId || undefined,
         valorHoraProfe: profesorId && valorHora ? Number(valorHora) : undefined,
         dia,
@@ -104,79 +102,7 @@ export default function NuevoHorarioModal({ sedes, onClose, onCrear, base, alumn
         </>
       }
     >
-      <div className={s.grid}>
-        <label className={s.campo}>
-          <span>Sede</span>
-          <select value={sedeId} onChange={(e) => { setSedeId(e.target.value); setCanchaId(''); }}>
-            {sedes.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}
-          </select>
-        </label>
-        <label className={s.campo}>
-          <span>Cancha</span>
-          <select value={canchaId} onChange={(e) => setCanchaId(e.target.value)}>
-            <option value="">Elegí una cancha…</option>
-            {canchas.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-          </select>
-        </label>
-
-        {alumnoFijo ? (
-          /* Abierto desde la ficha: el alumno viene fijo, clase individual. */
-          <label className={s.campo}>
-            <span>Alumno</span>
-            <input type="text" value={`${alumnoFijo.apellido}, ${alumnoFijo.nombre}`} disabled />
-          </label>
-        ) : (
-          <>
-            <label className={s.campo}>
-              <span>Tipo de clase</span>
-              <select value={tipo} onChange={(e) => setTipo(e.target.value as 'grupo' | 'individual')}>
-                <option value="grupo">Grupal (grupo fijo)</option>
-                <option value="individual">Individual (un alumno)</option>
-              </select>
-            </label>
-            {tipo === 'grupo' ? (
-              <label className={s.campo}>
-                <span>Grupo</span>
-                <select value={grupoId} onChange={(e) => setGrupoId(e.target.value)}>
-                  <option value="">Elegí un grupo…</option>
-                  {grupos.map((g) => (
-                    <option key={g.id} value={g.id}>{g.nombre} ({g.miembrosActivos})</option>
-                  ))}
-                </select>
-              </label>
-            ) : (
-              <label className={s.campo}>
-                <span>Alumno</span>
-                <select value={alumnoId} onChange={(e) => setAlumnoId(e.target.value)}>
-                  <option value="">Elegí un alumno…</option>
-                  {alumnos.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {/* El tipo Estado del front lista solo los "reales"; en espera viene igual del back. */}
-                      {a.apellido}, {a.nombre}{(a.estado as string) === 'EnEspera' ? ' (en espera)' : ''}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
-          </>
-        )}
-
-        <label className={s.campo}>
-          <span>Día</span>
-          <select value={dia} onChange={(e) => setDia(e.target.value as DiaSemana)}>
-            {DIAS.map((d) => <option key={d.valor} value={d.valor}>{d.label}</option>)}
-          </select>
-        </label>
-        <label className={s.campo}>
-          <span>Hora de inicio</span>
-          <HoraSelect value={hora} onChange={setHora} />
-        </label>
-        <label className={s.campo}>
-          <span>Duración (minutos)</span>
-          <select value={duracion} onChange={(e) => setDuracion(Number(e.target.value))}>
-            {[30, 45, 60, 90, 120].map((m) => <option key={m} value={m}>{m}'</option>)}
-          </select>
-        </label>
+      <div className={g.grid}>
         {/* El staff no elige profe: la clase queda a su nombre (la asigna el back). */}
         {esStaff ? (
           <label className={s.campo}>
@@ -223,7 +149,79 @@ export default function NuevoHorarioModal({ sedes, onClose, onCrear, base, alumn
           </label>
         )}
 
-        {error && <div className={`${s.span2} ${s.error}`}>{error}</div>}
+        <label className={s.campo}>
+          <span>Club</span>
+          <select value={sedeId} onChange={(e) => { setSedeId(e.target.value); setCanchaId(''); }}>
+            {sedes.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}
+          </select>
+        </label>
+        <label className={s.campo}>
+          <span>Cancha</span>
+          <select value={canchaId} onChange={(e) => setCanchaId(e.target.value)}>
+            <option value="">Elegí una cancha…</option>
+            {canchas.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </select>
+        </label>
+
+        <label className={s.campo}>
+          <span>Nombre (opcional)</span>
+          <input
+            type="text"
+            maxLength={80}
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            placeholder="Vacío: se arma solo con los alumnos"
+          />
+        </label>
+        <label className={s.campo}>
+          <span>Cupo (opcional)</span>
+          <input
+            type="number"
+            min={1}
+            max={50}
+            value={cupo}
+            onChange={(e) => setCupo(e.target.value)}
+            onWheel={(e) => e.currentTarget.blur()}
+            placeholder="Vacío: sin límite"
+          />
+        </label>
+        <label className={`${s.campo} ${g.span2}`}>
+          <span>Categoría sugerida (opcional)</span>
+          <select value={categoria} onChange={(e) => setCategoria(e.target.value as Categoria | '')}>
+            <option value="">Sin categoría (cualquiera puede entrar)</option>
+            <CategoriaOptions />
+          </select>
+        </label>
+
+        <div className={`${s.campo} ${g.span2}`}>
+          {/* Desde la ficha el alumno ya viene tildado, pero se pueden sumar más. */}
+          <span>Alumnos{alumnoFijo ? ` · ${alumnoFijo.nombre} ${alumnoFijo.apellido} ya está tildado` : ''}</span>
+          <SelectorAlumnos elegidos={alumnoIds} onCambiar={setAlumnoIds} cupo={cupoNum} />
+        </div>
+
+        <label className={s.campo}>
+          <span>Día</span>
+          <select value={dia} onChange={(e) => setDia(e.target.value as DiaSemana)}>
+            {DIAS.map((d) => <option key={d.valor} value={d.valor}>{d.label}</option>)}
+          </select>
+        </label>
+        <label className={s.campo}>
+          <span>Hora de inicio</span>
+          <HoraSelect value={hora} onChange={setHora} />
+        </label>
+        <label className={s.campo}>
+          <span>Duración (minutos)</span>
+          <select value={duracion} onChange={(e) => setDuracion(Number(e.target.value))}>
+            {[30, 45, 60, 90, 120].map((m) => <option key={m} value={m}>{m}'</option>)}
+          </select>
+        </label>
+
+        {cupoCorto && (
+          <div className={`${g.span2} ${s.error}`}>
+            Elegiste {alumnoIds.length} alumnos pero el cupo es de {cupoNum}.
+          </div>
+        )}
+        {error && <div className={`${g.span2} ${s.error}`}>{error}</div>}
       </div>
     </Modal>
   );

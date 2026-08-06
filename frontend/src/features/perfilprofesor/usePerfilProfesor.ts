@@ -18,7 +18,7 @@ export function useMiPerfil() {
 
 /**
  * Las acciones de edición. Cada una invalida el perfil para que la pantalla se
- * refresque sola; el mismo patrón que usan cuotas y grupos.
+ * refresque sola; el mismo patrón que usan cuotas y horarios.
  */
 export function useEditarPerfil() {
   const qc = useQueryClient();

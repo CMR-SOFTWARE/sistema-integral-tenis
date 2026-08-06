@@ -79,8 +79,8 @@ export default function ProfesoresPage() {
       titulo: `Eliminar a ${p.nombre} ${p.apellido}`,
       mensaje: (
         <>
-          Se borra el profe de tu equipo y su acceso a la app. Los grupos, horarios y
-          alumnos que lo tenían asignado quedan <b>sin profe</b> (no se borran).{' '}
+          Se borra el profe de tu equipo y su acceso a la app. Los horarios y alumnos
+          que lo tenían asignado quedan <b>sin profe</b> (no se borran).{' '}
           <b>Esto no se puede deshacer.</b>
         </>
       ),

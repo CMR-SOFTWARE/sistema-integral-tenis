@@ -8,14 +8,16 @@ using SistemaIntegralDeportivo.Api.Services;
 namespace SistemaIntegralDeportivo.Api.Tests.Services;
 
 /// <summary>
-/// Reglas de horarios (TDD): solapamiento POR CANCHA, grupal XOR individual,
-/// y desactivación que limpia el futuro sin tocar historia ni plata cobrada.
+/// Reglas de las clases fijas (TDD): solapamiento POR CANCHA, el cupo y quién puede
+/// sumarse al roster, y la desactivación que limpia el futuro sin tocar historia ni
+/// plata cobrada. Las reglas de cupo/estado/deuda vienen del viejo GrupoService: el
+/// grupo desapareció, las reglas no.
 /// </summary>
 public class HorarioServiceTests
 {
     private static readonly Guid Cancha1 = Guid.NewGuid();
     private static readonly Guid Cancha2 = Guid.NewGuid();
-    private static readonly Guid GrupoId = Guid.NewGuid();
+    private static readonly Guid HorarioId = Guid.NewGuid();
     private static readonly Guid AlumnoId = Guid.NewGuid();
 
     private readonly Mock<IHorarioRepository> _repo;
@@ -26,6 +28,7 @@ public class HorarioServiceTests
     private readonly Mock<IAlumnoRepository> _alumnos;
     private readonly Mock<ISedeRepository> _sedes;
     private readonly Mock<IUsuarioActual> _usuario;
+    private readonly Mock<IAlumnoService> _alumnoService;
     private readonly HorarioService _service;
 
     public HorarioServiceTests()
@@ -38,9 +41,10 @@ public class HorarioServiceTests
         _alumnos = new Mock<IAlumnoRepository>();
         _sedes = new Mock<ISedeRepository>();
         _usuario = new Mock<IUsuarioActual>(); // por defecto: no es staff → sin límite de club
+        _alumnoService = new Mock<IAlumnoService>();
         _service = new HorarioService(
             _repo.Object, _turnos.Object, _cargos.Object, _bloqueos.Object,
-            _staff.Object, _alumnos.Object, _sedes.Object, _usuario.Object);
+            _staff.Object, _alumnos.Object, _sedes.Object, _usuario.Object, _alumnoService.Object);
 
         // Por defecto: cualquier profe asignado es válido (los tests que prueban la
         // regla lo pisan con false)
@@ -54,11 +58,18 @@ public class HorarioServiceTests
         // Por defecto: no hay bloqueos
         _bloqueos.Setup(b => b.ListarAsync(It.IsAny<CancellationToken>())).ReturnsAsync([]);
 
+        // Por defecto: el alumno existe y está activo
+        _alumnos.Setup(r => r.ObtenerAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((Guid id, CancellationToken _) => new Alumno
+                {
+                    Id = id, Nombre = "Juan", Apellido = "Pérez", Telefono = "1",
+                    Estado = EstadoAlumno.Activo,
+                });
+
         // Ya existe: martes 18:00-19:00 en Cancha 1
         var existente = new Horario
         {
             CanchaId = Cancha1,
-            GrupoId = GrupoId,
             Dia = DayOfWeek.Tuesday,
             HoraInicio = new TimeOnly(18, 0),
             DuracionMinutos = 60,
@@ -74,11 +85,23 @@ public class HorarioServiceTests
     private static CreateHorarioDto Dto(Guid cancha, TimeOnly hora, int duracion = 60) => new()
     {
         CanchaId = cancha,
-        GrupoId = GrupoId,
         Dia = DayOfWeek.Tuesday,
         HoraInicio = hora,
         DuracionMinutos = duracion,
     };
+
+    /// <summary>Una clase ya existente, con su roster, para los tests del cupo.</summary>
+    private Horario ClaseCon(int? cupo, int ocupados)
+    {
+        var horario = new Horario
+        {
+            Id = HorarioId, CanchaId = Cancha1, CupoMaximo = cupo,
+            Dia = DayOfWeek.Tuesday, HoraInicio = new TimeOnly(18, 0),
+        };
+        _repo.Setup(r => r.ObtenerAsync(HorarioId, It.IsAny<CancellationToken>())).ReturnsAsync(horario);
+        _repo.Setup(r => r.ContarActivosAsync(HorarioId, It.IsAny<CancellationToken>())).ReturnsAsync(ocupados);
+        return horario;
+    }
 
     private static UpdateHorarioDto Update(
         Guid cancha, DayOfWeek dia, TimeOnly hora, int duracion = 60,
@@ -188,29 +211,11 @@ public class HorarioServiceTests
     }
 
     [Fact]
-    public async Task Crear_SinGrupoNiAlumno_Lanza()
+    public async Task Crear_SinAlumnos_EsValido()
     {
+        // Armar la clase primero y sumar la gente después es un caso normal
+        // (antes era imposible: el horario exigía un grupo o un alumno).
         var dto = Dto(Cancha2, new TimeOnly(10, 0));
-        dto.GrupoId = null; // ni grupo ni alumno
-
-        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.CrearAsync(dto));
-    }
-
-    [Fact]
-    public async Task Crear_ConGrupoYAlumnoALaVez_Lanza()
-    {
-        var dto = Dto(Cancha2, new TimeOnly(10, 0));
-        dto.AlumnoId = AlumnoId; // grupo Y alumno: ambiguo
-
-        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.CrearAsync(dto));
-    }
-
-    [Fact]
-    public async Task Crear_IndividualSinDeuda_Crea()
-    {
-        var dto = Dto(Cancha2, new TimeOnly(10, 0));
-        dto.GrupoId = null;
-        dto.AlumnoId = AlumnoId;
 
         await _service.CrearAsync(dto);
 
@@ -218,11 +223,63 @@ public class HorarioServiceTests
     }
 
     [Fact]
-    public async Task Crear_IndividualConCuotaVencida_Lanza()
+    public async Task Crear_ConMasAlumnosQueElCupo_Lanza()
     {
         var dto = Dto(Cancha2, new TimeOnly(10, 0));
-        dto.GrupoId = null;
-        dto.AlumnoId = AlumnoId;
+        dto.CupoMaximo = 2;
+        dto.AlumnoIds = [Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid()];
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.CrearAsync(dto));
+        _repo.Verify(r => r.AgregarAsync(It.IsAny<Horario>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Crear_ConAlumnos_LosSumaAlRosterYLosPromueveDeEspera()
+    {
+        var dto = Dto(Cancha2, new TimeOnly(10, 0));
+        dto.AlumnoIds = [AlumnoId];
+
+        await _service.CrearAsync(dto);
+
+        _repo.Verify(r => r.AgregarMembresiaAsync(
+            It.Is<AlumnoHorario>(m => m.AlumnoId == AlumnoId), It.IsAny<CancellationToken>()), Times.Once);
+        _alumnos.Verify(r => r.PromoverDeEsperaAsync(AlumnoId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    /// <summary>
+    /// La membresía que se registra en el repositorio tiene que ser LA MISMA instancia
+    /// que queda colgada del horario. Con dos objetos distintos —misma PK compuesta
+    /// (AlumnoId, HorarioId)— EF los cuenta como dos filas y el alta explota contra la
+    /// base real; con los repos mockeados no se nota, así que se chequea acá.
+    /// </summary>
+    [Fact]
+    public async Task Crear_ConAlumnos_RegistraUnaSolaMembresiaPorAlumno()
+    {
+        var dto = Dto(Cancha2, new TimeOnly(10, 0));
+        dto.AlumnoIds = [AlumnoId];
+
+        Horario? guardado = null;
+        _repo.Setup(r => r.AgregarAsync(It.IsAny<Horario>(), It.IsAny<CancellationToken>()))
+             .Callback<Horario, CancellationToken>((h, _) => guardado = h)
+             .ReturnsAsync((Horario h, CancellationToken _) => h);
+
+        var registradas = new List<AlumnoHorario>();
+        _repo.Setup(r => r.AgregarMembresiaAsync(It.IsAny<AlumnoHorario>(), It.IsAny<CancellationToken>()))
+             .Callback<AlumnoHorario, CancellationToken>((m, _) => registradas.Add(m))
+             .Returns(Task.CompletedTask);
+
+        await _service.CrearAsync(dto);
+
+        var registrada = Assert.Single(registradas);
+        var enElHorario = Assert.Single(guardado!.Alumnos);
+        Assert.Same(registrada, enElHorario);
+    }
+
+    [Fact]
+    public async Task Crear_ConUnAlumnoConCuotaVencida_NoCreaNada()
+    {
+        var dto = Dto(Cancha2, new TimeOnly(10, 0));
+        dto.AlumnoIds = [AlumnoId];
         // Debe una clase de hace 2 meses: liquidación vencida hace rato
         _cargos.Setup(c => c.ListarImpagosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
                .ReturnsAsync([new Cargo
@@ -232,7 +289,145 @@ public class HorarioServiceTests
                }]);
 
         await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.CrearAsync(dto));
+        // La validación va ANTES de crear: no queda una clase a medio armar
         _repo.Verify(r => r.AgregarAsync(It.IsAny<Horario>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // ─────────────────────────────────────────────
+    // El roster: las reglas que antes vivían en GrupoService
+    // ─────────────────────────────────────────────
+
+    [Fact]
+    public async Task AgregarAlumno_ClaseCompleta_Lanza()
+    {
+        ClaseCon(cupo: 4, ocupados: 4);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.AgregarAlumnoAsync(HorarioId, AlumnoId));
+        _repo.Verify(r => r.AgregarMembresiaAsync(It.IsAny<AlumnoHorario>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AgregarAlumno_SinLimiteDeCupo_LoSuma()
+    {
+        ClaseCon(cupo: null, ocupados: 99);
+
+        await _service.AgregarAlumnoAsync(HorarioId, AlumnoId);
+
+        _repo.Verify(r => r.AgregarMembresiaAsync(It.IsAny<AlumnoHorario>(), It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task AgregarAlumno_YaEstaEnLaClase_Lanza()
+    {
+        ClaseCon(cupo: 4, ocupados: 1);
+        _repo.Setup(r => r.ObtenerMembresiaAsync(HorarioId, AlumnoId, It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new AlumnoHorario { HorarioId = HorarioId, AlumnoId = AlumnoId });
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.AgregarAlumnoAsync(HorarioId, AlumnoId));
+    }
+
+    [Fact]
+    public async Task AgregarAlumno_QueSeHabiaIdo_ReactivaSuLugar()
+    {
+        ClaseCon(cupo: 4, ocupados: 1);
+        var vieja = new AlumnoHorario
+        {
+            HorarioId = HorarioId, AlumnoId = AlumnoId, FechaBaja = DateTime.UtcNow.AddMonths(-1),
+        };
+        _repo.Setup(r => r.ObtenerMembresiaAsync(HorarioId, AlumnoId, It.IsAny<CancellationToken>()))
+             .ReturnsAsync(vieja);
+
+        await _service.AgregarAlumnoAsync(HorarioId, AlumnoId);
+
+        Assert.Null(vieja.FechaBaja); // se reutiliza la fila, no se duplica
+        _repo.Verify(r => r.AgregarMembresiaAsync(It.IsAny<AlumnoHorario>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AgregarAlumno_NoActivo_Lanza()
+    {
+        ClaseCon(cupo: 4, ocupados: 0);
+        _alumnos.Setup(r => r.ObtenerAsync(AlumnoId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Alumno
+                {
+                    Id = AlumnoId, Nombre = "Juan", Apellido = "Pérez", Telefono = "1",
+                    Estado = EstadoAlumno.Inactivo,
+                });
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.AgregarAlumnoAsync(HorarioId, AlumnoId));
+    }
+
+    [Fact]
+    public async Task AgregarAlumno_ConCuotaVencida_Lanza()
+    {
+        ClaseCon(cupo: 4, ocupados: 0);
+        _cargos.Setup(c => c.ListarImpagosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync([new Cargo
+               {
+                   AlumnoId = AlumnoId, Tipo = TipoCargo.Clase, Concepto = "x", Monto = 4_000m,
+                   Fecha = DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(-2),
+               }]);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.AgregarAlumnoAsync(HorarioId, AlumnoId));
+    }
+
+    [Fact]
+    public async Task AgregarAlumno_CasoFeliz_ReconciliaElCalendario()
+    {
+        ClaseCon(cupo: 4, ocupados: 1);
+
+        await _service.AgregarAlumnoAsync(HorarioId, AlumnoId);
+
+        // Sin esto, el que se suma no aparece en los turnos ya generados
+        _alumnoService.Verify(s => s.SincronizarCalendarioAsync(AlumnoId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task QuitarAlumno_LeDaDeBajaYReconcilia()
+    {
+        ClaseCon(cupo: 4, ocupados: 2);
+        var membresia = new AlumnoHorario { HorarioId = HorarioId, AlumnoId = AlumnoId };
+        _repo.Setup(r => r.ObtenerMembresiaAsync(HorarioId, AlumnoId, It.IsAny<CancellationToken>()))
+             .ReturnsAsync(membresia);
+
+        await _service.QuitarAlumnoAsync(HorarioId, AlumnoId);
+
+        Assert.NotNull(membresia.FechaBaja); // baja lógica: se conserva la historia
+        _alumnoService.Verify(s => s.SincronizarCalendarioAsync(AlumnoId, It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task QuitarAlumno_QueNoEstaEnLaClase_Lanza()
+    {
+        ClaseCon(cupo: 4, ocupados: 2);
+        _repo.Setup(r => r.ObtenerMembresiaAsync(HorarioId, AlumnoId, It.IsAny<CancellationToken>()))
+             .ReturnsAsync((AlumnoHorario?)null);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.QuitarAlumnoAsync(HorarioId, AlumnoId));
+    }
+
+    [Fact]
+    public void TituloAutomatico_SegunElRoster()
+    {
+        var uno = new List<AlumnoHorario>
+        {
+            new() { AlumnoId = AlumnoId, Alumno = new Alumno { Nombre = "Ana", Apellido = "Gómez", Telefono = "1" } },
+        };
+        var varios = new List<AlumnoHorario>
+        {
+            new() { Alumno = new Alumno { Nombre = "Ana", Apellido = "Gómez", Telefono = "1" } },
+            new() { Alumno = new Alumno { Nombre = "Luis", Apellido = "Ruiz", Telefono = "2" } },
+        };
+
+        Assert.Equal("Intermedios", HorarioService.TituloDe("Intermedios", varios)); // el nombre manda
+        Assert.Equal("Ana Gómez", HorarioService.TituloDe(null, uno));               // la particular
+        Assert.Equal("Grupo de 2", HorarioService.TituloDe(null, varios));
+        Assert.Equal("Clase sin alumnos", HorarioService.TituloDe(null, []));
     }
 
     // ─────────────────────────────────────────────
@@ -336,7 +531,7 @@ public class HorarioServiceTests
         var horario = new Horario
         {
             CanchaId = Cancha2,
-            GrupoId = GrupoId,
+
             Dia = DayOfWeek.Wednesday,
             HoraInicio = new TimeOnly(10, 0),
             DuracionMinutos = 60,
@@ -401,7 +596,7 @@ public class HorarioServiceTests
     {
         var horario = new Horario
         {
-            CanchaId = Cancha1, GrupoId = GrupoId, Dia = DayOfWeek.Tuesday,
+            CanchaId = Cancha1, Dia = DayOfWeek.Tuesday,
             HoraInicio = new TimeOnly(18, 0), DuracionMinutos = 60, Activo = true,
         };
         _repo.Setup(r => r.ObtenerAsync(horario.Id, It.IsAny<CancellationToken>())).ReturnsAsync(horario);
@@ -515,12 +710,12 @@ public class HorarioServiceTests
         ComoStaffDe(miSede);
         var mio = new Horario
         {
-            GrupoId = GrupoId, Dia = DayOfWeek.Monday, HoraInicio = new TimeOnly(9, 0),
+            Dia = DayOfWeek.Monday, HoraInicio = new TimeOnly(9, 0),
             DuracionMinutos = 60, Cancha = new Cancha { Nombre = "Cancha 1", SedeId = miSede },
         };
         var ajeno = new Horario
         {
-            GrupoId = GrupoId, Dia = DayOfWeek.Monday, HoraInicio = new TimeOnly(9, 0),
+            Dia = DayOfWeek.Monday, HoraInicio = new TimeOnly(9, 0),
             DuracionMinutos = 60, Cancha = new Cancha { Nombre = "Cancha 2", SedeId = Guid.NewGuid() },
         };
         _repo.Setup(r => r.ListarActivosAsync(It.IsAny<CancellationToken>())).ReturnsAsync([mio, ajeno]);

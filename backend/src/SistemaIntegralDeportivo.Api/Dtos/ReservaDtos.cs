@@ -2,46 +2,44 @@ using System.ComponentModel.DataAnnotations;
 
 namespace SistemaIntegralDeportivo.Api.Dtos;
 
-/// <summary>Un horario (día/hora) de un grupo disponible, con su precio estimado por clase.</summary>
-public class HorarioDisponibleDto
+/// <summary>
+/// Una clase con lugar libre a la que el alumno PODRÍA sumarse (cupo disponible y
+/// categoría compatible). Antes esto era un grupo con sus horarios adentro; ahora la
+/// clase ya es la unidad, así que se aplanó un nivel.
+/// </summary>
+public class ClaseDisponibleDto
 {
+    public Guid HorarioId { get; set; }
+    public string Titulo { get; set; } = string.Empty;
+    public string? Categoria { get; set; }
+    public int MiembrosActivos { get; set; }
+    public int? CupoMaximo { get; set; }
     public string Dia { get; set; } = string.Empty; // "Tuesday" → el front lo traduce
     public TimeOnly HoraInicio { get; set; }
     public int DuracionMinutos { get; set; }
     public string Sede { get; set; } = string.Empty;
     public string Cancha { get; set; } = string.Empty;
-    /// <summary>valorHoraGrupal × (duración/60) ÷ (miembros + el alumno). Null si el profe no configuró precios.</summary>
+    /// <summary>valorHoraGrupal × (duración/60) ÷ (miembros + el alumno). Null si el profe no lo configuró.</summary>
     public decimal? PrecioEstimado { get; set; }
-}
-
-/// <summary>Un grupo al que el alumno PODRÍA sumarse (tiene cupo y coincide su categoría).</summary>
-public class GrupoDisponibleDto
-{
-    public Guid GrupoId { get; set; }
-    public string Nombre { get; set; } = string.Empty;
-    public string? Categoria { get; set; }
-    public int MiembrosActivos { get; set; }
-    public int? CupoMaximo { get; set; }
-    public List<HorarioDisponibleDto> Horarios { get; set; } = [];
-    /// <summary>Ya mandó una solicitud pendiente para este grupo (el front deshabilita el botón).</summary>
+    /// <summary>Ya mandó una solicitud pendiente para esta clase (el front deshabilita el botón).</summary>
     public bool SolicitudPendiente { get; set; }
 }
 
-/// <summary>El alumno pide sumarse a un grupo (solo el id).</summary>
-public class SolicitarGrupoDto
+/// <summary>El alumno pide un lugar en una clase (solo el id).</summary>
+public class SolicitarCupoDto
 {
     [Required]
-    public Guid GrupoId { get; set; }
+    public Guid HorarioId { get; set; }
 }
 
-/// <summary>Una solicitud de grupo (vista por el profe o por el alumno).</summary>
-public class SolicitudGrupoDto
+/// <summary>Un pedido de lugar en una clase (visto por el profe o por el alumno).</summary>
+public class SolicitudCupoDto
 {
     public Guid Id { get; set; }
     public Guid AlumnoId { get; set; }
     public string AlumnoNombre { get; set; } = string.Empty;
-    public Guid GrupoId { get; set; }
-    public string GrupoNombre { get; set; } = string.Empty;
+    public Guid HorarioId { get; set; }
+    public string ClaseNombre { get; set; } = string.Empty;
     /// <summary>Pendiente | Aceptada | Rechazada.</summary>
     public string Estado { get; set; } = string.Empty;
     public DateTime CreadoEl { get; set; }

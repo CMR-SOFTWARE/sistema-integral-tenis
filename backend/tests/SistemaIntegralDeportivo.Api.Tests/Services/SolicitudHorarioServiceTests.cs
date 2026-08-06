@@ -167,9 +167,11 @@ public class SolicitudHorarioServiceTests
 
         await _service.AceptarAsync(solicitud.Id, CanchaId);
 
+        // Pidió una clase para él solo: nace con él en el roster y cupo 1
         _horarioService.Verify(h => h.CrearAsync(
-            It.Is<CreateHorarioDto>(d => d.CanchaId == CanchaId && d.AlumnoId == AlumnoId
-                && d.Dia == DayOfWeek.Tuesday && d.HoraInicio == new TimeOnly(18, 0) && d.GrupoId == null),
+            It.Is<CreateHorarioDto>(d => d.CanchaId == CanchaId
+                && d.AlumnoIds.Count == 1 && d.AlumnoIds[0] == AlumnoId && d.CupoMaximo == 1
+                && d.Dia == DayOfWeek.Tuesday && d.HoraInicio == new TimeOnly(18, 0)),
             It.IsAny<CancellationToken>()), Times.Once);
         Assert.Equal(EstadoSolicitudHorario.Aceptada, solicitud.Estado);
         Assert.Equal(CanchaId, solicitud.CanchaId);

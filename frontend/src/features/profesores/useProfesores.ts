@@ -14,7 +14,7 @@ export interface ProfesorAsignable {
 
 /**
  * Trae los profes asignables del club (el dueño + los staff activos) para los
- * selectores de horario/grupo/alumno, y mapea un userId a su nombre.
+ * selectores de horario y alumno, y mapea un userId a su nombre.
  *
  * Con `sedeId` se acota a los que dan clases en ese club — así la ficha del alumno
  * ofrece solo los profes de su club. El dueño aparece siempre (trabaja en todos).

@@ -126,7 +126,7 @@ export default function TurnoModal({
           </div>
         ))}
         {turno.participantes.length === 0 && (
-          <div className={s.vacio}>Sin participantes (el grupo estaba vacío al generarse).</div>
+          <div className={s.vacio}>Sin participantes (la clase estaba vacía al generarse).</div>
         )}
       </div>
       <p className={s.nota}>

@@ -9,18 +9,18 @@ public class TurnoService : ITurnoService
 {
     private readonly ITurnoRepository _turnos;
     private readonly IHorarioRepository _horarios;
-    private readonly IGrupoRepository _grupos;
+
     private readonly ICargoRepository _cargos;
     private readonly IBloqueoRepository _bloqueos;
     private readonly IUsuarioActual _usuario;
 
     public TurnoService(
-        ITurnoRepository turnos, IHorarioRepository horarios, IGrupoRepository grupos,
+        ITurnoRepository turnos, IHorarioRepository horarios,
         ICargoRepository cargos, IBloqueoRepository bloqueos, IUsuarioActual usuario)
     {
         _turnos = turnos;
         _horarios = horarios;
-        _grupos = grupos;
+
         _cargos = cargos;
         _bloqueos = bloqueos;
         _usuario = usuario;
@@ -121,22 +121,14 @@ public class TurnoService : ITurnoService
             // grupal → miembros del grupo que estén ACTIVOS; individual → ese
             // alumno si está activo. El pausado/dado de baja no ocupa lugar ni
             // paga clases a las que no va (y no infla el divisor abaratando al resto).
-            List<Guid> roster = [];
-            if (horario.GrupoId is not null)
-            {
-                var grupo = await _grupos.ObtenerAsync(horario.GrupoId.Value, ct);
-                if (grupo is not null)
-                    roster =
-                    [
-                        .. grupo.Alumnos
-                            .Where(x => x.FechaBaja is null && x.Alumno?.Estado == EstadoAlumno.Activo)
-                            .Select(x => x.AlumnoId)
-                    ];
-            }
-            else if (horario.AlumnoId is not null && horario.Alumno?.Estado == EstadoAlumno.Activo)
-            {
-                roster = [horario.AlumnoId.Value];
-            }
+            // El roster viene con el horario (ya no hay que ir a buscar el grupo):
+            // los que están sin baja y activos. Se congela en el turno al generarlo.
+            List<Guid> roster =
+            [
+                .. horario.Alumnos
+                    .Where(x => x.FechaBaja is null && x.Alumno?.Estado == EstadoAlumno.Activo)
+                    .Select(x => x.AlumnoId)
+            ];
 
             // Sin nadie que juegue no hay turno que generar
             if (roster.Count == 0) continue;

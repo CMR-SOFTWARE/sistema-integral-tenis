@@ -6,11 +6,21 @@ namespace SistemaIntegralDeportivo.Api.Services;
 public interface IHorarioService
 {
     /// <summary>
-    /// Alta de horario. Reglas: grupal XOR individual; sin solapamiento
-    /// con otros horarios activos de la MISMA cancha (mismo día y rango).
+    /// Alta de una clase fija con su cupo y sus alumnos. Reglas: sin solapamiento con
+    /// otras clases de la MISMA cancha (mismo día y rango), y cada alumno tiene que
+    /// poder sumarse (activo o en espera, y sin la cuota vencida).
     /// </summary>
     /// <exception cref="Common.ReglaDeNegocioException">Si viola una regla.</exception>
     Task<HorarioResponseDto> CrearAsync(CreateHorarioDto dto, CancellationToken ct = default);
+
+    /// <summary>
+    /// Suma un alumno al roster: respeta el cupo, no duplica, reactiva al que vuelve,
+    /// promueve al que estaba en espera y lo repone en los turnos futuros.
+    /// </summary>
+    Task AgregarAlumnoAsync(Guid horarioId, Guid alumnoId, CancellationToken ct = default);
+
+    /// <summary>Lo saca del roster (baja lógica) y de sus turnos futuros.</summary>
+    Task QuitarAlumnoAsync(Guid horarioId, Guid alumnoId, CancellationToken ct = default);
 
     Task<IReadOnlyList<HorarioResponseDto>> ListarAsync(CancellationToken ct = default);
 

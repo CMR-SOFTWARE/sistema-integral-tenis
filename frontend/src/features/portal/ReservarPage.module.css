@@ -6,9 +6,21 @@
   margin-bottom: 16px;
 }
 
+/* Las flechas y el período viajan JUNTOS. Sueltos en la toolbar, al envolverse
+   quedaban desparramados (la › sola en el renglón de abajo). Mismo arreglo que
+   el calendario del profe. */
+.navegador {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+}
+
 .nav {
   width: 36px;
   height: 36px;
+  flex: none; /* que las flechas no se aplasten cuando el rango se estira */
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   border-radius: 10px;
@@ -26,7 +38,9 @@
   font-size: 16px;
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
+  min-width: 0;
 }
 
 .hoy {
@@ -95,7 +109,7 @@
   padding: 10px 0;
 }
 
-/* ── Tarjeta de un grupo con cupo (slot reservable) ── */
+/* ── Tarjeta de una clase con lugar (slot reservable) ── */
 .slot {
   border: 1px solid #c7dbfa;
   border-radius: 10px;
@@ -416,9 +430,15 @@
   }
   .columna { scroll-snap-align: start; }
 
-  /* El navegador de semana queda arriba y el botón de pedir clase, abajo a lo ancho */
+  /* El navegador de semana queda arriba a lo ancho y el botón de pedir clase, abajo */
   .toolbar {
     flex-wrap: wrap;
+  }
+  .navegador {
+    flex: 1 1 100%;
+  }
+  .rango {
+    font-size: 15px;
   }
   .btnIndividual {
     flex: 1 1 100%;

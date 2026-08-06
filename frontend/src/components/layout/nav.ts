@@ -20,8 +20,8 @@ export const profNav: NavItem[] = [
     icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
   },
   {
-    // Agenda: Calendario (turnos) + Horarios (plantillas) + Grupos en sub-tabs.
-    // Visible a ambos roles como antes Calendario; el staff ve solo el tab Calendario.
+    // Agenda: los turnos con fecha y los horarios (plantillas) que los generan.
+    // Visible a ambos roles; el staff queda acotado a las clases de su club.
     to: '/agenda',
     label: 'Agenda',
     icon: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4',

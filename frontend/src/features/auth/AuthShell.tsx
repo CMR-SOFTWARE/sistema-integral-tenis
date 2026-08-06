@@ -24,7 +24,7 @@ export default function AuthShell({ children }: { children: ReactNode }) {
           <div className={s.eyebrow}>Gestión deportiva</div>
           <h1 className={s.titulo}>Tu cancha,<br />bajo control.</h1>
           <p className={s.bajada}>
-            Alumnos, turnos, grupos por categoría, cuotas y disponibilidad.
+            Alumnos, turnos, clases por categoría, cuotas y disponibilidad.
             Todo en un solo lugar, rápido y claro.
           </p>
         </div>

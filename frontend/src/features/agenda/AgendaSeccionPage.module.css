@@ -1,4 +1,4 @@
-/* Barra superior de la Agenda: sub-tabs a la izquierda + filtro compartido a la derecha. */
+/* Barra superior de la Agenda: el filtro compartido club + profe. */
 .barra {
   display: flex;
   align-items: center;
@@ -8,41 +8,18 @@
   flex-wrap: wrap;
 }
 
-.tabs {
-  display: flex;
-  gap: 2px;
-}
-
-.tab,
-.tabActivo {
-  border: none;
-  background: none;
-  padding: 12px 18px;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 15px;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  white-space: nowrap;
-  border-bottom: 2px solid transparent;
-  margin-bottom: -1px; /* pisa el borde inferior del contenedor */
-  transition: color 0.15s;
-}
-
-.tab:hover {
-  color: var(--color-text);
-}
-
-.tabActivo {
-  color: var(--color-primary-dark);
-  border-bottom-color: var(--color-primary);
-}
-
-/* Filtro club + profe, compartido por toda la agenda. */
+/* Filtro club + profe, compartido por toda la agenda. En el celular ocupa el ancho;
+   de tablet para arriba se apoya sobre el margen derecho. */
 .filtros {
-  margin-left: auto;
   display: flex;
   gap: 8px;
   align-items: center;
-  padding-bottom: 8px;
+  flex-wrap: wrap;
+  padding: 4px 0 12px;
+}
+
+@media (min-width: 700px) {
+  .filtros {
+    margin-left: auto;
+  }
 }

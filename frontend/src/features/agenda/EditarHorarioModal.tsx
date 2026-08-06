@@ -2,43 +2,76 @@ import { useMemo, useState } from 'react';
 import Modal from '../../components/Modal';
 import HoraSelect from '../../components/HoraSelect';
 import { ApiError } from '../../lib/api';
+import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
+import CategoriaOptions from '../alumnos/CategoriaOptions';
+import type { Categoria } from '../alumnos/types';
+import SelectorAlumnos from './SelectorAlumnos';
 import { DIAS, horaCorta } from './types';
 import type { DiaSemana, Horario, Sede, UpdateHorario } from './types';
 import { useProfesores } from '../profesores/useProfesores';
 import s from '../alumnos/NuevoAlumnoModal.module.css';
+import g from './FormHorario.module.css';
+import r from './EditarHorarioModal.module.css';
 
 interface Props {
   horario: Horario;
   sedes: Sede[];
   onClose: () => void;
   onEditar: (id: string, dto: UpdateHorario) => Promise<void>;
+  /** El roster va por su cuenta: el back reconcilia los turnos al instante. */
+  onAgregarAlumno: (horarioId: string, alumnoId: string) => Promise<void>;
+  onQuitarAlumno: (horarioId: string, alumnoId: string) => Promise<void>;
 }
 
 /**
- * Edición de un horario: cancha, día, hora, duración, profe y su valor hora. El
- * grupo/alumno queda fijo (para cambiarlo se borra y se recrea). Cambiar el día/hora
- * reprograma los turnos futuros (lo maneja el backend).
+ * Edición de una clase: cancha, día, hora, duración, profe, nombre, cupo y categoría
+ * (todo eso se guarda con el botón) más el roster, que se toca acá mismo pero se
+ * aplica al instante: sumar o sacar a alguien reprograma sus turnos futuros y cambia
+ * el divisor de la cuota, así que no puede quedar esperando un "Guardar".
  */
-export default function EditarHorarioModal({ horario, sedes, onClose, onEditar }: Props) {
+export default function EditarHorarioModal({
+  horario, sedes, onClose, onEditar, onAgregarAlumno, onQuitarAlumno,
+}: Props) {
   const sedeInicial = sedes.find((x) => x.canchas.some((c) => c.id === horario.canchaId))?.id
     ?? sedes[0]?.id ?? '';
   const [sedeId, setSedeId] = useState(sedeInicial);
   const [canchaId, setCanchaId] = useState(horario.canchaId);
+  const [nombre, setNombre] = useState(horario.nombre ?? '');
+  const [cupo, setCupo] = useState(horario.cupoMaximo?.toString() ?? '');
+  // 'SinCategoria' (herencia de los grupos migrados) es lo mismo que sin elegir.
+  const [categoria, setCategoria] = useState<Categoria | ''>(
+    horario.categoria && horario.categoria !== 'SinCategoria' ? horario.categoria : '',
+  );
   const [dia, setDia] = useState<DiaSemana>(horario.dia);
   const [hora, setHora] = useState(horaCorta(horario.horaInicio));
   const [duracion, setDuracion] = useState(horario.duracionMinutos);
   const [profesorId, setProfesorId] = useState(horario.profesorUserId ?? '');
   const [valorHora, setValorHora] = useState(horario.valorHoraProfe?.toString() ?? '');
   const { profes } = useProfesores();
+  const confirmar = useConfirmar();
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Roster
+  const [sumando, setSumando] = useState(false);
+  const [aSumar, setASumar] = useState<string[]>([]);
+  const [tocandoRoster, setTocandoRoster] = useState(false);
 
   const canchas = useMemo(
     () => sedes.find((x) => x.id === sedeId)?.canchas ?? [],
     [sedes, sedeId],
   );
 
-  const valido = canchaId !== '';
+  const cupoNum = cupo === '' ? null : Number(cupo);
+  // El back rechaza un cupo por debajo de los que ya vienen: lo avisamos antes.
+  const cupoCorto = cupoNum !== null && horario.miembrosActivos > cupoNum;
+  const valido = canchaId !== '' && !cupoCorto;
+
+  // Los lugares que quedan se cuentan contra el cupo GUARDADO (es el que valida el
+  // back), no contra el del formulario: si querés más, guardá el cupo nuevo primero.
+  const lugaresLibres = horario.cupoMaximo === null
+    ? null
+    : Math.max(0, horario.cupoMaximo - horario.miembrosActivos);
+  const completa = lugaresLibres === 0;
 
   const guardar = async () => {
     setError(null);
@@ -46,6 +79,9 @@ export default function EditarHorarioModal({ horario, sedes, onClose, onEditar }
     try {
       await onEditar(horario.id, {
         canchaId,
+        nombre: nombre.trim() || undefined,
+        cupoMaximo: cupoNum ?? undefined,
+        categoria: categoria || undefined,
         profesorUserId: profesorId || undefined,
         valorHoraProfe: profesorId && valorHora ? Number(valorHora) : undefined,
         dia,
@@ -57,6 +93,39 @@ export default function EditarHorarioModal({ horario, sedes, onClose, onEditar }
       setError(e instanceof ApiError ? e.message : 'No se pudo guardar el horario.');
     } finally {
       setEnviando(false);
+    }
+  };
+
+  const sumarTildados = async () => {
+    setError(null);
+    setTocandoRoster(true);
+    try {
+      // De a uno: cada alta reconcilia el calendario del alumno por separado.
+      for (const alumnoId of aSumar) await onAgregarAlumno(horario.id, alumnoId);
+      setASumar([]);
+      setSumando(false);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'No se pudo sumar al alumno.');
+    } finally {
+      setTocandoRoster(false);
+    }
+  };
+
+  const quitar = async (alumnoId: string, quien: string) => {
+    if (!(await confirmar({
+      titulo: 'Sacar de la clase',
+      mensaje: `¿Sacar a ${quien} de "${horario.titulo}"? Sale de los turnos futuros y su historia se conserva.`,
+      confirmar: 'Sacar',
+      peligro: true,
+    }))) return;
+    setError(null);
+    setTocandoRoster(true);
+    try {
+      await onQuitarAlumno(horario.id, alumnoId);
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : 'No se pudo sacar al alumno.');
+    } finally {
+      setTocandoRoster(false);
     }
   };
 
@@ -74,9 +143,9 @@ export default function EditarHorarioModal({ horario, sedes, onClose, onEditar }
         </>
       }
     >
-      <div className={s.grid}>
+      <div className={g.grid}>
         <label className={s.campo}>
-          <span>Sede</span>
+          <span>Club</span>
           <select value={sedeId} onChange={(e) => { setSedeId(e.target.value); setCanchaId(''); }}>
             {sedes.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}
           </select>
@@ -86,6 +155,36 @@ export default function EditarHorarioModal({ horario, sedes, onClose, onEditar }
           <select value={canchaId} onChange={(e) => setCanchaId(e.target.value)}>
             <option value="">Elegí una cancha…</option>
             {canchas.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </select>
+        </label>
+
+        <label className={s.campo}>
+          <span>Nombre (opcional)</span>
+          <input
+            type="text"
+            maxLength={80}
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            placeholder="Vacío: se arma solo con los alumnos"
+          />
+        </label>
+        <label className={s.campo}>
+          <span>Cupo (opcional)</span>
+          <input
+            type="number"
+            min={1}
+            max={50}
+            value={cupo}
+            onChange={(e) => setCupo(e.target.value)}
+            onWheel={(e) => e.currentTarget.blur()}
+            placeholder="Vacío: sin límite"
+          />
+        </label>
+        <label className={`${s.campo} ${g.span2}`}>
+          <span>Categoría sugerida (opcional)</span>
+          <select value={categoria} onChange={(e) => setCategoria(e.target.value as Categoria | '')}>
+            <option value="">Sin categoría (cualquiera puede entrar)</option>
+            <CategoriaOptions />
           </select>
         </label>
 
@@ -137,7 +236,76 @@ export default function EditarHorarioModal({ horario, sedes, onClose, onEditar }
           </label>
         )}
 
-        {error && <div className={`${s.span2} ${s.error}`}>{error}</div>}
+        {/* El roster va último: en el celular, lo que más se edita es el día y la
+            hora, y no conviene tener que pasar por la lista de alumnos para llegar. */}
+        <div className={`${g.span2} ${r.roster}`}>
+          <div className={r.rosterHeader}>
+            <span className={r.rosterTitulo}>Alumnos que vienen</span>
+            <span className={r.rosterCupo}>
+              {horario.miembrosActivos}
+              {horario.cupoMaximo !== null ? `/${horario.cupoMaximo}${completa ? ' · completa' : ''}` : ''}
+            </span>
+            <button
+              className={r.btnSumar}
+              disabled={tocandoRoster || completa}
+              title={completa ? 'La clase está completa: subí el cupo y guardá' : undefined}
+              onClick={() => { setSumando((x) => !x); setASumar([]); }}
+            >
+              {sumando ? 'Listo' : '+ Sumar alumnos'}
+            </button>
+          </div>
+
+          <div className={r.miembros}>
+            {horario.miembros.map((m) => (
+              <span key={m.alumnoId} className={r.miembroChip}>
+                {m.nombre} {m.apellido}
+                <button
+                  className={r.quitarX}
+                  disabled={tocandoRoster}
+                  title={`Sacar a ${m.nombre}`}
+                  onClick={() => void quitar(m.alumnoId, `${m.nombre} ${m.apellido}`)}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </span>
+            ))}
+            {horario.miembros.length === 0 && (
+              <span className={r.sinAlumnos}>Sin alumnos: la clase no genera turnos.</span>
+            )}
+          </div>
+
+          {sumando && (
+            <>
+              <SelectorAlumnos
+                elegidos={aSumar}
+                onCambiar={setASumar}
+                cupo={lugaresLibres}
+                excluir={horario.miembros.map((m) => m.alumnoId)}
+              />
+              <button
+                className={r.btnSumar}
+                disabled={tocandoRoster || aSumar.length === 0}
+                onClick={() => void sumarTildados()}
+              >
+                {tocandoRoster ? 'Sumando…' : `Sumar ${aSumar.length} a la clase`}
+              </button>
+            </>
+          )}
+
+          <p className={r.nota}>
+            Sumar o sacar gente se aplica al momento (no espera al "Guardar") y reordena
+            los turnos futuros.
+          </p>
+        </div>
+
+        {cupoCorto && (
+          <div className={`${g.span2} ${s.error}`}>
+            Ya vienen {horario.miembrosActivos} alumnos: el cupo no puede ser menor.
+          </div>
+        )}
+        {error && <div className={`${g.span2} ${s.error}`}>{error}</div>}
       </div>
     </Modal>
   );

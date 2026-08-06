@@ -46,8 +46,8 @@ export default function InicioPage() {
       <div className={s.tarjeta}>
         <h3 className={s.tarjetaTitulo}>Estás en la lista de espera 🎾</h3>
         <p className={s.sinClubTexto}>
-          Ya sos parte de <b>{ficha.club}</b>. Tu profe te va a asignar un horario o un
-          grupo; cuando lo haga, acá vas a ver tus clases y tu cuota.
+          Ya sos parte de <b>{ficha.club}</b>. Tu profe te va a sumar a una clase;
+          cuando lo haga, acá vas a ver tus horarios y tu cuota.
         </p>
       </div>
     );

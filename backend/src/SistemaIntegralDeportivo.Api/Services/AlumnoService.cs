@@ -11,7 +11,7 @@ public class AlumnoService : IAlumnoService
     private readonly ICargoRepository _cargos;
     private readonly ICredencialesService _credenciales;
     private readonly ITurnoRepository _turnos;
-    private readonly IGrupoRepository _grupos;
+
     private readonly IHorarioRepository _horarios;
     private readonly IStaffService _staff;
     private readonly IUsuarioActual _usuario;
@@ -19,14 +19,14 @@ public class AlumnoService : IAlumnoService
 
     public AlumnoService(
         IAlumnoRepository repo, ICargoRepository cargos, ICredencialesService credenciales,
-        ITurnoRepository turnos, IGrupoRepository grupos, IHorarioRepository horarios,
+        ITurnoRepository turnos, IHorarioRepository horarios,
         IStaffService staff, IUsuarioActual usuario, ISedeRepository sedes)
     {
         _repo = repo;
         _cargos = cargos;
         _credenciales = credenciales;
         _turnos = turnos;
-        _grupos = grupos;
+
         _horarios = horarios;
         _staff = staff;
         _usuario = usuario;
@@ -289,14 +289,13 @@ public class AlumnoService : IAlumnoService
 
     public async Task<IReadOnlyList<AlumnoHorarioDto>> HorariosDeAsync(Guid id, CancellationToken ct = default)
     {
-        // Grupos activos del alumno → sus horarios grupales; más sus individuales.
-        var misGrupos = (await _grupos.ListarMembresiasActivasDeAlumnoAsync(id, ct))
-            .Select(m => m.GrupoId)
+        // Las clases donde está en el roster (ya no hay grupal vs. individual).
+        var misClases = (await _horarios.ListarMembresiasActivasDeAlumnoAsync(id, ct))
+            .Select(m => m.HorarioId)
             .ToHashSet();
 
         return (await _horarios.ListarActivosAsync(ct))
-            .Where(h => h.AlumnoId == id
-                     || (h.GrupoId is not null && misGrupos.Contains(h.GrupoId.Value)))
+            .Where(h => misClases.Contains(h.Id))
             .OrderBy(h => ((int)h.Dia + 6) % 7) // Lunes primero (Domingo=0 → al final)
             .ThenBy(h => h.HoraInicio)
             .Select(h => new AlumnoHorarioDto
@@ -306,8 +305,8 @@ public class AlumnoService : IAlumnoService
                 DuracionMinutos = h.DuracionMinutos,
                 Cancha = h.Cancha?.Nombre ?? string.Empty,
                 Sede = h.Cancha?.Sede?.Nombre ?? string.Empty,
-                Tipo = h.GrupoId is not null ? "Grupal" : "Individual",
-                Grupo = h.Grupo?.Nombre,
+                Titulo = HorarioService.TituloDe(h.Nombre, h.Alumnos),
+                Companeros = h.Alumnos.Count(x => x.FechaBaja is null) - 1,
             })
             .ToList();
     }
@@ -510,16 +509,17 @@ public class AlumnoService : IAlumnoService
         var hoy = DateOnly.FromDateTime(DateTime.UtcNow);
         var tocados = new HashSet<Guid>();
 
-        // Turnos futuros donde DEBERÍA estar (solo si está Activo)
+        // Turnos futuros donde DEBERÍA estar (solo si está Activo). Antes esto era la
+        // unión de "los horarios de mis grupos" + "mis horarios individuales"; ahora
+        // es una sola cosa: las clases donde estoy en el roster.
         var debeEstar = new Dictionary<Guid, Turno>();
         if (alumno.Estado == EstadoAlumno.Activo)
         {
-            var misGrupos = (await _grupos.ListarMembresiasActivasDeAlumnoAsync(alumnoId, ct))
-                .Select(m => m.GrupoId)
+            var misClases = (await _horarios.ListarMembresiasActivasDeAlumnoAsync(alumnoId, ct))
+                .Select(m => m.HorarioId)
                 .ToHashSet();
             var horarios = (await _horarios.ListarActivosAsync(ct))
-                .Where(h => (h.GrupoId is not null && misGrupos.Contains(h.GrupoId.Value))
-                         || h.AlumnoId == alumnoId);
+                .Where(h => misClases.Contains(h.Id));
 
             foreach (var horario in horarios)
                 foreach (var turno in await _turnos.ListarPorHorarioDesdeAsync(horario.Id, hoy, ct))
@@ -571,16 +571,18 @@ public class AlumnoService : IAlumnoService
         }
     }
 
-    /// <summary>Baja: libera el cupo de sus grupos y el slot de sus horarios individuales.</summary>
+    /// <summary>
+    /// Baja: libera su lugar en todas las clases que tomaba. Antes eran dos
+    /// mecanismos (cerrar la membresía del grupo vs. desactivar el horario
+    /// individual); ahora es uno solo. La clase que queda vacía NO se desactiva:
+    /// deja de generar turnos igual, y así el profe no pierde la plantilla.
+    /// </summary>
     private async Task LiberarLugarAsync(Guid alumnoId, CancellationToken ct)
     {
         var ahora = DateTime.UtcNow;
 
-        foreach (var membresia in await _grupos.ListarMembresiasActivasDeAlumnoAsync(alumnoId, ct))
+        foreach (var membresia in await _horarios.ListarMembresiasActivasDeAlumnoAsync(alumnoId, ct))
             membresia.FechaBaja = ahora;
-
-        foreach (var horario in await _horarios.ListarIndividualesDeAlumnoAsync(alumnoId, ct))
-            horario.Activo = false;
     }
 
     /// <summary>

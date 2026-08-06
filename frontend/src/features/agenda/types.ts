@@ -1,5 +1,7 @@
 // Tipos espejo de AgendaDtos.cs + helpers de fecha/hora de la agenda.
 
+import type { Categoria } from '../alumnos/types';
+
 export type DiaSemana =
   | 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday'
   | 'Friday' | 'Saturday' | 'Sunday';
@@ -17,11 +19,24 @@ export interface Sede {
   canchas: Cancha[];
 }
 
+/** Espejo de MiembroHorarioDto: un alumno del roster de la clase. */
+export interface MiembroHorario {
+  alumnoId: string;
+  nombre: string;
+  apellido: string;
+  categoria: Categoria;
+  fechaAlta: string;
+}
+
 export interface Horario {
   id: string;
+  /** Lo que se muestra: el nombre cargado, o uno armado con el roster. */
   titulo: string;
-  categoria: string | null;
-  esIndividual: boolean;
+  /** El nombre TAL CUAL lo cargó el profe (null = se arma solo). Para el formulario. */
+  nombre: string | null;
+  categoria: Categoria | null;
+  /** Cuántos alumnos entran; null = sin límite. */
+  cupoMaximo: number | null;
   canchaId: string;
   cancha: string;
   sede: string;
@@ -31,15 +46,18 @@ export interface Horario {
   activo: boolean;
   profesorUserId: string | null;
   valorHoraProfe: number | null;
-  /** Roster (grupal XOR individual): para pre-seleccionar al duplicar. */
-  grupoId: string | null;
-  alumnoId: string | null;
+  /** Los que vienen hoy (sin los dados de baja). */
+  miembros: MiembroHorario[];
+  miembrosActivos: number;
 }
 
 export interface CreateHorario {
   canchaId: string;
-  grupoId?: string;
-  alumnoId?: string;
+  nombre?: string;
+  cupoMaximo?: number;
+  categoria?: Categoria;
+  /** Los alumnos con los que arranca la clase; puede ir vacío y sumarlos después. */
+  alumnoIds: string[];
   profesorUserId?: string;
   /** Valor hora del profe para esta clase (override; vacío = usa el base del profe). */
   valorHoraProfe?: number;
@@ -48,9 +66,15 @@ export interface CreateHorario {
   duracionMinutos: number;
 }
 
-/** Edición de un horario (sin grupo/alumno: el roster no se toca acá). */
+/**
+ * Edición de una clase. El roster NO va acá: se toca con sus propios endpoints
+ * (agregar/quitar alumno), que además reconcilian el calendario.
+ */
 export interface UpdateHorario {
   canchaId: string;
+  nombre?: string;
+  cupoMaximo?: number;
+  categoria?: Categoria;
   profesorUserId?: string;
   valorHoraProfe?: number;
   dia: DiaSemana;
