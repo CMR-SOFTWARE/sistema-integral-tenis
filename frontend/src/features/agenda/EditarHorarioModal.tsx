@@ -66,28 +66,34 @@ export default function EditarHorarioModal({
   const cupoCorto = cupoNum !== null && horario.miembrosActivos > cupoNum;
   const valido = canchaId !== '' && !cupoCorto;
 
-  // Los lugares que quedan se cuentan contra el cupo GUARDADO (es el que valida el
-  // back), no contra el del formulario: si querés más, guardá el cupo nuevo primero.
-  const lugaresLibres = horario.cupoMaximo === null
+  // Los lugares se cuentan contra el cupo DEL FORMULARIO, no el guardado: agrandar
+  // una clase particular (cupo 1 → 4) y sumarle los tres nuevos es UN solo gesto, y
+  // el guardado del cupo viaja con el alta (ver sumarTildados).
+  const lugaresLibres = cupoNum === null
     ? null
-    : Math.max(0, horario.cupoMaximo - horario.miembrosActivos);
+    : Math.max(0, cupoNum - horario.miembrosActivos);
   const completa = lugaresLibres === 0;
+  // Los tildados tienen que seguir entrando: si bajás el cupo DESPUÉS de tildarlos,
+  // el back los rechazaría de a uno con un error confuso.
+  const entranLosTildados = lugaresLibres === null || aSumar.length <= lugaresLibres;
+
+  const dtoActual = (): UpdateHorario => ({
+    canchaId,
+    nombre: nombre.trim() || undefined,
+    cupoMaximo: cupoNum ?? undefined,
+    categoria: categoria || undefined,
+    profesorUserId: profesorId || undefined,
+    valorHoraProfe: profesorId && valorHora ? Number(valorHora) : undefined,
+    dia,
+    horaInicio: hora, // "18:00" — TimeOnly lo parsea
+    duracionMinutos: duracion,
+  });
 
   const guardar = async () => {
     setError(null);
     setEnviando(true);
     try {
-      await onEditar(horario.id, {
-        canchaId,
-        nombre: nombre.trim() || undefined,
-        cupoMaximo: cupoNum ?? undefined,
-        categoria: categoria || undefined,
-        profesorUserId: profesorId || undefined,
-        valorHoraProfe: profesorId && valorHora ? Number(valorHora) : undefined,
-        dia,
-        horaInicio: hora, // "18:00" — TimeOnly lo parsea
-        duracionMinutos: duracion,
-      });
+      await onEditar(horario.id, dtoActual());
       onClose();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo guardar el horario.');
@@ -100,6 +106,11 @@ export default function EditarHorarioModal({
     setError(null);
     setTocandoRoster(true);
     try {
+      // El formulario se guarda ANTES de sumar porque el back valida el alta contra
+      // el cupo PERSISTIDO: sin esto, agrandar la clase y sumar gente eran dos
+      // pasadas con un "Guardar cambios" en el medio. Por eso el botón dice
+      // "Guardar y sumar": nombra las dos cosas que hace.
+      await onEditar(horario.id, dtoActual());
       // De a uno: cada alta reconcilia el calendario del alumno por separado.
       for (const alumnoId of aSumar) await onAgregarAlumno(horario.id, alumnoId);
       setASumar([]);
@@ -241,14 +252,16 @@ export default function EditarHorarioModal({
         <div className={`${g.span2} ${r.roster}`}>
           <div className={r.rosterHeader}>
             <span className={r.rosterTitulo}>Alumnos que vienen</span>
+            {/* El cupo que se muestra es el del FORMULARIO: si acabás de escribir 4,
+                la clase ya se lee como "1/4" y podés sumar los que entran. */}
             <span className={r.rosterCupo}>
               {horario.miembrosActivos}
-              {horario.cupoMaximo !== null ? `/${horario.cupoMaximo}${completa ? ' · completa' : ''}` : ''}
+              {cupoNum !== null ? `/${cupoNum}${completa ? ' · completa' : ''}` : ''}
             </span>
             <button
               className={r.btnSumar}
               disabled={tocandoRoster || completa}
-              title={completa ? 'La clase está completa: subí el cupo y guardá' : undefined}
+              title={completa ? 'La clase está completa: subí el cupo para sumar a alguien más' : undefined}
               onClick={() => { setSumando((x) => !x); setASumar([]); }}
             >
               {sumando ? 'Listo' : '+ Sumar alumnos'}
@@ -286,17 +299,18 @@ export default function EditarHorarioModal({
               />
               <button
                 className={r.btnSumar}
-                disabled={tocandoRoster || aSumar.length === 0}
+                disabled={tocandoRoster || aSumar.length === 0 || !valido || !entranLosTildados}
                 onClick={() => void sumarTildados()}
               >
-                {tocandoRoster ? 'Sumando…' : `Sumar ${aSumar.length} a la clase`}
+                {tocandoRoster ? 'Guardando y sumando…' : `Guardar y sumar ${aSumar.length}`}
               </button>
             </>
           )}
 
           <p className={r.nota}>
-            Sumar o sacar gente se aplica al momento (no espera al "Guardar") y reordena
-            los turnos futuros.
+            Sumar o sacar gente se aplica al momento y reordena los turnos futuros.
+            Al sumar se guardan también los cambios del formulario (entre ellos el cupo,
+            que es contra el que el sistema valida quién entra).
           </p>
         </div>
 
