@@ -1,11 +1,24 @@
+/* Mobile-first: un campo por fila, y de tablet para arriba dos columnas. */
 .grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 14px;
 }
 
+/*
+ * De la primera línea a la última, NO `span 2`: con `span 2` el item obliga a Grid
+ * a crear una segunda columna IMPLÍCITA cuando la grilla tiene una sola, y el resto
+ * de los campos vuelve a acomodarse de a dos. Por eso en el celular estos
+ * formularios se veían en dos columnas aunque el media query estuviera bien.
+ */
 .span2 {
-  grid-column: span 2;
+  grid-column: 1 / -1;
+}
+
+@media (min-width: 700px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 .campo {
@@ -137,11 +150,4 @@
   font-size: 12px;
   color: var(--color-text-muted);
   line-height: 1.5;
-}
-
-/* ── Móvil: un campo por fila ── */
-@media (max-width: 760px) {
-  .grid {
-    grid-template-columns: 1fr;
-  }
 }

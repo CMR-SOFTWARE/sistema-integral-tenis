@@ -1,12 +1,12 @@
 /*
- * La grilla de los formularios de horario (nuevo y editar). Mobile-first de verdad:
- * la base es UNA columna —el profe carga la clase parado en la cancha— y recién de
- * tablet para arriba pasa a dos.
+ * La grilla de los formularios de horario (nuevo y editar). Mobile-first: la base es
+ * UNA columna —el profe carga la clase parado en la cancha— y recién de tablet para
+ * arriba pasa a dos. Son los formularios más largos de la app (suman cupo, categoría
+ * y la lista de alumnos), así que en el celular se plantan en una columna.
  *
- * Tiene grilla propia y no la de NuevoAlumnoModal a propósito: aquella arma dos
- * columnas por defecto y las deshace con un `max-width`, y en el celular seguía
- * mostrando los campos de a dos. Estos formularios son largos (suman cupo, categoría
- * y la lista de alumnos), así que se plantan en una columna y no se negocia.
+ * Ojo con `.span2`: va `1 / -1` y no `span 2`. Con `span 2` el item obliga a Grid a
+ * crear una segunda columna implícita cuando la grilla tiene una sola, y los campos
+ * vuelven a verse de a dos en el celular.
  */
 
 .grid {
