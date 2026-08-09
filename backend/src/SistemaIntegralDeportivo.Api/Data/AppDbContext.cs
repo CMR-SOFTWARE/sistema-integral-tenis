@@ -38,6 +38,7 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
     public DbSet<Servicio> Servicios => Set<Servicio>();
     public DbSet<Pedido> Pedidos => Set<Pedido>();
     public DbSet<Raqueta> Raquetas => Set<Raqueta>();
+    public DbSet<Encordado> Encordados => Set<Encordado>();
     public DbSet<SolicitudGrupo> SolicitudesGrupo => Set<SolicitudGrupo>();
     public DbSet<SolicitudHorario> SolicitudesHorario => Set<SolicitudHorario>();
     public DbSet<ClaseSuelta> ClasesSueltas => Set<ClaseSuelta>();
@@ -255,6 +256,15 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
             .OnDelete(DeleteBehavior.Cascade); // si se borrara el alumno, se van sus raquetas
         modelBuilder.Entity<Raqueta>()
             .HasIndex(r => r.AlumnoId); // "las raquetas de este alumno"
+
+        modelBuilder.Entity<Encordado>()
+            .HasOne(e => e.Raqueta)
+            .WithMany(r => r.Encordados)
+            .HasForeignKey(e => e.RaquetaId)
+            .OnDelete(DeleteBehavior.Cascade); // se borra la raqueta → se va su historial
+        // "el historial de esta raqueta, del más nuevo al más viejo"
+        modelBuilder.Entity<Encordado>()
+            .HasIndex(e => new { e.RaquetaId, e.Fecha });
 
         // ── Solicitudes de sumarse a un grupo (M5a) ──
 

@@ -127,6 +127,20 @@ public interface IPortalService
     /// <exception cref="Common.ReglaDeNegocioException">La raqueta no existe o no es mía.</exception>
     Task BorrarRaquetaAsync(Guid userId, Guid raquetaId, CancellationToken ct = default);
 
+    /// <summary>Registro un encordado en una raqueta mía (devuelve la raqueta al día).</summary>
+    /// <exception cref="Common.ReglaDeNegocioException">La raqueta no existe o no es mía.</exception>
+    Task<RaquetaDto> AgregarEncordadoAsync(
+        Guid userId, Guid raquetaId, GuardarEncordadoDto dto, CancellationToken ct = default);
+
+    /// <summary>Corrijo un encordado del historial de una raqueta mía.</summary>
+    /// <exception cref="Common.ReglaDeNegocioException">No existe, o la raqueta no es mía.</exception>
+    Task<RaquetaDto> EditarEncordadoAsync(
+        Guid userId, Guid encordadoId, GuardarEncordadoDto dto, CancellationToken ct = default);
+
+    /// <summary>Borro un encordado del historial de una raqueta mía.</summary>
+    /// <exception cref="Common.ReglaDeNegocioException">No existe, o la raqueta no es mía.</exception>
+    Task BorrarEncordadoAsync(Guid userId, Guid encordadoId, CancellationToken ct = default);
+
     /// <summary>
     /// Aviso de cancelación de MI turno (hasta la hora de inicio): el turno
     /// sigue para el resto y mi cargo queda (falta con aviso; la recuperación

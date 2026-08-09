@@ -533,6 +533,54 @@ public class PortalController : ControllerBase
         }
     }
 
+    /// <summary>POST api/portal/raquetas/{id}/encordados — registro un encordado.</summary>
+    [HttpPost("raquetas/{raquetaId:guid}/encordados")]
+    public async Task<ActionResult<RaquetaDto>> AgregarEncordado(
+        Guid raquetaId, GuardarEncordadoDto dto, CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.AgregarEncordadoAsync(userId, raquetaId, dto, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>PUT api/portal/encordados/{id} — corrijo un encordado del historial.</summary>
+    [HttpPut("encordados/{encordadoId:guid}")]
+    public async Task<ActionResult<RaquetaDto>> EditarEncordado(
+        Guid encordadoId, GuardarEncordadoDto dto, CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            return Ok(await _portal.EditarEncordadoAsync(userId, encordadoId, dto, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>DELETE api/portal/encordados/{id} — borro un encordado del historial.</summary>
+    [HttpDelete("encordados/{encordadoId:guid}")]
+    public async Task<IActionResult> BorrarEncordado(Guid encordadoId, CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            await _portal.BorrarEncordadoAsync(userId, encordadoId, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     /// <summary>POST api/portal/mis-turnos/{id}/cancelar — aviso que no vengo (mi cargo queda).</summary>
     [HttpPost("mis-turnos/{turnoId:guid}/cancelar")]
     public async Task<IActionResult> CancelarMiTurno(

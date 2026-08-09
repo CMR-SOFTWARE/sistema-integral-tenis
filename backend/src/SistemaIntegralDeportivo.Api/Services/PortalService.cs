@@ -380,6 +380,26 @@ public class PortalService : IPortalService
         await _raquetas.BorrarAsync(ficha.Id, raquetaId, ct);
     }
 
+    public async Task<RaquetaDto> AgregarEncordadoAsync(
+        Guid userId, Guid raquetaId, GuardarEncordadoDto dto, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+        return await _raquetas.AgregarEncordadoAsync(ficha.Id, raquetaId, dto, ct);
+    }
+
+    public async Task<RaquetaDto> EditarEncordadoAsync(
+        Guid userId, Guid encordadoId, GuardarEncordadoDto dto, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+        return await _raquetas.EditarEncordadoAsync(ficha.Id, encordadoId, dto, ct);
+    }
+
+    public async Task BorrarEncordadoAsync(Guid userId, Guid encordadoId, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+        await _raquetas.BorrarEncordadoAsync(ficha.Id, encordadoId, ct);
+    }
+
     public async Task CancelarMiTurnoAsync(
         Guid userId, Guid turnoId, string motivo, CancellationToken ct = default)
     {

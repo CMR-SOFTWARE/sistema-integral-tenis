@@ -18,11 +18,14 @@ public class AlumnosController : ControllerBase
 {
     private readonly IAlumnoService _service;
     private readonly INotaAlumnoService _notas;
+    private readonly IRaquetaService _raquetas;
 
-    public AlumnosController(IAlumnoService service, INotaAlumnoService notas)
+    public AlumnosController(
+        IAlumnoService service, INotaAlumnoService notas, IRaquetaService raquetas)
     {
         _service = service;
         _notas = notas;
+        _raquetas = raquetas;
     }
 
     /// <summary>GET api/alumnos?categoria=Cuarta&amp;estado=Activo</summary>
@@ -152,6 +155,61 @@ public class AlumnosController : ControllerBase
     [HttpGet("{id:guid}/cuenta")]
     public async Task<ActionResult<AlumnoCuentaDto>> Cuenta(Guid id, CancellationToken ct) =>
         Ok(await _service.CuentaDeAsync(id, ct));
+
+    // ── Raquetas del alumno ──
+    // Mismo service que usa el portal: cambia solo quién resuelve el alumnoId. El
+    // profe puede cargarlas y encordarlas porque muchas veces es él quien encorda,
+    // y el alumno no siempre las tiene cargadas.
+
+    /// <summary>GET api/alumnos/{id}/raquetas — sus raquetas con el historial de encordado.</summary>
+    [HttpGet("{id:guid}/raquetas")]
+    public async Task<ActionResult<IReadOnlyList<RaquetaDto>>> Raquetas(Guid id, CancellationToken ct) =>
+        Ok(await _raquetas.MisAsync(id, ct));
+
+    /// <summary>POST api/alumnos/{id}/raquetas — le cargo una raqueta.</summary>
+    [HttpPost("{id:guid}/raquetas")]
+    public async Task<ActionResult<RaquetaDto>> AgregarRaqueta(
+        Guid id, GuardarRaquetaDto dto, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await _raquetas.AgregarAsync(id, dto, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>POST api/alumnos/{id}/raquetas/{raquetaId}/encordados — registro un encordado.</summary>
+    [HttpPost("{id:guid}/raquetas/{raquetaId:guid}/encordados")]
+    public async Task<ActionResult<RaquetaDto>> AgregarEncordado(
+        Guid id, Guid raquetaId, GuardarEncordadoDto dto, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await _raquetas.AgregarEncordadoAsync(id, raquetaId, dto, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>DELETE api/alumnos/{id}/raquetas/{raquetaId} — le borro una raqueta.</summary>
+    [HttpDelete("{id:guid}/raquetas/{raquetaId:guid}")]
+    public async Task<IActionResult> BorrarRaqueta(Guid id, Guid raquetaId, CancellationToken ct)
+    {
+        try
+        {
+            await _raquetas.BorrarAsync(id, raquetaId, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
 
     // ── Notas de seguimiento del profe sobre el alumno ──
 
