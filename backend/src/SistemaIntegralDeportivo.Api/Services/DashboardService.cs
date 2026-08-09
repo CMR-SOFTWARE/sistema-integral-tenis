@@ -108,10 +108,7 @@ public class DashboardService : IDashboardService
         };
     }
 
-    // Mismo criterio que TurnoService.Mapear: nombre del grupo o "Fulano (individual)"
-    private static string Titulo(Turno t) =>
-        t.Horario?.Grupo?.Nombre
-            ?? (t.Horario?.Alumno is not null
-                ? $"{t.Horario.Alumno.Nombre} {t.Horario.Alumno.Apellido} (individual)"
-                : string.Empty);
+    // Una sola definición del título, en TurnoService: las copias sueltas se
+    // desactualizaron cuando el grupo dejó de existir.
+    private static string Titulo(Turno t) => TurnoService.TituloDe(t);
 }

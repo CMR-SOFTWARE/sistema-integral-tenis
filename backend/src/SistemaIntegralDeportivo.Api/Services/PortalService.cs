@@ -490,8 +490,10 @@ public class PortalService : IPortalService
             Fecha = t.Fecha,
             HoraInicio = t.HoraInicio,
             DuracionMinutos = t.DuracionMinutos,
-            Titulo = t.Horario?.Grupo?.Nombre ?? "Clase individual",
-            Categoria = t.Horario?.Grupo?.Categoria?.ToString(),
+            // La clase con su nombre real: antes salía del grupo, y sin grupo TODA
+            // clase decía "Clase individual" aunque el alumno viera tres compañeros.
+            Titulo = TurnoService.TituloDe(t),
+            Categoria = t.Horario?.Categoria?.ToString(),
             Sede = t.Cancha?.Sede?.Nombre ?? string.Empty,
             Cancha = t.Cancha?.Nombre ?? string.Empty,
             Estado = t.Estado.ToString(),

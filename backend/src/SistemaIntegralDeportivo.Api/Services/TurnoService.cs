@@ -208,6 +208,22 @@ public class TurnoService : ITurnoService
         await _turnos.GuardarCambiosAsync(ct); // mismo DbContext: persiste todo junto
     }
 
+    /// <summary>
+    /// Cómo se llama un turno en pantalla. Sale de la CLASE (su nombre, o el que se
+    /// arma con el roster); si el turno no cuelga de ninguna —una clase suelta— se
+    /// nombra por el alumno que la pidió.
+    ///
+    /// Es público y lo usan también el dashboard, los bloqueos, las cancelaciones y
+    /// el portal: antes cada uno tenía su propia copia y quedaron todas desactualizadas
+    /// al desaparecer los grupos (una clase de cuatro se mostraba como "Fulano (suelta)").
+    /// </summary>
+    public static string TituloDe(Turno t) =>
+        t.Horario is { } h
+            ? HorarioService.TituloDe(h.Nombre, h.Alumnos)
+            : t.Participantes.FirstOrDefault()?.Alumno is { } suelto
+                ? $"{suelto.Nombre} {suelto.Apellido} (suelta)" // turno suelto (M5c)
+                : "Clase suelta";
+
     private static TurnoResponseDto Mapear(Turno t, HashSet<Guid> deudores) => new()
     {
         Id = t.Id,
@@ -216,12 +232,7 @@ public class TurnoService : ITurnoService
         DuracionMinutos = t.DuracionMinutos,
         Estado = t.Estado.ToString(),
         CanceladoMotivo = t.CanceladoMotivo,
-        Titulo = t.Horario?.Grupo?.Nombre
-            ?? (t.Horario?.Alumno is not null
-                ? $"{t.Horario.Alumno.Nombre} {t.Horario.Alumno.Apellido} (individual)"
-                : t.Participantes.FirstOrDefault()?.Alumno is { } suelto
-                    ? $"{suelto.Nombre} {suelto.Apellido} (suelta)" // turno suelto (M5c)
-                    : "Clase suelta"),
+        Titulo = TituloDe(t),
         Cancha = t.Cancha?.Nombre ?? string.Empty,
         Sede = t.Cancha?.Sede?.Nombre ?? string.Empty,
         ProfesorUserId = t.Horario?.ProfesorUserId,

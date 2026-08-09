@@ -56,10 +56,5 @@ public class CancelacionService : ICancelacionService
         CanceladoEl = p.CanceloEl ?? default,
     };
 
-    // Mismo criterio que TurnoService.Mapear
-    private static string Titulo(Turno t) =>
-        t.Horario?.Grupo?.Nombre
-            ?? (t.Horario?.Alumno is not null
-                ? $"{t.Horario.Alumno.Nombre} {t.Horario.Alumno.Apellido} (individual)"
-                : string.Empty);
+    private static string Titulo(Turno t) => TurnoService.TituloDe(t);
 }

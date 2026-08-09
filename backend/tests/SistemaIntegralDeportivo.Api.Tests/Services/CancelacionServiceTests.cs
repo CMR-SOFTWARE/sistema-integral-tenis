@@ -37,7 +37,7 @@ public class CancelacionServiceTests
             {
                 CanchaId = Guid.NewGuid(), Dia = DayOfWeek.Tuesday,
                 HoraInicio = new TimeOnly(18, 0), DuracionMinutos = 60,
-                Grupo = new Grupo { Nombre = "Intermedios" },
+                Nombre = "Intermedios",
             },
         };
         _turnos.Setup(t => t.ListarCanceladosRecientesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
@@ -52,7 +52,7 @@ public class CancelacionServiceTests
             {
                 CanchaId = Guid.NewGuid(), Dia = DayOfWeek.Wednesday,
                 HoraInicio = new TimeOnly(9, 0), DuracionMinutos = 60,
-                Grupo = new Grupo { Nombre = "Avanzados" },
+                Nombre = "Avanzados",
             },
         };
         var aviso = new TurnoParticipante
@@ -95,7 +95,7 @@ public class CancelacionServiceTests
             {
                 CanchaId = Guid.NewGuid(), Dia = DayOfWeek.Tuesday,
                 HoraInicio = new TimeOnly(18, 0), DuracionMinutos = 60,
-                Grupo = new Grupo { Nombre = "Intermedios" },
+                Nombre = "Intermedios",
             },
         };
         _turnos.Setup(t => t.ListarCanceladosRecientesAsync(It.IsAny<int>(), It.IsAny<CancellationToken>()))
