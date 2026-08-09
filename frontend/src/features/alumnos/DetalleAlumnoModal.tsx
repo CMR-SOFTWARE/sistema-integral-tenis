@@ -84,7 +84,7 @@ export default function DetalleAlumnoModal({
       ? new Date(alumno.fechaNacimiento).toLocaleDateString('es-AR')
       : '—'],
     ['Categoría por edad', subPorEdad(alumno.fechaNacimiento) ?? 'Adulto'],
-    ['Es menor', alumno.esMenor ? (alumno.tutorId ? 'Sí (con tutor)' : 'Sí — falta cargar el tutor') : 'No'],
+    ['Responsable', alumno.esMenor ? (alumno.tutorId ? 'Sí (con tutor)' : 'Sí — falta cargarlo') : 'No necesita'],
     ['Director', director ? director.nombre : '—'],
     ['Club', alumno.sedeNombre ?? 'Sin asignar'],
     ['Cuota mensual', formatoPlata(alumno.arancel)],

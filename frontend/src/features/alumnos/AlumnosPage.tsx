@@ -228,7 +228,7 @@ export default function AlumnosPage() {
                         <div>
                           <div className={s.nombre}>{a.apellido}, {a.nombre}</div>
                           <div className={s.dni}>
-                            {a.dni ? `DNI ${a.dni}` : 'Sin DNI'}{a.esMenor ? (a.tutorId ? ' · menor' : ' · menor (falta tutor)') : ''}
+                            {a.dni ? `DNI ${a.dni}` : 'Sin DNI'}{a.esMenor ? (a.tutorId ? ' · con tutor' : ' · falta el tutor') : ''}
                             {enFamilia(a) ? ` · 👪 Familia (${conteoFamilia.get(a.familiaId!)})` : ''}
                           </div>
                         </div>
