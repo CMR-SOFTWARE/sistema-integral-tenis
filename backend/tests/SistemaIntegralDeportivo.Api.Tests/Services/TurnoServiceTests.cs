@@ -528,4 +528,69 @@ public class TurnoServiceTests
 
         Assert.Equal(2, mesVista.Count);
     }
+
+    // ─────────────────────────────────────────────
+    // Cómo se llama un turno en pantalla
+    //
+    // No había ni un test acá, y por eso pasó desapercibido que al desaparecer los
+    // grupos una clase de cuatro se mostraba como "Fulano (suelta)" en el calendario
+    // y como "Clase individual" en el portal del alumno (09/08/2026).
+    // ─────────────────────────────────────────────
+
+    private static Alumno Alumno(string nombre, string apellido) =>
+        new() { Id = Guid.NewGuid(), Nombre = nombre, Apellido = apellido, Telefono = "1" };
+
+    /// <summary>Un turno colgado de una clase con ese nombre y ese roster.</summary>
+    private static Turno TurnoDeClase(string? nombre, params Alumno[] roster)
+    {
+        var horario = new Horario { Id = HorarioId, CanchaId = Guid.NewGuid(), Nombre = nombre };
+        foreach (var a in roster)
+            horario.Alumnos.Add(new AlumnoHorario { HorarioId = horario.Id, AlumnoId = a.Id, Alumno = a });
+        return new Turno { Fecha = Lunes, HorarioId = horario.Id, Horario = horario };
+    }
+
+    [Fact]
+    public void Titulo_ClaseConNombre_UsaEseNombre()
+    {
+        var t = TurnoDeClase("Intermedios", Alumno("Juan", "Pérez"), Alumno("Sofía", "Gómez"));
+
+        Assert.Equal("Intermedios", TurnoService.TituloDe(t));
+    }
+
+    /// <summary>El caso que estaba roto: una clase de varios NO es de nadie en particular.</summary>
+    [Fact]
+    public void Titulo_ClaseSinNombreConVarios_DiceCuantosSon()
+    {
+        var t = TurnoDeClase(null, Alumno("Juan", "Pérez"), Alumno("Sofía", "Gómez"), Alumno("Ana", "Díaz"));
+
+        var titulo = TurnoService.TituloDe(t);
+
+        Assert.Equal("Grupo de 3", titulo);
+        Assert.DoesNotContain("suelta", titulo);
+        Assert.DoesNotContain("individual", titulo);
+    }
+
+    [Fact]
+    public void Titulo_ClaseSinNombreConUnoSolo_EsElNombreDelAlumno()
+    {
+        var t = TurnoDeClase(null, Alumno("Juan", "Pérez"));
+
+        Assert.Equal("Juan Pérez", TurnoService.TituloDe(t));
+    }
+
+    [Fact]
+    public void Titulo_TurnoSuelto_SeNombraPorQuienLoPidio()
+    {
+        var suelto = Alumno("Mateo", "Ruiz");
+        var t = new Turno { Fecha = Lunes, HorarioId = null };
+        t.Participantes.Add(new TurnoParticipante { AlumnoId = suelto.Id, Alumno = suelto });
+
+        Assert.Equal("Mateo Ruiz (suelta)", TurnoService.TituloDe(t));
+    }
+
+    [Fact]
+    public void Titulo_TurnoSueltoSinParticipantes_NoRompe()
+    {
+        Assert.Equal("Clase suelta", TurnoService.TituloDe(new Turno { Fecha = Lunes, HorarioId = null }));
+    }
 }

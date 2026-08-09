@@ -73,7 +73,7 @@ public class BloqueoServiceTests
                 Dia = fecha.DayOfWeek,
                 HoraInicio = hora,
                 DuracionMinutos = duracion,
-                Grupo = new Grupo { Nombre = "Intermedios" },
+                Nombre = "Intermedios", // el título de la clase sale de acá
             },
         };
         turno.Participantes.Add(new TurnoParticipante

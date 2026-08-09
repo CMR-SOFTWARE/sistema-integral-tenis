@@ -151,8 +151,8 @@ public class PortalServiceTests
             Horario = new Horario
             {
                 CanchaId = Guid.NewGuid(),
-                GrupoId = Guid.NewGuid(),
-                Grupo = new Grupo { Nombre = "Intermedios", Categoria = CategoriaAlumno.Cuarta },
+                Nombre = "Intermedios",
+                Categoria = CategoriaAlumno.Cuarta,
                 Dia = DayOfWeek.Tuesday,
                 HoraInicio = new TimeOnly(18, 0),
                 DuracionMinutos = 60,
