@@ -5,13 +5,24 @@ using SistemaIntegralDeportivo.Api.Repositories;
 
 namespace SistemaIntegralDeportivo.Api.Services;
 
-/// <summary>Las raquetas del alumno (M3): las administra él mismo desde su perfil.</summary>
+/// <summary>
+/// Las raquetas del alumno y su historial de encordado (M3). Todo recibe el
+/// <c>alumnoId</c> y valida que la raqueta sea SUYA: por eso el mismo service sirve
+/// a los dos lados —el alumno desde el portal (el id sale de su token) y el profe
+/// desde la ficha (el id va por ruta)—, que es como lo pidió el profe: él encorda.
+/// </summary>
 public interface IRaquetaService
 {
     Task<IReadOnlyList<RaquetaDto>> MisAsync(Guid alumnoId, CancellationToken ct = default);
     Task<RaquetaDto> AgregarAsync(Guid alumnoId, GuardarRaquetaDto dto, CancellationToken ct = default);
     Task<RaquetaDto> EditarAsync(Guid alumnoId, Guid raquetaId, GuardarRaquetaDto dto, CancellationToken ct = default);
     Task BorrarAsync(Guid alumnoId, Guid raquetaId, CancellationToken ct = default);
+
+    Task<RaquetaDto> AgregarEncordadoAsync(
+        Guid alumnoId, Guid raquetaId, GuardarEncordadoDto dto, CancellationToken ct = default);
+    Task<RaquetaDto> EditarEncordadoAsync(
+        Guid alumnoId, Guid encordadoId, GuardarEncordadoDto dto, CancellationToken ct = default);
+    Task BorrarEncordadoAsync(Guid alumnoId, Guid encordadoId, CancellationToken ct = default);
 }
 
 public class RaquetaService : IRaquetaService
@@ -36,8 +47,7 @@ public class RaquetaService : IRaquetaService
         {
             AlumnoId = alumnoId,
             Marca = dto.Marca.Trim(),
-            Tension = Limpiar(dto.Tension),
-            MarcaEncordado = Limpiar(dto.MarcaEncordado),
+            Modelo = Limpiar(dto.Modelo),
             // TenantId lo asigna el repositorio
         };
         await _raquetas.AgregarAsync(raqueta, ct);
@@ -50,8 +60,7 @@ public class RaquetaService : IRaquetaService
     {
         var raqueta = await MiaAsync(alumnoId, raquetaId, ct);
         raqueta.Marca = dto.Marca.Trim();
-        raqueta.Tension = Limpiar(dto.Tension);
-        raqueta.MarcaEncordado = Limpiar(dto.MarcaEncordado);
+        raqueta.Modelo = Limpiar(dto.Modelo);
         await _raquetas.GuardarCambiosAsync(ct);
         return Mapear(raqueta);
     }
@@ -59,7 +68,53 @@ public class RaquetaService : IRaquetaService
     public async Task BorrarAsync(Guid alumnoId, Guid raquetaId, CancellationToken ct = default)
     {
         var raqueta = await MiaAsync(alumnoId, raquetaId, ct);
-        _raquetas.Eliminar(raqueta);
+        _raquetas.Eliminar(raqueta); // los encordados se van en cascada
+        await _raquetas.GuardarCambiosAsync(ct);
+    }
+
+    // ── El historial de encordados ──
+
+    public async Task<RaquetaDto> AgregarEncordadoAsync(
+        Guid alumnoId, Guid raquetaId, GuardarEncordadoDto dto, CancellationToken ct = default)
+    {
+        var raqueta = await MiaAsync(alumnoId, raquetaId, ct);
+
+        var encordado = Construir(dto);
+        encordado.RaquetaId = raqueta.Id;
+        await _raquetas.AgregarEncordadoAsync(encordado, ct);
+        raqueta.Encordados.Add(encordado); // para devolver la raqueta ya actualizada
+        await _raquetas.GuardarCambiosAsync(ct);
+
+        return Mapear(raqueta);
+    }
+
+    public async Task<RaquetaDto> EditarEncordadoAsync(
+        Guid alumnoId, Guid encordadoId, GuardarEncordadoDto dto, CancellationToken ct = default)
+    {
+        var encordado = await _raquetas.ObtenerEncordadoAsync(encordadoId, ct)
+            ?? throw new ReglaDeNegocioException("Ese encordado no existe.");
+        // La pertenencia se valida por la RAQUETA: es la dueña del historial.
+        var raqueta = await MiaAsync(alumnoId, encordado.RaquetaId, ct);
+
+        encordado.CuerdaVertical = dto.CuerdaVertical.Trim();
+        encordado.TensionVertical = Limpiar(dto.TensionVertical);
+        encordado.CuerdaHorizontal = Limpiar(dto.CuerdaHorizontal);
+        encordado.TensionHorizontal = Limpiar(dto.TensionHorizontal);
+        encordado.Fecha = dto.Fecha;
+        await _raquetas.GuardarCambiosAsync(ct);
+
+        // Se relee: la instancia editada y la de la colección pueden ser distintas.
+        return Mapear(await MiaAsync(alumnoId, raqueta.Id, ct));
+    }
+
+    public async Task BorrarEncordadoAsync(
+        Guid alumnoId, Guid encordadoId, CancellationToken ct = default)
+    {
+        var encordado = await _raquetas.ObtenerEncordadoAsync(encordadoId, ct)
+            ?? throw new ReglaDeNegocioException("Ese encordado no existe.");
+        await MiaAsync(alumnoId, encordado.RaquetaId, ct);
+
+        _raquetas.EliminarEncordado(encordado);
         await _raquetas.GuardarCambiosAsync(ct);
     }
 
@@ -73,13 +128,44 @@ public class RaquetaService : IRaquetaService
         return raqueta;
     }
 
+    private static Encordado Construir(GuardarEncordadoDto dto) => new()
+    {
+        CuerdaVertical = dto.CuerdaVertical.Trim(),
+        TensionVertical = Limpiar(dto.TensionVertical),
+        CuerdaHorizontal = Limpiar(dto.CuerdaHorizontal),
+        TensionHorizontal = Limpiar(dto.TensionHorizontal),
+        Fecha = dto.Fecha,
+    };
+
     private static string? Limpiar(string? s) => string.IsNullOrWhiteSpace(s) ? null : s.Trim();
 
-    private static RaquetaDto Mapear(Raqueta r) => new()
+    private static RaquetaDto Mapear(Raqueta r)
     {
-        Id = r.Id,
-        Marca = r.Marca,
-        Tension = r.Tension,
-        MarcaEncordado = r.MarcaEncordado,
+        // Del más nuevo al más viejo. Desempata CreadoEl: dos encordados pueden
+        // llevar la misma fecha (se cargó uno mal y se corrigió cargando otro).
+        var historial = r.Encordados
+            .OrderByDescending(e => e.Fecha).ThenByDescending(e => e.CreadoEl)
+            .Select(MapearEncordado)
+            .ToList();
+
+        return new RaquetaDto
+        {
+            Id = r.Id,
+            Marca = r.Marca,
+            Modelo = r.Modelo,
+            Encordados = historial,
+            UltimoEncordado = historial.FirstOrDefault(),
+        };
+    }
+
+    private static EncordadoDto MapearEncordado(Encordado e) => new()
+    {
+        Id = e.Id,
+        CuerdaVertical = e.CuerdaVertical,
+        TensionVertical = e.TensionVertical,
+        CuerdaHorizontal = e.CuerdaHorizontal,
+        TensionHorizontal = e.TensionHorizontal,
+        Fecha = e.Fecha,
+        EsHibrido = e.EsHibrido,
     };
 }

@@ -1,0 +1,89 @@
+/* Formulario de encordado. Autocontenido a propósito: lo usan el portal del alumno
+   y la ficha del profe, que tienen estilos distintos alrededor. */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  margin-top: 8px;
+  background: var(--color-surface-subtle);
+}
+
+.fila {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.fila > * {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+.form input {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background: var(--color-surface);
+}
+
+.titulo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--color-text-soft);
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-soft);
+  cursor: pointer;
+}
+
+.check input {
+  width: auto;
+  accent-color: var(--color-primary);
+}
+
+.acciones {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.btnCancelar {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-soft);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btnGuardar {
+  border: none;
+  background: var(--color-primary-dark);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btnGuardar:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

@@ -1,6 +1,7 @@
 // Tipos espejo de PortalDtos.cs + AlumnoLiquidacionDto (lo que ve el alumno).
 
 import type { CargoLinea, EstadoLiquidacion } from '../cuotas/types';
+import type { Raqueta } from '../alumnos/types';
 
 export interface MiTurno {
   id: string;
@@ -83,12 +84,9 @@ export interface DatosPago {
   titular: string | null;
 }
 
-export interface Raqueta {
-  id: string;
-  marca: string;
-  tension: string | null;
-  marcaEncordado: string | null;
-}
+// Las raquetas viven en alumnos/types: son del alumno y las ven los dos lados
+// (él desde su perfil, el profe desde la ficha).
+export type { Encordado, Raqueta } from '../alumnos/types';
 
 /**
  * Espejo de ClaseDisponibleDto: una clase con lugar a la que me podría sumar. Antes

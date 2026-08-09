@@ -139,6 +139,49 @@ export interface AlumnoHorario {
   companeros: number;
 }
 
+/** Espejo de EncordadoDto: un encordado del historial de una raqueta. */
+export interface Encordado {
+  id: string;
+  cuerdaVertical: string;
+  tensionVertical: string | null;
+  /** Null = encordado simple (la misma cuerda en las dos direcciones). */
+  cuerdaHorizontal: string | null;
+  tensionHorizontal: string | null;
+  fecha: string; // "2026-08-01"
+  esHibrido: boolean;
+}
+
+/** Espejo de RaquetaDto: una raqueta del alumno con su historial. */
+export interface Raqueta {
+  id: string;
+  marca: string;
+  modelo: string | null;
+  /** Del más nuevo al más viejo (lo ordena el back). */
+  encordados: Encordado[];
+  /** Ya resuelto por el back; null si nunca se encordó. */
+  ultimoEncordado: Encordado | null;
+}
+
+/** "Luxilon ALU Power · 24 kg", y con barra si el encordado es híbrido. */
+export function resumenEncordado(e: Encordado): string {
+  const vertical = [e.cuerdaVertical, e.tensionVertical].filter(Boolean).join(' · ');
+  if (!e.esHibrido) return vertical;
+  const horizontal = [e.cuerdaHorizontal, e.tensionHorizontal].filter(Boolean).join(' · ');
+  return `${vertical} / ${horizontal}`;
+}
+
+/** Hoy como "YYYY-MM-DD" (valor por defecto de los campos de fecha). */
+export function hoyIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** "2026-08-03" → "03/08/2026". El dato exacto, para cuando el aproximado no alcanza. */
+export function fechaLegible(fechaIso: string): string {
+  return new Date(`${fechaIso}T00:00:00`).toLocaleDateString('es-AR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+  });
+}
+
 /** Espejo de CargoResumenDto. */
 export interface CargoResumen {
   id: string;
@@ -197,6 +240,24 @@ export function iniciales(nombre: string, apellido: string): string {
 
 export function formatoPlata(n: number | null): string {
   return n === null ? '—' : '$' + n.toLocaleString('es-AR');
+}
+
+/**
+ * "2026-05-20" → "hace 2 meses". Redondeo grueso a propósito: lo que importa es
+ * si la cuerda está vencida, y para eso "hace 3 meses" dice más que la fecha.
+ */
+export function haceCuanto(fechaIso: string): string {
+  const dias = Math.floor(
+    (Date.now() - new Date(`${fechaIso}T00:00:00`).getTime()) / 86_400_000,
+  );
+  if (dias < 0) return 'programado';
+  if (dias === 0) return 'hoy';
+  if (dias === 1) return 'ayer';
+  if (dias < 30) return `hace ${dias} días`;
+  const meses = Math.floor(dias / 30);
+  if (meses < 12) return `hace ${meses} ${meses === 1 ? 'mes' : 'meses'}`;
+  const anios = Math.floor(dias / 365);
+  return `hace ${anios} ${anios === 1 ? 'año' : 'años'}`;
 }
 
 export function edad(fechaNacimiento: string): number {

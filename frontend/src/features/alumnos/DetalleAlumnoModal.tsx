@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Modal from '../../components/Modal';
 import Avatar from '../../components/Avatar';
 import NotasAlumnoSection from './NotasAlumnoSection';
+import RaquetasAlumnoSection from './RaquetasAlumnoSection';
 import { api, ApiError } from '../../lib/api';
 import { CAT_COLOR, CAT_LABEL, ESTADO_UI, formatoPlata, subPorEdad } from './types';
 import type { Alumno, AlumnoCuenta, AlumnoHorario } from './types';
@@ -211,6 +212,11 @@ export default function DetalleAlumnoModal({
               ))}
             </div>
           )}
+
+          {/* Las raquetas: el profe mira hace cuánto que están encordadas. */}
+          <div style={{ marginTop: 18 }}>
+            <RaquetasAlumnoSection alumnoId={alumno.id} nombre={alumno.nombre} />
+          </div>
 
           <div className={s.seccion} style={{ marginTop: 18 }}>
             Cuenta corriente
