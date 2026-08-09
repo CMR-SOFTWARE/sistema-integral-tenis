@@ -29,16 +29,19 @@ public class SolicitudCupoService : ISolicitudCupoService
     private readonly IAlumnoRepository _alumnos;
     private readonly IHorarioRepository _horarios;
     private readonly ITenantRepository _tenant;
+    private readonly ICargoRepository _cargos;
     private readonly IHorarioService _horarioService;
 
     public SolicitudCupoService(
         ISolicitudCupoRepository solicitudes, IAlumnoRepository alumnos,
-        IHorarioRepository horarios, ITenantRepository tenant, IHorarioService horarioService)
+        IHorarioRepository horarios, ITenantRepository tenant, ICargoRepository cargos,
+        IHorarioService horarioService)
     {
         _solicitudes = solicitudes;
         _alumnos = alumnos;
         _horarios = horarios;
         _tenant = tenant;
+        _cargos = cargos;
         _horarioService = horarioService;
     }
 
@@ -100,6 +103,15 @@ public class SolicitudCupoService : ISolicitudCupoService
             throw new ReglaDeNegocioException("Ya venís a esa clase.");
         if (!Categorias.EsCompatible(horario.Categoria, alumno.Categoria))
             throw new ReglaDeNegocioException("Esa clase es de otra categoría.");
+
+        // Nadie pide clases NUEVAS con la cuota vencida. La regla vive acá y no en
+        // HorarioService: al profe no lo frena (él suma a quien quiera desde la
+        // agenda), frena al alumno que se anota solo. Misma regla que pedir una
+        // clase individual o una suelta.
+        var impagos = await _cargos.ListarImpagosAsync([alumnoId], ct);
+        if (CuotaService.TieneDeudaVencida(impagos, DateOnly.FromDateTime(DateTime.UtcNow)))
+            throw new ReglaDeNegocioException(
+                "Tenés la cuota vencida: regularizala antes de pedir clases nuevas.");
 
         var activos = horario.Alumnos.Count(m => m.FechaBaja is null);
         if (horario.CupoMaximo is not null && activos >= horario.CupoMaximo)

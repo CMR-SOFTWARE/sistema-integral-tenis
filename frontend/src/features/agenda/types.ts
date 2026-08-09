@@ -119,6 +119,12 @@ export const DIAS: { valor: DiaSemana; label: string; corto: string }[] = [
   { valor: 'Sunday', label: 'Domingo', corto: 'Dom' },
 ];
 
+/** "2026-08-05" → 'Wednesday' (para cruzar una fecha con el día de un horario). */
+export function diaDe(fechaIso: string): DiaSemana {
+  const d = new Date(`${fechaIso}T00:00:00`);
+  return DIAS[(d.getDay() + 6) % 7].valor; // getDay(): domingo=0 → DIAS va lunes primero
+}
+
 /** "18:00:00" → "18:00" */
 export function horaCorta(hora: string): string {
   return hora.slice(0, 5);

@@ -241,6 +241,46 @@
 
 /* ── Franjas bloqueadas y leyenda ── */
 
+/*
+ * Una clase SIN alumnos. No genera turnos, pero OCUPA la cancha: si no se mostrara,
+ * queda invisible y no hay por dónde editarla ni darla de baja (era el bug del
+ * "grupo fantasma"). Se dibuja apagada y punteada para no confundirla con una clase
+ * de verdad.
+ */
+.claseVacia {
+  width: 100%;
+  text-align: left;
+  border: 1px dashed var(--color-border);
+  border-radius: 10px;
+  padding: 8px 9px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.claseVacia:hover {
+  border-color: var(--color-primary);
+}
+
+.claseVaciaTitulo {
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--color-text-soft);
+  margin: 3px 0;
+}
+
+.claseVaciaAviso {
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--color-warning);
+}
+
+.claseVaciaLugar {
+  font-size: 11px;
+  margin-top: 2px;
+}
+
 .franjaBloqueada {
   border: 1px dashed #9ca3af;
   border-radius: 10px;

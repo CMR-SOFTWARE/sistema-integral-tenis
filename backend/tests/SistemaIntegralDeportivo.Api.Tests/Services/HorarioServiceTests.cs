@@ -275,8 +275,13 @@ public class HorarioServiceTests
         Assert.Same(registrada, enElHorario);
     }
 
+    /// <summary>
+    /// La deuda NO frena al profe: si te pone en una clase, entrás. El que no puede
+    /// tomar clases nuevas debiendo es el alumno pidiéndolas por su cuenta desde el
+    /// portal (ahí sí se valida: ver SolicitudCupoService y SolicitudHorarioService).
+    /// </summary>
     [Fact]
-    public async Task Crear_ConUnAlumnoConCuotaVencida_NoCreaNada()
+    public async Task Crear_ConUnAlumnoConCuotaVencida_LoSumaIgual()
     {
         var dto = Dto(Cancha2, new TimeOnly(10, 0));
         dto.AlumnoIds = [AlumnoId];
@@ -288,9 +293,10 @@ public class HorarioServiceTests
                    Fecha = DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(-2),
                }]);
 
-        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.CrearAsync(dto));
-        // La validación va ANTES de crear: no queda una clase a medio armar
-        _repo.Verify(r => r.AgregarAsync(It.IsAny<Horario>(), It.IsAny<CancellationToken>()), Times.Never);
+        await _service.CrearAsync(dto);
+
+        _repo.Verify(r => r.AgregarMembresiaAsync(
+            It.Is<AlumnoHorario>(m => m.AlumnoId == AlumnoId), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     // ─────────────────────────────────────────────
@@ -360,8 +366,9 @@ public class HorarioServiceTests
             () => _service.AgregarAlumnoAsync(HorarioId, AlumnoId));
     }
 
+    /// <summary>Mismo criterio que al crear: el profe suma a quien quiere, deba o no.</summary>
     [Fact]
-    public async Task AgregarAlumno_ConCuotaVencida_Lanza()
+    public async Task AgregarAlumno_ConCuotaVencida_LoSumaIgual()
     {
         ClaseCon(cupo: 4, ocupados: 0);
         _cargos.Setup(c => c.ListarImpagosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
@@ -371,8 +378,9 @@ public class HorarioServiceTests
                    Fecha = DateOnly.FromDateTime(DateTime.UtcNow).AddMonths(-2),
                }]);
 
-        await Assert.ThrowsAsync<ReglaDeNegocioException>(
-            () => _service.AgregarAlumnoAsync(HorarioId, AlumnoId));
+        await _service.AgregarAlumnoAsync(HorarioId, AlumnoId);
+
+        _repo.Verify(r => r.AgregarMembresiaAsync(It.IsAny<AlumnoHorario>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

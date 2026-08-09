@@ -52,17 +52,25 @@ migraron al roster de cada uno de sus horarios.
 3. **Roster congelado al generar**: el turno copia los miembros activos del
    horario al momento de generarse. Ese roster fija el divisor del precio
    (`modelo-precios.md`): cambios posteriores del horario NO tocan turnos ya
-   generados. Un horario **sin alumnos no genera turnos**.
+   generados. Un horario **sin alumnos no genera turnos**, pero **sigue
+   ocupando la cancha** (cuenta para el solapamiento). Por eso el calendario lo
+   muestra igual, apagado: si no, queda invisible y no hay por dónde editarlo ni
+   darlo de baja — era el bug del "grupo fantasma" (06/08/2026).
 4. **Cupo**: no entra nadie si el roster llegó a `CupoMaximo`, y el cupo no
    puede bajar por debajo de los que ya vienen. Sumar a alguien de la lista de
-   espera es lo que lo convierte en alumno; el que tiene la **cuota vencida**
-   no entra a clases nuevas.
-5. **Asistencia default-presente**: todos los del roster figuran presentes;
+   espera es lo que lo convierte en alumno.
+5. **La cuota vencida frena al alumno, no al profe.** El profe asigna a quien
+   quiera desde la agenda (muchas veces le arma el horario justamente para
+   acomodarlo). El que no puede tomar clases nuevas debiendo es el alumno
+   pidiéndolas por su cuenta: `SolicitudCupoService` (lugar en una clase),
+   `SolicitudHorarioService` (clase individual fija) y `ClaseSueltaService`.
+   Aceptar una solicitud pendiente no revalida la deuda: aceptar es gesto del profe.
+6. **Asistencia default-presente**: todos los del roster figuran presentes;
    el profe marca solo al que faltó. No mueve la plata (registro + input
    para recuperaciones).
-6. **Cancelación de turno**: el turno se marca Cancelado (con motivo y
+7. **Cancelación de turno**: el turno se marca Cancelado (con motivo y
    quién), nunca se borra. El horario sigue vigente para las próximas semanas.
-7. **Turnos pasados no se regeneran** al cambiar un horario; los futuros no
+8. **Turnos pasados no se regeneran** al cambiar un horario; los futuros no
    jugados de ese horario sí pueden regenerarse.
 
 ## 4. Qué NO entra en esta vertical
