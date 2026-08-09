@@ -19,8 +19,9 @@ interface Props {
  * una sola pasada (antes había que crear un grupo aparte y cargarle la gente).
  *
  * Se ofrecen los ACTIVOS y los de la LISTA DE ESPERA: asignarles una clase es
- * justo lo que los convierte en alumnos. Los que tienen la cuota vencida se
- * muestran marcados pero no se pueden tildar — el back los rechaza igual.
+ * justo lo que los convierte en alumnos. Los que deben quedan marcados con un chip,
+ * pero se pueden tildar igual: la deuda frena al alumno que se anota solo desde el
+ * portal, no al profe armando su agenda.
  */
 export default function SelectorAlumnos({ elegidos, onCambiar, cupo, excluir = [] }: Props) {
   const [alumnos, setAlumnos] = useState<Alumno[]>([]);
@@ -80,15 +81,15 @@ export default function SelectorAlumnos({ elegidos, onCambiar, cupo, excluir = [
         )}
         {visibles.map((a) => {
           const elegido = elegidos.includes(a.id);
-          // Con la cuota vencida no entra a clases nuevas (regla del back).
-          const bloqueado = a.deudaVencida || (!elegido && lleno);
+          // Lo único que bloquea es el cupo: la deuda se avisa, no frena.
+          const bloqueado = !elegido && lleno;
           const av = avatarColor(a.nombre + a.apellido);
           const cat = CAT_COLOR[a.categoria];
           return (
             <label
               key={a.id}
               className={bloqueado ? s.filaBloqueada : elegido ? s.filaElegida : s.fila}
-              title={a.deudaVencida ? 'Tiene la cuota vencida: registrá el pago antes de sumarlo' : undefined}
+              title={a.deudaVencida ? 'Debe la cuota — podés sumarlo igual' : undefined}
             >
               <input
                 type="checkbox"

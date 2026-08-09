@@ -168,9 +168,14 @@ public class HorarioService : IHorarioService
     }
 
     /// <summary>
-    /// Las dos reglas que decidían si alguien podía entrar a un grupo, ahora sobre la
-    /// clase: solo entran los ACTIVOS y los de la LISTA DE ESPERA (sumarlos es lo que
-    /// los vuelve alumnos), y nadie toma clases NUEVAS con la cuota vencida.
+    /// Quién puede entrar a una clase cuando lo pone EL PROFE: solo los ACTIVOS y los
+    /// de la LISTA DE ESPERA (sumarlos es lo que los vuelve alumnos).
+    ///
+    /// La deuda vencida NO frena acá: el profe decide a quién le da clase, y muchas
+    /// veces le arma el horario justamente para acomodarlo. La regla sigue viva del
+    /// lado del ALUMNO, que no puede pedir clases nuevas debiendo — en
+    /// <see cref="SolicitudCupoService"/>, <see cref="SolicitudHorarioService"/> y
+    /// <see cref="ClaseSueltaService"/>.
     /// </summary>
     private async Task<Alumno> ValidarAlumnoParaClaseAsync(Guid alumnoId, CancellationToken ct)
     {
@@ -180,11 +185,6 @@ public class HorarioService : IHorarioService
         if (alumno.Estado != EstadoAlumno.Activo && alumno.Estado != EstadoAlumno.EnEspera)
             throw new ReglaDeNegocioException(
                 $"{alumno.Nombre} {alumno.Apellido} no está activo y no puede sumarse a una clase.");
-
-        var impagos = await _cargos.ListarImpagosAsync([alumnoId], ct);
-        if (CuotaService.TieneDeudaVencida(impagos, DateOnly.FromDateTime(DateTime.UtcNow)))
-            throw new ReglaDeNegocioException(
-                $"{alumno.Nombre} {alumno.Apellido} tiene la cuota vencida: registrá el pago en Cuotas antes de sumarlo a una clase.");
 
         return alumno;
     }

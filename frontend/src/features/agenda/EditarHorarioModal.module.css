@@ -88,6 +88,26 @@
   color: var(--color-text-faint);
 }
 
+/* Dar de baja la clase. Va a la izquierda del footer, separado de Guardar: es la
+   acción que no se deshace y no tiene que caer bajo el dedo por accidente. */
+.btnBaja {
+  margin-right: auto;
+  border: 1px solid var(--color-danger-border);
+  background: var(--color-surface);
+  color: var(--color-danger);
+  padding: 11px 16px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btnBaja:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .nota {
   margin: 0;
   font-size: 12px;

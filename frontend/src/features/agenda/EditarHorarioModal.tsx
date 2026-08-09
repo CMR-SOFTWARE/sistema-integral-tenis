@@ -21,6 +21,8 @@ interface Props {
   /** El roster va por su cuenta: el back reconcilia los turnos al instante. */
   onAgregarAlumno: (horarioId: string, alumnoId: string) => Promise<void>;
   onQuitarAlumno: (horarioId: string, alumnoId: string) => Promise<void>;
+  /** Dar de baja la clase; solo el dueño (al staff no se le pasa). Ya confirma él. */
+  onDesactivar?: (h: Horario) => Promise<void>;
 }
 
 /**
@@ -30,7 +32,7 @@ interface Props {
  * el divisor de la cuota, así que no puede quedar esperando un "Guardar".
  */
 export default function EditarHorarioModal({
-  horario, sedes, onClose, onEditar, onAgregarAlumno, onQuitarAlumno,
+  horario, sedes, onClose, onEditar, onAgregarAlumno, onQuitarAlumno, onDesactivar,
 }: Props) {
   const sedeInicial = sedes.find((x) => x.canchas.some((c) => c.id === horario.canchaId))?.id
     ?? sedes[0]?.id ?? '';
@@ -147,6 +149,17 @@ export default function EditarHorarioModal({
       onClose={onClose}
       footer={
         <>
+          {/* Dar de baja vive acá y no solo en el detalle del turno: una clase sin
+              alumnos no genera turnos, y por ese camino no había forma de llegarle. */}
+          {onDesactivar && (
+            <button
+              className={r.btnBaja}
+              disabled={enviando || tocandoRoster}
+              onClick={() => void onDesactivar(horario)}
+            >
+              Desactivar
+            </button>
+          )}
           <button className={s.btnSecundario} onClick={onClose}>Cancelar</button>
           <button className={s.btnPrimario} onClick={() => void guardar()} disabled={enviando || !valido}>
             {enviando ? 'Guardando…' : 'Guardar cambios'}

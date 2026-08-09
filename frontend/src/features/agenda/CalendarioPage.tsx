@@ -73,6 +73,15 @@ export default function CalendarioPage({ sede, profe }: Props) {
     (t) => (sede === '' || t.sede === sede) && (profe === '' || t.profesorUserId === profe),
   );
 
+  // Las clases SIN alumnos no generan turnos, pero ocupan la cancha igual: si no se
+  // mostraran, quedan invisibles y no hay forma de editarlas ni darlas de baja (el
+  // profe las choca recién al querer armar otra clase en esa franja).
+  const clasesVacias = horarios.filter(
+    (h) => h.miembrosActivos === 0
+      && (sede === '' || h.sede === sede)
+      && (profe === '' || h.profesorUserId === profe),
+  );
+
   // Modo "por profe": los profes CON turnos en el período (el filtro de profe ya colapsa a uno).
   // Los turnos sin profe van a su propia sección (solo cuando no se filtró por uno).
   const gruposProfe = porProfe
@@ -140,11 +149,13 @@ export default function CalendarioPage({ sede, profe }: Props) {
   const desactivarHorario = async (h: Horario) => {
     if (!(await confirmar({
       titulo: `Desactivar el horario de "${h.titulo}"`,
-      mensaje: 'Los turnos ya generados se conservan; no se generan nuevos.',
+      mensaje: 'Los turnos ya generados se conservan; no se generan nuevos. Se libera la franja de esa cancha.',
       confirmar: 'Desactivar',
       peligro: true,
     }))) return;
+    // Se llama desde el detalle del turno Y desde la edición: se cierran los dos.
     setAbierto(null);
+    setEditandoId(null);
     await desactivarH(h.id);
     await refrescar();
   };
@@ -210,7 +221,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
 
       {/* Modo TODOS: una sola grilla (Día o Semana) o un solo mes. */}
       {!activo.cargando && !activo.error && !porProfe && vista !== 'mes' && (
-        <GrillaSemana dias={dias} turnos={visibles} bloqueos={bloqueos} onAbrirTurno={setAbierto} nombreDe={nombreDe} />
+        <GrillaSemana dias={dias} turnos={visibles} clasesVacias={clasesVacias} bloqueos={bloqueos} onAbrirTurno={setAbierto} onAbrirClaseVacia={(h) => setEditandoId(h.id)} nombreDe={nombreDe} />
       )}
 
       {!activo.cargando && !activo.error && !porProfe && vista === 'mes' && (
@@ -234,7 +245,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
               <div key={p.userId} className={s.grupoProfe}>
                 <div className={s.grupoProfeTitulo}>{p.nombre}{p.esDueño ? ' (vos)' : ''}</div>
                 {vista !== 'mes' ? (
-                  <GrillaSemana dias={dias} turnos={suyos} bloqueos={bloqueos} onAbrirTurno={setAbierto} nombreDe={nombreDe} />
+                  <GrillaSemana dias={dias} turnos={suyos} clasesVacias={clasesVacias.filter((h) => h.profesorUserId === p.userId)} bloqueos={bloqueos} onAbrirTurno={setAbierto} onAbrirClaseVacia={(h) => setEditandoId(h.id)} nombreDe={nombreDe} />
                 ) : (
                   <VistaMes
                     key={`${mesCursor.anio}-${mesCursor.mes}-${p.userId}`}
@@ -250,7 +261,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
             <div className={s.grupoProfe}>
               <div className={s.grupoProfeTitulo}>Sin profe</div>
               {vista !== 'mes' ? (
-                <GrillaSemana dias={dias} turnos={visibles.filter((t) => !t.profesorUserId)} bloqueos={bloqueos} onAbrirTurno={setAbierto} nombreDe={nombreDe} />
+                <GrillaSemana dias={dias} turnos={visibles.filter((t) => !t.profesorUserId)} clasesVacias={clasesVacias.filter((h) => !h.profesorUserId)} bloqueos={bloqueos} onAbrirTurno={setAbierto} onAbrirClaseVacia={(h) => setEditandoId(h.id)} nombreDe={nombreDe} />
               ) : (
                 <VistaMes
                   key={`${mesCursor.anio}-${mesCursor.mes}-sin`}
@@ -314,6 +325,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
           onEditar={editarHorario}
           onAgregarAlumno={agregarAlumno}
           onQuitarAlumno={quitarAlumno}
+          onDesactivar={esOwner ? desactivarHorario : undefined}
         />
       )}
     </div>
