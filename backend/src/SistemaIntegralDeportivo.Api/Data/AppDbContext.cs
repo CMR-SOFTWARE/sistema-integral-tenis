@@ -25,8 +25,6 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<Alumno> Alumnos => Set<Alumno>();
     public DbSet<Tutor> Tutores => Set<Tutor>();
-    public DbSet<Grupo> Grupos => Set<Grupo>();
-    public DbSet<AlumnoGrupo> AlumnoGrupos => Set<AlumnoGrupo>();
     public DbSet<Sede> Sedes => Set<Sede>();
     public DbSet<Cancha> Canchas => Set<Cancha>();
     public DbSet<Horario> Horarios => Set<Horario>();
@@ -39,7 +37,6 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
     public DbSet<Pedido> Pedidos => Set<Pedido>();
     public DbSet<Raqueta> Raquetas => Set<Raqueta>();
     public DbSet<Encordado> Encordados => Set<Encordado>();
-    public DbSet<SolicitudGrupo> SolicitudesGrupo => Set<SolicitudGrupo>();
     public DbSet<SolicitudHorario> SolicitudesHorario => Set<SolicitudHorario>();
     public DbSet<ClaseSuelta> ClasesSueltas => Set<ClaseSuelta>();
     public DbSet<Publicidad> Publicidades => Set<Publicidad>();
@@ -65,7 +62,6 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
         modelBuilder.Entity<Alumno>().Property(a => a.Categoria).HasConversion<string>();
         modelBuilder.Entity<Alumno>().Property(a => a.Estado).HasConversion<string>();
         modelBuilder.Entity<Tutor>().Property(t => t.Relacion).HasConversion<string>();
-        modelBuilder.Entity<Grupo>().Property(g => g.Categoria).HasConversion<string>();
 
         // FechaNacimiento es una FECHA, no un instante: el front manda "2000-01-01"
         // sin zona horaria (DateTime.Kind=Unspecified). Npgsql por default mapea
@@ -107,19 +103,6 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
         modelBuilder.Entity<Tutor>()
             .HasIndex(t => new { t.TenantId, t.Dni })
             .IsUnique();
-
-        // ── Grupo: índice por tenant + activo ──
-        modelBuilder.Entity<Grupo>()
-            .HasIndex(g => new { g.TenantId, g.Activo });
-
-        // Valor mensual del grupo (atajo para repartir aranceles): precisión monetaria
-        modelBuilder.Entity<Grupo>()
-            .Property(g => g.ValorMensual)
-            .HasPrecision(12, 2);
-
-        // ── AlumnoGrupo: clave primaria COMPUESTA (alumno + grupo) ──
-        modelBuilder.Entity<AlumnoGrupo>()
-            .HasKey(ag => new { ag.AlumnoId, ag.GrupoId });
 
         // ── Agenda: sedes, canchas, horarios y turnos ──
 
@@ -265,18 +248,6 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
         // "el historial de esta raqueta, del más nuevo al más viejo"
         modelBuilder.Entity<Encordado>()
             .HasIndex(e => new { e.RaquetaId, e.Fecha });
-
-        // ── Solicitudes de sumarse a un grupo (M5a) ──
-
-        modelBuilder.Entity<SolicitudGrupo>().Property(s => s.Estado).HasConversion<string>();
-        modelBuilder.Entity<SolicitudGrupo>()
-            .HasIndex(s => new { s.TenantId, s.Estado }); // "solicitudes pendientes del profe"
-        modelBuilder.Entity<SolicitudGrupo>()
-            .HasOne(s => s.Alumno).WithMany().HasForeignKey(s => s.AlumnoId)
-            .OnDelete(DeleteBehavior.Cascade);
-        modelBuilder.Entity<SolicitudGrupo>()
-            .HasOne(s => s.Grupo).WithMany().HasForeignKey(s => s.GrupoId)
-            .OnDelete(DeleteBehavior.Cascade);
 
         // ── Solicitudes de clase individual fija (M5b) ──
 

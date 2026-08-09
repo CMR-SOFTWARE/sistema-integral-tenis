@@ -37,9 +37,11 @@ public class CancelacionService : ICancelacionService
         Titulo = Titulo(t),
         Motivo = t.CanceladoMotivo,
         Por = (t.CanceladoPor ?? CanceladoPor.Profesor).ToString(), // legacy sin dato = profe
-        // En clase individual hay UN afectado concreto a quien avisar
-        AlumnoNombre = t.Horario?.Alumno is { } a ? $"{a.Nombre} {a.Apellido}" : null,
-        Telefono = t.Horario?.Alumno?.Telefono,
+        // Cuando va UNO solo hay un afectado concreto a quien avisar; si van varios,
+        // no hay a quién señalar. Sale del roster del turno y no del horario: es el
+        // que estaba anotado ESE día.
+        AlumnoNombre = Unico(t) is { } a ? $"{a.Nombre} {a.Apellido}" : null,
+        Telefono = Unico(t)?.Telefono,
         CanceladoEl = t.CanceladoEl ?? default,
     };
 
@@ -57,4 +59,8 @@ public class CancelacionService : ICancelacionService
     };
 
     private static string Titulo(Turno t) => TurnoService.TituloDe(t);
+
+    /// <summary>El único anotado en el turno, o null si van varios (o ninguno).</summary>
+    private static Alumno? Unico(Turno t) =>
+        t.Participantes.Count == 1 ? t.Participantes.First().Alumno : null;
 }

@@ -486,15 +486,15 @@ public class AlumnoService : IAlumnoService
     /// <summary>
     /// Reconcilia los turnos futuros del alumno con su realidad actual. Es la
     /// ÚNICA fuente de verdad del vínculo estado↔calendario: la llaman el
-    /// cambio de estado, la baja y también GrupoService al entrar/salir de un
-    /// grupo (antes cada camino la copiaba —o se la olvidaba, que fue el bug—).
+    /// cambio de estado, la baja y HorarioService al entrar/salir de una clase
+    /// (antes cada camino la copiaba —o se la olvidaba, que fue el bug—).
     ///
-    ///  - Donde DEBE estar y no está (grupos activos + horarios individuales,
+    ///  - Donde DEBE estar y no está (las clases donde figura en el roster, y
     ///    solo si Activo) → lo agrega al roster de los turnos futuros ya
-    ///    generados. Los individuales borrados los regenera la generación
-    ///    perezosa; acá solo se completan los que existan.
-    ///  - Donde ESTÁ y no debe (pausado, o ya no es de ese grupo) → lo saca; si
-    ///    era el único (individual), el turno entero se va y libera el slot.
+    ///    generados. Los turnos borrados los regenera la generación perezosa;
+    ///    acá solo se completan los que existan.
+    ///  - Donde ESTÁ y no debe (pausado, o ya no viene a esa clase) → lo saca; si
+    ///    era el único anotado, el turno entero se va y libera el slot.
     ///  - Cada turno TOCADO invalida sus cargos IMPAGOS: el divisor cambió
     ///    (÷3 ↔ ÷4) y la liquidación los regenera con el correcto (la fórmula
     ///    vive solo en CuotaService). Lo PAGADO es intocable.

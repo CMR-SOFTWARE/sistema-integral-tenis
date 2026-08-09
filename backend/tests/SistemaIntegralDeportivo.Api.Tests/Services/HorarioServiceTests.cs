@@ -447,12 +447,12 @@ public class HorarioServiceTests
         var horario = new Horario
         {
             CanchaId = Cancha1,
-            AlumnoId = AlumnoId,
             Dia = DayOfWeek.Tuesday,
             HoraInicio = new TimeOnly(10, 0),
             DuracionMinutos = 30,
             Activo = true,
         };
+        horario.Alumnos.Add(new AlumnoHorario { HorarioId = horario.Id, AlumnoId = AlumnoId });
         _repo.Setup(r => r.ObtenerAsync(horario.Id, It.IsAny<CancellationToken>()))
              .ReturnsAsync(horario);
         return horario;

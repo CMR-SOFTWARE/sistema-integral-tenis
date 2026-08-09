@@ -139,20 +139,13 @@ public class AlumnoRepository : IAlumnoRepository
 
     public async Task EliminarDefinitivoAsync(Alumno alumno, CancellationToken ct = default)
     {
-        // Los horarios individuales del alumno (y sus turnos) NO caen en cascada:
-        // la FK Horario→Alumno es SetNull. Los borramos a mano para no dejar
-        // horarios huérfanos. Los TurnoParticipante de esos turnos sí caen solos.
-        var horarios = await _db.Horarios
-            .Include(h => h.Turnos)
-            .Where(h => h.TenantId == TenantId && h.AlumnoId == alumno.Id)
-            .ToListAsync(ct);
-
-        foreach (var h in horarios)
-            _db.Turnos.RemoveRange(h.Turnos);
-        _db.Horarios.RemoveRange(horarios);
-
-        // La ficha: cargos, participaciones, membresías, raquetas, notas y
-        // solicitudes (grupo/horario/clase suelta) caen en cascada.
+        // Ya no hay horarios "del" alumno que borrar: una clase es de la academia y
+        // el alumno es una fila de su roster, que cae en cascada. La clase que queda
+        // vacía se conserva —deja de generar turnos y el calendario la muestra
+        // apagada—, y el profe decide si le suma a alguien o la da de baja.
+        //
+        // La ficha (cargos, participaciones, membresías, raquetas, notas y
+        // solicitudes) también cae en cascada.
         _db.Alumnos.Remove(alumno);
         await _db.SaveChangesAsync(ct);
     }

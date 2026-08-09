@@ -2,8 +2,8 @@ namespace SistemaIntegralDeportivo.Api.Models;
 
 /// <summary>
 /// Quién toma una clase fija. Es la tabla intermedia EXPLÍCITA de Alumno ↔ Horario
-/// (reemplaza a <see cref="AlumnoGrupo"/>, que colgaba del grupo): explícita porque
-/// guarda historia — "Pepe estuvo en los martes de 18 de marzo a junio".
+/// (heredó la forma de la vieja AlumnoGrupo, que colgaba del grupo): explícita
+/// porque guarda historia — "Pepe estuvo en los martes de 18 de marzo a junio".
 /// La clave primaria compuesta (AlumnoId, HorarioId) se configura en el DbContext,
 /// y por eso al reingresar se reactiva la fila en vez de crear otra.
 /// </summary>

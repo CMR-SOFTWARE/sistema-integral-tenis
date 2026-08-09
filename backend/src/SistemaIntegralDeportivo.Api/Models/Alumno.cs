@@ -68,6 +68,5 @@ public class Alumno
     public DateTime ActualizadoEl { get; set; } = DateTime.UtcNow;
 
     // ── Relaciones ──
-    public ICollection<AlumnoGrupo> Grupos { get; set; } = new List<AlumnoGrupo>();
     public ICollection<Raqueta> Raquetas { get; set; } = new List<Raqueta>();
 }
