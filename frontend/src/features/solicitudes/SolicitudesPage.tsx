@@ -89,7 +89,7 @@ export default function SolicitudesPage() {
                       {CAT_LABEL[sol.categoria as Categoria]}
                     </span>
                   )}
-                  {sol.esMenor && <span className={s.chipMenor}>Menor</span>}
+                  {sol.esMenor && <span className={s.chipMenor}>Con responsable</span>}
                 </div>
                 <div className={s.detalle}>
                   {sol.email}

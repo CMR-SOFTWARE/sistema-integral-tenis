@@ -129,11 +129,13 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
           <span>Categoría por edad (automática)</span>
           <input value={subPorEdad(form.fechaNacimiento || null) ?? 'Adulto'} disabled readOnly />
         </label>
+        {/* Se puede tildar DESPUÉS del alta: el profe carga al alumno y se acuerda
+            más tarde de que necesita un responsable (fue un pedido concreto). */}
         <label className={s.campo}>
-          <span>&nbsp;</span>
+          <span>Responsable a cargo</span>
           <label className={s.check}>
             <input type="checkbox" checked={form.esMenor} onChange={(e) => set('esMenor', e.target.checked)} />
-            Es menor de edad
+            Necesita un tutor o responsable
           </label>
         </label>
         <label className={s.campo}>
@@ -202,7 +204,7 @@ export default function EditarAlumnoModal({ alumno, onClose, onEditar }: Props) 
         {esMenor && !alumno.tutorId && (
           <div className={`${s.span2} ${s.bloqueTutor}`}>
             <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8 }}>
-              Datos del tutor (opcional — podés cargarlo ahora o después)
+              Datos del tutor o responsable (opcional — podés cargarlo ahora o después)
             </div>
             <div className={s.grid}>
               <label className={s.campo}>

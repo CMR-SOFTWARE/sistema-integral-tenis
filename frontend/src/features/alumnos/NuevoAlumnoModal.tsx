@@ -17,8 +17,9 @@ interface Props {
 
 /**
  * Alta de alumno CON acceso al portal (plan v2: registro único — email
- * obligatorio, el sistema genera la contraseña temporal). Cuando la fecha
- * de nacimiento da menor de 18, aparece el bloque de tutor + consentimiento.
+ * obligatorio, el sistema genera la contraseña temporal). Al marcar que necesita
+ * un responsable aparece el bloque de tutor + consentimiento: son los menores de
+ * edad, pero también un adulto con un apoyo a cargo.
  */
 export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) {
   const [form, setForm] = useState({
@@ -127,15 +128,17 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
           <span>Fecha de nacimiento (opcional)</span>
           <input type="date" value={form.fechaNacimiento} onChange={(e) => set('fechaNacimiento', e.target.value)} />
         </label>
+        {/* No dice "es menor de edad" a propósito: el profe también lo necesita para
+            un adulto con un apoyo a cargo. La edad es UN caso de esto, no el único. */}
         <label className={s.campo}>
-          <span>&nbsp;</span>
+          <span>Responsable a cargo</span>
           <label className={s.check}>
             <input
               type="checkbox"
               checked={form.esMenor}
               onChange={(e) => set('esMenor', e.target.checked)}
             />
-            Es menor de edad
+            Necesita un tutor o responsable
           </label>
         </label>
         <label className={s.campo}>
@@ -202,7 +205,7 @@ export default function NuevoAlumnoModal({ onClose, onCrear, onCreado }: Props) 
         {esMenor && (
           <div className={`${s.span2} ${s.bloqueTutor}`}>
             <div className={s.bloqueTitulo}>
-              Alumno menor de edad — datos del tutor
+              Datos del tutor o responsable a cargo
             </div>
             <div className={s.grid}>
               <label className={s.campo}>

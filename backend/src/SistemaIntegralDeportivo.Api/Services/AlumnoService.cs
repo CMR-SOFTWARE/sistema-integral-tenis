@@ -586,19 +586,20 @@ public class AlumnoService : IAlumnoService
     }
 
     /// <summary>
-    /// Regla del menor (Ley 25.326): tutor + consentimiento obligatorios. La
-    /// condición de menor la marca el profe con un checkbox (antes se derivaba de
-    /// la fecha, ahora opcional).
+    /// Regla del responsable a cargo (Ley 25.326): tutor + consentimiento obligatorios.
+    /// La marca el profe con un checkbox. El campo se llama <c>EsMenor</c> por su origen
+    /// —los menores de edad— pero cubre también al adulto con un apoyo a cargo, que es
+    /// como lo usa el profe; de ahí que en la app se hable de "responsable" y no de edad.
     /// </summary>
     private static void ValidarMenor(CreateAlumnoDto dto)
     {
         if (!dto.EsMenor) return;
 
         if (dto.Tutor is null)
-            throw new ReglaDeNegocioException("Un alumno menor de edad requiere un tutor.");
+            throw new ReglaDeNegocioException("Ese alumno necesita un tutor o responsable a cargo.");
         if (!dto.ConsentimientoDatos)
             throw new ReglaDeNegocioException(
-                "Un alumno menor requiere el consentimiento de datos otorgado por su tutor.");
+                "Falta el consentimiento de datos, que tiene que dar su tutor o responsable.");
     }
 
     /// <summary>
