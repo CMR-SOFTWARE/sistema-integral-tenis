@@ -98,7 +98,5 @@ public class SueldoPorHora : IPoliticaDeSueldo
         return resultado;
     }
 
-    private static string Titulo(Horario h) =>
-        h.Grupo?.Nombre
-        ?? (h.Alumno is not null ? $"{h.Alumno.Nombre} {h.Alumno.Apellido} (individual)" : "Clase");
+    private static string Titulo(Horario h) => HorarioService.TituloDe(h.Nombre, h.Alumnos);
 }

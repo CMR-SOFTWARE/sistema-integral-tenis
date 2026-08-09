@@ -5,8 +5,7 @@ namespace SistemaIntegralDeportivo.Api.Models;
 /// horarios con cupo libre y de su categoría; el profe la ACEPTA (lo suma al roster,
 /// que reconcilia el calendario) o la RECHAZA.
 ///
-/// Reemplaza a <see cref="SolicitudGrupo"/>, que pedía entrar a un grupo. Se llama
-/// "cupo" y no "horario" para no confundirla con <see cref="SolicitudHorario"/>, que
+/// Se llama "cupo" y no "horario" para no confundirla con <see cref="SolicitudHorario"/>, que
 /// es otra cosa: pedir que le armen una clase individual nueva.
 /// </summary>
 public class SolicitudCupo

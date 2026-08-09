@@ -43,5 +43,4 @@ public class Tenant
     // ── Navegación (las FK apuntan hacia acá) ──
     public ICollection<Alumno> Alumnos { get; set; } = new List<Alumno>();
     public ICollection<Tutor> Tutores { get; set; } = new List<Tutor>();
-    public ICollection<Grupo> Grupos { get; set; } = new List<Grupo>();
 }

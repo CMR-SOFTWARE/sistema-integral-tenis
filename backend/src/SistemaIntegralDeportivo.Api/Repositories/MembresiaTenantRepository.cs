@@ -79,10 +79,6 @@ public class MembresiaTenantRepository : IMembresiaTenantRepository
         // Dejar "sin asignar" lo que lo tenía de profe en ESTE tenant (no se rompe:
         // ProfesorUserId es un Guid suelto, no un FK con cascada). Todo en una sola
         // transacción con la baja de la membresía.
-        var grupos = await _db.Grupos
-            .Where(g => g.TenantId == TenantId && g.ProfesorUserId == userId).ToListAsync(ct);
-        foreach (var g in grupos) g.ProfesorUserId = null;
-
         var horarios = await _db.Horarios
             .Where(h => h.TenantId == TenantId && h.ProfesorUserId == userId).ToListAsync(ct);
         foreach (var h in horarios) h.ProfesorUserId = null;

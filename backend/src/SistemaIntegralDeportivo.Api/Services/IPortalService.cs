@@ -62,7 +62,7 @@ public interface IPortalService
     /// <exception cref="Common.ReglaDeNegocioException">Sin ficha, no es imagen o muy pesada.</exception>
     Task<MiPerfilDto> ActualizarFotoAsync(Guid userId, string? fotoUrl, CancellationToken ct = default);
 
-    /// <summary>Grupos a los que me podría sumar (cupo + mi categoría), con precio estimado.</summary>
+    /// <summary>Clases a las que me podría sumar (con lugar + mi categoría), con precio estimado.</summary>
     Task<IReadOnlyList<ClaseDisponibleDto>> ClasesDisponiblesAsync(Guid userId, CancellationToken ct = default);
 
     /// <summary>Pido sumarme a un grupo (queda pendiente de que el profe lo apruebe).</summary>

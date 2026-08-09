@@ -45,14 +45,6 @@ public class Horario
     /// <summary>El roster: quiénes toman esta clase (con su historia de alta y baja).</summary>
     public ICollection<AlumnoHorario> Alumnos { get; set; } = new List<AlumnoHorario>();
 
-    // ── Restos del modelo viejo (grupo XOR alumno) ──
-    // Ya NO se leen: el roster es Alumnos. Las columnas quedan hasta la migración de
-    // limpieza, para poder volver atrás si la copia de datos hubiera salido mal.
-    public Guid? GrupoId { get; set; }
-    public Grupo? Grupo { get; set; }
-    public Guid? AlumnoId { get; set; }
-    public Alumno? Alumno { get; set; }
-
     // ── Recurrencia semanal ──
     public DayOfWeek Dia { get; set; }
     public TimeOnly HoraInicio { get; set; }

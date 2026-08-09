@@ -5,7 +5,7 @@ namespace SistemaIntegralDeportivo.Api.Models;
 /// propio recurrente (él solo con el profe) en un día/hora. Propone día + hora
 /// + duración; el profe la ACEPTA eligiendo una cancha libre (se crea el
 /// <see cref="Horario"/> individual) o la RECHAZA. No confundir con
-/// <see cref="SolicitudGrupo"/> (sumarse a un grupo existente).
+/// <see cref="SolicitudCupo"/>, que es pedir lugar en una clase que ya existe.
 /// </summary>
 public class SolicitudHorario
 {
