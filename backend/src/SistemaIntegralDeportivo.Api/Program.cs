@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using SistemaIntegralDeportivo.Api.Common;
 using SistemaIntegralDeportivo.Api.Data;
 using SistemaIntegralDeportivo.Api.Models;
 using SistemaIntegralDeportivo.Api.Repositories;
@@ -114,8 +115,15 @@ else
 // Base de datos: EF Core sobre PostgreSQL (Supabase). La connection string real
 // vive en user-secrets en desarrollo, y en la variable de entorno ConnectionStrings__Default
 // en producción (Railway) — nunca en appsettings.json.
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+// Diagnóstico de performance: el contador vive por request y el interceptor le anota
+// cada comando SQL que EF ejecuta. Con eso el middleware de tiempos puede decir si una
+// pantalla lenta lo es por hacer muchas consultas, una pesada, o por el tamaño del JSON.
+builder.Services.AddScoped<DiagnosticoDb>();
+builder.Services.AddScoped<ContadorDeQueriesInterceptor>();
+
+builder.Services.AddDbContext<AppDbContext>((sp, options) =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Default"))
+           .AddInterceptors(sp.GetRequiredService<ContadorDeQueriesInterceptor>()));
 
 // ── Auth (ADR-0007) ──
 // Identity CORE (sin roles de Identity: los roles son membresías por tenant).
@@ -194,6 +202,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Antes que todo lo demás (auth incluida) para que el tiempo medido sea el que
+// realmente espera el profe con el celular en la mano, no solo el del controller.
+app.UseMiddleware<TiempoDeRequestMiddleware>();
 
 app.UseCors("Frontend");
 
