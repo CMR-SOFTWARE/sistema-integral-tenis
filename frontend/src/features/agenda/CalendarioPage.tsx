@@ -94,6 +94,16 @@ export default function CalendarioPage({ sede, profe }: Props) {
     () => (vista === 'dia' ? [dia] : Array.from({ length: 7 }, (_, i) => sumarDias(lunes, i))),
     [vista, dia, lunes],
   );
+
+  // En el celular la semana muestra un mapa de los 7 días y ABRE uno solo (siete
+  // columnas en 390 px dan 47 px cada una: no entra nada). Vive acá y no en la
+  // grilla porque en modo "Por profe" hay varias apiladas y todas abren el mismo.
+  const [diaElegido, setDiaElegido] = useState(() => aISO(new Date()));
+  // Derivado y no un efecto: al cambiar de semana el día guardado deja de existir,
+  // y se cae solo a hoy (si esta semana lo tiene) o al lunes. Nunca queda en blanco.
+  const diaAbierto = dias.includes(diaElegido)
+    ? diaElegido
+    : dias.includes(aISO(new Date())) ? aISO(new Date()) : dias[0];
   const semanaActual = lunesDe(new Date()) === lunes;
   const mesActual = mesCursor.anio === ahora.getFullYear() && mesCursor.mes === ahora.getMonth() + 1;
   const turnoAbierto: Turno | null = activo.turnos.find((t) => t.id === abierto) ?? null;
@@ -221,7 +231,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
 
       {/* Modo TODOS: una sola grilla (Día o Semana) o un solo mes. */}
       {!activo.cargando && !activo.error && !porProfe && vista !== 'mes' && (
-        <GrillaSemana dias={dias} turnos={visibles} clasesVacias={clasesVacias} bloqueos={bloqueos} onAbrirTurno={setAbierto} onAbrirClaseVacia={(h) => setEditandoId(h.id)} nombreDe={nombreDe} />
+        <GrillaSemana dias={dias} turnos={visibles} clasesVacias={clasesVacias} bloqueos={bloqueos} onAbrirTurno={setAbierto} onAbrirClaseVacia={(h) => setEditandoId(h.id)} diaAbierto={diaAbierto} onAbrirDia={setDiaElegido} nombreDe={nombreDe} />
       )}
 
       {!activo.cargando && !activo.error && !porProfe && vista === 'mes' && (
@@ -245,7 +255,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
               <div key={p.userId} className={s.grupoProfe}>
                 <div className={s.grupoProfeTitulo}>{p.nombre}{p.esDueño ? ' (vos)' : ''}</div>
                 {vista !== 'mes' ? (
-                  <GrillaSemana dias={dias} turnos={suyos} clasesVacias={clasesVacias.filter((h) => h.profesorUserId === p.userId)} bloqueos={bloqueos} onAbrirTurno={setAbierto} onAbrirClaseVacia={(h) => setEditandoId(h.id)} nombreDe={nombreDe} />
+                  <GrillaSemana dias={dias} turnos={suyos} clasesVacias={clasesVacias.filter((h) => h.profesorUserId === p.userId)} bloqueos={bloqueos} onAbrirTurno={setAbierto} onAbrirClaseVacia={(h) => setEditandoId(h.id)} diaAbierto={diaAbierto} onAbrirDia={setDiaElegido} nombreDe={nombreDe} />
                 ) : (
                   <VistaMes
                     key={`${mesCursor.anio}-${mesCursor.mes}-${p.userId}`}
@@ -261,7 +271,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
             <div className={s.grupoProfe}>
               <div className={s.grupoProfeTitulo}>Sin profe</div>
               {vista !== 'mes' ? (
-                <GrillaSemana dias={dias} turnos={visibles.filter((t) => !t.profesorUserId)} clasesVacias={clasesVacias.filter((h) => !h.profesorUserId)} bloqueos={bloqueos} onAbrirTurno={setAbierto} onAbrirClaseVacia={(h) => setEditandoId(h.id)} nombreDe={nombreDe} />
+                <GrillaSemana dias={dias} turnos={visibles.filter((t) => !t.profesorUserId)} clasesVacias={clasesVacias.filter((h) => !h.profesorUserId)} bloqueos={bloqueos} onAbrirTurno={setAbierto} onAbrirClaseVacia={(h) => setEditandoId(h.id)} diaAbierto={diaAbierto} onAbrirDia={setDiaElegido} nombreDe={nombreDe} />
               ) : (
                 <VistaMes
                   key={`${mesCursor.anio}-${mesCursor.mes}-sin`}
