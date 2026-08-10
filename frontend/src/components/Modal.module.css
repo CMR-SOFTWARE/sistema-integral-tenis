@@ -9,6 +9,11 @@
   justify-content: center;
   padding: 40px 20px;
   overflow-y: auto;
+  /* El scroll muere acá y no se "pasa" a lo que haya detrás. Sin esto, con dos
+     modales apilados (la ficha del alumno y el de asignar horario, por ejemplo) la
+     rueda movía la ficha de atrás mientras el de adelante quedaba fijo, y la
+     pantalla se veía partida en dos. */
+  overscroll-behavior: contain;
   animation: fade 0.2s ease;
 }
 

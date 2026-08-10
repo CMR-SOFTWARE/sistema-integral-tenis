@@ -1,0 +1,157 @@
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.fila {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 12px;
+}
+
+/* Cuándo es la clase: es lo primero que el profe busca al asignar. */
+.cuando {
+  flex: none;
+  width: 52px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dia {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--color-primary-dark);
+  text-transform: uppercase;
+}
+
+.hora {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.datos {
+  flex: 1;
+  min-width: 0;
+}
+
+.titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 7px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10px;
+}
+
+.detalle {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.btnSumar {
+  flex: none;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-primary-dark);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btnSumar:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: #eef6f0;
+}
+
+.btnSumar:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.vacio {
+  padding: 22px;
+  text-align: center;
+  color: var(--color-text-faint);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.aviso {
+  background: #fef6e7;
+  border: 1px solid #f3dfb6;
+  color: #b7791f;
+  border-radius: var(--radius-md);
+  padding: 10px 13px;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+
+.error {
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: 10px 13px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.btnSecundario {
+  padding: 11px 18px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--color-text-soft);
+}
+
+.btnCrear {
+  padding: 11px 20px;
+  border: none;
+  background: var(--color-primary-dark);
+  color: #fff;
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* Móvil: la fila se parte y el botón baja a lo ancho. */
+@media (max-width: 560px) {
+  .fila {
+    flex-wrap: wrap;
+  }
+
+  .btnSumar {
+    flex: 1 1 100%;
+  }
+}

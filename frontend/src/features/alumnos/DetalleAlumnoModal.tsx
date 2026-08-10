@@ -10,6 +10,7 @@ import type { Alumno, AlumnoCuenta, AlumnoHorario } from './types';
 import { useProfesores } from '../profesores/useProfesores';
 import { useSedes } from '../agenda/hooks';
 import NuevoHorarioModal from '../agenda/NuevoHorarioModal';
+import AsignarHorarioModal from './AsignarHorarioModal';
 import { obtenerSesion } from '../auth/sesion';
 import s from './DetalleAlumnoModal.module.css';
 
@@ -39,7 +40,10 @@ export default function DetalleAlumnoModal({
   const qc = useQueryClient();
 
   // "Asignar horario" desde la ficha: reusa el modal de horario con el alumno fijo.
+  // Dos pasos: primero se ofrecen las clases que YA existen, y crear una nueva es
+  // la salida de abajo. Antes el botón iba derecho a crear.
   const [asignando, setAsignando] = useState(false);
+  const [creandoClase, setCreandoClase] = useState(false);
   const sesion = obtenerSesion();
   const miSedeId = sesion?.rol === 'staff' ? sesion.sedeId : null; // el staff solo su club
   const { sedes } = useSedes();
@@ -282,6 +286,15 @@ export default function DetalleAlumnoModal({
       )}
 
       {asignando && (
+        <AsignarHorarioModal
+          alumno={alumno}
+          onClose={() => setAsignando(false)}
+          onAsignado={() => void horarios.refetch()}
+          onCrearNueva={() => { setAsignando(false); setCreandoClase(true); }}
+        />
+      )}
+
+      {creandoClase && (
         <NuevoHorarioModal
           sedes={sedesParaHorario}
           alumnoFijo={{
@@ -290,7 +303,7 @@ export default function DetalleAlumnoModal({
             apellido: alumno.apellido,
             profesorUserId: alumno.profesorUserId,
           }}
-          onClose={() => setAsignando(false)}
+          onClose={() => setCreandoClase(false)}
           onCrear={async (dto) => {
             await api.post('/horarios', dto);
             // Refrescamos los horarios de la ficha + la lista (puede pasar de espera a alumno).

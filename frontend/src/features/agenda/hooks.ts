@@ -73,17 +73,24 @@ export function useHorarios() {
 
   // Sumar/sacar del roster repone o quita al alumno de los turnos futuros y cambia
   // el divisor de la cuota: el back reconcilia, nosotros invalidamos lo mismo que
-  // al tocar el horario. La ficha del alumno también muestra sus clases.
-  const agregarAlumno = async (horarioId: string, alumnoId: string) => {
-    await api.post(`/horarios/${horarioId}/alumnos`, { alumnoId });
+  // al tocar el horario. Además de sus clases (la ficha), se invalidan el listado y
+  // el inicio: darle su primera clase a alguien de la lista de espera lo convierte
+  // en alumno, y las dos vistas lo cuentan.
+  const invalidarAlumno = async () => {
     await invalidar();
     await qc.invalidateQueries({ queryKey: ['alumno-horarios'] });
+    await qc.invalidateQueries({ queryKey: ['alumnos'] });
+    await qc.invalidateQueries({ queryKey: ['dashboard'] });
+  };
+
+  const agregarAlumno = async (horarioId: string, alumnoId: string) => {
+    await api.post(`/horarios/${horarioId}/alumnos`, { alumnoId });
+    await invalidarAlumno();
   };
 
   const quitarAlumno = async (horarioId: string, alumnoId: string) => {
     await api.delete(`/horarios/${horarioId}/alumnos/${alumnoId}`);
-    await invalidar();
-    await qc.invalidateQueries({ queryKey: ['alumno-horarios'] });
+    await invalidarAlumno();
   };
 
   return {
