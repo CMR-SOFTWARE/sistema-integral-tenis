@@ -9,7 +9,7 @@ import { formatoPlata, CAT_LABEL } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import { aISO, fechaCorta, horaCorta, lunesDe, rangoSemana, sumarDias } from '../agenda/types';
 import { useReservarData, usePortalSedes } from './hooks';
-import type { ClaseDisponible, ClaseSuelta, DatosPago, Disponibilidad } from './types';
+import type { ClaseSuelta, DatosPago, Disponibilidad, SlotReserva } from './types';
 import s from './ReservarPage.module.css';
 
 const DIA_IDX: Record<string, number> = {
@@ -26,26 +26,38 @@ const ESTADO_SOL: Record<string, { label: string; cls: string }> = {
 
 const hhmm = (t: string) => t.slice(0, 5);
 
-/** Una clase disponible ya ubicada en la columna de su día. */
-interface SlotClase extends ClaseDisponible {
+/** Una franja de la grilla ya ubicada en la columna de su día. */
+interface Slot extends SlotReserva {
   diaIdx: number;
 }
 
-/** Reservar: calendario semanal con las clases que tienen lugar + pedir clase individual (M5a/M5b). */
+/** "Quedan 2" / "Hay lugar" (cupo abierto): nunca cuánta gente hay adentro. */
+const lugares = (sl: SlotReserva) =>
+  sl.lugaresLibres === null ? 'Hay lugar'
+    : sl.lugaresLibres === 1 ? 'Queda 1'
+      : `Quedan ${sl.lugaresLibres}`;
+
+/**
+ * Reservar: la grilla semanal del club del alumno + pedir clase individual (M5a/M5b).
+ *
+ * Cada franja viene clasificada por el back en disponible / ocupada / mía, y lo que no
+ * puede pedir llega **sin datos**: ni título (que puede ser el nombre de otro alumno),
+ * ni cancha, ni precio. Acá no se esconde nada — directamente no viaja.
+ */
 export default function ReservarPage() {
   const conClub = obtenerSesion()?.alumno != null;
   const miCategoria = obtenerSesion()?.categoria ?? null; // para marcar "tu categoría" en el calendario
   const qc = useQueryClient();
   const [lunes, setLunes] = useState(() => lunesDe(new Date()));
 
-  // Lista principal (clases con lugar + solicitudes + clases sueltas) cacheada por React Query.
+  // Lista principal (la grilla + solicitudes + clases sueltas) cacheada por React Query.
   const reservarQuery = useReservarData();
-  const { clases, solCupo, solHorario, clasesSueltas } =
-    reservarQuery.data ?? { clases: [], solCupo: [], solHorario: [], clasesSueltas: [] };
+  const { slots: slotsData, solCupo, solHorario, clasesSueltas } =
+    reservarQuery.data ?? { slots: [], solCupo: [], solHorario: [], clasesSueltas: [] };
   const cargando = reservarQuery.isLoading;
 
   const [error, setError] = useState<string | null>(null); // errores de acciones
-  const [confirmar, setConfirmar] = useState<SlotClase | null>(null);
+  const [confirmar, setConfirmar] = useState<Slot | null>(null);
   const [pidiendoIndividual, setPidiendoIndividual] = useState(false);
   const { data: sedes = [] } = usePortalSedes();
   const [formInd, setFormInd] = useState({ sedeId: '', dia: 'Monday', hora: '18:00', duracion: 60 });
@@ -110,11 +122,9 @@ export default function ReservarPage() {
   const sedeNombre = sedes.find((x) => x.id === formInd.sedeId)?.nombre ?? '';
   const sedeNombreSuelta = sedes.find((x) => x.id === formSuelta.sedeId)?.nombre ?? '';
 
-  // La clase ya es la unidad: cada una es un slot de la grilla (antes había que
-  // aplanar grupo → sus horarios).
-  const slots = useMemo<SlotClase[]>(
-    () => clases.map((c) => ({ ...c, diaIdx: DIA_IDX[c.dia] ?? 0 })),
-    [clases],
+  const slots = useMemo<Slot[]>(
+    () => slotsData.map((c) => ({ ...c, diaIdx: DIA_IDX[c.dia] ?? 0 })),
+    [slotsData],
   );
 
   const dias = useMemo(() => Array.from({ length: 7 }, (_, i) => sumarDias(lunes, i)), [lunes]);
@@ -127,7 +137,10 @@ export default function ReservarPage() {
     setEnviando(true); setError(null);
     try {
       await api.post('/portal/solicitudes-cupo', { horarioId: confirmar.horarioId });
-      setToast(`Pediste un lugar en ${confirmar.titulo}. Tu profe lo va a aprobar.`);
+      // La clase se nombra por cuándo es, nunca por su título.
+      setToast(
+        `Pediste un lugar el ${DIAS_ES[confirmar.diaIdx].toLowerCase()} a las ${horaCorta(confirmar.horaInicio)}. Tu profe lo va a aprobar.`,
+      );
       setTimeout(() => setToast(null), 3500);
       setConfirmar(null); recargar();
     } catch (e) {
@@ -214,32 +227,36 @@ export default function ReservarPage() {
               <div key={fecha} className={`${s.columna} ${hoyCol ? s.columnaHoy : ''}`}>
                 <div className={s.columnaTitulo}>{fechaCorta(fecha)}</div>
                 {delDia.length === 0 && <div className={s.libre}>—</div>}
-                {delDia.map((sl) => (
-                  <button
-                    key={sl.horarioId}
-                    className={`${s.slot} ${sl.solicitudPendiente ? s.slotPendiente : ''}`}
-                    disabled={sl.solicitudPendiente}
-                    onClick={() => { setError(null); setConfirmar(sl); }}
-                  >
-                    <div className={s.slotHora}>{horaCorta(sl.horaInicio)}</div>
-                    <div className={s.slotTitulo}>{sl.titulo}</div>
-                    {sl.categoria && sl.categoria !== 'SinCategoria' && (
-                      <div
-                        className={`${s.slotCat} ${sl.categoria === miCategoria ? s.slotCatMia : ''}`}
-                      >
-                        {CAT_LABEL[sl.categoria as Categoria] ?? sl.categoria}
-                        {sl.categoria === miCategoria && ' · tu cat.'}
-                      </div>
-                    )}
-                    <div className={s.slotDetalle}>
-                      {sl.miembrosActivos}{sl.cupoMaximo ? `/${sl.cupoMaximo}` : ''} · {sl.cancha || 'cancha'}
-                    </div>
-                    {sl.precioEstimado != null && (
-                      <div className={s.slotPrecio}>≈ {formatoPlata(sl.precioEstimado)}/clase</div>
-                    )}
-                    {sl.solicitudPendiente && <div className={s.slotBadge}>Pedido ✓</div>}
-                  </button>
-                ))}
+                {delDia.map((sl, idx) => {
+                  const libre = sl.estado === 'Disponible';
+                  const clase = libre
+                    ? `${s.slot} ${sl.solicitudPendiente ? s.slotPendiente : ''}`
+                    : sl.estado === 'Mia' ? `${s.slot} ${s.slotMia}` : `${s.slot} ${s.slotOcupado}`;
+                  return (
+                    // La clave es día+hora+posición: las ocupadas no traen id a propósito.
+                    <button
+                      key={sl.horarioId ?? `${sl.dia}-${sl.horaInicio}-${idx}`}
+                      className={clase}
+                      disabled={!libre || sl.solicitudPendiente}
+                      onClick={libre ? () => { setError(null); setConfirmar(sl); } : undefined}
+                    >
+                      <div className={s.slotHora}>{horaCorta(sl.horaInicio)}</div>
+                      {!libre && (
+                        <div className={s.slotEstado}>{sl.estado === 'Mia' ? 'Tu clase' : 'Ocupado'}</div>
+                      )}
+                      {sl.categoria && sl.categoria !== 'SinCategoria' && (
+                        <div
+                          className={`${s.slotCat} ${sl.categoria === miCategoria ? s.slotCatMia : ''}`}
+                        >
+                          {CAT_LABEL[sl.categoria as Categoria] ?? sl.categoria}
+                          {sl.categoria === miCategoria && ' · tu cat.'}
+                        </div>
+                      )}
+                      {libre && <div className={s.slotDetalle}>{lugares(sl)}</div>}
+                      {sl.solicitudPendiente && <div className={s.slotBadge}>Pedido ✓</div>}
+                    </button>
+                  );
+                })}
               </div>
             );
           })}
@@ -253,9 +270,13 @@ export default function ReservarPage() {
           <div className={s.tarjeta}>
             {solCupo.map((sol) => {
               const e = ESTADO_SOL[sol.estado];
+              const idx = DIA_IDX[sol.dia] ?? 0;
               return (
                 <div key={`c${sol.id}`} className={s.solFila}>
-                  <span className={s.solNombre}>{sol.claseNombre}</span>
+                  {/* Cuándo es la clase, no cómo se llama: el nombre puede ser el de otro alumno. */}
+                  <span className={s.solNombre}>
+                    {sol.sede} · {DIAS_ES[idx]} {hhmm(sol.horaInicio)}
+                  </span>
                   <span className={`${s.chip} ${e.cls}`}>{e.label}</span>
                 </div>
               );
@@ -318,7 +339,7 @@ export default function ReservarPage() {
       {confirmar && (
         <Modal
           titulo="Pedir un lugar en la clase"
-          subtitulo={confirmar.titulo}
+          subtitulo={confirmar.sede}
           onClose={() => { setConfirmar(null); setError(null); }}
           ancho={420}
           footer={
@@ -336,8 +357,8 @@ export default function ReservarPage() {
               <b>{fechaCorta(sumarDias(lunes, confirmar.diaIdx))} · {horaCorta(confirmar.horaInicio)} ({confirmar.duracionMinutos}')</b>
             </div>
             <div className={s.resumenFila}>
-              <span>Cancha</span>
-              <b>{confirmar.cancha || '—'}{confirmar.sede ? ` · ${confirmar.sede}` : ''}</b>
+              <span>Club</span>
+              <b>{confirmar.sede || '—'}</b>
             </div>
             {confirmar.categoria && confirmar.categoria !== 'SinCategoria' && (
               <div className={s.resumenFila}>
@@ -347,17 +368,8 @@ export default function ReservarPage() {
             )}
             <div className={s.resumenFila}>
               <span>Lugares</span>
-              <b>
-                {confirmar.miembrosActivos}
-                {confirmar.cupoMaximo !== null ? `/${confirmar.cupoMaximo} ocupados` : ' anotados'}
-              </b>
+              <b>{lugares(confirmar)}</b>
             </div>
-            {confirmar.precioEstimado != null && (
-              <div className={s.resumenFila}>
-                <span>Precio estimado</span>
-                <b>≈ {formatoPlata(confirmar.precioEstimado)}/clase</b>
-              </div>
-            )}
           </div>
           {error && <div className={s.errorModal}>{error}</div>}
           <p className={s.nota}>El profe tiene que aprobar tu pedido antes de sumarte a la clase.</p>

@@ -2,26 +2,55 @@ using System.ComponentModel.DataAnnotations;
 
 namespace SistemaIntegralDeportivo.Api.Dtos;
 
-/// <summary>
-/// Una clase con lugar libre a la que el alumno PODRÍA sumarse (cupo disponible y
-/// categoría compatible). Antes esto era un grupo con sus horarios adentro; ahora la
-/// clase ya es la unidad, así que se aplanó un nivel.
-/// </summary>
-public class ClaseDisponibleDto
+/// <summary>Cómo ve el alumno una franja de la grilla de Reservar.</summary>
+public enum EstadoSlot
 {
-    public Guid HorarioId { get; set; }
-    public string Titulo { get; set; } = string.Empty;
-    public string? Categoria { get; set; }
-    public int MiembrosActivos { get; set; }
-    public int? CupoMaximo { get; set; }
+    /// <summary>Tiene lugar y es de su categoría: la puede pedir.</summary>
+    Disponible,
+    /// <summary>No la puede pedir. Llena o de otra categoría se ven IGUAL, a propósito.</summary>
+    Ocupado,
+    /// <summary>Ya viene a esta clase.</summary>
+    Mia,
+}
+
+/// <summary>
+/// Una franja de la grilla de Reservar del portal.
+///
+/// Lo que NO lleva es la parte importante: ni título de clase, ni cancha, ni precio, ni
+/// cuánta gente hay adentro. El título de una clase de una sola persona ES el nombre de
+/// esa persona (<c>HorarioService.TituloDe</c>), así que mandarlo le mostraba a cada
+/// alumno quiénes toman clase en el club y a qué hora. Se corta en el borde, no en el
+/// front: lo que no viaja no se filtra.
+/// </summary>
+public class SlotReservaDto
+{
+    /// <summary>
+    /// Solo cuando es <see cref="EstadoSlot.Disponible"/>: sin el id, una franja ocupada
+    /// no se puede pedir ni tocando la API a mano (el service igual revalida).
+    /// </summary>
+    public Guid? HorarioId { get; set; }
+
+    /// <summary>Disponible | Ocupado | Mia.</summary>
+    public string Estado { get; set; } = string.Empty;
+
     public string Dia { get; set; } = string.Empty; // "Tuesday" → el front lo traduce
     public TimeOnly HoraInicio { get; set; }
     public int DuracionMinutos { get; set; }
+
+    /// <summary>El club de la franja (el suyo, salvo que la ficha no tenga club asignado).</summary>
     public string Sede { get; set; } = string.Empty;
-    public string Cancha { get; set; } = string.Empty;
-    /// <summary>valorHoraGrupal × (duración/60) ÷ (miembros + el alumno). Null si el profe no lo configuró.</summary>
-    public decimal? PrecioEstimado { get; set; }
-    /// <summary>Ya mandó una solicitud pendiente para esta clase (el front deshabilita el botón).</summary>
+
+    /// <summary>La categoría de la CLASE, para que sepa si es su nivel. Solo si es Disponible.</summary>
+    public string? Categoria { get; set; }
+
+    /// <summary>
+    /// Cuántos lugares quedan. Reemplaza al "2/4": dice lo que el alumno necesita sin
+    /// decir cuánta gente hay adentro. Null = sin límite de cupo, o la franja no es
+    /// Disponible.
+    /// </summary>
+    public int? LugaresLibres { get; set; }
+
+    /// <summary>Ya mandó un pedido para esta clase (el front deshabilita el botón).</summary>
     public bool SolicitudPendiente { get; set; }
 }
 
@@ -32,7 +61,10 @@ public class SolicitarCupoDto
     public Guid HorarioId { get; set; }
 }
 
-/// <summary>Un pedido de lugar en una clase (visto por el profe o por el alumno).</summary>
+/// <summary>
+/// Un pedido de lugar en una clase, visto por el PROFE: necesita saber quién pide y a qué
+/// clase. Al alumno se le manda <see cref="MiSolicitudCupoDto"/>, que no lleva nombres.
+/// </summary>
 public class SolicitudCupoDto
 {
     public Guid Id { get; set; }
@@ -40,6 +72,23 @@ public class SolicitudCupoDto
     public string AlumnoNombre { get; set; } = string.Empty;
     public Guid HorarioId { get; set; }
     public string ClaseNombre { get; set; } = string.Empty;
+    /// <summary>Pendiente | Aceptada | Rechazada.</summary>
+    public string Estado { get; set; } = string.Empty;
+    public DateTime CreadoEl { get; set; }
+    public DateTime? ResueltoEl { get; set; }
+}
+
+/// <summary>
+/// Mi pedido de lugar, visto desde el PORTAL. La clase se identifica por cuándo es, no
+/// por su nombre: el nombre puede ser el de otro alumno (ver <see cref="SlotReservaDto"/>).
+/// </summary>
+public class MiSolicitudCupoDto
+{
+    public Guid Id { get; set; }
+    public string Dia { get; set; } = string.Empty;
+    public TimeOnly HoraInicio { get; set; }
+    public int DuracionMinutos { get; set; }
+    public string Sede { get; set; } = string.Empty;
     /// <summary>Pendiente | Aceptada | Rechazada.</summary>
     public string Estado { get; set; } = string.Empty;
     public DateTime CreadoEl { get; set; }

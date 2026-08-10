@@ -137,9 +137,25 @@
   font-size: 13px;
 }
 
-.slotTitulo {
+/* Franja que el alumno NO puede pedir: llena o de otra categoría, se ven igual y sin
+   ningún dato de la clase. Apagada, para que la grilla siga leyéndose por lo verde. */
+.slotOcupado {
+  cursor: default;
+  background: var(--color-surface-2, #eef1ef);
+  border-color: var(--color-border-subtle);
+  color: var(--color-text-faint);
+}
+
+/* Una clase a la que YA viene: marcarla es lo que hace que la grilla sea su semana. */
+.slotMia {
+  cursor: default;
+  background: rgba(23, 138, 76, 0.1);
+  border-color: rgba(23, 138, 76, 0.3);
+}
+
+.slotEstado {
   font-weight: 700;
-  font-size: 13px;
+  font-size: 12px;
   margin: 2px 0;
 }
 
@@ -163,13 +179,6 @@
 .slotDetalle {
   color: var(--color-text-faint);
   font-size: 11px;
-}
-
-.slotPrecio {
-  margin-top: 4px;
-  font-weight: 800;
-  font-size: 12px;
-  color: var(--color-primary-dark, #0e6b3c);
 }
 
 .slotBadge {

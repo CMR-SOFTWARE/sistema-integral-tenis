@@ -88,34 +88,42 @@ export interface DatosPago {
 // (él desde su perfil, el profe desde la ficha).
 export type { Encordado, Raqueta } from '../alumnos/types';
 
+/** Cómo veo una franja de la grilla de Reservar. */
+export type EstadoSlot = 'Disponible' | 'Ocupado' | 'Mia';
+
 /**
- * Espejo de ClaseDisponibleDto: una clase con lugar a la que me podría sumar. Antes
- * esto era un grupo con sus horarios adentro; ahora la clase ya es la unidad, así
- * que viene aplanada (un horario = una fila).
+ * Espejo de SlotReservaDto: una franja de la grilla de Reservar.
+ *
+ * Lo que NO trae es lo importante: ni título de clase, ni cancha, ni precio, ni cuánta
+ * gente hay adentro. El título de una clase de una sola persona es el nombre de esa
+ * persona, así que el backend directamente no lo manda.
  */
-export interface ClaseDisponible {
-  horarioId: string;
-  titulo: string;
-  categoria: string | null;
-  miembrosActivos: number;
-  cupoMaximo: number | null;
+export interface SlotReserva {
+  /** Solo cuando estado es 'Disponible': es lo único que se puede pedir. */
+  horarioId: string | null;
+  estado: EstadoSlot;
   dia: string; // "Tuesday"
   horaInicio: string; // "18:00:00"
   duracionMinutos: number;
   sede: string;
-  cancha: string;
-  precioEstimado: number | null;
+  /** La categoría de la CLASE. Solo si es 'Disponible'. */
+  categoria: string | null;
+  /** Cuántos lugares quedan. Null = cupo abierto, o la franja no es 'Disponible'. */
+  lugaresLibres: number | null;
   /** Ya mandé un pedido pendiente para esta clase (el botón queda deshabilitado). */
   solicitudPendiente: boolean;
 }
 
-/** Espejo de SolicitudCupoDto: mi pedido de lugar en una clase. */
-export interface SolicitudCupo {
+/**
+ * Espejo de MiSolicitudCupoDto: mi pedido de lugar, identificado por CUÁNDO es la
+ * clase y no por su nombre (ver SlotReserva).
+ */
+export interface MiSolicitudCupo {
   id: string;
-  alumnoId: string;
-  alumnoNombre: string;
-  horarioId: string;
-  claseNombre: string;
+  dia: string; // "Tuesday"
+  horaInicio: string; // "18:00:00"
+  duracionMinutos: number;
+  sede: string;
   estado: 'Pendiente' | 'Aceptada' | 'Rechazada';
   creadoEl: string;
   resueltoEl: string | null;

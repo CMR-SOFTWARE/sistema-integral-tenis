@@ -53,7 +53,10 @@ public class SolicitudCupoRepository : ISolicitudCupoRepository
     public async Task<IReadOnlyList<SolicitudCupo>> ListarPorAlumnoAsync(
         Guid alumnoId, CancellationToken ct = default) =>
         await _db.SolicitudesCupo
-            .Include(s => s.Horario).ThenInclude(h => h.Alumnos).ThenInclude(ah => ah.Alumno)
+            // Cancha+sede, NO el roster: al alumno se le devuelve cuándo y dónde es la
+            // clase, nunca su título (que puede ser el nombre de otro alumno). Traer los
+            // compañeros era justo lo que alimentaba esa filtración.
+            .Include(s => s.Horario).ThenInclude(h => h.Cancha).ThenInclude(c => c.Sede)
             .Where(s => s.TenantId == TenantId && s.AlumnoId == alumnoId)
             .OrderByDescending(s => s.CreadoEl)
             .ToListAsync(ct);

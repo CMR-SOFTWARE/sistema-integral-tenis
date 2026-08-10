@@ -6,18 +6,25 @@ using SistemaIntegralDeportivo.Api.Repositories;
 namespace SistemaIntegralDeportivo.Api.Services;
 
 /// <summary>
-/// El alumno pide un lugar en una clase fija: ve las que tienen cupo libre y son de
-/// su categoría, con el precio estimado, y pide sumarse. El profe acepta (lo suma al
-/// roster, que reconcilia el calendario) o rechaza.
+/// El alumno pide un lugar en una clase fija: ve la grilla semanal de SU club y pide
+/// sumarse a una que tenga lugar. El profe acepta (lo suma al roster, que reconcilia el
+/// calendario) o rechaza.
 ///
 /// Reemplaza a ISolicitudGrupoService: el flujo es el mismo, pero sobre horarios.
 /// </summary>
 public interface ISolicitudCupoService
 {
-    Task<IReadOnlyList<ClaseDisponibleDto>> DisponiblesParaAlumnoAsync(Guid alumnoId, CancellationToken ct = default);
-    Task<SolicitudCupoDto> SolicitarAsync(Guid alumnoId, Guid horarioId, CancellationToken ct = default);
+    /// <summary>
+    /// La grilla de Reservar: TODAS las clases del club del alumno, cada una marcada como
+    /// disponible, ocupada o suya. Lo ocupado va sin datos a propósito (ver
+    /// <see cref="SlotReservaDto"/>).
+    /// </summary>
+    Task<IReadOnlyList<SlotReservaDto>> GrillaParaAlumnoAsync(Guid alumnoId, CancellationToken ct = default);
+    Task<MiSolicitudCupoDto> SolicitarAsync(Guid alumnoId, Guid horarioId, CancellationToken ct = default);
+    /// <summary>Los pendientes que ve el PROFE (con nombres, que ahí sí corresponden).</summary>
     Task<IReadOnlyList<SolicitudCupoDto>> ListarPendientesAsync(CancellationToken ct = default);
-    Task<IReadOnlyList<SolicitudCupoDto>> MisAsync(Guid alumnoId, CancellationToken ct = default);
+    /// <summary>Mis pedidos vistos desde el PORTAL: sin nombre de clase ni de alumno.</summary>
+    Task<IReadOnlyList<MiSolicitudCupoDto>> MisAsync(Guid alumnoId, CancellationToken ct = default);
     Task<int> ContarPendientesAsync(CancellationToken ct = default);
     Task AceptarAsync(Guid solicitudId, CancellationToken ct = default);
     Task RechazarAsync(Guid solicitudId, CancellationToken ct = default);
@@ -28,68 +35,75 @@ public class SolicitudCupoService : ISolicitudCupoService
     private readonly ISolicitudCupoRepository _solicitudes;
     private readonly IAlumnoRepository _alumnos;
     private readonly IHorarioRepository _horarios;
-    private readonly ITenantRepository _tenant;
     private readonly ICargoRepository _cargos;
     private readonly IHorarioService _horarioService;
 
     public SolicitudCupoService(
         ISolicitudCupoRepository solicitudes, IAlumnoRepository alumnos,
-        IHorarioRepository horarios, ITenantRepository tenant, ICargoRepository cargos,
+        IHorarioRepository horarios, ICargoRepository cargos,
         IHorarioService horarioService)
     {
         _solicitudes = solicitudes;
         _alumnos = alumnos;
         _horarios = horarios;
-        _tenant = tenant;
         _cargos = cargos;
         _horarioService = horarioService;
     }
 
-    public async Task<IReadOnlyList<ClaseDisponibleDto>> DisponiblesParaAlumnoAsync(
+    public async Task<IReadOnlyList<SlotReservaDto>> GrillaParaAlumnoAsync(
         Guid alumnoId, CancellationToken ct = default)
     {
         var alumno = await _alumnos.ObtenerAsync(alumnoId, ct)
             ?? throw new ReglaDeNegocioException("El alumno no existe.");
 
         var horarios = await _horarios.ListarActivosAsync(ct);
-        var tenant = await _tenant.ObtenerActualAsync(ct);
         var pendientes = (await _solicitudes.ListarPorAlumnoAsync(alumnoId, ct))
             .Where(s => s.Estado == EstadoSolicitudGrupo.Pendiente)
             .Select(s => s.HorarioId)
             .ToHashSet();
 
-        var disponibles = new List<ClaseDisponibleDto>();
-        foreach (var h in horarios)
-        {
-            var activos = h.Alumnos.Count(m => m.FechaBaja is null);
-            if (h.Alumnos.Any(m => m.AlumnoId == alumnoId && m.FechaBaja is null)) continue; // ya viene
-            if (h.CupoMaximo is not null && activos >= h.CupoMaximo) continue;               // sin lugar
-            if (!Categorias.EsCompatible(h.Categoria, alumno.Categoria)) continue;
+        // Solo su club. Si la ficha no tiene club asignado se muestran todos: una
+        // pantalla vacía sin explicación es peor que ver de más (mismo criterio que
+        // AsignarHorarioModal del lado del profe).
+        var slots = horarios
+            .Where(h => alumno.SedeId is null || h.Cancha?.Sede?.Id == alumno.SedeId)
+            .Select(h => Slot(h, alumno, pendientes.Contains(h.Id)));
 
-            var futuros = activos + 1; // contándolo a él para estimar el divisor
-            disponibles.Add(new ClaseDisponibleDto
-            {
-                HorarioId = h.Id,
-                Titulo = HorarioService.TituloDe(h.Nombre, h.Alumnos),
-                Categoria = h.Categoria?.ToString(),
-                MiembrosActivos = activos,
-                CupoMaximo = h.CupoMaximo,
-                Dia = h.Dia.ToString(),
-                HoraInicio = h.HoraInicio,
-                DuracionMinutos = h.DuracionMinutos,
-                Sede = h.Cancha?.Sede?.Nombre ?? string.Empty,
-                Cancha = h.Cancha?.Nombre ?? string.Empty,
-                PrecioEstimado = tenant.ValorHoraGrupal is null
-                    ? null
-                    : Math.Round(tenant.ValorHoraGrupal.Value * h.DuracionMinutos / 60m / futuros, 2),
-                SolicitudPendiente = pendientes.Contains(h.Id),
-            });
-        }
-
-        return [.. disponibles.OrderBy(c => c.Dia).ThenBy(c => c.HoraInicio)];
+        return [.. slots.OrderBy(c => c.Dia).ThenBy(c => c.HoraInicio)];
     }
 
-    public async Task<SolicitudCupoDto> SolicitarAsync(
+    /// <summary>
+    /// Clasifica una clase para ESTE alumno. Lo ocupado sale sin id, sin categoría y sin
+    /// lugares: si no lo puede pedir, no necesita saber nada de esa clase.
+    /// </summary>
+    private static SlotReservaDto Slot(Horario h, Alumno alumno, bool pendiente)
+    {
+        var activos = h.Alumnos.Count(m => m.FechaBaja is null);
+        var yaViene = h.Alumnos.Any(m => m.AlumnoId == alumno.Id && m.FechaBaja is null);
+        var sinLugar = h.CupoMaximo is not null && activos >= h.CupoMaximo;
+        var otraCategoria = !Categorias.EsCompatible(h.Categoria, alumno.Categoria);
+
+        var estado = yaViene ? EstadoSlot.Mia
+            : sinLugar || otraCategoria ? EstadoSlot.Ocupado
+            : EstadoSlot.Disponible;
+        var libre = estado == EstadoSlot.Disponible;
+
+        return new SlotReservaDto
+        {
+            HorarioId = libre ? h.Id : null,
+            Estado = estado.ToString(),
+            Dia = h.Dia.ToString(),
+            HoraInicio = h.HoraInicio,
+            DuracionMinutos = h.DuracionMinutos,
+            Sede = h.Cancha?.Sede?.Nombre ?? string.Empty,
+            Categoria = libre ? h.Categoria?.ToString() : null,
+            // Null con cupo abierto: "hay lugar" sin decir cuántos son.
+            LugaresLibres = libre && h.CupoMaximo is { } cupo ? cupo - activos : null,
+            SolicitudPendiente = libre && pendiente,
+        };
+    }
+
+    public async Task<MiSolicitudCupoDto> SolicitarAsync(
         Guid alumnoId, Guid horarioId, CancellationToken ct = default)
     {
         var alumno = await _alumnos.ObtenerAsync(alumnoId, ct)
@@ -125,7 +139,7 @@ public class SolicitudCupoService : ISolicitudCupoService
         await _solicitudes.GuardarCambiosAsync(ct);
 
         solicitud.Horario = horario; // para el Mapear
-        return Mapear(solicitud);
+        return MapearParaElAlumno(solicitud);
     }
 
     public async Task<IReadOnlyList<SolicitudCupoDto>> ListarPendientesAsync(CancellationToken ct = default)
@@ -134,10 +148,10 @@ public class SolicitudCupoService : ISolicitudCupoService
         return pendientes.Select(Mapear).ToList();
     }
 
-    public async Task<IReadOnlyList<SolicitudCupoDto>> MisAsync(Guid alumnoId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<MiSolicitudCupoDto>> MisAsync(Guid alumnoId, CancellationToken ct = default)
     {
         var mias = await _solicitudes.ListarPorAlumnoAsync(alumnoId, ct);
-        return mias.Select(Mapear).ToList();
+        return mias.Select(MapearParaElAlumno).ToList();
     }
 
     public Task<int> ContarPendientesAsync(CancellationToken ct = default) =>
@@ -172,6 +186,7 @@ public class SolicitudCupoService : ISolicitudCupoService
         await _solicitudes.GuardarCambiosAsync(ct);
     }
 
+    /// <summary>Para el PROFE: necesita saber quién pide y a qué clase.</summary>
     private static SolicitudCupoDto Mapear(SolicitudCupo s) => new()
     {
         Id = s.Id,
@@ -179,6 +194,22 @@ public class SolicitudCupoService : ISolicitudCupoService
         AlumnoNombre = s.Alumno is null ? string.Empty : $"{s.Alumno.Nombre} {s.Alumno.Apellido}",
         HorarioId = s.HorarioId,
         ClaseNombre = s.Horario is null ? string.Empty : HorarioService.TituloDe(s.Horario.Nombre, s.Horario.Alumnos),
+        Estado = s.Estado.ToString(),
+        CreadoEl = s.CreadoEl,
+        ResueltoEl = s.ResueltoEl,
+    };
+
+    /// <summary>
+    /// Para el ALUMNO: la clase se identifica por cuándo es. Nada de títulos — el de una
+    /// clase de una persona es el nombre de esa persona.
+    /// </summary>
+    private static MiSolicitudCupoDto MapearParaElAlumno(SolicitudCupo s) => new()
+    {
+        Id = s.Id,
+        Dia = s.Horario?.Dia.ToString() ?? string.Empty,
+        HoraInicio = s.Horario?.HoraInicio ?? default,
+        DuracionMinutos = s.Horario?.DuracionMinutos ?? 0,
+        Sede = s.Horario?.Cancha?.Sede?.Nombre ?? string.Empty,
         Estado = s.Estado.ToString(),
         CreadoEl = s.CreadoEl,
         ResueltoEl = s.ResueltoEl,

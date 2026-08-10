@@ -62,15 +62,18 @@ public interface IPortalService
     /// <exception cref="Common.ReglaDeNegocioException">Sin ficha, no es imagen o muy pesada.</exception>
     Task<MiPerfilDto> ActualizarFotoAsync(Guid userId, string? fotoUrl, CancellationToken ct = default);
 
-    /// <summary>Clases a las que me podría sumar (con lugar + mi categoría), con precio estimado.</summary>
-    Task<IReadOnlyList<ClaseDisponibleDto>> ClasesDisponiblesAsync(Guid userId, CancellationToken ct = default);
+    /// <summary>
+    /// La grilla de Reservar: las clases de MI club, cada una marcada como disponible,
+    /// ocupada o mía. Lo que no puedo pedir viene sin datos.
+    /// </summary>
+    Task<IReadOnlyList<SlotReservaDto>> GrillaDeReservaAsync(Guid userId, CancellationToken ct = default);
 
-    /// <summary>Pido sumarme a un grupo (queda pendiente de que el profe lo apruebe).</summary>
-    /// <exception cref="Common.ReglaDeNegocioException">Sin ficha, grupo lleno/de otra categoría, ya miembro o ya solicitado.</exception>
-    Task<SolicitudCupoDto> SolicitarCupoAsync(Guid userId, Guid horarioId, CancellationToken ct = default);
+    /// <summary>Pido sumarme a una clase (queda pendiente de que el profe lo apruebe).</summary>
+    /// <exception cref="Common.ReglaDeNegocioException">Sin ficha, clase llena/de otra categoría, ya miembro o ya solicitado.</exception>
+    Task<MiSolicitudCupoDto> SolicitarCupoAsync(Guid userId, Guid horarioId, CancellationToken ct = default);
 
-    /// <summary>Mis solicitudes de grupo con su estado.</summary>
-    Task<IReadOnlyList<SolicitudCupoDto>> MisSolicitudesCupoAsync(Guid userId, CancellationToken ct = default);
+    /// <summary>Mis pedidos de lugar con su estado (identificados por día y hora).</summary>
+    Task<IReadOnlyList<MiSolicitudCupoDto>> MisSolicitudesCupoAsync(Guid userId, CancellationToken ct = default);
 
     /// <summary>Los banners de publicidad activos del club (para el Inicio del portal).</summary>
     Task<IReadOnlyList<PublicidadDto>> PublicidadAsync(Guid userId, CancellationToken ct = default);

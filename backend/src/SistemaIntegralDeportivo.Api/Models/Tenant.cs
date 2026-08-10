@@ -32,6 +32,12 @@ public class Tenant
     // ── Precios (config del profe; null = todavía no configurado) ──
     // La fórmula (modelo-precios.md): grupal se divide entre los ASIGNADOS
     // del turno; individual la paga entera el alumno.
+    /// <summary>
+    /// Hoy NO se usa en ningún cálculo ni se edita: el precio estimado del portal se
+    /// sacó (10/08/2026) y el profe dejó de configurarlo con los grupos. Se conserva
+    /// a propósito — es el valor que ya cargó, y lo que haría falta para revivir la
+    /// estimación cuando la sección de cuotas evolucione. No borrar la columna.
+    /// </summary>
     public decimal? ValorHoraGrupal { get; set; }
     public decimal? ValorClaseIndividual { get; set; }
 

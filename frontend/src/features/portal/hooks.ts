@@ -5,15 +5,15 @@ import { useFichaActiva } from './FichaActivaContext';
 import type { Servicio, Pedido } from '../cuotas/types';
 import type {
   Aviso,
-  ClaseDisponible,
   ClaseSuelta,
   CuotaFamilia,
   MiLiquidacion,
+  MiSolicitudCupo,
   MisTurnos,
   NotaProfe,
   Publicidad,
   SedeReserva,
-  SolicitudCupo,
+  SlotReserva,
   SolicitudHorario,
 } from './types';
 
@@ -100,8 +100,9 @@ export function useServiciosYPedidos() {
 }
 
 export interface ReservarData {
-  clases: ClaseDisponible[];
-  solCupo: SolicitudCupo[];
+  /** La grilla entera de mi club: disponibles, ocupadas y las mías. */
+  slots: SlotReserva[];
+  solCupo: MiSolicitudCupo[];
   solHorario: SolicitudHorario[];
   clasesSueltas: ClaseSuelta[];
 }
@@ -111,13 +112,13 @@ export function useReservarData() {
   return useQuery({
     queryKey: ['portal-reservar', alumnoId],
     queryFn: async (): Promise<ReservarData> => {
-      const [clases, solCupo, solHorario, clasesSueltas] = await Promise.all([
-        api.get<ClaseDisponible[]>('/portal/clases-disponibles'),
-        api.get<SolicitudCupo[]>('/portal/solicitudes-cupo'),
+      const [slots, solCupo, solHorario, clasesSueltas] = await Promise.all([
+        api.get<SlotReserva[]>('/portal/clases-disponibles'),
+        api.get<MiSolicitudCupo[]>('/portal/solicitudes-cupo'),
         api.get<SolicitudHorario[]>('/portal/solicitudes-horario'),
         api.get<ClaseSuelta[]>('/portal/clases-sueltas'),
       ]);
-      return { clases, solCupo, solHorario, clasesSueltas };
+      return { slots, solCupo, solHorario, clasesSueltas };
     },
     enabled: tieneFicha(),
   });
