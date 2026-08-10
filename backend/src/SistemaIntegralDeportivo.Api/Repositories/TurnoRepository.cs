@@ -30,12 +30,22 @@ public class TurnoRepository : ITurnoRepository
             .Where(t => t.TenantId == TenantId && t.Fecha >= desde && t.Fecha <= hasta)
             .ToListAsync(ct);
 
-    public async Task<IReadOnlyList<DateOnly>> FechasGeneradasAsync(
-        Guid horarioId, DateOnly desde, DateOnly hasta, CancellationToken ct = default) =>
-        await _db.Turnos
-            .Where(t => t.HorarioId == horarioId && t.Fecha >= desde && t.Fecha <= hasta)
-            .Select(t => t.Fecha)
+    public async Task<ILookup<Guid, DateOnly>> FechasGeneradasAsync(
+        IReadOnlyCollection<Guid> horarioIds, DateOnly desde, DateOnly hasta, CancellationToken ct = default)
+    {
+        if (horarioIds.Count == 0) return Enumerable.Empty<Guid>().ToLookup(x => x, _ => default(DateOnly));
+
+        // Una sola consulta para todos los horarios del rango. Trae solo dos columnas,
+        // así que aunque sean cientos de filas pesa nada: lo caro es el viaje, no los datos.
+        var filas = await _db.Turnos
+            .AsNoTracking()
+            .Where(t => t.HorarioId != null && horarioIds.Contains(t.HorarioId.Value)
+                        && t.Fecha >= desde && t.Fecha <= hasta)
+            .Select(t => new { HorarioId = t.HorarioId!.Value, t.Fecha })
             .ToListAsync(ct);
+
+        return filas.ToLookup(f => f.HorarioId, f => f.Fecha);
+    }
 
     public Task<Turno?> ObtenerAsync(Guid id, CancellationToken ct = default) =>
         _db.Turnos
