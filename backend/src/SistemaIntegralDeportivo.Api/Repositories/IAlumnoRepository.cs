@@ -30,19 +30,12 @@ public interface IAlumnoRepository
     Task<Alumno> AgregarAsync(Alumno alumno, CancellationToken ct = default);
 
     /// <summary>
-    /// Alumnos del tenant, filtrables por categoría y estado. Sin filtro de estado
-    /// devuelve la lista "de alumnos de verdad": EXCLUYE a los de la lista de espera
-    /// (<see cref="EstadoAlumno.EnEspera"/>). Para verlos, pedir estado=EnEspera.
+    /// Alumnos del tenant, filtrables por categoría y estado. Sin filtro devuelve
+    /// TODAS las fichas: quién es "alumno" y quién está esperando lo decide el
+    /// filtro por clase (<see cref="ListarConClaseAsync"/>), no una columna.
     /// </summary>
     Task<IReadOnlyList<Alumno>> ListarAsync(
         CategoriaAlumno? categoria, EstadoAlumno? estado, CancellationToken ct = default);
-
-    /// <summary>
-    /// Promueve al alumno de la lista de espera: si está <see cref="EstadoAlumno.EnEspera"/>,
-    /// pasa a <see cref="EstadoAlumno.Activo"/> (le asignaron su primera clase). Idempotente
-    /// y scopeado; no toca a los que ya son Activo/Suspendido/Inactivo.
-    /// </summary>
-    Task PromoverDeEsperaAsync(Guid alumnoId, CancellationToken ct = default);
 
     /// <summary>Un alumno del tenant por id (trackeado, apto para modificar).</summary>
     Task<Alumno?> ObtenerAsync(Guid id, CancellationToken ct = default);
@@ -55,12 +48,27 @@ public interface IAlumnoRepository
     Task VincularTutorAsync(Alumno alumno, Tutor tutor, CancellationToken ct = default);
 
     /// <summary>
-    /// Ids de los alumnos del tenant con al menos una clase asignada: miembro de un
-    /// grupo activo (membresía sin baja) u horario individual activo. Se usa para
-    /// cobrar la cuota SOLO a los que efectivamente toman clases (el que no tiene
-    /// clase no tiene cuota, aunque tenga arancel cargado).
+    /// Ids de los alumnos del tenant con al menos una clase asignada (membresía sin
+    /// baja en un horario activo). Es la línea que separa a un alumno de alguien que
+    /// está esperando, y también la que decide a quién se le cobra cuota (el que no
+    /// toma clases no paga, aunque tenga arancel cargado).
     /// </summary>
     Task<HashSet<Guid>> ListarConClaseAsync(CancellationToken ct = default);
+
+    /// <summary>
+    /// De los ids dados, cuáles tienen clase vigente. Mismo criterio que
+    /// <see cref="ListarConClaseAsync"/> pero acotado, y <b>sin scopear por tenant</b>:
+    /// lo usa la sesión del portal, que arma la ficha ANTES de que haya club
+    /// establecido (igual que <see cref="ListarPorUserIdAsync"/>).
+    /// </summary>
+    Task<HashSet<Guid>> FiltrarConClaseAsync(
+        IReadOnlyCollection<Guid> alumnoIds, CancellationToken ct = default);
+
+    /// <summary>
+    /// Cuántos alumnos activos del tenant tienen clase asignada: el número que el
+    /// profe entiende por "mis alumnos". No cuenta a los que están esperando.
+    /// </summary>
+    Task<int> ContarActivosConClaseAsync(CancellationToken ct = default);
 
     /// <summary>
     /// Borrado REAL de la ficha (el profe pidió poder borrar a los que no vienen
@@ -102,6 +110,10 @@ public interface IAlumnoRepository
     /// <summary>Suma de aranceles de los alumnos activos (ingreso estimado).</summary>
     Task<decimal> SumarArancelActivosAsync(CancellationToken ct = default);
 
-    /// <summary>Conteo por categoría, excluyendo dados de baja (Inactivo).</summary>
+    /// <summary>
+    /// Conteo por categoría de los alumnos CON CLASE, para que el desglose sume lo
+    /// mismo que el total de arriba (si contara también a los que esperan, el
+    /// dashboard mostraría dos números que no cierran).
+    /// </summary>
     Task<Dictionary<CategoriaAlumno, int>> ContarPorCategoriaAsync(CancellationToken ct = default);
 }

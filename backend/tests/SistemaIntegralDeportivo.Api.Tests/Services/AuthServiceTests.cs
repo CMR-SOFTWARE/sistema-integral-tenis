@@ -46,6 +46,10 @@ public class AuthServiceTests
                 .ReturnsAsync((Alumno?)null);
         _alumnos.Setup(a => a.ListarPorUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync([]);
+        // Por defecto la ficha no tiene clase (= está en la lista de espera)
+        _alumnos.Setup(a => a.FiltrarConClaseAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync([]);
         _tokens.Setup(t => t.Generar(It.IsAny<Usuario>(), It.IsAny<Tenant?>(), It.IsAny<RolTenant?>()))
                .Returns("jwt-de-prueba");
     }
@@ -317,6 +321,38 @@ public class AuthServiceTests
         Assert.Equal(vinculada.Id, sesion.Alumno!.AlumnoId);
         Assert.Equal("Club Demo", sesion.Alumno.Club);
         Assert.Single(sesion.Alumnos); // la familia (acá 1 miembro)
+    }
+
+    [Fact]
+    public async Task Sesion_FichaSinClase_VieneEnEspera()
+    {
+        // El portal le muestra "estás en la lista de espera" con esto. Ya no sale de
+        // un estado guardado: es no tener ninguna clase.
+        var vinculada = Ficha(userId: UserId);
+        _alumnos.Setup(a => a.ListarPorUserIdAsync(UserId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync([vinculada]);
+        _alumnos.Setup(a => a.FiltrarConClaseAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync([]);
+
+        var sesion = await _service.ArmarSesionAsync(Jugador(), incluirToken: false);
+
+        Assert.True(sesion.Alumno!.EnEspera);
+    }
+
+    [Fact]
+    public async Task Sesion_FichaConClase_NoVieneEnEspera()
+    {
+        var vinculada = Ficha(userId: UserId);
+        _alumnos.Setup(a => a.ListarPorUserIdAsync(UserId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync([vinculada]);
+        _alumnos.Setup(a => a.FiltrarConClaseAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync([vinculada.Id]);
+
+        var sesion = await _service.ArmarSesionAsync(Jugador(), incluirToken: false);
+
+        Assert.False(sesion.Alumno!.EnEspera);
     }
 
     [Fact]

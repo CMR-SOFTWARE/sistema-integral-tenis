@@ -10,7 +10,8 @@ interface Metricas {
   clubesPendientes: number;
   clubesSuspendidos: number;
   totalProfes: number;
-  totalAlumnos: number;
+  /** Todas las personas dadas de alta en los clubes, tengan clase o no. */
+  totalUsuarios: number;
   ingresosMes: number;
   clubesNuevos30d: number;
   alumnosNuevos30d: number;
@@ -84,8 +85,8 @@ export default function PlataformaPage() {
             <div className={s.statDetalle}>dueños + empleados</div>
           </div>
           <div className={s.stat}>
-            <div className={s.statNumero}>{metricas.totalAlumnos}</div>
-            <div className={s.statLabel}>Alumnos activos</div>
+            <div className={s.statNumero}>{metricas.totalUsuarios}</div>
+            <div className={s.statLabel}>Usuarios</div>
             <div className={s.statDetalle}>en toda la plataforma</div>
           </div>
           <div className={`${s.stat} ${s.statPlata}`}>

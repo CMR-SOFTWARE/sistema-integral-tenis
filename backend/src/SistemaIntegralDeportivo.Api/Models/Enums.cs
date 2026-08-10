@@ -58,16 +58,32 @@ public enum CategoriaAlumno
     SinCategoria // alumno nuevo, todavía no evaluado
 }
 
-/// <summary>Ciclo de vida del alumno. Nunca se borra: se suspende o inactiva.</summary>
+/// <summary>
+/// Ciclo de vida del alumno. Nunca se borra: se suspende o inactiva.
+/// Acá va SOLO el ciclo de vida: estar en la lista de espera NO es un estado, se
+/// deriva de "no tiene clase vigente" (ver <see cref="ListaAlumnos"/>). Cuando era
+/// un valor más del enum, ser de la espera te sacaba de Alumnos y no había vuelta.
+/// </summary>
 public enum EstadoAlumno
 {
     Activo,     // al día, puede reservar
     Suspendido, // no pagó → se bloquea reserva, NO se borra
     Inactivo,   // dejó de venir, se conserva el historial
-    // Se unió/lo cargaron pero TODAVÍA no tiene ninguna clase → está en la "lista
-    // de espera": es un miembro, no un alumno (no cuenta ni paga cuota). Pasa a
-    // Activo cuando se le asigna la primera clase (grupo u horario).
-    EnEspera
+}
+
+/// <summary>
+/// En qué lista cae la ficha, según tenga o no una clase asignada. Es un filtro de
+/// consulta, no un dato guardado: la misma ficha cambia de lista sola al entrar o
+/// salir de una clase.
+/// </summary>
+public enum ListaAlumnos
+{
+    /// <summary>Todas las fichas de la academia (la pestaña "Usuarios").</summary>
+    Todos,
+    /// <summary>Los que tienen clase asignada (la pestaña "Alumnos").</summary>
+    ConClase,
+    /// <summary>Los que todavía no tienen ninguna (la lista de espera).</summary>
+    SinClase,
 }
 
 /// <summary>Vínculo del tutor con el alumno menor.</summary>

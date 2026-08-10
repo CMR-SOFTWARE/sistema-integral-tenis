@@ -12,7 +12,7 @@ import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { useProfesores } from '../profesores/useProfesores';
 import { CAT_COLOR, CAT_LABEL, ESTADO_UI, subPorEdad } from './types';
 import CategoriaOptions from './CategoriaOptions';
-import type { Alumno, Categoria, Estado } from './types';
+import type { Alumno, Categoria, Estado, Lista } from './types';
 import s from './AlumnosPage.module.css';
 
 interface Credenciales {
@@ -23,11 +23,20 @@ interface Credenciales {
   titular: string | null;
 }
 
-export default function AlumnosPage() {
+interface Props {
+  /**
+   * Qué lista se muestra. `ConClase` es la pestaña Alumnos (los que tienen clase);
+   * `Todos` es Usuarios (el padrón entero, incluidos los que esperan y las bajas).
+   */
+  lista?: Lista;
+}
+
+export default function AlumnosPage({ lista = 'Todos' }: Props) {
+  const esPadron = lista === 'Todos'; // la pestaña Usuarios
   const [filtro, setFiltro] = useState<Categoria | 'todas'>('todas');
   const [filtroEstado, setFiltroEstado] = useState<Estado | 'todos'>('todos');
   const { alumnos, cargando, error, crear, crearAcceso, editar, cambiarEstado, cambiarProfe, darDeBaja, eliminarDefinitivo } =
-    useAlumnos(filtro, filtroEstado);
+    useAlumnos(filtro, filtroEstado, lista);
   const [busqueda, setBusqueda] = useState('');
   const [filtroProfe, setFiltroProfe] = useState<string>('todos');
   const [modalNuevo, setModalNuevo] = useState(false);
@@ -51,7 +60,9 @@ export default function AlumnosPage() {
   }, [params, setParams]);
 
   // Cuenta familiar: fichas que comparten familiaId (mismo login) son una familia.
-  // Se calcula sobre la lista COMPLETA (el vínculo no depende de los filtros).
+  // Se calcula sobre lo que trajo la pestaña, así que en Alumnos un hermano que
+  // todavía no tiene clase no cuenta y el chip no aparece (en Usuarios sí). Se
+  // prefiere eso a pedir el padrón entero en cada carga.
   const conteoFamilia = new Map<string, number>();
   for (const a of alumnos) if (a.familiaId) conteoFamilia.set(a.familiaId, (conteoFamilia.get(a.familiaId) ?? 0) + 1);
   const enFamilia = (a: Alumno) => !!a.familiaId && (conteoFamilia.get(a.familiaId) ?? 0) > 1;
@@ -165,7 +176,8 @@ export default function AlumnosPage() {
           <option value="SinCategoria">Sin categoría</option>
           <CategoriaOptions />
         </select>
-        {/* Estado: por defecto se ven todos (incluidas bajas) */}
+        {/* Estado: en Alumnos no se ofrecen las Bajas, que al perder sus clases
+            dejan de estar en esta lista (viven en Usuarios). */}
         <select
           className={s.selectEstado}
           value={filtroEstado}
@@ -174,7 +186,7 @@ export default function AlumnosPage() {
           <option value="todos">Todos los estados</option>
           <option value="Activo">Activos</option>
           <option value="Suspendido">Pausados</option>
-          <option value="Inactivo">Bajas</option>
+          {esPadron && <option value="Inactivo">Bajas</option>}
         </select>
         {/* Filtro por profe de cabecera (el club puede tener varios profes) */}
         {profes.length > 1 && (
@@ -191,7 +203,9 @@ export default function AlumnosPage() {
         )}
 
         <div className={s.spacer} />
-        <div className={s.contador}>{visibles.length} alumnos</div>
+        <div className={s.contador}>
+          {visibles.length} {esPadron ? 'usuarios' : 'alumnos'}
+        </div>
         {/* El dueño Y el profe empleado pueden cargar alumnos (el staff queda auto-asignado). */}
         <button className={s.btnNuevo} onClick={() => setModalNuevo(true)}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round">
@@ -259,6 +273,10 @@ export default function AlumnosPage() {
                       <span className={s.chip} style={{ background: estado.bg, color: estado.fg }}>
                         {estado.label}
                       </span>
+                      {/* Solo en Usuarios: en Alumnos todos tienen clase por definición. */}
+                      {esPadron && !a.tieneClase && a.estado === 'Activo' && (
+                        <span className={s.chipEspera}>En espera</span>
+                      )}
                     </td>
                     <td>
                       <div className={s.acciones}>
@@ -304,8 +322,10 @@ export default function AlumnosPage() {
         {!cargando && !error && visibles.length === 0 && (
           <div className={s.vacio}>
             {alumnos.length === 0 && filtro === 'todas' && termino === '' && filtroProfe === 'todos'
-              ? 'Todavía no hay alumnos. Creá el primero con "Nuevo alumno".'
-              : 'No se encontraron alumnos con ese filtro o búsqueda.'}
+              ? esPadron
+                ? 'Todavía no hay nadie en la academia. Cargá al primero con "Nuevo alumno".'
+                : 'Todavía no hay alumnos con clase. Los que se anotaron y esperan están en "Lista de espera"; las bajas, en "Usuarios".'
+              : 'No se encontraron resultados con ese filtro o búsqueda.'}
           </div>
         )}
       </div>

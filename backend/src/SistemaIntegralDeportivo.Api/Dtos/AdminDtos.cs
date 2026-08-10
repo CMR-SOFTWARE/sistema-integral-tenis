@@ -12,7 +12,9 @@ public class MetricasPlataformaDto
 
     /// <summary>Dueños + staff activos de toda la plataforma.</summary>
     public int TotalProfes { get; set; }
-    public int TotalAlumnos { get; set; }
+
+    /// <summary>Todas las personas dadas de alta en los clubes, tengan clase o no.</summary>
+    public int TotalUsuarios { get; set; }
 
     /// <summary>Suma de pagos confirmados en el mes en curso (aprox. de facturación).</summary>
     public decimal IngresosMes { get; set; }

@@ -184,6 +184,14 @@
   letter-spacing: 0.02em;
 }
 
+/* "En espera": activo pero todavía sin ninguna clase. Solo se ve en Usuarios. */
+.chipEspera {
+  composes: chip;
+  margin-left: 6px;
+  background: #fef6e7;
+  color: #b7791f;
+}
+
 .tel {
   color: var(--color-text-soft);
 }

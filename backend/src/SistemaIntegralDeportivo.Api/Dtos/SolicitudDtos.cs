@@ -23,9 +23,20 @@ public class MiSolicitudDto
     public DateTime? ResueltoEl { get; set; }
 }
 
-/// <summary>Una solicitud pendiente vista por el PROFE (datos del solicitante para decidir).</summary>
+/// <summary>Por qué alguien figura en la lista de espera.</summary>
+public enum MotivoEspera
+{
+    /// <summary>Todavía no tiene ninguna clase asignada.</summary>
+    SinClase,
+    /// <summary>Pidió sumarse a una clase y el profe no resolvió el pedido. Puede
+    /// tener otras clases: por eso alguien aparece en Alumnos y en la espera a la vez.</summary>
+    PidioCupo,
+}
+
+/// <summary>Una fila de la lista de espera vista por el PROFE (datos para decidir).</summary>
 public class SolicitudPendienteDto
 {
+    /// <summary>Id de la FICHA del alumno (no del pedido).</summary>
     public Guid Id { get; set; }
     public string Nombre { get; set; } = string.Empty;
     public string Apellido { get; set; } = string.Empty;
@@ -37,6 +48,15 @@ public class SolicitudPendienteDto
     public string? Categoria { get; set; }
     public string? Mensaje { get; set; }
     public DateTime CreadoEl { get; set; }
+
+    /// <summary>SinClase | PidioCupo: decide qué acciones ofrece la fila.</summary>
+    public string Motivo { get; set; } = string.Empty;
+
+    /// <summary>El pedido a rechazar; null cuando el motivo es SinClase.</summary>
+    public Guid? SolicitudId { get; set; }
+
+    /// <summary>La clase que pidió; null cuando el motivo es SinClase.</summary>
+    public string? Clase { get; set; }
 }
 
 /// <summary>Conteo para el badge del sidebar del profe.</summary>

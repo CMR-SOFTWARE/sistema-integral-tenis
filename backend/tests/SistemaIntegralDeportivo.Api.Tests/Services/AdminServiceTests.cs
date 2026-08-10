@@ -25,7 +25,7 @@ public class AdminServiceTests
         _repo.Setup(r => r.ContarClubesPorEstadoAsync(It.IsAny<CancellationToken>()))
              .ReturnsAsync(new Dictionary<EstadoTenant, int>());
         _repo.Setup(r => r.ContarStaffActivosAsync(It.IsAny<CancellationToken>())).ReturnsAsync(0);
-        _repo.Setup(r => r.ContarAlumnosActivosAsync(It.IsAny<CancellationToken>())).ReturnsAsync(0);
+        _repo.Setup(r => r.ContarUsuariosAsync(It.IsAny<CancellationToken>())).ReturnsAsync(0);
         _repo.Setup(r => r.IngresosDelMesAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(0m);
         _repo.Setup(r => r.ContarClubesNuevosAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>())).ReturnsAsync(0);
         _repo.Setup(r => r.ContarAlumnosNuevosAsync(It.IsAny<DateTime>(), It.IsAny<CancellationToken>())).ReturnsAsync(0);
@@ -42,7 +42,7 @@ public class AdminServiceTests
                  [EstadoTenant.Suspendido] = 1,
              });
         _repo.Setup(r => r.ContarStaffActivosAsync(It.IsAny<CancellationToken>())).ReturnsAsync(3);
-        _repo.Setup(r => r.ContarAlumnosActivosAsync(It.IsAny<CancellationToken>())).ReturnsAsync(120);
+        _repo.Setup(r => r.ContarUsuariosAsync(It.IsAny<CancellationToken>())).ReturnsAsync(120);
         _repo.Setup(r => r.IngresosDelMesAsync(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>())).ReturnsAsync(450_000m);
 
         var m = await _service.MetricasAsync();
@@ -52,7 +52,7 @@ public class AdminServiceTests
         Assert.Equal(2, m.ClubesPendientes);
         Assert.Equal(1, m.ClubesSuspendidos);
         Assert.Equal(11, m.TotalProfes); // 8 dueños + 3 staff
-        Assert.Equal(120, m.TotalAlumnos);
+        Assert.Equal(120, m.TotalUsuarios);
         Assert.Equal(450_000m, m.IngresosMes);
     }
 
