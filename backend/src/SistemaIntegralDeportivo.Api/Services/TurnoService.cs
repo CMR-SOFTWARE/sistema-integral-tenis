@@ -111,11 +111,18 @@ public class TurnoService : ITurnoService
     {
         var horarios = await _horarios.ListarActivosAsync(ct);
         var bloqueos = await _bloqueos.ListarAsync(ct);
+
+        // Las fechas ya generadas de TODOS los horarios, en una sola consulta. Preguntar
+        // de a un horario adentro del foreach era lo que ponía la agenda en 5,5 segundos:
+        // cada vuelta cuesta ~115 ms de red contra Supabase, hagas lo que hagas.
+        var yaGeneradasPorHorario = await _turnos.FechasGeneradasAsync(
+            [.. horarios.Select(h => h.Id)], desde, hasta, ct);
+
         var generoAlguno = false;
 
         foreach (var horario in horarios)
         {
-            var yaGeneradas = await _turnos.FechasGeneradasAsync(horario.Id, desde, hasta, ct);
+            var yaGeneradas = yaGeneradasPorHorario[horario.Id].ToHashSet();
 
             // Roster CONGELADO al generar (fija el divisor del precio):
             // grupal → miembros del grupo que estén ACTIVOS; individual → ese

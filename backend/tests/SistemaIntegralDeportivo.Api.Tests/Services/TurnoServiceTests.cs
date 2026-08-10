@@ -49,11 +49,17 @@ public class TurnoServiceTests
                  .ReturnsAsync([HorarioGrupal()]);
 
         // Sin turnos generados todavía
-        _turnos.Setup(t => t.FechasGeneradasAsync(HorarioId, It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
-               .ReturnsAsync([]);
+        YaGeneradas();
         _turnos.Setup(t => t.ListarEntreAsync(It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
                .ReturnsAsync([]);
     }
+
+    /// <summary>Las fechas que la clase de prueba ya tiene generadas (vacío = ninguna).</summary>
+    private void YaGeneradas(params DateOnly[] fechas) =>
+        _turnos.Setup(t => t.FechasGeneradasAsync(
+                   It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<DateOnly>(),
+                   It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
+               .ReturnsAsync(fechas.ToLookup(_ => HorarioId, f => f));
 
     /// <summary>
     /// Una clase con su roster cargado. El repo real lo trae con el horario
@@ -134,12 +140,34 @@ public class TurnoServiceTests
         Assert.DoesNotContain(generado.Participantes, p => p.AlumnoId == AlumnoDeBaja);
     }
 
+    /// <summary>
+    /// La generación pregunta las fechas ya materializadas UNA sola vez, para todas las
+    /// clases juntas. Preguntar de a una era N+1: con 46 clases eran 46 idas y vueltas,
+    /// y a ~115 ms de red contra Supabase eso ponía la agenda en 5,5 segundos. Es un test
+    /// de forma, no de resultado: contra la base local el bug no se nota.
+    /// </summary>
+    [Fact]
+    public async Task Semana_PideLasFechasGeneradas_UnaSolaVezParaTodasLasClases()
+    {
+        var otra = HorarioGrupal();
+        otra.Id = Guid.NewGuid();
+        otra.Dia = DayOfWeek.Thursday;
+        _horarios.Setup(h => h.ListarActivosAsync(It.IsAny<CancellationToken>()))
+                 .ReturnsAsync([HorarioGrupal(), otra]);
+
+        await _service.ObtenerSemanaAsync(Lunes);
+
+        _turnos.Verify(t => t.FechasGeneradasAsync(
+            It.Is<IReadOnlyCollection<Guid>>(ids => ids.Count == 2),
+            It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()),
+            Times.Once);
+    }
+
     [Fact]
     public async Task Semana_EsIdempotente_NoRegeneraLoQueYaExiste()
     {
         // El turno del martes ya fue generado antes
-        _turnos.Setup(t => t.FechasGeneradasAsync(HorarioId, It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
-               .ReturnsAsync([Lunes.AddDays(1)]);
+        YaGeneradas(Lunes.AddDays(1));
 
         await _service.ObtenerSemanaAsync(Lunes);
 
@@ -228,8 +256,7 @@ public class TurnoServiceTests
     public async Task Mes_EsIdempotente_SoloGeneraLasFechasQueFaltan()
     {
         // El martes 14 ya tiene turno generado (lo materializó el Calendario)
-        _turnos.Setup(t => t.FechasGeneradasAsync(HorarioId, It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
-               .ReturnsAsync([new DateOnly(2026, 7, 14)]);
+        YaGeneradas(new DateOnly(2026, 7, 14));
         var generados = new List<Turno>();
         _turnos.Setup(t => t.AgregarAsync(It.IsAny<Turno>(), It.IsAny<CancellationToken>()))
                .Callback((Turno t, CancellationToken _) => generados.Add(t))

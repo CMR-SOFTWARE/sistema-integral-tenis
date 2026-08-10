@@ -9,9 +9,14 @@ public interface ITurnoRepository
     Task<IReadOnlyList<Turno>> ListarEntreAsync(
         DateOnly desde, DateOnly hasta, CancellationToken ct = default);
 
-    /// <summary>Fechas que YA tienen turno generado para un horario (idempotencia).</summary>
-    Task<IReadOnlyList<DateOnly>> FechasGeneradasAsync(
-        Guid horarioId, DateOnly desde, DateOnly hasta, CancellationToken ct = default);
+    /// <summary>
+    /// Fechas que YA tienen turno generado, por horario (idempotencia de la generación
+    /// perezosa). Recibe TODOS los horarios de una: antes se preguntaba de a uno y eso
+    /// eran 40+ idas y vueltas a la base por cada carga de la agenda — con ~115 ms de
+    /// red cada una, los 5,5 segundos que tardaba la semana en producción.
+    /// </summary>
+    Task<ILookup<Guid, DateOnly>> FechasGeneradasAsync(
+        IReadOnlyCollection<Guid> horarioIds, DateOnly desde, DateOnly hasta, CancellationToken ct = default);
 
     Task<Turno?> ObtenerAsync(Guid id, CancellationToken ct = default);
 
