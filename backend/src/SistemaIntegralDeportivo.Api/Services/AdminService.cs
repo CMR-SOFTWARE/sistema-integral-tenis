@@ -41,7 +41,7 @@ public class AdminService : IAdminService
             ClubesPendientes = Estado(EstadoTenant.PendientePago),
             ClubesSuspendidos = Estado(EstadoTenant.Suspendido),
             TotalProfes = totalClubes + staff, // dueños + staff
-            TotalAlumnos = await _repo.ContarAlumnosActivosAsync(ct),
+            TotalUsuarios = await _repo.ContarUsuariosAsync(ct),
             IngresosMes = await _repo.IngresosDelMesAsync(hoy.Year, hoy.Month, ct),
             ClubesNuevos30d = await _repo.ContarClubesNuevosAsync(hace30, ct),
             AlumnosNuevos30d = await _repo.ContarAlumnosNuevosAsync(hace30, ct),

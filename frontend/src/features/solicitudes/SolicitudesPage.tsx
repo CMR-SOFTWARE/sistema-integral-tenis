@@ -8,9 +8,14 @@ import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import s from './SolicitudesPage.module.css';
 
 /**
- * Lista de espera: los que se unieron a la academia (o cargó el profe) y todavía
- * NO tienen clase. Son miembros, no alumnos: se vuelven alumnos cuando se les
- * asigna un horario. El profe los puede quitar.
+ * Lista de espera: quién está esperando una clase. Son dos casos distintos, y cada
+ * uno tiene su acción:
+ *
+ *  - **Sin clase**: se anotó (o lo cargó el profe) y todavía no le asignaron nada.
+ *    Se le asigna un horario, o se lo saca de la academia (borra la ficha).
+ *  - **Pidió cupo**: pidió sumarse a una clase desde su portal. Puede ser un alumno
+ *    que ya viene —por eso está acá Y en Alumnos—. Se acepta desde la Agenda; acá
+ *    se puede rechazar, que NO le toca la ficha.
  */
 export default function SolicitudesPage() {
   const [espera, setEspera] = useState<SolicitudPendiente[] | null>(null);
@@ -34,24 +39,56 @@ export default function SolicitudesPage() {
     setTimeout(() => setToast(null), 3500);
   };
 
-  const quitar = async (sol: SolicitudPendiente) => {
-    const ok = await confirmar({
-      titulo: `¿Quitar a ${sol.nombre} ${sol.apellido}?`,
-      mensaje: 'Sale de la lista de espera. Su cuenta se conserva (puede volver a unirse).',
-      confirmar: 'Quitar',
-      peligro: true,
-    });
-    if (!ok) return;
-    setProcesando(sol.id);
+  /** Corre una acción sobre una fila mostrando el "…" y recargando al final. */
+  const ejecutar = async (id: string, accion: () => Promise<unknown>, ok: string) => {
+    setProcesando(id);
     try {
-      await api.post(`/solicitudes/${sol.id}/quitar`, {});
-      avisar(`${sol.nombre} ${sol.apellido} salió de la lista de espera.`);
+      await accion();
+      avisar(ok);
       cargar();
     } catch (e) {
-      avisar(e instanceof ApiError ? e.message : 'No se pudo quitar.');
+      avisar(e instanceof ApiError ? e.message : 'No se pudo completar la acción.');
     } finally {
       setProcesando(null);
     }
+  };
+
+  /** Sin clase: sacarlo de la academia BORRA su ficha. Confirmación fuerte. */
+  const eliminar = async (sol: SolicitudPendiente) => {
+    const ok = await confirmar({
+      titulo: `Eliminar a ${sol.nombre} ${sol.apellido}`,
+      mensaje: (
+        <>
+          Se borra su ficha y todo lo que tenga cargado. <b>Esto no se puede deshacer.</b>{' '}
+          Su cuenta se conserva: puede volver a unirse al club.
+        </>
+      ),
+      confirmar: 'Eliminar definitivamente',
+      cancelar: 'No, cancelar',
+      peligro: true,
+    });
+    if (!ok) return;
+    await ejecutar(
+      sol.id,
+      () => api.post(`/solicitudes/${sol.id}/quitar`, {}),
+      `${sol.nombre} ${sol.apellido} salió de la academia.`,
+    );
+  };
+
+  /** Pidió cupo: se rechaza EL PEDIDO; la ficha del alumno no se toca. */
+  const rechazar = async (sol: SolicitudPendiente) => {
+    const ok = await confirmar({
+      titulo: `Rechazar el pedido de ${sol.nombre}`,
+      mensaje: `No se suma a ${sol.clase ?? 'esa clase'}. Su ficha y sus otras clases quedan como están.`,
+      confirmar: 'Rechazar',
+      peligro: true,
+    });
+    if (!ok) return;
+    await ejecutar(
+      sol.id,
+      () => api.post(`/horarios/solicitudes-cupo/${sol.solicitudId}/rechazar`, {}),
+      `Pedido de ${sol.nombre} rechazado.`,
+    );
   };
 
   if (error) return <div className={s.error}>{error}</div>;
@@ -60,15 +97,16 @@ export default function SolicitudesPage() {
   return (
     <div>
       <div className={s.intro}>
-        Los que se unieron a tu academia (o cargaste) y todavía no tienen clase. Son
-        miembros, todavía no alumnos: <b>se vuelven alumnos cuando les asignás un
-        horario</b> — desde la Agenda, sumándolos a una clase.
+        Los que están esperando una clase: los que se unieron (o cargaste) y todavía no
+        tienen ninguna, y los que <b>pidieron sumarse</b> a una desde su portal. Estos
+        últimos pueden ser alumnos que ya vienen, así que también los vas a ver en
+        "Alumnos".
       </div>
 
       {espera.length === 0 && (
         <div className={s.vacioCard}>
-          No hay nadie en la lista de espera. Cuando alguien se una desde su portal
-          —o lo cargues sin asignarle clase— aparece acá.
+          No hay nadie esperando. Cuando alguien se una desde su portal —o lo cargues
+          sin asignarle clase— aparece acá.
         </div>
       )}
 
@@ -76,6 +114,8 @@ export default function SolicitudesPage() {
         {espera.map((sol) => {
           const av = avatarColor(sol.nombre + sol.apellido);
           const cat = sol.categoria ? CAT_COLOR[sol.categoria as Categoria] : null;
+          const pidio = sol.motivo === 'PidioCupo';
+          const enCurso = procesando === sol.id;
           return (
             <div key={sol.id} className={s.tarjetaSol}>
               <div className={s.avatar} style={{ background: `${av}1a`, color: av }}>
@@ -91,6 +131,12 @@ export default function SolicitudesPage() {
                   )}
                   {sol.esMenor && <span className={s.chipMenor}>Con responsable</span>}
                 </div>
+                {/* Por qué está esperando: cambia las acciones de la derecha. */}
+                <div className={s.motivo}>
+                  {pidio
+                    ? <>Pidió sumarse a <b>{sol.clase ?? 'una clase'}</b></>
+                    : 'Todavía sin clase asignada'}
+                </div>
                 <div className={s.detalle}>
                   {sol.email}
                   {sol.dni && ` · DNI ${sol.dni}`}
@@ -99,14 +145,22 @@ export default function SolicitudesPage() {
                 {sol.mensaje && <div className={s.mensaje}>"{sol.mensaje}"</div>}
               </div>
               <div className={s.acciones}>
-                <Link to="/agenda" className={s.btnAprobar}>Asignarle un horario</Link>
-                <button
-                  className={s.btnRechazar}
-                  disabled={procesando === sol.id}
-                  onClick={() => void quitar(sol)}
-                >
-                  {procesando === sol.id ? '…' : 'Quitar'}
-                </button>
+                {pidio ? (
+                  <>
+                    {/* Aceptar vive en el panel de la Agenda, que ya existe: no se duplica. */}
+                    <Link to="/agenda" className={s.btnAprobar}>Verlo en la Agenda</Link>
+                    <button className={s.btnRechazar} disabled={enCurso} onClick={() => void rechazar(sol)}>
+                      {enCurso ? '…' : 'Rechazar'}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/agenda" className={s.btnAprobar}>Asignarle un horario</Link>
+                    <button className={s.btnRechazar} disabled={enCurso} onClick={() => void eliminar(sol)}>
+                      {enCurso ? '…' : 'Eliminar'}
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           );

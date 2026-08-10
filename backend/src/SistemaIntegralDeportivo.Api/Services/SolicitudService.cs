@@ -6,24 +6,27 @@ using SistemaIntegralDeportivo.Api.Repositories;
 namespace SistemaIntegralDeportivo.Api.Services;
 
 /// <summary>
-/// Lista de espera (antes "solicitudes"): el jugador se UNE a un club y su ficha
-/// nace directo en espera (<see cref="EstadoAlumno.EnEspera"/>), sin aprobación.
-/// El profe la ve, la puede quitar, y se vuelve alumno cuando le asigna una clase.
+/// Lista de espera (antes "solicitudes"): quién está esperando una clase. Ya no es
+/// un estado de la ficha —eso hacía que estar en la espera te sacara de Alumnos—,
+/// sino una consulta que junta dos motivos: el que no tiene ninguna clase y el que
+/// pidió sumarse a una y el profe no resolvió todavía.
 /// </summary>
 public class SolicitudService : ISolicitudService
 {
     private readonly IAlumnoService _alumnos;
     private readonly IAlumnoRepository _alumnoRepo;
+    private readonly ISolicitudCupoRepository _pedidos;
     private readonly ITenantRepository _tenants;
     private readonly ITenantActual _tenantActual;
     private readonly IUsuarioActual _usuario;
 
     public SolicitudService(
-        IAlumnoService alumnos, IAlumnoRepository alumnoRepo,
+        IAlumnoService alumnos, IAlumnoRepository alumnoRepo, ISolicitudCupoRepository pedidos,
         ITenantRepository tenants, ITenantActual tenantActual, IUsuarioActual usuario)
     {
         _alumnos = alumnos;
         _alumnoRepo = alumnoRepo;
+        _pedidos = pedidos;
         _tenants = tenants;
         _tenantActual = tenantActual;
         _usuario = usuario;
@@ -48,9 +51,9 @@ public class SolicitudService : ISolicitudService
             throw new ReglaDeNegocioException(
                 "Completá tu DNI, teléfono y fecha de nacimiento antes de unirte (Mi perfil).");
 
-        // Unirse = entrar a la LISTA DE ESPERA de ese club (sin aprobar). La ficha
-        // nace EnEspera (Construir) en el tenant elegido; se vuelve alumno cuando el
-        // profe le asigna una clase. El mensaje opcional queda como nota.
+        // Unirse = crear la ficha en ese club (sin aprobar). Queda esperando porque
+        // todavía no tiene clase; se vuelve alumno cuando el profe le asigna una.
+        // El mensaje opcional queda como nota.
         _tenantActual.Establecer(dto.TenantId);
         await _alumnos.CrearVinculadoAsync(new CreateAlumnoDto
         {
@@ -69,57 +72,98 @@ public class SolicitudService : ISolicitudService
     }
 
     // Ya no hay solicitudes con estado: unirse deja la ficha en espera directo.
-    // El portal se entera por su sesión (la ficha aparece EnEspera).
+    // El portal se entera por su sesión (la ficha viene marcada como en espera).
     public Task<IReadOnlyList<MiSolicitudDto>> MisAsync(Guid userId, CancellationToken ct = default) =>
         Task.FromResult<IReadOnlyList<MiSolicitudDto>>([]);
 
-    /// <summary>Lista de espera del club: las fichas EnEspera (miembros sin clase todavía).</summary>
+    /// <summary>
+    /// La lista de espera del club, derivada de dos motivos:
+    /// <list type="bullet">
+    /// <item>los ACTIVOS sin ninguna clase asignada (el pausado y el de baja no están
+    /// esperando nada, así que no entran);</item>
+    /// <item>los que tienen un pedido de cupo sin resolver — tengan clase o no. Es el
+    /// caso que pone a alguien en Alumnos y en la espera al mismo tiempo.</item>
+    /// </list>
+    /// Alguien sin clase Y con un pedido aparece una sola vez, como pedido: es la fila
+    /// que le da al profe algo para hacer.
+    /// </summary>
     public async Task<IReadOnlyList<SolicitudPendienteDto>> PendientesAsync(
         CancellationToken ct = default)
     {
-        IEnumerable<Alumno> fichas = await _alumnoRepo.ListarAsync(null, EstadoAlumno.EnEspera, ct);
+        var conClase = await _alumnoRepo.ListarConClaseAsync(ct);
+        IEnumerable<Alumno> fichas = await _alumnoRepo.ListarAsync(null, EstadoAlumno.Activo, ct);
 
         // El profe EMPLEADO ve solo SU lista de espera (los que él cargó); el dueño, toda.
         if (_usuario.EsStaff)
             fichas = fichas.Where(a => a.ProfesorUserId == _usuario.UserId);
+        var mias = fichas.ToDictionary(a => a.Id);
 
-        return fichas
-            .Select(a => new SolicitudPendienteDto
-            {
-                Id = a.Id, // ahora es el id de la FICHA (para quitarla de la lista)
-                Nombre = a.Nombre,
-                Apellido = a.Apellido,
-                Email = a.Email ?? string.Empty,
-                Dni = a.Dni,
-                Telefono = a.Telefono,
-                FechaNacimiento = a.FechaNacimiento,
-                EsMenor = a.EsMenor,
-                Categoria = a.Categoria.ToString(),
-                Mensaje = a.Notas,
-                CreadoEl = a.CreadoEl,
-            })
+        var pedidos = (await _pedidos.ListarPorEstadoAsync(EstadoSolicitudGrupo.Pendiente, ct))
+            .Where(p => mias.ContainsKey(p.AlumnoId))
             .ToList();
+        var conPedido = pedidos.Select(p => p.AlumnoId).ToHashSet();
+
+        var filas = pedidos.Select(p => Fila(
+            mias[p.AlumnoId],
+            MotivoEspera.PidioCupo,
+            p.Id,
+            p.Horario is { } h ? HorarioService.TituloDe(h.Nombre, h.Alumnos) : null));
+
+        var sinClase = mias.Values
+            .Where(a => !conClase.Contains(a.Id) && !conPedido.Contains(a.Id))
+            .Select(a => Fila(a, MotivoEspera.SinClase, null, null));
+
+        return [.. filas.Concat(sinClase).OrderBy(f => f.CreadoEl)];
     }
 
     public async Task<int> ContarPendientesAsync(CancellationToken ct = default) =>
-        // El staff cuenta solo los suyos (reusa el filtro de arriba); el dueño, un COUNT directo.
-        _usuario.EsStaff
-            ? (await PendientesAsync(ct)).Count
-            : await _alumnoRepo.ContarPorEstadoAsync(EstadoAlumno.EnEspera, ct);
+        // Cuenta lo mismo que muestra la lista: son dos queries, no vale la pena un
+        // atajo que después se desincronice del criterio de arriba.
+        (await PendientesAsync(ct)).Count;
 
-    /// <summary>Quitar de la lista de espera: borra la ficha EnEspera (conserva su login).</summary>
+    /// <summary>
+    /// Saca de la academia al que espera SIN clase: borrado real de la ficha. Al que
+    /// espera por un pedido no se le toca la ficha — se le rechaza el pedido desde
+    /// <see cref="ISolicitudCupoService.RechazarAsync"/>.
+    /// </summary>
     public async Task QuitarDeEsperaAsync(Guid alumnoId, CancellationToken ct = default)
     {
-        var ficha = await _alumnoRepo.ObtenerAsync(alumnoId, ct);
-        if (ficha is null || ficha.Estado != EstadoAlumno.EnEspera)
-            throw new ReglaDeNegocioException("Ese registro no está en la lista de espera.");
+        var ficha = await _alumnoRepo.ObtenerAsync(alumnoId, ct)
+            ?? throw new ReglaDeNegocioException("Esa ficha no existe.");
 
         // El staff solo quita de SU lista de espera.
         if (_usuario.EsStaff && ficha.ProfesorUserId != _usuario.UserId)
             throw new ReglaDeNegocioException("Ese registro no es de tu lista de espera.");
 
-        // Borra la ficha y su historial (que no tiene, es un miembro sin clase). El
-        // Usuario NO se toca: la persona puede unirse a otro club o volver a intentar.
+        // Guard: el que YA tiene clase es un alumno, y esto borra la ficha entera. Si
+        // el profe lo quiere sacar, va por la baja o el borrado desde su ficha, donde
+        // la confirmación dice lo que se pierde.
+        var conClase = await _alumnoRepo.FiltrarConClaseAsync([alumnoId], ct);
+        if (conClase.Contains(alumnoId))
+            throw new ReglaDeNegocioException(
+                $"{ficha.Nombre} {ficha.Apellido} ya tiene clase asignada: sacalo desde su ficha.");
+
+        // Borra la ficha y su historial. El Usuario NO se toca: la persona puede
+        // unirse a otro club o volver a intentar.
         await _alumnoRepo.EliminarDefinitivoAsync(ficha, ct);
     }
+
+    private static SolicitudPendienteDto Fila(
+        Alumno a, MotivoEspera motivo, Guid? solicitudId, string? clase) => new()
+    {
+        Id = a.Id, // el id de la FICHA (el del pedido va aparte, en SolicitudId)
+        Nombre = a.Nombre,
+        Apellido = a.Apellido,
+        Email = a.Email ?? string.Empty,
+        Dni = a.Dni,
+        Telefono = a.Telefono,
+        FechaNacimiento = a.FechaNacimiento,
+        EsMenor = a.EsMenor,
+        Categoria = a.Categoria.ToString(),
+        Mensaje = a.Notas,
+        CreadoEl = a.CreadoEl,
+        Motivo = motivo.ToString(),
+        SolicitudId = solicitudId,
+        Clase = clase,
+    };
 }

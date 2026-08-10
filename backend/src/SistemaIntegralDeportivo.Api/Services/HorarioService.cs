@@ -95,12 +95,8 @@ public class HorarioService : IHorarioService
         }
         await _horarios.GuardarCambiosAsync(ct);
 
-        // Sumarlo a una clase es "darle su primera clase": el que estaba en la lista
-        // de espera ahora es alumno de verdad.
-        foreach (var alumno in alumnos)
-            await _alumnos.PromoverDeEsperaAsync(alumno.Id, ct);
-        await _horarios.GuardarCambiosAsync(ct);
-
+        // No hay nada que "promover": sumarlo al roster ya lo saca de la lista de
+        // espera y lo mete en Alumnos, porque las dos listas se derivan de esto mismo.
         return Mapear(creado);
     }
 
@@ -143,8 +139,6 @@ public class HorarioService : IHorarioService
         // membresías activas del alumno (query a la base) y tiene que ver la nueva.
         await _horarios.GuardarCambiosAsync(ct);
 
-        await _alumnos.PromoverDeEsperaAsync(alumnoId, ct);
-
         // Lo repone en los turnos futuros YA generados de esta clase y recalcula el
         // divisor de la cuota: sin esto, el que vuelve no aparece en el calendario.
         await _alumnoService.SincronizarCalendarioAsync(alumnoId, ct);
@@ -168,8 +162,9 @@ public class HorarioService : IHorarioService
     }
 
     /// <summary>
-    /// Quién puede entrar a una clase cuando lo pone EL PROFE: solo los ACTIVOS y los
-    /// de la LISTA DE ESPERA (sumarlos es lo que los vuelve alumnos).
+    /// Quién puede entrar a una clase cuando lo pone EL PROFE: los ACTIVOS. Eso incluye
+    /// a los de la lista de espera, que son activos sin clase todavía — sumarlos es
+    /// justamente lo que los vuelve alumnos. Quedan afuera el pausado y el de baja.
     ///
     /// La deuda vencida NO frena acá: el profe decide a quién le da clase, y muchas
     /// veces le arma el horario justamente para acomodarlo. La regla sigue viva del
@@ -182,7 +177,7 @@ public class HorarioService : IHorarioService
         var alumno = await _alumnos.ObtenerAsync(alumnoId, ct)
             ?? throw new ReglaDeNegocioException("El alumno no existe.");
 
-        if (alumno.Estado != EstadoAlumno.Activo && alumno.Estado != EstadoAlumno.EnEspera)
+        if (alumno.Estado != EstadoAlumno.Activo)
             throw new ReglaDeNegocioException(
                 $"{alumno.Nombre} {alumno.Apellido} no está activo y no puede sumarse a una clase.");
 

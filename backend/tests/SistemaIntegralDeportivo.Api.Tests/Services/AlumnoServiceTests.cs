@@ -65,6 +65,13 @@ public class AlumnoServiceTests
         _repo.Setup(r => r.AgregarAsync(It.IsAny<Alumno>(), It.IsAny<CancellationToken>()))
              .ReturnsAsync((Alumno a, CancellationToken _) => a);
 
+        // Por defecto nadie tiene clase asignada: los tests que lo necesitan lo dicen.
+        _repo.Setup(r => r.ListarConClaseAsync(It.IsAny<CancellationToken>()))
+             .ReturnsAsync([]);
+        _repo.Setup(r => r.FiltrarConClaseAsync(
+                 It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+             .ReturnsAsync([]);
+
         // Por defecto: nadie debe nada y las credenciales salen bien
         _cargos.Setup(c => c.ListarImpagosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
                .ReturnsAsync([]);
@@ -232,8 +239,6 @@ public class AlumnoServiceTests
     [Fact]
     public async Task CrearAsync_NaceActivo()
     {
-        // El profe carga al alumno: va DIRECTO a Alumnos (Activo). La lista de espera
-        // quedó solo para el auto-registro del portal (ver CrearVinculado).
         await _service.CrearAsync(AlumnoMayor());
 
         _repo.Verify(r => r.AgregarAsync(
@@ -242,15 +247,69 @@ public class AlumnoServiceTests
     }
 
     [Fact]
-    public async Task CrearVinculado_NaceEnEspera()
+    public async Task CrearVinculado_TambienNaceActivo()
     {
-        // Auto-registro (se unió desde el portal): entra a la LISTA DE ESPERA hasta que
-        // el profe le asigne una clase.
+        // El auto-registro del portal nace igual que el alta del profe: que esté "en
+        // la lista de espera" no se guarda, se ve porque todavía no tiene clase.
         await _service.CrearVinculadoAsync(AlumnoMayor(), Guid.NewGuid());
 
         _repo.Verify(r => r.AgregarAsync(
-            It.Is<Alumno>(a => a.Estado == EstadoAlumno.EnEspera),
+            It.Is<Alumno>(a => a.Estado == EstadoAlumno.Activo),
             It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    // ── Las tres listas: quién cae en cada una ──
+
+    [Fact]
+    public async Task Listar_ConClase_SoloLosQueTienenClase()
+    {
+        var conClase = FichaExistente();
+        var esperando = FichaExistente();
+        _repo.Setup(r => r.ListarAsync(null, null, It.IsAny<CancellationToken>()))
+             .ReturnsAsync([conClase, esperando]);
+        _repo.Setup(r => r.ListarConClaseAsync(It.IsAny<CancellationToken>()))
+             .ReturnsAsync([conClase.Id]);
+
+        var lista = await _service.ListarAsync(null, null, ListaAlumnos.ConClase);
+
+        var item = Assert.Single(lista);
+        Assert.Equal(conClase.Id, item.Id);
+        Assert.True(item.TieneClase);
+    }
+
+    [Fact]
+    public async Task Listar_SinClase_SoloLosQueEsperan()
+    {
+        var conClase = FichaExistente();
+        var esperando = FichaExistente();
+        _repo.Setup(r => r.ListarAsync(null, null, It.IsAny<CancellationToken>()))
+             .ReturnsAsync([conClase, esperando]);
+        _repo.Setup(r => r.ListarConClaseAsync(It.IsAny<CancellationToken>()))
+             .ReturnsAsync([conClase.Id]);
+
+        var lista = await _service.ListarAsync(null, null, ListaAlumnos.SinClase);
+
+        var item = Assert.Single(lista);
+        Assert.Equal(esperando.Id, item.Id);
+        Assert.False(item.TieneClase);
+    }
+
+    [Fact]
+    public async Task Listar_Todos_DevuelveTambienALosQueEsperan()
+    {
+        // La pestaña Usuarios: el padrón entero, con o sin clase.
+        var conClase = FichaExistente();
+        var esperando = FichaExistente();
+        _repo.Setup(r => r.ListarAsync(null, null, It.IsAny<CancellationToken>()))
+             .ReturnsAsync([conClase, esperando]);
+        _repo.Setup(r => r.ListarConClaseAsync(It.IsAny<CancellationToken>()))
+             .ReturnsAsync([conClase.Id]);
+
+        var lista = await _service.ListarAsync(null, null, ListaAlumnos.Todos);
+
+        Assert.Equal(2, lista.Count);
+        Assert.True(lista.Single(a => a.Id == conClase.Id).TieneClase);
+        Assert.False(lista.Single(a => a.Id == esperando.Id).TieneClase);
     }
 
     // ── Cambiar el profe titular desde la ficha ──

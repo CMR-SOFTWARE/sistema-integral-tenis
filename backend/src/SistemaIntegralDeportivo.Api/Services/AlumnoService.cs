@@ -90,8 +90,7 @@ public class AlumnoService : IAlumnoService
         var titular = await _credenciales.BuscarTitularPorTelefonoAsync(dto.Telefono, ct);
         if (titular is not null)
         {
-            // El profe carga al alumno: va DIRECTO a Alumnos (Activo), no a la espera.
-            var ficha = Construir(dto, EstadoAlumno.Activo);
+            var ficha = Construir(dto);
             ficha.UserId = titular.UserId; // la ficha nace bajo la cuenta del titular
             ficha.SedeId = sede;           // el club elegido para la ficha
             var creada = await _repo.AgregarAsync(ficha, ct);
@@ -117,7 +116,7 @@ public class AlumnoService : IAlumnoService
 
         try
         {
-            var alumno = Construir(dto, EstadoAlumno.Activo);
+            var alumno = Construir(dto);
             alumno.UserId = cred.UserId;
             alumno.SedeId = sede; // el club elegido para la ficha
             var creado = await _repo.AgregarAsync(alumno, ct);
@@ -191,7 +190,7 @@ public class AlumnoService : IAlumnoService
         if (existente is not null)
         {
             // Ya vinculada a ESTE usuario: idempotente (re-aprobar no rompe)
-            if (existente.UserId == userId) return Mapear(existente);
+            if (existente.UserId == userId) return await MapearConClaseAsync(existente, ct);
 
             if (existente.UserId is not null)
                 throw new ReglaDeNegocioException(
@@ -200,14 +199,15 @@ public class AlumnoService : IAlumnoService
             existente.UserId = userId;
             existente.ActualizadoEl = DateTime.UtcNow;
             await _repo.GuardarCambiosAsync(ct);
-            return Mapear(existente);
+            return await MapearConClaseAsync(existente, ct);
         }
 
         ValidarMenor(dto);
 
-        // Auto-registro (se unió desde el portal): entra a la LISTA DE ESPERA hasta
-        // que el profe le asigne una clase.
-        var alumno = Construir(dto, EstadoAlumno.EnEspera);
+        // Auto-registro (se unió desde el portal): la ficha nace igual que cualquier
+        // otra. Que esté "en la lista de espera" no se guarda: se ve solo porque
+        // todavía no tiene ninguna clase.
+        var alumno = Construir(dto);
         alumno.UserId = userId;
         var creado = await _repo.AgregarAsync(alumno, ct);
         return Mapear(creado);
@@ -262,11 +262,12 @@ public class AlumnoService : IAlumnoService
         }
 
         await _repo.GuardarCambiosAsync(ct);
-        return Mapear(alumno);
+        return await MapearConClaseAsync(alumno, ct);
     }
 
     public async Task<IReadOnlyList<AlumnoResponseDto>> ListarAsync(
-        CategoriaAlumno? categoria, EstadoAlumno? estado, CancellationToken ct = default)
+        CategoriaAlumno? categoria, EstadoAlumno? estado,
+        ListaAlumnos lista = ListaAlumnos.Todos, CancellationToken ct = default)
     {
         var alumnos = await _repo.ListarAsync(categoria, estado, ct);
 
@@ -274,8 +275,17 @@ public class AlumnoService : IAlumnoService
         if (_usuario.EsStaff)
             alumnos = alumnos.Where(a => a.ProfesorUserId == _usuario.UserId).ToList();
 
+        // Un query para toda la lista (no uno por alumno): quiénes tienen clase.
+        var conClase = await _repo.ListarConClaseAsync(ct);
+        alumnos = lista switch
+        {
+            ListaAlumnos.ConClase => alumnos.Where(a => conClase.Contains(a.Id)).ToList(),
+            ListaAlumnos.SinClase => alumnos.Where(a => !conClase.Contains(a.Id)).ToList(),
+            _ => alumnos,
+        };
+
         var deudores = await DeudoresDeAsync(alumnos.Select(a => a.Id).ToList(), ct);
-        return alumnos.Select(a => Mapear(a, deudores.Contains(a.Id))).ToList();
+        return alumnos.Select(a => Mapear(a, deudores.Contains(a.Id), conClase.Contains(a.Id))).ToList();
     }
 
     public async Task<AlumnoResponseDto?> ObtenerAsync(Guid id, CancellationToken ct = default)
@@ -284,7 +294,8 @@ public class AlumnoService : IAlumnoService
         if (alumno is null) return null;
 
         var deudores = await DeudoresDeAsync([id], ct);
-        return Mapear(alumno, deudores.Contains(id));
+        var conClase = await _repo.FiltrarConClaseAsync([id], ct);
+        return Mapear(alumno, deudores.Contains(id), conClase.Contains(id));
     }
 
     public async Task<IReadOnlyList<AlumnoHorarioDto>> HorariosDeAsync(Guid id, CancellationToken ct = default)
@@ -350,7 +361,7 @@ public class AlumnoService : IAlumnoService
         await SincronizarCalendarioAsync(id, ct);
 
         await _repo.GuardarCambiosAsync(ct);
-        return Mapear(alumno);
+        return await MapearConClaseAsync(alumno, ct);
     }
 
     public async Task<AlumnoResponseDto?> CambiarProfesorAsync(
@@ -376,7 +387,7 @@ public class AlumnoService : IAlumnoService
 
         await _repo.GuardarCambiosAsync(ct);
         await _repo.RecargarSedeAsync(alumno, ct); // el club nuevo, para la respuesta
-        return Mapear(alumno);
+        return await MapearConClaseAsync(alumno, ct);
     }
 
     public async Task<bool> DarDeBajaAsync(Guid id, CancellationToken ct = default)
@@ -603,12 +614,11 @@ public class AlumnoService : IAlumnoService
     }
 
     /// <summary>
-    /// La entidad desde el DTO (consentimientos con timestamp del server). El estado
-    /// inicial lo decide el caller: el alta del profe nace <b>Activo</b> (va directo a
-    /// Alumnos); el auto-registro del portal nace <b>EnEspera</b> (lista de espera,
-    /// hasta que el profe le asigne una clase).
+    /// La entidad desde el DTO (consentimientos con timestamp del server). Toda ficha
+    /// nace <b>Activa</b>, la cargue el profe o se una alguien desde el portal: en qué
+    /// lista cae lo decide tener o no una clase, no el estado.
     /// </summary>
-    private static Alumno Construir(CreateAlumnoDto dto, EstadoAlumno estadoInicial)
+    private static Alumno Construir(CreateAlumnoDto dto)
     {
         var ahora = DateTime.UtcNow;
         return new Alumno
@@ -621,8 +631,7 @@ public class AlumnoService : IAlumnoService
             FechaNacimiento = dto.FechaNacimiento,
             EsMenor = dto.EsMenor,
             Categoria = dto.Categoria,
-            // El estado lo decide el caller (ver doc): alta del profe = Activo, auto-registro = EnEspera.
-            Estado = estadoInicial,
+            Estado = EstadoAlumno.Activo,
             Arancel = dto.Arancel,
             ProfesorUserId = dto.ProfesorUserId,
             Notas = dto.Notas,
@@ -644,6 +653,18 @@ public class AlumnoService : IAlumnoService
         };
     }
 
+    /// <summary>
+    /// Mapea una ficha ya existente resolviendo si tiene clase. Lo usan las
+    /// operaciones que devuelven la ficha actualizada (editar, pausar, cambiar de
+    /// profe): sin esto, el front recibiría <c>tieneClase = false</c> y creería que
+    /// el alumno se fue a la lista de espera.
+    /// </summary>
+    private async Task<AlumnoResponseDto> MapearConClaseAsync(Alumno a, CancellationToken ct)
+    {
+        var conClase = await _repo.FiltrarConClaseAsync([a.Id], ct);
+        return Mapear(a, tieneClase: conClase.Contains(a.Id));
+    }
+
     /// <summary>Alumnos con cuota vencida (señal en la ficha; la regla vive en CuotaService).</summary>
     private async Task<HashSet<Guid>> DeudoresDeAsync(IReadOnlyCollection<Guid> alumnoIds, CancellationToken ct)
     {
@@ -658,7 +679,8 @@ public class AlumnoService : IAlumnoService
             .ToHashSet();
     }
 
-    private static AlumnoResponseDto Mapear(Alumno a, bool deudaVencida = false) => new()
+    private static AlumnoResponseDto Mapear(
+        Alumno a, bool deudaVencida = false, bool tieneClase = false) => new()
     {
         Id = a.Id,
         Nombre = a.Nombre,
@@ -682,5 +704,6 @@ public class AlumnoService : IAlumnoService
         ProfesorUserId = a.ProfesorUserId,
         SedeId = a.SedeId,
         SedeNombre = a.Sede?.Nombre,
+        TieneClase = tieneClase,
     };
 }

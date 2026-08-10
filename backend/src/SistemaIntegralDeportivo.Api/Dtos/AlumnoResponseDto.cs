@@ -45,6 +45,12 @@ public class AlumnoResponseDto
     /// <summary>Club (sede) de la ficha, heredado del profe de cabecera; null = sin club.</summary>
     public Guid? SedeId { get; set; }
     public string? SedeNombre { get; set; }
+
+    /// <summary>
+    /// Tiene al menos una clase asignada. Es lo que separa a un alumno de alguien que
+    /// todavía está esperando: no hay columna que lo diga, se deriva del roster.
+    /// </summary>
+    public bool TieneClase { get; set; }
 }
 
 /// <summary>Un horario asignado del alumno, para la ficha del profe (día/hora/cancha).</summary>

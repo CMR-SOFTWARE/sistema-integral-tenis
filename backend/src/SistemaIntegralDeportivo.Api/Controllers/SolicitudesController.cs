@@ -19,17 +19,21 @@ public class SolicitudesController : ControllerBase
         _service = service;
     }
 
-    /// <summary>La lista de espera de MI club (fichas EnEspera), con sus datos.</summary>
+    /// <summary>La lista de espera de MI club: los sin clase + los pedidos sin resolver.</summary>
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<SolicitudPendienteDto>>> Pendientes(CancellationToken ct) =>
         Ok(await _service.PendientesAsync(ct));
 
-    /// <summary>Conteo para el badge del sidebar (cuántos hay en espera).</summary>
+    /// <summary>Conteo para el badge de la pestaña (cuántos hay esperando).</summary>
     [HttpGet("conteo")]
     public async Task<ActionResult<ConteoSolicitudesDto>> Conteo(CancellationToken ct) =>
         Ok(new ConteoSolicitudesDto { Pendientes = await _service.ContarPendientesAsync(ct) });
 
-    /// <summary>Quitar de la lista de espera (borra la ficha; conserva su login).</summary>
+    /// <summary>
+    /// Quitar al que espera SIN clase: borra la ficha (conserva su login). Para el que
+    /// espera por un pedido va <c>POST api/horarios/solicitudes-cupo/{id}/rechazar</c>,
+    /// que no toca la ficha.
+    /// </summary>
     [HttpPost("{id:guid}/quitar")]
     public async Task<IActionResult> Quitar(Guid id, CancellationToken ct)
     {

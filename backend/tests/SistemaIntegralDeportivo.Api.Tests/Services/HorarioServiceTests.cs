@@ -234,8 +234,10 @@ public class HorarioServiceTests
     }
 
     [Fact]
-    public async Task Crear_ConAlumnos_LosSumaAlRosterYLosPromueveDeEspera()
+    public async Task Crear_ConAlumnos_LosSumaAlRoster()
     {
+        // Sumarlo al roster ES sacarlo de la lista de espera: las dos listas se
+        // derivan de esto, no hay ningún estado que promover aparte.
         var dto = Dto(Cancha2, new TimeOnly(10, 0));
         dto.AlumnoIds = [AlumnoId];
 
@@ -243,7 +245,6 @@ public class HorarioServiceTests
 
         _repo.Verify(r => r.AgregarMembresiaAsync(
             It.Is<AlumnoHorario>(m => m.AlumnoId == AlumnoId), It.IsAny<CancellationToken>()), Times.Once);
-        _alumnos.Verify(r => r.PromoverDeEsperaAsync(AlumnoId, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     /// <summary>

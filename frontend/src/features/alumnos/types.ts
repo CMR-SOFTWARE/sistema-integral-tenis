@@ -43,7 +43,15 @@ export interface Alumno {
   /** Club (sede) de la ficha, heredado del profe de cabecera; null = sin club. */
   sedeId: string | null;
   sedeNombre: string | null;
+  /** Tiene al menos una clase asignada: lo que separa a un alumno del que espera. */
+  tieneClase: boolean;
 }
+
+/**
+ * Qué lista se pide al back (`GET /alumnos?lista=`). Espejo del enum ListaAlumnos:
+ * es la diferencia entre las pestañas Alumnos y Usuarios.
+ */
+export type Lista = 'Todos' | 'ConClase' | 'SinClase';
 
 /** Espejo de CreateAlumnoDto. Mínimo: nombre, apellido y teléfono (el usuario). */
 export interface CreateAlumno {

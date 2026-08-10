@@ -34,9 +34,15 @@ public interface IAlumnoService
     /// <exception cref="Common.ReglaDeNegocioException">No existe o viola una regla.</exception>
     Task<AlumnoResponseDto> EditarAsync(Guid id, UpdateAlumnoDto dto, CancellationToken ct = default);
 
-    /// <summary>Lista del tenant, filtrable por categoría y estado.</summary>
+    /// <summary>
+    /// Lista del tenant, filtrable por categoría, estado y lista. La lista es lo que
+    /// separa las tres pestañas del profe: <see cref="ListaAlumnos.ConClase"/> son sus
+    /// alumnos, <see cref="ListaAlumnos.SinClase"/> los que esperan y
+    /// <see cref="ListaAlumnos.Todos"/> el padrón entero.
+    /// </summary>
     Task<IReadOnlyList<AlumnoResponseDto>> ListarAsync(
-        CategoriaAlumno? categoria, EstadoAlumno? estado, CancellationToken ct = default);
+        CategoriaAlumno? categoria, EstadoAlumno? estado,
+        ListaAlumnos lista = ListaAlumnos.Todos, CancellationToken ct = default);
 
     /// <summary>Un alumno por id, o null si no existe en el tenant.</summary>
     Task<AlumnoResponseDto?> ObtenerAsync(Guid id, CancellationToken ct = default);

@@ -68,6 +68,10 @@ public class AuthService : IAuthService
         // Alumno = la default (compatibilidad); Alumnos = toda la familia.
         var fichas = await _alumnos.ListarPorUserIdAsync(usuario.Id, ct);
 
+        // "Está en la lista de espera" ya no es una columna: es no tener clase. Un
+        // query para toda la familia, que puede tener fichas en clubes distintos.
+        var conClase = await _alumnos.FiltrarConClaseAsync([.. fichas.Select(f => f.Id)], ct);
+
         return new SesionDto
         {
             Token = incluirToken ? _tokens.Generar(usuario, tenantDeTrabajo, rol) : null,
@@ -89,8 +93,8 @@ public class AuthService : IAuthService
             Telefono = usuario.PhoneNumber,
             FechaNacimiento = usuario.FechaNacimiento,
             Categoria = usuario.Categoria?.ToString(),
-            Alumno = fichas.Count == 0 ? null : Mapear(fichas[0]),
-            Alumnos = fichas.Select(Mapear).ToList(),
+            Alumno = fichas.Count == 0 ? null : Mapear(fichas[0], conClase),
+            Alumnos = fichas.Select(f => Mapear(f, conClase)).ToList(),
         };
     }
 
@@ -165,13 +169,13 @@ public class AuthService : IAuthService
         return slug.ToString().Trim('-');
     }
 
-    private static FichaDto Mapear(Alumno a) => new()
+    private static FichaDto Mapear(Alumno a, HashSet<Guid> conClase) => new()
     {
         AlumnoId = a.Id,
         TenantId = a.TenantId,
         Nombre = a.Nombre,
         Apellido = a.Apellido,
         Club = a.Tenant?.Nombre ?? string.Empty,
-        EnEspera = a.Estado == EstadoAlumno.EnEspera,
+        EnEspera = !conClase.Contains(a.Id),
     };
 }

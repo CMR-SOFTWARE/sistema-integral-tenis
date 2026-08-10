@@ -8,9 +8,10 @@ using SistemaIntegralDeportivo.Api.Services;
 namespace SistemaIntegralDeportivo.Api.Tests.Services;
 
 /// <summary>
-/// Lista de espera (TDD): unirse a un club crea la ficha DIRECTO en espera
-/// (EnEspera), sin aprobar; un club por persona y datos completos. El profe ve
-/// la lista, puede quitar, y la persona se vuelve alumno al recibir una clase.
+/// Lista de espera (TDD): unirse a un club crea la ficha, que queda esperando
+/// porque todavía no tiene clase (ya no hay un estado EnEspera). El profe ve la
+/// lista, que junta a los que no tienen ninguna clase y a los que pidieron sumarse
+/// a una y él no resolvió — esos pueden ser alumnos y estar acá a la vez.
 /// </summary>
 public class SolicitudServiceTests
 {
@@ -19,6 +20,7 @@ public class SolicitudServiceTests
 
     private readonly Mock<IAlumnoService> _alumnos;
     private readonly Mock<IAlumnoRepository> _alumnoRepo;
+    private readonly Mock<ISolicitudCupoRepository> _pedidos;
     private readonly Mock<ITenantRepository> _tenants;
     private readonly Mock<ITenantActual> _tenantActual;
     private readonly Mock<IUsuarioActual> _usuario;
@@ -28,18 +30,45 @@ public class SolicitudServiceTests
     {
         _alumnos = new Mock<IAlumnoService>();
         _alumnoRepo = new Mock<IAlumnoRepository>();
+        _pedidos = new Mock<ISolicitudCupoRepository>();
         _tenants = new Mock<ITenantRepository>();
         _tenantActual = new Mock<ITenantActual>();
         _usuario = new Mock<IUsuarioActual>(); // por defecto: no es staff (dueño ve toda la espera)
         _service = new SolicitudService(
-            _alumnos.Object, _alumnoRepo.Object, _tenants.Object, _tenantActual.Object, _usuario.Object);
+            _alumnos.Object, _alumnoRepo.Object, _pedidos.Object,
+            _tenants.Object, _tenantActual.Object, _usuario.Object);
 
         // Por defecto: el club existe y está activo, sin ficha previa
         _tenants.Setup(t => t.ObtenerPorIdAsync(TenantId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(ClubActivo());
         _alumnoRepo.Setup(a => a.ObtenerPorUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                    .ReturnsAsync((Alumno?)null);
+        // Por defecto: nadie tiene clase y no hay pedidos pendientes
+        _alumnoRepo.Setup(a => a.ListarConClaseAsync(It.IsAny<CancellationToken>()))
+                   .ReturnsAsync([]);
+        _alumnoRepo.Setup(a => a.FiltrarConClaseAsync(
+                       It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+                   .ReturnsAsync([]);
+        _pedidos.Setup(p => p.ListarPorEstadoAsync(
+                    EstadoSolicitudGrupo.Pendiente, It.IsAny<CancellationToken>()))
+                .ReturnsAsync([]);
     }
+
+    /// <summary>Ficha activa del club, con el mínimo para construir el DTO.</summary>
+    private static Alumno Ficha(string nombre, Guid? profe = null) => new()
+    {
+        Nombre = nombre, Apellido = "Mora", Dni = "40", Telefono = "+1",
+        Estado = EstadoAlumno.Activo, ProfesorUserId = profe,
+    };
+
+    /// <summary>Las fichas activas que devuelve el repo para el tenant.</summary>
+    private void Activas(params Alumno[] fichas) =>
+        _alumnoRepo.Setup(a => a.ListarAsync(null, EstadoAlumno.Activo, It.IsAny<CancellationToken>()))
+                   .ReturnsAsync(fichas);
+
+    private void ConClase(params Alumno[] fichas) =>
+        _alumnoRepo.Setup(a => a.ListarConClaseAsync(It.IsAny<CancellationToken>()))
+                   .ReturnsAsync([.. fichas.Select(f => f.Id)]);
 
     private static Tenant ClubActivo() => new()
     {
@@ -137,23 +166,93 @@ public class SolicitudServiceTests
         Assert.Equal("Juego los martes", dtoUsado.Notas); // el mensaje queda como nota
     }
 
-    // ── Lista de espera del profe + quitar ──
+    // ── La lista de espera: derivada, no un estado ──
 
     [Fact]
-    public async Task Pendientes_DevuelveLasFichasEnEspera()
+    public async Task Pendientes_ActivoSinClase_Aparece()
     {
-        _alumnoRepo.Setup(a => a.ListarAsync(null, EstadoAlumno.EnEspera, It.IsAny<CancellationToken>()))
-                   .ReturnsAsync(new[]
-                   {
-                       new Alumno { Nombre = "Ana", Apellido = "Mora", Dni = "40", Telefono = "+1",
-                                    Estado = EstadoAlumno.EnEspera, Notas = "Los jueves" },
-                   });
+        var ana = Ficha("Ana");
+        ana.Notas = "Los jueves";
+        Activas(ana);
 
-        var lista = await _service.PendientesAsync();
+        var item = Assert.Single(await _service.PendientesAsync());
 
-        var item = Assert.Single(lista);
         Assert.Equal("Ana", item.Nombre);
         Assert.Equal("Los jueves", item.Mensaje);
+        Assert.Equal(nameof(MotivoEspera.SinClase), item.Motivo);
+        Assert.Null(item.SolicitudId);
+    }
+
+    [Fact]
+    public async Task Pendientes_ConClaseYSinPedido_NoAparece()
+    {
+        // Es un alumno de verdad: no está esperando nada.
+        var ana = Ficha("Ana");
+        Activas(ana);
+        ConClase(ana);
+
+        Assert.Empty(await _service.PendientesAsync());
+    }
+
+    [Fact]
+    public async Task Pendientes_ConClaseYPedidoPendiente_ApareceIgual()
+    {
+        // El caso que pidió el profe: ya es alumno (viene los lunes) y además está
+        // esperando lugar en otra clase. Tiene que estar en las DOS listas.
+        var ana = Ficha("Ana");
+        Activas(ana);
+        ConClase(ana);
+        _pedidos.Setup(p => p.ListarPorEstadoAsync(
+                    EstadoSolicitudGrupo.Pendiente, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new[]
+                {
+                    new SolicitudCupo
+                    {
+                        AlumnoId = ana.Id,
+                        Horario = new Horario { Nombre = "Grupo B", CanchaId = Guid.NewGuid() },
+                    },
+                });
+
+        var item = Assert.Single(await _service.PendientesAsync());
+
+        Assert.Equal("Ana", item.Nombre);
+        Assert.Equal(nameof(MotivoEspera.PidioCupo), item.Motivo);
+        Assert.Equal("Grupo B", item.Clase);
+        Assert.NotNull(item.SolicitudId);
+    }
+
+    [Fact]
+    public async Task Pendientes_SinClaseYConPedido_ApareceUnaSolaVez()
+    {
+        // No se duplica: gana el pedido, que es la fila con algo para hacer.
+        var ana = Ficha("Ana");
+        Activas(ana);
+        _pedidos.Setup(p => p.ListarPorEstadoAsync(
+                    EstadoSolicitudGrupo.Pendiente, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new[]
+                {
+                    new SolicitudCupo
+                    {
+                        AlumnoId = ana.Id,
+                        Horario = new Horario { Nombre = "Grupo B", CanchaId = Guid.NewGuid() },
+                    },
+                });
+
+        var item = Assert.Single(await _service.PendientesAsync());
+
+        Assert.Equal(nameof(MotivoEspera.PidioCupo), item.Motivo);
+    }
+
+    [Fact]
+    public async Task Pendientes_PausadosYBajas_NoAparecen()
+    {
+        // El repo devuelve SOLO los activos: el pausado y el de baja no están
+        // esperando nada, están afuera del circuito.
+        Activas();
+
+        Assert.Empty(await _service.PendientesAsync());
+        _alumnoRepo.Verify(
+            a => a.ListarAsync(null, EstadoAlumno.Activo, It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -162,20 +261,48 @@ public class SolicitudServiceTests
         var yo = Guid.NewGuid();
         _usuario.Setup(u => u.EsStaff).Returns(true);
         _usuario.Setup(u => u.UserId).Returns(yo);
-        _alumnoRepo.Setup(a => a.ListarAsync(null, EstadoAlumno.EnEspera, It.IsAny<CancellationToken>()))
-                   .ReturnsAsync(new[]
-                   {
-                       new Alumno { Nombre = "Mío", Apellido = "A", Dni = "1", Telefono = "+1",
-                                    Estado = EstadoAlumno.EnEspera, ProfesorUserId = yo },
-                       new Alumno { Nombre = "Ajeno", Apellido = "B", Dni = "2", Telefono = "+2",
-                                    Estado = EstadoAlumno.EnEspera, ProfesorUserId = Guid.NewGuid() },
-                   });
+        Activas(Ficha("Mío", yo), Ficha("Ajeno", Guid.NewGuid()));
 
-        var lista = await _service.PendientesAsync();
+        var item = Assert.Single(await _service.PendientesAsync());
 
-        var item = Assert.Single(lista);
         Assert.Equal("Mío", item.Nombre);
     }
+
+    [Fact]
+    public async Task Pendientes_Staff_IgnoraLosPedidosDeOtrosProfes()
+    {
+        var yo = Guid.NewGuid();
+        _usuario.Setup(u => u.EsStaff).Returns(true);
+        _usuario.Setup(u => u.UserId).Returns(yo);
+        var mio = Ficha("Mío", yo);
+        var ajeno = Ficha("Ajeno", Guid.NewGuid());
+        Activas(mio, ajeno);
+        ConClase(mio, ajeno);
+        _pedidos.Setup(p => p.ListarPorEstadoAsync(
+                    EstadoSolicitudGrupo.Pendiente, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new[]
+                {
+                    new SolicitudCupo { AlumnoId = ajeno.Id },
+                });
+
+        Assert.Empty(await _service.PendientesAsync());
+    }
+
+    [Fact]
+    public async Task ContarPendientes_CuentaLosDosMotivos()
+    {
+        var sinClase = Ficha("Ana");
+        var conPedido = Ficha("Beto");
+        Activas(sinClase, conPedido);
+        ConClase(conPedido);
+        _pedidos.Setup(p => p.ListarPorEstadoAsync(
+                    EstadoSolicitudGrupo.Pendiente, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new[] { new SolicitudCupo { AlumnoId = conPedido.Id } });
+
+        Assert.Equal(2, await _service.ContarPendientesAsync());
+    }
+
+    // ── Quitar de la espera: borra la ficha, así que el guard importa ──
 
     [Fact]
     public async Task Quitar_Staff_FichaDeOtroProfe_Lanza()
@@ -183,11 +310,7 @@ public class SolicitudServiceTests
         var yo = Guid.NewGuid();
         _usuario.Setup(u => u.EsStaff).Returns(true);
         _usuario.Setup(u => u.UserId).Returns(yo);
-        var ajena = new Alumno
-        {
-            Nombre = "Ajeno", Apellido = "B", Dni = "2", Telefono = "+2",
-            Estado = EstadoAlumno.EnEspera, ProfesorUserId = Guid.NewGuid(),
-        };
+        var ajena = Ficha("Ajeno", Guid.NewGuid());
         _alumnoRepo.Setup(a => a.ObtenerAsync(ajena.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ajena);
 
         await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.QuitarDeEsperaAsync(ajena.Id));
@@ -195,13 +318,9 @@ public class SolicitudServiceTests
     }
 
     [Fact]
-    public async Task Quitar_EnEspera_BorraLaFicha()
+    public async Task Quitar_SinClase_BorraLaFicha()
     {
-        var ficha = new Alumno
-        {
-            Nombre = "Ana", Apellido = "Mora", Dni = "40", Telefono = "+1",
-            Estado = EstadoAlumno.EnEspera,
-        };
+        var ficha = Ficha("Ana");
         _alumnoRepo.Setup(a => a.ObtenerAsync(ficha.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ficha);
 
         await _service.QuitarDeEsperaAsync(ficha.Id);
@@ -210,14 +329,15 @@ public class SolicitudServiceTests
     }
 
     [Fact]
-    public async Task Quitar_NoEstaEnEspera_Lanza()
+    public async Task Quitar_ConClase_Lanza()
     {
-        var ficha = new Alumno
-        {
-            Nombre = "Ana", Apellido = "Mora", Dni = "40", Telefono = "+1",
-            Estado = EstadoAlumno.Activo, // ya es alumno de verdad: no se quita desde acá
-        };
+        // Está en la espera por un pedido, pero es un alumno: esto borraría su ficha
+        // entera. Se rechaza el pedido, que no la toca.
+        var ficha = Ficha("Ana");
         _alumnoRepo.Setup(a => a.ObtenerAsync(ficha.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ficha);
+        _alumnoRepo.Setup(a => a.FiltrarConClaseAsync(
+                       It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+                   .ReturnsAsync([ficha.Id]);
 
         await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.QuitarDeEsperaAsync(ficha.Id));
         _alumnoRepo.Verify(a => a.EliminarDefinitivoAsync(It.IsAny<Alumno>(), It.IsAny<CancellationToken>()), Times.Never);

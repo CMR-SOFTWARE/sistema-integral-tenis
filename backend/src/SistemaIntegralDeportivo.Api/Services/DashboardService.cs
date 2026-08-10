@@ -73,7 +73,9 @@ public class DashboardService : IDashboardService
 
         return new DashboardResumenDto
         {
-            AlumnosActivos = await _alumnos.ContarPorEstadoAsync(EstadoAlumno.Activo, ct),
+            // "Mis alumnos" son los que tienen clase: contar todos los activos metería
+            // en el número a los que todavía están esperando que les asignen una.
+            AlumnosActivos = await _alumnos.ContarActivosConClaseAsync(ct),
             NuevosEsteMes = await _alumnos.ContarNuevosDesdeAsync(inicioDeMes, ct),
             Pausados = await _alumnos.ContarPorEstadoAsync(EstadoAlumno.Suspendido, ct),
             RecaudacionDelMes = cargosMes.Where(c => c.PagadoEl is not null).Sum(c => c.Monto),

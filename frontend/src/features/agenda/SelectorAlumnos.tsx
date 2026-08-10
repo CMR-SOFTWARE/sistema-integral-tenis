@@ -29,11 +29,10 @@ export default function SelectorAlumnos({ elegidos, onCambiar, cupo, excluir = [
   const [busqueda, setBusqueda] = useState('');
 
   useEffect(() => {
-    void Promise.all([
-      api.get<Alumno[]>('/alumnos?estado=Activo'),
-      api.get<Alumno[]>('/alumnos?estado=EnEspera'),
-    ])
-      .then(([activos, espera]) => setAlumnos([...activos, ...espera]))
+    // Una sola llamada: los activos ya incluyen a los de la lista de espera (que
+    // son activos sin clase). Antes eran dos, cuando la espera era un estado aparte.
+    void api.get<Alumno[]>('/alumnos?estado=Activo')
+      .then(setAlumnos)
       .catch(() => setAlumnos([]))
       .finally(() => setCargando(false));
   }, []);
@@ -105,8 +104,8 @@ export default function SelectorAlumnos({ elegidos, onCambiar, cupo, excluir = [
                 <span className={s.chip} style={{ background: `${cat}1a`, color: cat }}>
                   {CAT_LABEL[a.categoria]}
                 </span>
-                {/* El tipo Estado del front lista solo los "reales"; en espera viene igual del back. */}
-                {(a.estado as string) === 'EnEspera' && <span className={s.chipEspera}>en espera</span>}
+                {/* Todavía sin ninguna clase: sumarlo acá es lo que lo vuelve alumno. */}
+                {!a.tieneClase && <span className={s.chipEspera}>en espera</span>}
                 {a.deudaVencida && <span className={s.deuda}>cuota vencida</span>}
               </span>
             </label>

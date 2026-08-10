@@ -1,7 +1,14 @@
 // Tipos espejo de SolicitudDtos.cs.
 
-/** Espejo de SolicitudPendienteDto (lo que ve el profe para decidir). */
+/**
+ * Por qué alguien está en la lista de espera. `PidioCupo` puede ser un alumno que
+ * ya viene: por eso hay quien está en Alumnos y en la espera a la vez.
+ */
+export type MotivoEspera = 'SinClase' | 'PidioCupo';
+
+/** Espejo de SolicitudPendienteDto (una fila de la lista de espera). */
 export interface SolicitudPendiente {
+  /** Id de la FICHA (el del pedido va en solicitudId). */
   id: string;
   nombre: string;
   apellido: string;
@@ -13,6 +20,11 @@ export interface SolicitudPendiente {
   categoria: string | null;
   mensaje: string | null;
   creadoEl: string;
+  motivo: MotivoEspera;
+  /** El pedido a rechazar; null si el motivo es SinClase. */
+  solicitudId: string | null;
+  /** La clase que pidió; null si el motivo es SinClase. */
+  clase: string | null;
 }
 
 /** Espejo de MiSolicitudDto (lo que ve el alumno en el portal). */

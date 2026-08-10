@@ -1,24 +1,30 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import type {
-  AccesoCreado, Alumno, AlumnoCreado, Categoria, CreateAlumno, Estado, UpdateAlumno,
+  AccesoCreado, Alumno, AlumnoCreado, Categoria, CreateAlumno, Estado, Lista, UpdateAlumno,
 } from './types';
 
 /**
  * Estado y operaciones de la pantalla Alumnos contra la API .NET.
- * Con React Query: la lista se cachea por (categoría, estado); tras cada
- * mutación se invalida la key "alumnos" y se re-pide sola.
+ * Con React Query: la lista se cachea por (categoría, estado, lista); tras cada
+ * mutación se invalida la key "alumnos" y se re-pide sola. La `lista` es lo que
+ * separa la pestaña Alumnos (ConClase) de Usuarios (Todos).
  */
-export function useAlumnos(categoria: Categoria | 'todas', estado: Estado | 'todos' = 'todos') {
+export function useAlumnos(
+  categoria: Categoria | 'todas',
+  estado: Estado | 'todos' = 'todos',
+  lista: Lista = 'Todos',
+) {
   const qc = useQueryClient();
 
   const query = useQuery({
-    queryKey: ['alumnos', categoria, estado],
+    queryKey: ['alumnos', categoria, estado, lista],
     queryFn: () => {
-      // El backend filtra por ambos (GET /alumnos?categoria=&estado=)
+      // El backend filtra por los tres (GET /alumnos?categoria=&estado=&lista=)
       const params = new URLSearchParams();
       if (categoria !== 'todas') params.set('categoria', categoria);
       if (estado !== 'todos') params.set('estado', estado);
+      if (lista !== 'Todos') params.set('lista', lista);
       const q = params.toString() === '' ? '' : `?${params}`;
       return api.get<Alumno[]>(`/alumnos${q}`);
     },

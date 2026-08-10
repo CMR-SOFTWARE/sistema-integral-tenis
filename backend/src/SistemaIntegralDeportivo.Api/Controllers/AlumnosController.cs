@@ -28,13 +28,18 @@ public class AlumnosController : ControllerBase
         _raquetas = raquetas;
     }
 
-    /// <summary>GET api/alumnos?categoria=Cuarta&amp;estado=Activo</summary>
+    /// <summary>
+    /// GET api/alumnos?categoria=Cuarta&amp;estado=Activo&amp;lista=ConClase
+    /// <para><c>lista</c> elige la pestaña: ConClase = Alumnos, SinClase = la espera,
+    /// Todos (default) = Usuarios.</para>
+    /// </summary>
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<AlumnoResponseDto>>> Listar(
         [FromQuery] CategoriaAlumno? categoria,
         [FromQuery] EstadoAlumno? estado,
+        [FromQuery] ListaAlumnos lista,
         CancellationToken ct) =>
-        Ok(await _service.ListarAsync(categoria, estado, ct));
+        Ok(await _service.ListarAsync(categoria, estado, lista, ct));
 
     /// <summary>
     /// GET api/alumnos/morosos — activos con la cuota impaga pasado el día 15

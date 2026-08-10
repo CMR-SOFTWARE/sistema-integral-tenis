@@ -13,7 +13,10 @@ public interface IAdminRepository
 {
     Task<IReadOnlyDictionary<EstadoTenant, int>> ContarClubesPorEstadoAsync(CancellationToken ct = default);
     Task<int> ContarStaffActivosAsync(CancellationToken ct = default);
-    Task<int> ContarAlumnosActivosAsync(CancellationToken ct = default);
+
+    /// <summary>Todas las personas de todos los clubes, sin filtrar por estado ni por
+    /// tener clase: es el total de usuarios de la plataforma.</summary>
+    Task<int> ContarUsuariosAsync(CancellationToken ct = default);
     Task<decimal> IngresosDelMesAsync(int anio, int mes, CancellationToken ct = default);
     Task<int> ContarClubesNuevosAsync(DateTime desde, CancellationToken ct = default);
     Task<int> ContarAlumnosNuevosAsync(DateTime desde, CancellationToken ct = default);
@@ -43,8 +46,8 @@ public class AdminRepository : IAdminRepository
     public Task<int> ContarStaffActivosAsync(CancellationToken ct = default) =>
         _db.MembresiasTenant.CountAsync(m => m.Activo, ct);
 
-    public Task<int> ContarAlumnosActivosAsync(CancellationToken ct = default) =>
-        _db.Alumnos.CountAsync(a => a.Estado == EstadoAlumno.Activo, ct);
+    public Task<int> ContarUsuariosAsync(CancellationToken ct = default) =>
+        _db.Alumnos.CountAsync(ct);
 
     public async Task<decimal> IngresosDelMesAsync(int anio, int mes, CancellationToken ct = default)
     {

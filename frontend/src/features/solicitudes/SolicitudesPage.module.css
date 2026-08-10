@@ -73,6 +73,14 @@
   color: #b7791f;
 }
 
+/* Por qué está esperando: es lo que decide qué botones ve el profe, así que va
+   antes que los datos de contacto y con más peso. */
+.motivo {
+  font-size: 13px;
+  color: var(--color-text-soft);
+  margin-top: 3px;
+}
+
 .detalle {
   font-size: 13px;
   color: var(--color-text-muted);
