@@ -138,33 +138,99 @@
 /* Mobile primero: los días se recorren de a uno con scroll horizontal. El ancho
    de columna tiene que dar para el club y los nombres de los alumnos, si no la
    tarjeta se corta toda con puntos suspensivos. */
+/*
+ * El mapa de la semana (solo celular). Antes la grilla scrolleaba de costado y en
+ * 390 px se veían menos de dos días: había que arrastrar para llegar al domingo.
+ * Achicar las columnas no alcanzaba —siete en 390 px dan 47 px, donde no entran los
+ * alumnos ni el club ni el profe—, así que la semana se ve acá arriba de un vistazo
+ * y el día que tocás se despliega entero abajo.
+ */
+.mapa {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.mapaDia {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-height: 52px; /* objetivo de toque cómodo con el dedo */
+  padding: 6px 2px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.mapaDiaHoy {
+  border-color: var(--color-primary);
+}
+
+.mapaDiaAbierto {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+}
+
+.mapaNombre {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.mapaNumero {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+/* Cuántas clases tiene ese día: es lo que se lee de un vistazo. */
+.mapaCuenta {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-faint);
+}
+
+.mapaDiaAbierto .mapaNombre,
+.mapaDiaAbierto .mapaNumero,
+.mapaDiaAbierto .mapaCuenta {
+  color: #fff;
+}
+
 .grilla {
   display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: 215px;
-  gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 8px; /* aire para la barra de scroll */
-}
-
-/* Vista Día: una sola columna, a todo el ancho y sin scroll lateral. */
-.grillaUnDia {
-  grid-auto-flow: row;
   grid-template-columns: 1fr;
-  grid-auto-columns: auto;
-  overflow-x: visible;
-  padding-bottom: 0;
+  gap: 10px;
 }
 
+/* Vista Día: una sola columna, a todo el ancho. */
+.grillaUnDia {
+  grid-template-columns: 1fr;
+}
+
+/* En el celular se despliega SOLO la columna del día abierto (ver .mapa). De
+   tablet para arriba vuelven las siete, en el media query del final. */
 .columna {
+  display: none;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 13px;
   padding: 10px;
   min-height: 140px;
-  display: flex;
+  min-width: 0; /* sin esto el contenido largo estira la columna y desborda la grilla */
   flex-direction: column;
   gap: 8px;
+}
+
+.columnaAbierta {
+  display: flex;
 }
 
 .columnaHoy {
@@ -268,6 +334,9 @@
   font-size: 13px;
   color: var(--color-text-soft);
   margin: 3px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .claseVaciaAviso {
@@ -279,6 +348,9 @@
 .claseVaciaLugar {
   font-size: 11px;
   margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .franjaBloqueada {
@@ -371,12 +443,21 @@
 /* ── Móvil: la semana se desliza de lado (7 columnas no entran) ── */
 /* De acá para arriba hay lugar para la semana completa en pantalla. */
 @media (min-width: 900px) {
+  /* Acá entran los siete días con su contenido: el mapa sobra y las columnas
+     vuelven todas, que es como se veía siempre en escritorio. */
+  .mapa {
+    display: none;
+  }
+
+  /* minmax(0, 1fr) y no 1fr: el `auto` implícito de 1fr no deja que la columna se
+     achique por debajo de su contenido, y textos como "Club Atletico Prueba ·
+     Cancha 1" imponían un ancho mínimo que entre los siete desbordaba la pantalla. */
   .grilla {
-    grid-auto-flow: row;
-    grid-template-columns: repeat(7, 1fr);
-    grid-auto-columns: auto;
-    overflow-x: visible;
-    padding-bottom: 0;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .columna {
+    display: flex;
   }
 
   .toolbar {
