@@ -252,21 +252,21 @@ public class PortalService : IPortalService
 
     // ── Pedir un lugar en una clase fija (M5a) ──
 
-    public async Task<IReadOnlyList<ClaseDisponibleDto>> ClasesDisponiblesAsync(
+    public async Task<IReadOnlyList<SlotReservaDto>> GrillaDeReservaAsync(
         Guid userId, CancellationToken ct = default)
     {
         var ficha = await FichaDeAsync(userId, ct);
-        return await _solicitudesCupo.DisponiblesParaAlumnoAsync(ficha.Id, ct);
+        return await _solicitudesCupo.GrillaParaAlumnoAsync(ficha.Id, ct);
     }
 
-    public async Task<SolicitudCupoDto> SolicitarCupoAsync(
+    public async Task<MiSolicitudCupoDto> SolicitarCupoAsync(
         Guid userId, Guid horarioId, CancellationToken ct = default)
     {
         var ficha = await FichaDeAsync(userId, ct);
         return await _solicitudesCupo.SolicitarAsync(ficha.Id, horarioId, ct);
     }
 
-    public async Task<IReadOnlyList<SolicitudCupoDto>> MisSolicitudesCupoAsync(
+    public async Task<IReadOnlyList<MiSolicitudCupoDto>> MisSolicitudesCupoAsync(
         Guid userId, CancellationToken ct = default)
     {
         var ficha = await FichaDeAsync(userId, ct);

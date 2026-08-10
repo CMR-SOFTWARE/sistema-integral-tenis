@@ -209,14 +209,17 @@ public class PortalController : ControllerBase
         }
     }
 
-    /// <summary>GET api/portal/clases-disponibles — clases con lugar para mi categoría.</summary>
+    /// <summary>
+    /// GET api/portal/clases-disponibles — la grilla de Reservar de MI club: cada franja
+    /// marcada como disponible, ocupada o mía. Lo ocupado viaja sin datos.
+    /// </summary>
     [HttpGet("clases-disponibles")]
-    public async Task<ActionResult<IReadOnlyList<ClaseDisponibleDto>>> ClasesDisponibles(CancellationToken ct)
+    public async Task<ActionResult<IReadOnlyList<SlotReservaDto>>> ClasesDisponibles(CancellationToken ct)
     {
         if (UserId() is not { } userId) return Unauthorized();
         try
         {
-            return Ok(await _portal.ClasesDisponiblesAsync(userId, ct));
+            return Ok(await _portal.GrillaDeReservaAsync(userId, ct));
         }
         catch (ReglaDeNegocioException ex)
         {
@@ -226,7 +229,7 @@ public class PortalController : ControllerBase
 
     /// <summary>POST api/portal/solicitudes-cupo — pido un lugar en una clase (pendiente del profe).</summary>
     [HttpPost("solicitudes-cupo")]
-    public async Task<ActionResult<SolicitudCupoDto>> SolicitarCupo(SolicitarCupoDto dto, CancellationToken ct)
+    public async Task<ActionResult<MiSolicitudCupoDto>> SolicitarCupo(SolicitarCupoDto dto, CancellationToken ct)
     {
         if (UserId() is not { } userId) return Unauthorized();
         try
@@ -241,7 +244,7 @@ public class PortalController : ControllerBase
 
     /// <summary>GET api/portal/solicitudes-cupo — mis pedidos de lugar con su estado.</summary>
     [HttpGet("solicitudes-cupo")]
-    public async Task<ActionResult<IReadOnlyList<SolicitudCupoDto>>> MisSolicitudesCupo(CancellationToken ct)
+    public async Task<ActionResult<IReadOnlyList<MiSolicitudCupoDto>>> MisSolicitudesCupo(CancellationToken ct)
     {
         if (UserId() is not { } userId) return Unauthorized();
         try
