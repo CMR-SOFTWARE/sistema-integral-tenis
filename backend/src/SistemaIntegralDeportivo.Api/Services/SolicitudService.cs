@@ -113,7 +113,14 @@ public class SolicitudService : ISolicitudService
             .Where(a => !conClase.Contains(a.Id) && !conPedido.Contains(a.Id))
             .Select(a => Fila(a, MotivoEspera.SinClase, null, null));
 
-        return [.. filas.Concat(sinClase).OrderBy(f => f.CreadoEl)];
+        // Tercer motivo: el que YA es alumno y el profe anotó a mano. Al que no tiene
+        // ninguna clase la marca no le agrega nada (ya está arriba, en sinClase) y
+        // gana ese motivo, que es el que ofrece sacarlo de la academia.
+        var anotados = mias.Values
+            .Where(a => a.EnEsperaDesde is not null && conClase.Contains(a.Id) && !conPedido.Contains(a.Id))
+            .Select(a => Fila(a, MotivoEspera.LoAnotoElProfe, null, null));
+
+        return [.. filas.Concat(sinClase).Concat(anotados).OrderBy(f => f.CreadoEl)];
     }
 
     public async Task<int> ContarPendientesAsync(CancellationToken ct = default) =>
@@ -140,12 +147,44 @@ public class SolicitudService : ISolicitudService
         // la confirmación dice lo que se pierde.
         var conClase = await _alumnoRepo.FiltrarConClaseAsync([alumnoId], ct);
         if (conClase.Contains(alumnoId))
+        {
+            // Salvo que esté ahí porque vos lo anotaste: entonces "sacarlo de la
+            // espera" es apagar esa marca, y sigue siendo alumno como hasta recién.
+            if (ficha.EnEsperaDesde is not null)
+            {
+                ficha.EnEsperaDesde = null;
+                ficha.ActualizadoEl = DateTime.UtcNow;
+                await _alumnoRepo.GuardarCambiosAsync(ct);
+                return;
+            }
+
             throw new ReglaDeNegocioException(
                 $"{ficha.Nombre} {ficha.Apellido} ya tiene clase asignada: sacalo desde su ficha.");
+        }
 
         // Borra la ficha y su historial. El Usuario NO se toca: la persona puede
         // unirse a otro club o volver a intentar.
         await _alumnoRepo.EliminarDefinitivoAsync(ficha, ct);
+    }
+
+    public async Task CambiarEsperaAsync(Guid alumnoId, bool enEspera, CancellationToken ct = default)
+    {
+        var ficha = await _alumnoRepo.ObtenerAsync(alumnoId, ct)
+            ?? throw new ReglaDeNegocioException("Esa ficha no existe.");
+
+        // Mismo criterio que el resto: el staff solo toca a SUS alumnos.
+        if (_usuario.EsStaff && ficha.ProfesorUserId != _usuario.UserId)
+            throw new ReglaDeNegocioException("Ese alumno no es tuyo.");
+
+        // Marcar dos veces no pisa la fecha: si la pisáramos, volver a tocar el botón
+        // lo mandaría al final de la cola cuando en realidad hace rato que espera.
+        if (enEspera)
+            ficha.EnEsperaDesde ??= DateTime.UtcNow;
+        else
+            ficha.EnEsperaDesde = null;
+
+        ficha.ActualizadoEl = DateTime.UtcNow;
+        await _alumnoRepo.GuardarCambiosAsync(ct);
     }
 
     private static SolicitudPendienteDto Fila(
@@ -161,7 +200,10 @@ public class SolicitudService : ISolicitudService
         EsMenor = a.EsMenor,
         Categoria = a.Categoria.ToString(),
         Mensaje = a.Notas,
-        CreadoEl = a.CreadoEl,
+        // Desde cuándo espera, que es lo que ordena la lista. Para el anotado a mano
+        // es cuándo lo anotaste: su ficha puede ser de hace dos años y recién ahora
+        // haberte pedido otra clase.
+        CreadoEl = motivo == MotivoEspera.LoAnotoElProfe ? a.EnEsperaDesde ?? a.CreadoEl : a.CreadoEl,
         Motivo = motivo.ToString(),
         SolicitudId = solicitudId,
         Clase = clase,

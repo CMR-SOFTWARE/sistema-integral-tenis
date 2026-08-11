@@ -31,10 +31,23 @@ export function useAlumnos(
   });
 
   // El cambio de un alumno (ej. su cuota mensual / arancel) también repercute en Cuotas.
+  // Y en la espera: alta sin clase entra, pausa y baja salen (solo espera el ACTIVO).
   const invalidar = () => Promise.all([
     qc.invalidateQueries({ queryKey: ['alumnos'] }),
     qc.invalidateQueries({ queryKey: ['cuotas'] }),
+    qc.invalidateQueries({ queryKey: ['solicitudes'] }),
+    qc.invalidateQueries({ queryKey: ['solicitudes-conteo'] }),
   ]);
+
+  /**
+   * Anota (o desanota) a mano en la lista de espera: el alumno que ya viene y te pide
+   * otra clase hablando, sin pasar por el portal. Mueve la espera y su badge, así que
+   * se invalidan las dos junto con el listado — una sola vez, acá y no en la pantalla.
+   */
+  const cambiarEspera = async (id: string, enEspera: boolean) => {
+    await api.patch(`/solicitudes/${id}/espera`, { enEspera });
+    await invalidar();
+  };
 
   const crear = async (dto: CreateAlumno) => {
     // Devuelve la ficha + credenciales (la temporal viaja UNA sola vez)
@@ -82,6 +95,6 @@ export function useAlumnos(
     alumnos: query.data ?? [],
     cargando: query.isLoading,
     error: query.error ? (query.error.message || 'Error cargando alumnos') : null,
-    crear, crearAcceso, editar, cambiarEstado, cambiarProfe, darDeBaja, eliminarDefinitivo,
+    crear, crearAcceso, editar, cambiarEstado, cambiarProfe, cambiarEspera, darDeBaja, eliminarDefinitivo,
   };
 }

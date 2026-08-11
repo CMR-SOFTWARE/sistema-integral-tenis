@@ -135,6 +135,11 @@ public class HorarioService : IHorarioService
                 new AlumnoHorario { HorarioId = horarioId, AlumnoId = alumnoId }, ct);
         }
 
+        // Si el profe lo tenía anotado a mano en la espera, darle clase es justo el
+        // gesto que resuelve ese pedido: sale solo de la lista. Va acá porque este es
+        // el ÚNICO camino para sumar a alguien al roster de una clase.
+        alumno.EnEsperaDesde = null;
+
         // Persistir la membresía ANTES de reconciliar: la reconciliación consulta las
         // membresías activas del alumno (query a la base) y tiene que ver la nueva.
         await _horarios.GuardarCambiosAsync(ct);

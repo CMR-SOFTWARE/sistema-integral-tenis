@@ -705,5 +705,6 @@ public class AlumnoService : IAlumnoService
         SedeId = a.SedeId,
         SedeNombre = a.Sede?.Nombre,
         TieneClase = tieneClase,
+        EnEspera = a.EnEsperaDesde is not null,
     };
 }

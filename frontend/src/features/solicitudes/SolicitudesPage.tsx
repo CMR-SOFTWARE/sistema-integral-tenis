@@ -82,6 +82,17 @@ export default function SolicitudesPage() {
     );
   };
 
+  /**
+   * Lo anotó el profe: sacarlo de la espera solo apaga esa marca. Sigue siendo alumno
+   * con sus clases, así que va sin confirmación (no se pierde nada).
+   */
+  const sacarDeLaEspera = (sol: SolicitudPendiente) =>
+    ejecutar(
+      sol.id,
+      () => api.post(`/solicitudes/${sol.id}/quitar`, {}),
+      `${sol.nombre} salió de la lista de espera.`,
+    );
+
   /** Pidió cupo: se rechaza EL PEDIDO; la ficha del alumno no se toca. */
   const rechazar = async (sol: SolicitudPendiente) => {
     const ok = await confirmar({
@@ -105,9 +116,9 @@ export default function SolicitudesPage() {
     <div>
       <div className={s.intro}>
         Los que están esperando una clase: los que se unieron (o cargaste) y todavía no
-        tienen ninguna, y los que <b>pidieron sumarse</b> a una desde su portal. Estos
-        últimos pueden ser alumnos que ya vienen, así que también los vas a ver en
-        "Alumnos".
+        tienen ninguna, los que <b>pidieron sumarse</b> a una desde su portal, y los que
+        <b> anotaste vos</b> desde Alumnos porque te la pidieron hablando. Los dos últimos
+        pueden ser alumnos que ya vienen, así que también los vas a ver en "Alumnos".
       </div>
 
       {espera.length === 0 && (
@@ -122,6 +133,7 @@ export default function SolicitudesPage() {
           const av = avatarColor(sol.nombre + sol.apellido);
           const cat = sol.categoria ? CAT_COLOR[sol.categoria as Categoria] : null;
           const pidio = sol.motivo === 'PidioCupo';
+          const anotado = sol.motivo === 'LoAnotoElProfe';
           const enCurso = procesando === sol.id;
           return (
             <div key={sol.id} className={s.tarjetaSol}>
@@ -142,7 +154,9 @@ export default function SolicitudesPage() {
                 <div className={s.motivo}>
                   {pidio
                     ? <>Pidió sumarse a <b>{sol.clase ?? 'una clase'}</b></>
-                    : 'Todavía sin clase asignada'}
+                    : anotado
+                      ? <>Ya es alumno y <b>lo anotaste vos</b>: quiere otra clase</>
+                      : 'Todavía sin clase asignada'}
                 </div>
                 <div className={s.detalle}>
                   {sol.email}
@@ -158,6 +172,15 @@ export default function SolicitudesPage() {
                     <Link to="/agenda" className={s.btnAprobar}>Verlo en la Agenda</Link>
                     <button className={s.btnRechazar} disabled={enCurso} onClick={() => void rechazar(sol)}>
                       {enCurso ? '…' : 'Rechazar'}
+                    </button>
+                  </>
+                ) : anotado ? (
+                  <>
+                    {/* Ya es alumno: sacarlo de la espera NO le toca la ficha, así que
+                        acá no va ni confirmación ni el botón rojo de eliminar. */}
+                    <Link to="/agenda" className={s.btnAprobar}>Asignarle un horario</Link>
+                    <button className={s.btnRechazar} disabled={enCurso} onClick={() => void sacarDeLaEspera(sol)}>
+                      {enCurso ? '…' : 'Sacar de la espera'}
                     </button>
                   </>
                 ) : (

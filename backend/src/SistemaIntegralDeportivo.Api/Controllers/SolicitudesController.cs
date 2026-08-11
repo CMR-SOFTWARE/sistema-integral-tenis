@@ -30,9 +30,9 @@ public class SolicitudesController : ControllerBase
         Ok(new ConteoSolicitudesDto { Pendientes = await _service.ContarPendientesAsync(ct) });
 
     /// <summary>
-    /// Quitar al que espera SIN clase: borra la ficha (conserva su login). Para el que
-    /// espera por un pedido va <c>POST api/horarios/solicitudes-cupo/{id}/rechazar</c>,
-    /// que no toca la ficha.
+    /// Sacar de la espera. Al que anotó el profe le apaga la marca; al que espera SIN
+    /// clase le borra la ficha (conserva su login). Para el que espera por un pedido va
+    /// <c>POST api/horarios/solicitudes-cupo/{id}/rechazar</c>, que no toca la ficha.
     /// </summary>
     [HttpPost("{id:guid}/quitar")]
     public async Task<IActionResult> Quitar(Guid id, CancellationToken ct)
@@ -40,6 +40,24 @@ public class SolicitudesController : ControllerBase
         try
         {
             await _service.QuitarDeEsperaAsync(id, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>
+    /// El profe anota (o desanota) a mano en la espera al alumno que le pidió otra
+    /// clase hablando, sin pasar por el portal. <paramref name="id"/> es la ficha.
+    /// </summary>
+    [HttpPatch("{id:guid}/espera")]
+    public async Task<IActionResult> CambiarEspera(Guid id, CambiarEsperaDto dto, CancellationToken ct)
+    {
+        try
+        {
+            await _service.CambiarEsperaAsync(id, dto.EnEspera, ct);
             return NoContent();
         }
         catch (ReglaDeNegocioException ex)

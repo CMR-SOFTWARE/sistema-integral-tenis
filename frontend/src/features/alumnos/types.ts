@@ -45,6 +45,8 @@ export interface Alumno {
   sedeNombre: string | null;
   /** Tiene al menos una clase asignada: lo que separa a un alumno del que espera. */
   tieneClase: boolean;
+  /** Lo anotó el profe a mano en la lista de espera (te pidió otra clase hablando). */
+  enEspera: boolean;
 }
 
 /**
