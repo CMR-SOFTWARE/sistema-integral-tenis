@@ -19,7 +19,7 @@ interface Props {
   onClose: () => void;
   onEditar: (id: string, dto: UpdateHorario) => Promise<void>;
   /** El roster va por su cuenta: el back reconcilia los turnos al instante. */
-  onAgregarAlumno: (horarioId: string, alumnoId: string) => Promise<void>;
+  onAgregarAlumnos: (horarioId: string, alumnoIds: string[]) => Promise<void>;
   onQuitarAlumno: (horarioId: string, alumnoId: string) => Promise<void>;
   /** Dar de baja la clase; solo el dueño (al staff no se le pasa). Ya confirma él. */
   onDesactivar?: (h: Horario) => Promise<void>;
@@ -32,7 +32,7 @@ interface Props {
  * el divisor de la cuota, así que no puede quedar esperando un "Guardar".
  */
 export default function EditarHorarioModal({
-  horario, sedes, onClose, onEditar, onAgregarAlumno, onQuitarAlumno, onDesactivar,
+  horario, sedes, onClose, onEditar, onAgregarAlumnos, onQuitarAlumno, onDesactivar,
 }: Props) {
   const sedeInicial = sedes.find((x) => x.canchas.some((c) => c.id === horario.canchaId))?.id
     ?? sedes[0]?.id ?? '';
@@ -113,8 +113,7 @@ export default function EditarHorarioModal({
       // pasadas con un "Guardar cambios" en el medio. Por eso el botón dice
       // "Guardar y sumar": nombra las dos cosas que hace.
       await onEditar(horario.id, dtoActual());
-      // De a uno: cada alta reconcilia el calendario del alumno por separado.
-      for (const alumnoId of aSumar) await onAgregarAlumno(horario.id, alumnoId);
+      await onAgregarAlumnos(horario.id, aSumar);
       setASumar([]);
       setSumando(false);
     } catch (e) {

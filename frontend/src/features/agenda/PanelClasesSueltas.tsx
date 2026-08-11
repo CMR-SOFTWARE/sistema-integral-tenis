@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '../../lib/api';
 import { horaCorta } from './types';
 import { formatoPlata } from '../alumnos/types';
@@ -28,19 +29,25 @@ interface Props {
 const fechaCorta = (iso: string) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit' });
 
+/** Referencia estable mientras carga: si no, el efecto de las canchas se re-dispara. */
+const VACIO: ClaseSuelta[] = [];
+
 /** Clases sueltas pendientes (M5c): el profe elige cancha y confirma (o rechaza). */
 export default function PanelClasesSueltas({ onCambio }: Props) {
-  const [clases, setClases] = useState<ClaseSuelta[]>([]);
   const [canchas, setCanchas] = useState<Record<string, CanchaLibre[]>>({});
   const [elegida, setElegida] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState<string | null>(null);
+  const qc = useQueryClient();
 
-  const cargar = useCallback(() => {
-    api.get<ClaseSuelta[]>('/clases-sueltas').then(setClases).catch(() => setClases([]));
-  }, []);
-
-  useEffect(() => { cargar(); }, [cargar]);
+  // Cacheada: la bandeja se re-armaba en cada entrada a la Agenda y casi siempre
+  // vuelve vacía. Confirmar/rechazar la invalida.
+  const query = useQuery({
+    queryKey: ['clases-sueltas'],
+    queryFn: () => api.get<ClaseSuelta[]>('/clases-sueltas'),
+  });
+  const clases = query.data ?? VACIO;
+  const cargar = () => qc.invalidateQueries({ queryKey: ['clases-sueltas'] });
 
   useEffect(() => {
     clases.forEach((c) => {
@@ -60,7 +67,7 @@ export default function PanelClasesSueltas({ onCambio }: Props) {
     setOcupado(c.id); setError(null);
     try {
       await api.post(`/clases-sueltas/${c.id}/confirmar`, { canchaId });
-      cargar(); onCambio();
+      await cargar(); onCambio();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo confirmar.');
     } finally { setOcupado(null); }
@@ -70,7 +77,7 @@ export default function PanelClasesSueltas({ onCambio }: Props) {
     setOcupado(c.id); setError(null);
     try {
       await api.post(`/clases-sueltas/${c.id}/rechazar`, {});
-      cargar();
+      await cargar();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo rechazar.');
     } finally { setOcupado(null); }

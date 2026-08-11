@@ -8,6 +8,7 @@ import { formatoPlata } from '../alumnos/types';
 import NuevoEmpleadoModal from './NuevoEmpleadoModal';
 import EditarEmpleadoModal from './EditarEmpleadoModal';
 import DetalleEmpleadoModal from './DetalleEmpleadoModal';
+import { useInvalidarProfesores } from './useProfesores';
 import type { Staff, StaffCreado, UpdateEmpleado } from './types';
 import s from '../alumnos/AlumnosPage.module.css';
 
@@ -26,6 +27,7 @@ export default function ProfesoresPage() {
   const [credenciales, setCredenciales] = useState<{ nombre: string; usuario: string; passwordTemporal: string } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const confirmar = useConfirmar();
+  const invalidarProfes = useInvalidarProfesores();
   const esOwner = obtenerSesion()?.rol === 'owner';
 
   const cargar = useCallback(() => {
@@ -37,6 +39,10 @@ export default function ProfesoresPage() {
   }, []);
 
   useEffect(() => { cargar(); }, [cargar]);
+
+  // Tras cada alta/baja/edición: además de la tabla, se refresca la lista de profes
+  // asignables, que vive cacheada aparte y alimenta los selects de toda la app.
+  const recargar = () => { cargar(); void invalidarProfes(); };
 
   const avisar = (msg: string) => {
     setToast(msg);
@@ -58,7 +64,7 @@ export default function ProfesoresPage() {
   // El director no tiene membresía: su ficha se edita por su propia ruta.
   const editar = async (id: string, dto: UpdateEmpleado) => {
     await api.put(editando?.esDueño ? '/staff/director' : `/staff/${id}`, dto);
-    cargar();
+    recargar();
   };
 
   const cambiarActivo = async (p: Staff) => {
@@ -69,7 +75,7 @@ export default function ProfesoresPage() {
       peligro: true,
     }))) return;
     await api.patch(`/staff/${p.id}/activo`, { activo: !p.activo });
-    cargar();
+    recargar();
     avisar(p.activo ? `${p.nombre} salió del equipo` : `${p.nombre} reactivado`);
   };
 
@@ -91,7 +97,7 @@ export default function ProfesoresPage() {
     try {
       await api.delete(`/staff/${p.id}/definitivo`);
       avisar(`${p.nombre} ${p.apellido} eliminado`);
-      cargar();
+      recargar();
     } catch (e) {
       avisar(e instanceof ApiError ? e.message : 'No se pudo eliminar el profe.');
     }
@@ -239,7 +245,7 @@ export default function ProfesoresPage() {
           onClose={() => setModalNuevo(false)}
           onCrear={crear}
           onCreado={(creado) => {
-            cargar();
+            recargar();
             if (creado.passwordTemporal) {
               setCredenciales({
                 nombre: `${creado.staff.nombre} ${creado.staff.apellido}`,

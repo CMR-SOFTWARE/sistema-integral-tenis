@@ -1,7 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
-import { api } from '../../lib/api';
+import { useMemo, useState } from 'react';
 import { CAT_COLOR, CAT_LABEL, avatarColor, iniciales } from '../alumnos/types';
-import type { Alumno } from '../alumnos/types';
+import { useAlumnos } from '../alumnos/useAlumnos';
 import s from './SelectorAlumnos.module.css';
 
 interface Props {
@@ -24,18 +23,14 @@ interface Props {
  * portal, no al profe armando su agenda.
  */
 export default function SelectorAlumnos({ elegidos, onCambiar, cupo, excluir = [] }: Props) {
-  const [alumnos, setAlumnos] = useState<Alumno[]>([]);
-  const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState('');
 
-  useEffect(() => {
-    // Una sola llamada: los activos ya incluyen a los de la lista de espera (que
-    // son activos sin clase). Antes eran dos, cuando la espera era un estado aparte.
-    void api.get<Alumno[]>('/alumnos?estado=Activo')
-      .then(setAlumnos)
-      .catch(() => setAlumnos([]))
-      .finally(() => setCargando(false));
-  }, []);
+  // Una sola llamada: los activos ya incluyen a los de la lista de espera (que
+  // son activos sin clase). Antes eran dos, cuando la espera era un estado aparte.
+  // Va por el hook del listado (misma URL, misma key) en vez de pedir a mano: así
+  // abrir este modal comparte el caché con la pantalla de Alumnos y no se vuelve a
+  // bajar la lista entera —que hoy trae la foto de cada uno adentro de la fila—.
+  const { alumnos, cargando } = useAlumnos('todas', 'Activo');
 
   const fuera = useMemo(() => new Set(excluir), [excluir]);
   const termino = busqueda.trim().toLowerCase();

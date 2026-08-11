@@ -81,10 +81,20 @@ export function useHorarios() {
     await qc.invalidateQueries({ queryKey: ['alumno-horarios'] });
     await qc.invalidateQueries({ queryKey: ['alumnos'] });
     await qc.invalidateQueries({ queryKey: ['dashboard'] });
+    // Darle su primera clase lo saca de la lista de espera: la lista y el badge
+    // de la pestaña tienen que enterarse (antes el badge solo se refrescaba al
+    // cambiar de pestaña, y de paso pedía de más).
+    await qc.invalidateQueries({ queryKey: ['solicitudes'] });
+    await qc.invalidateQueries({ queryKey: ['solicitudes-conteo'] });
   };
 
-  const agregarAlumno = async (horarioId: string, alumnoId: string) => {
-    await api.post(`/horarios/${horarioId}/alumnos`, { alumnoId });
+  // Los alumnos se suman de a uno contra el back (cada alta reconcilia el calendario
+  // de ese alumno por separado), pero se invalida UNA sola vez al final: invalidar
+  // por alta hacía que sumar cuatro alumnos volviera a bajar la semana cuatro veces
+  // —y la semana es el request más caro que tenemos—.
+  const agregarAlumnos = async (horarioId: string, alumnoIds: string[]) => {
+    for (const alumnoId of alumnoIds)
+      await api.post(`/horarios/${horarioId}/alumnos`, { alumnoId });
     await invalidarAlumno();
   };
 
@@ -97,7 +107,7 @@ export function useHorarios() {
     horarios: query.data ?? [],
     cargando: query.isLoading,
     error: query.error ? (query.error.message || 'Error cargando horarios') : null,
-    crear, editar, desactivar, agregarAlumno, quitarAlumno,
+    crear, editar, desactivar, agregarAlumnos, quitarAlumno,
     recargar: () => qc.invalidateQueries({ queryKey: ['horarios'] }),
   };
 }
