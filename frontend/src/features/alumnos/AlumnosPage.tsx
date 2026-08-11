@@ -35,7 +35,7 @@ export default function AlumnosPage({ lista = 'Todos' }: Props) {
   const esPadron = lista === 'Todos'; // la pestaña Usuarios
   const [filtro, setFiltro] = useState<Categoria | 'todas'>('todas');
   const [filtroEstado, setFiltroEstado] = useState<Estado | 'todos'>('todos');
-  const { alumnos, cargando, error, crear, crearAcceso, editar, cambiarEstado, cambiarProfe, darDeBaja, eliminarDefinitivo } =
+  const { alumnos, cargando, error, crear, crearAcceso, editar, cambiarEstado, cambiarProfe, cambiarEspera, darDeBaja, eliminarDefinitivo } =
     useAlumnos(filtro, filtroEstado, lista);
   const [busqueda, setBusqueda] = useState('');
   const [filtroProfe, setFiltroProfe] = useState<string>('todos');
@@ -108,29 +108,54 @@ export default function AlumnosPage({ lista = 'Todos' }: Props) {
     }
   };
 
+  /** Devuelve si se aplicó (false = el profe canceló la confirmación). */
   const pausarOReactivar = async (a: Alumno) => {
     const pausar = a.estado === 'Activo';
     if (pausar && !(await confirmar({
       titulo: `Pausar a ${a.nombre} ${a.apellido}`,
       mensaje: 'Sale de sus turnos futuros y deja de pagarlos, pero le guardamos su lugar: al reactivarlo vuelve solo.',
       confirmar: 'Pausar',
-    }))) return;
+    }))) return false;
 
     await cambiarEstado(a.id, pausar ? 'Suspendido' : 'Activo');
     avisar(pausar
       ? `${a.nombre} pausado y fuera del calendario`
       : `${a.nombre} reactivado: vuelve a sus turnos`);
+    return true;
   };
 
+  /**
+   * El select de estado rutea a DOS caminos distintos, y la diferencia importa:
+   * pausar le GUARDA el lugar en sus clases y la baja se lo LIBERA. Mandar "Inactivo"
+   * por el mismo endpoint que la pausa lo dejaría de baja ocupando cupo igual.
+   *
+   * Devuelve si se aplicó, para que el select vuelva a donde estaba si se cancela.
+   */
+  const cambiarEstadoDesdeLaFila = async (a: Alumno, nuevo: Estado) => {
+    if (nuevo === a.estado) return true;
+    if (nuevo === 'Inactivo') return baja(a);
+    return pausarOReactivar(a);
+  };
+
+  /** Lo anotás en la espera porque te pidió otra clase hablando (no desde el portal). */
+  const alternarEspera = async (a: Alumno) => {
+    await cambiarEspera(a.id, !a.enEspera);
+    avisar(a.enEspera
+      ? `${a.nombre} salió de la lista de espera`
+      : `${a.nombre} quedó anotado en la lista de espera`);
+  };
+
+  /** Devuelve si se aplicó (false = el profe canceló la confirmación). */
   const baja = async (a: Alumno) => {
     if (!(await confirmar({
       titulo: `Dar de baja a ${a.nombre} ${a.apellido}`,
       mensaje: 'Sale del calendario y de todas sus clases (se libera el cupo en cada una). El historial se conserva.',
       confirmar: 'Dar de baja',
       peligro: true,
-    }))) return;
+    }))) return false;
     await darDeBaja(a.id);
     avisar(`${a.nombre} dado de baja y fuera del calendario`);
+    return true;
   };
 
   /** Borrado REAL: la ficha y TODO su historial, sin vuelta atrás. */
@@ -273,8 +298,10 @@ export default function AlumnosPage({ lista = 'Todos' }: Props) {
                       <span className={s.chip} style={{ background: estado.bg, color: estado.fg }}>
                         {estado.label}
                       </span>
-                      {/* Solo en Usuarios: en Alumnos todos tienen clase por definición. */}
-                      {esPadron && !a.tieneClase && a.estado === 'Activo' && (
+                      {/* Sin clase solo se avisa en Usuarios (en Alumnos todos tienen
+                          por definición); el anotado a mano, en las dos: es la única
+                          forma de ver desde acá que está esperando otra clase. */}
+                      {a.estado === 'Activo' && (a.enEspera || (esPadron && !a.tieneClase)) && (
                         <span className={s.chipEspera}>En espera</span>
                       )}
                     </td>
@@ -289,26 +316,40 @@ export default function AlumnosPage({ lista = 'Todos' }: Props) {
                             queda con lo que se usa a diario. */}
                         {esOwner && (
                         <>
-                        <button
-                          className={`${s.accion} ${s.accionPausa}`}
-                          title={a.estado === 'Activo' ? 'Pausar' : 'Reactivar'}
-                          onClick={() => void pausarOReactivar(a)}
+                        {/* Anotar en la espera solo tiene sentido en el alumno ACTIVO
+                            que YA tiene clase: al que no tiene ninguna ya lo muestra
+                            la espera por sí solo, y el pausado no espera nada. */}
+                        {a.estado === 'Activo' && a.tieneClase && (
+                          <button
+                            className={`${s.accion} ${a.enEspera ? s.accionEsperaActiva : ''}`}
+                            title={a.enEspera
+                              ? 'Está anotado en la lista de espera: sacarlo'
+                              : 'Anotarlo en la lista de espera (te pidió otra clase)'}
+                            onClick={() => void alternarEspera(a)}
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
+                            </svg>
+                          </button>
+                        )}
+                        <select
+                          className={s.selectFila}
+                          value={a.estado}
+                          onChange={(e) => {
+                            // Si cancela la confirmación no cambia nada en la data, así
+                            // que el select se queda mostrando lo que eligió: lo volvemos
+                            // a la mano en vez de esperar que React lo redibuje solo.
+                            const select = e.currentTarget;
+                            const elegido = select.value as Estado;
+                            void cambiarEstadoDesdeLaFila(a, elegido)
+                              .then((aplicado) => { if (!aplicado) select.value = a.estado; });
+                          }}
+                          title="Estado del alumno"
                         >
-                          {a.estado === 'Activo' ? (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                              <path d="M10 4H6v16h4zM18 4h-4v16h4z" />
-                            </svg>
-                          ) : (
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round">
-                              <path d="M6 4l14 8-14 8z" />
-                            </svg>
-                          )}
-                        </button>
-                        <button className={`${s.accion} ${s.accionBaja}`} title="Dar de baja (se puede reactivar)" onClick={() => void baja(a)}>
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6" />
-                          </svg>
-                        </button>
+                          <option value="Activo">Activo</option>
+                          <option value="Suspendido">Pausado</option>
+                          <option value="Inactivo">Baja</option>
+                        </select>
                         </>
                         )}
                       </div>

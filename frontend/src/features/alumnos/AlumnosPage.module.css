@@ -235,6 +235,33 @@
   color: var(--color-danger);
 }
 
+/* Anotado en la espera: el reloj queda encendido para verlo de un vistazo en la fila. */
+.accionEsperaActiva {
+  border-color: #b7791f;
+  background: #fef6e7;
+  color: #b7791f;
+}
+
+/* El estado, editable desde la fila. Va compacto: comparte celda con los iconos y
+   en el celular la tabla ya scrollea de costado. */
+.selectFila {
+  height: 32px;
+  padding: 0 6px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-soft);
+  cursor: pointer;
+}
+
+.selectFila:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
 /* Borrado REAL: siempre teñido de rojo para que se distinga de la baja. */
 .accionEliminar {
   border-color: var(--color-danger-border);

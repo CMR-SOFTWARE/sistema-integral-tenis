@@ -29,10 +29,18 @@ public interface ISolicitudService
     Task<int> ContarPendientesAsync(CancellationToken ct = default);
 
     /// <summary>
-    /// Saca de la academia al que está esperando SIN clase: borrado real de la ficha
-    /// (conserva su login). No sirve para el que espera por un pedido — a ese se le
-    /// rechaza el pedido, la ficha no se toca.
+    /// Saca de la espera. Son dos cosas MUY distintas según por qué esté ahí:
+    /// al que el profe anotó a mano le apaga la marca y nada más; al que espera SIN
+    /// clase le borra la ficha de verdad (conserva su login). No sirve para el que
+    /// espera por un pedido — a ese se le rechaza el pedido, la ficha no se toca.
     /// </summary>
-    /// <exception cref="Common.ReglaDeNegocioException">Ya tiene clase asignada.</exception>
+    /// <exception cref="Common.ReglaDeNegocioException">Tiene clase y no lo anotó el profe.</exception>
     Task QuitarDeEsperaAsync(Guid alumnoId, CancellationToken ct = default);
+
+    /// <summary>
+    /// El profe anota (o desanota) a mano en la lista de espera al que YA es alumno y
+    /// le pidió otra clase hablando. Marcar dos veces no pisa la fecha original: la
+    /// antigüedad en la cola es del primer pedido.
+    /// </summary>
+    Task CambiarEsperaAsync(Guid alumnoId, bool enEspera, CancellationToken ct = default);
 }

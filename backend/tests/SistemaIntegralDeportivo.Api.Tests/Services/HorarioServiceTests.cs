@@ -353,6 +353,25 @@ public class HorarioServiceTests
     }
 
     [Fact]
+    public async Task AgregarAlumno_LimpiaLaMarcaDeEspera()
+    {
+        // Lo habías anotado a mano porque te pidió clase; dársela es justo el gesto
+        // que resuelve el pedido, así que sale solo de la lista de espera.
+        ClaseCon(cupo: 4, ocupados: 0);
+        var anotado = new Alumno
+        {
+            Id = AlumnoId, Nombre = "Juan", Apellido = "Pérez", Telefono = "1",
+            Estado = EstadoAlumno.Activo, EnEsperaDesde = DateTime.UtcNow.AddDays(-3),
+        };
+        _alumnos.Setup(r => r.ObtenerAsync(AlumnoId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(anotado);
+
+        await _service.AgregarAlumnoAsync(HorarioId, AlumnoId);
+
+        Assert.Null(anotado.EnEsperaDesde);
+    }
+
+    [Fact]
     public async Task AgregarAlumno_NoActivo_Lanza()
     {
         ClaseCon(cupo: 4, ocupados: 0);

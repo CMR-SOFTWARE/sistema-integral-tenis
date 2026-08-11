@@ -31,6 +31,9 @@ public enum MotivoEspera
     /// <summary>Pidió sumarse a una clase y el profe no resolvió el pedido. Puede
     /// tener otras clases: por eso alguien aparece en Alumnos y en la espera a la vez.</summary>
     PidioCupo,
+    /// <summary>El profe lo anotó a mano (le pidió clase hablando, no desde el portal).
+    /// Como el pedido de cupo, puede tener otras clases.</summary>
+    LoAnotoElProfe,
 }
 
 /// <summary>Una fila de la lista de espera vista por el PROFE (datos para decidir).</summary>
@@ -49,13 +52,13 @@ public class SolicitudPendienteDto
     public string? Mensaje { get; set; }
     public DateTime CreadoEl { get; set; }
 
-    /// <summary>SinClase | PidioCupo: decide qué acciones ofrece la fila.</summary>
+    /// <summary>SinClase | PidioCupo | LoAnotoElProfe: decide qué acciones ofrece la fila.</summary>
     public string Motivo { get; set; } = string.Empty;
 
-    /// <summary>El pedido a rechazar; null cuando el motivo es SinClase.</summary>
+    /// <summary>El pedido a rechazar; solo cuando el motivo es PidioCupo.</summary>
     public Guid? SolicitudId { get; set; }
 
-    /// <summary>La clase que pidió; null cuando el motivo es SinClase.</summary>
+    /// <summary>La clase que pidió; solo cuando el motivo es PidioCupo.</summary>
     public string? Clase { get; set; }
 }
 
@@ -63,4 +66,10 @@ public class SolicitudPendienteDto
 public class ConteoSolicitudesDto
 {
     public int Pendientes { get; set; }
+}
+
+/// <summary>Body para anotar/desanotar a mano en la lista de espera.</summary>
+public class CambiarEsperaDto
+{
+    public bool EnEspera { get; set; }
 }

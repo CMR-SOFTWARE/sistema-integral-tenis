@@ -38,6 +38,17 @@ public class Alumno
     public EstadoAlumno Estado { get; set; } = EstadoAlumno.Activo;
     public string? Notas { get; set; } // observaciones del profe ("lesión de hombro", etc.)
 
+    /// <summary>
+    /// El profe lo anotó a mano en la lista de espera; null = no anotado. A la espera
+    /// se llega sola por no tener ninguna clase, o por un pedido de cupo del portal:
+    /// esto cubre al que YA viene y le pide otro día al profe en la cancha, que no
+    /// tenía dónde quedar registrado. Se limpia solo al asignarle una clase.
+    ///
+    /// Guarda la FECHA y no un bool para que la lista ordene por cuándo lo anotaste
+    /// (lo justo es que el que hace más tiempo que espera aparezca primero).
+    /// </summary>
+    public DateTime? EnEsperaDesde { get; set; }
+
     // ── Cómo liquida (ADR-0009): el mes entero (vence el 10) o cargo por cargo ──
     public ModalidadPago Modalidad { get; set; } = ModalidadPago.Mensual;
 

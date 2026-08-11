@@ -51,6 +51,12 @@ public class AlumnoResponseDto
     /// todavía está esperando: no hay columna que lo diga, se deriva del roster.
     /// </summary>
     public bool TieneClase { get; set; }
+
+    /// <summary>
+    /// El profe lo anotó a mano en la lista de espera (le pidió otra clase hablando).
+    /// Solo del lado del profe: al portal del alumno no viaja.
+    /// </summary>
+    public bool EnEspera { get; set; }
 }
 
 /// <summary>Un horario asignado del alumno, para la ficha del profe (día/hora/cancha).</summary>

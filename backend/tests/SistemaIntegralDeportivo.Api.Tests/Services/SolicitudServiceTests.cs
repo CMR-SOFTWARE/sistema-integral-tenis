@@ -70,6 +70,14 @@ public class SolicitudServiceTests
         _alumnoRepo.Setup(a => a.ListarConClaseAsync(It.IsAny<CancellationToken>()))
                    .ReturnsAsync([.. fichas.Select(f => f.Id)]);
 
+    /// <summary>Ficha que el profe anotó a mano en la espera.</summary>
+    private static Alumno Anotada(string nombre, Guid? profe = null)
+    {
+        var ficha = Ficha(nombre, profe);
+        ficha.EnEsperaDesde = DateTime.UtcNow;
+        return ficha;
+    }
+
     private static Tenant ClubActivo() => new()
     {
         Id = TenantId, Subdominio = "club-x", Nombre = "Club X",
@@ -288,6 +296,83 @@ public class SolicitudServiceTests
         Assert.Empty(await _service.PendientesAsync());
     }
 
+    // ── Anotado a mano: el que ya viene y le pide otro día al profe en la cancha ──
+
+    [Fact]
+    public async Task Pendientes_AnotadoAMano_ConClase_Aparece()
+    {
+        // Es alumno (viene los martes) y le pidió los jueves hablando: sin esto no
+        // había dónde registrarlo, porque a la espera solo se llegaba sin ninguna
+        // clase o pidiendo cupo desde el portal.
+        var ana = Anotada("Ana");
+        Activas(ana);
+        ConClase(ana);
+
+        var item = Assert.Single(await _service.PendientesAsync());
+
+        Assert.Equal("Ana", item.Nombre);
+        Assert.Equal(nameof(MotivoEspera.LoAnotoElProfe), item.Motivo);
+        Assert.Null(item.SolicitudId); // no hay pedido que rechazar
+        Assert.Null(item.Clase);       // no dijo cuál: por eso lo anotó el profe
+    }
+
+    [Fact]
+    public async Task Pendientes_AnotadoAMano_OrdenaPorCuandoLoAnotaste()
+    {
+        // La fila lleva la fecha de la MARCA, no la del alta de la ficha: el que hace
+        // más tiempo que espera va primero, aunque su ficha sea la más nueva.
+        var vieja = Anotada("Vieja");
+        vieja.CreadoEl = DateTime.UtcNow.AddYears(-2);
+        vieja.EnEsperaDesde = DateTime.UtcNow.AddMinutes(-1);
+        var nueva = Anotada("Nueva");
+        nueva.CreadoEl = DateTime.UtcNow;
+        nueva.EnEsperaDesde = DateTime.UtcNow.AddDays(-30);
+        Activas(vieja, nueva);
+        ConClase(vieja, nueva);
+
+        var filas = await _service.PendientesAsync();
+
+        Assert.Equal("Nueva", filas[0].Nombre); // anotada hace 30 días
+        Assert.Equal("Vieja", filas[1].Nombre);
+    }
+
+    [Fact]
+    public async Task Pendientes_AnotadoAMano_SinClase_ApareceComoSinClase()
+    {
+        // Sin ninguna clase ya está esperando: la marca no agrega nada y gana el
+        // motivo concreto, que es el que ofrece sacarlo de la academia.
+        var ana = Anotada("Ana");
+        Activas(ana);
+
+        var item = Assert.Single(await _service.PendientesAsync());
+
+        Assert.Equal(nameof(MotivoEspera.SinClase), item.Motivo);
+    }
+
+    [Fact]
+    public async Task Pendientes_AnotadoAMano_YConPedidoDeCupo_ApareceUnaSolaVez()
+    {
+        // Lo anotaste vos Y además pidió cupo desde el portal: gana el pedido, que es
+        // la fila con algo para resolver.
+        var ana = Anotada("Ana");
+        Activas(ana);
+        ConClase(ana);
+        _pedidos.Setup(p => p.ListarPorEstadoAsync(
+                    EstadoSolicitudGrupo.Pendiente, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new[]
+                {
+                    new SolicitudCupo
+                    {
+                        AlumnoId = ana.Id,
+                        Horario = new Horario { Nombre = "Grupo B", CanchaId = Guid.NewGuid() },
+                    },
+                });
+
+        var item = Assert.Single(await _service.PendientesAsync());
+
+        Assert.Equal(nameof(MotivoEspera.PidioCupo), item.Motivo);
+    }
+
     [Fact]
     public async Task ContarPendientes_CuentaLosDosMotivos()
     {
@@ -341,5 +426,74 @@ public class SolicitudServiceTests
 
         await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.QuitarDeEsperaAsync(ficha.Id));
         _alumnoRepo.Verify(a => a.EliminarDefinitivoAsync(It.IsAny<Alumno>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task Quitar_AnotadoAMano_ApagaLaMarcaYNoBorraLaFicha()
+    {
+        // Al que anotó el profe se lo saca de la espera sin tocarle nada más: es un
+        // alumno igual que antes, solo que ya no está esperando otra clase.
+        var ficha = Anotada("Ana");
+        _alumnoRepo.Setup(a => a.ObtenerAsync(ficha.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ficha);
+        _alumnoRepo.Setup(a => a.FiltrarConClaseAsync(
+                       It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+                   .ReturnsAsync([ficha.Id]);
+
+        await _service.QuitarDeEsperaAsync(ficha.Id);
+
+        Assert.Null(ficha.EnEsperaDesde);
+        _alumnoRepo.Verify(a => a.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+        _alumnoRepo.Verify(a => a.EliminarDefinitivoAsync(It.IsAny<Alumno>(), It.IsAny<CancellationToken>()), Times.Never);
+    }
+
+    // ── Marcar / desmarcar a mano ──
+
+    [Fact]
+    public async Task Marcar_AnotaConLaFechaDeHoy()
+    {
+        var ficha = Ficha("Ana");
+        _alumnoRepo.Setup(a => a.ObtenerAsync(ficha.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ficha);
+
+        await _service.CambiarEsperaAsync(ficha.Id, true);
+
+        Assert.NotNull(ficha.EnEsperaDesde);
+        _alumnoRepo.Verify(a => a.GuardarCambiosAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task Marcar_DosVeces_NoPisaLaFechaOriginal()
+    {
+        // Si se pisara, volver a tocar el botón lo mandaría al final de la cola.
+        var ficha = Anotada("Ana");
+        var original = ficha.EnEsperaDesde;
+        _alumnoRepo.Setup(a => a.ObtenerAsync(ficha.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ficha);
+
+        await _service.CambiarEsperaAsync(ficha.Id, true);
+
+        Assert.Equal(original, ficha.EnEsperaDesde);
+    }
+
+    [Fact]
+    public async Task Desmarcar_ApagaLaMarca()
+    {
+        var ficha = Anotada("Ana");
+        _alumnoRepo.Setup(a => a.ObtenerAsync(ficha.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ficha);
+
+        await _service.CambiarEsperaAsync(ficha.Id, false);
+
+        Assert.Null(ficha.EnEsperaDesde);
+    }
+
+    [Fact]
+    public async Task Marcar_Staff_FichaDeOtroProfe_Lanza()
+    {
+        var yo = Guid.NewGuid();
+        _usuario.Setup(u => u.EsStaff).Returns(true);
+        _usuario.Setup(u => u.UserId).Returns(yo);
+        var ajena = Ficha("Ajeno", Guid.NewGuid());
+        _alumnoRepo.Setup(a => a.ObtenerAsync(ajena.Id, It.IsAny<CancellationToken>())).ReturnsAsync(ajena);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.CambiarEsperaAsync(ajena.Id, true));
+        Assert.Null(ajena.EnEsperaDesde);
     }
 }
