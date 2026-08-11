@@ -14,7 +14,7 @@ import NuevoHorarioModal from './NuevoHorarioModal';
 import EditarHorarioModal from './EditarHorarioModal';
 import FichaDesdeAgenda from './FichaDesdeAgenda';
 import { aISO, fechaLarga, lunesDe, rangoSemana, sumarDias } from './types';
-import type { CreateHorario, Horario, Turno, UpdateHorario } from './types';
+import type { Horario, Turno } from './types';
 import { MESES } from '../cuotas/types';
 import { useBloqueos } from '../bloqueos/useBloqueos';
 import s from './CalendarioPage.module.css';
@@ -54,7 +54,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
   const { sedes, cargando: sedesCargando } = useSedes();
   const {
     horarios, crear: crearH, editar: editarH, desactivar: desactivarH,
-    agregarAlumno, quitarAlumno, recargar: recargarH,
+    agregarAlumnos, quitarAlumno, recargar: recargarH,
   } = useHorarios();
   const [abierto, setAbierto] = useState<string | null>(null); // turnoId
   const [fichaAlumnoId, setFichaAlumnoId] = useState<string | null>(null); // ficha abierta desde una clase
@@ -152,10 +152,11 @@ export default function CalendarioPage({ sede, profe }: Props) {
   };
   const esHoy = vista === 'dia' ? dia === aISO(new Date()) : vista === 'semana' ? semanaActual : mesActual;
 
-  // Tocar un horario cambia los turnos generados → refrescamos la semana/mes también.
+  // Para los paneles de pedidos: aceptar una solicitud crea o cambia clases del lado
+  // del back, sin pasar por useHorarios, así que acá no hay nada que se entere solo.
+  // Crear/editar/desactivar NO lo usan: esas tres ya invalidan los horarios y la
+  // semana desde el hook, y llamarlo de nuevo bajaba la agenda dos veces por guardado.
   const refrescar = async () => { await recargarH(); await activo.recargar(); };
-  const crearHorario = async (dto: CreateHorario) => { await crearH(dto); await refrescar(); };
-  const editarHorario = async (id: string, dto: UpdateHorario) => { await editarH(id, dto); await refrescar(); };
   const desactivarHorario = async (h: Horario) => {
     if (!(await confirmar({
       titulo: `Desactivar el horario de "${h.titulo}"`,
@@ -167,7 +168,6 @@ export default function CalendarioPage({ sede, profe }: Props) {
     setAbierto(null);
     setEditandoId(null);
     await desactivarH(h.id);
-    await refrescar();
   };
 
   return (
@@ -323,7 +323,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
           sedes={disponibles}
           base={duplicandoHorario ?? undefined}
           onClose={() => { setModalHorario(false); setDuplicandoHorario(null); }}
-          onCrear={crearHorario}
+          onCrear={crearH}
         />
       )}
 
@@ -332,8 +332,8 @@ export default function CalendarioPage({ sede, profe }: Props) {
           horario={editandoHorario}
           sedes={soloMiClub(sedes)}
           onClose={() => setEditandoId(null)}
-          onEditar={editarHorario}
-          onAgregarAlumno={agregarAlumno}
+          onEditar={editarH}
+          onAgregarAlumnos={agregarAlumnos}
           onQuitarAlumno={quitarAlumno}
           onDesactivar={esOwner ? desactivarHorario : undefined}
         />

@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '../../lib/api';
 import { DIAS, horaCorta } from './types';
 import type { DiaSemana } from './types';
@@ -25,21 +26,25 @@ interface Props {
   onCambio: () => void;
 }
 
+/** Referencia estable mientras carga: si no, el efecto de las canchas se re-dispara. */
+const VACIO: SolicitudHorario[] = [];
+
 /** Solicitudes de clase individual fija (M5b): el profe elige cancha y acepta, o rechaza. */
 export default function PanelSolicitudesHorario({ onCambio }: Props) {
-  const [solicitudes, setSolicitudes] = useState<SolicitudHorario[]>([]);
   const [canchas, setCanchas] = useState<Record<string, CanchaLibre[]>>({});
   const [elegida, setElegida] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState<string | null>(null);
+  const qc = useQueryClient();
 
-  const cargar = useCallback(() => {
-    api.get<SolicitudHorario[]>('/horarios/solicitudes')
-      .then(setSolicitudes)
-      .catch(() => setSolicitudes([]));
-  }, []);
-
-  useEffect(() => { cargar(); }, [cargar]);
+  // Cacheada: la bandeja se re-armaba en cada entrada a la Agenda y casi siempre
+  // vuelve vacía. Aceptar/rechazar la invalida.
+  const query = useQuery({
+    queryKey: ['solicitudes-horario'],
+    queryFn: () => api.get<SolicitudHorario[]>('/horarios/solicitudes'),
+  });
+  const solicitudes = query.data ?? VACIO;
+  const cargar = () => qc.invalidateQueries({ queryKey: ['solicitudes-horario'] });
 
   // Al mostrar cada solicitud, cargamos sus canchas libres
   useEffect(() => {
@@ -60,7 +65,7 @@ export default function PanelSolicitudesHorario({ onCambio }: Props) {
     setOcupado(sol.id); setError(null);
     try {
       await api.post(`/horarios/solicitudes/${sol.id}/aceptar`, { canchaId });
-      cargar(); onCambio();
+      await cargar(); onCambio();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo aceptar.');
     } finally { setOcupado(null); }
@@ -70,7 +75,7 @@ export default function PanelSolicitudesHorario({ onCambio }: Props) {
     setOcupado(sol.id); setError(null);
     try {
       await api.post(`/horarios/solicitudes/${sol.id}/rechazar`, {});
-      cargar();
+      await cargar();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo rechazar.');
     } finally { setOcupado(null); }

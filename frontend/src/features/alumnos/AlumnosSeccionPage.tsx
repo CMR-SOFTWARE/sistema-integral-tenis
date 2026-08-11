@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import AlumnosPage from './AlumnosPage';
 import SolicitudesPage from '../solicitudes/SolicitudesPage';
@@ -20,15 +21,15 @@ type Tab = 'alumnos' | 'espera' | 'usuarios';
  */
 export default function AlumnosSeccionPage() {
   const [tab, setTab] = useState<Tab>('alumnos');
-  const [enEspera, setEnEspera] = useState(0);
 
-  // Contador para el badge de la pestaña. Se refresca al cambiar de pestaña
-  // (p. ej. tras asignarle un horario a alguien, que lo saca de la espera).
-  useEffect(() => {
-    api.get<{ pendientes: number }>('/solicitudes/conteo')
-      .then((c) => setEnEspera(c.pendientes))
-      .catch(() => setEnEspera(0));
-  }, [tab]);
+  // Contador para el badge de la pestaña. Antes se re-pedía en CADA toque de
+  // pestaña; ahora lo invalidan las acciones que lo mueven (asignar un horario,
+  // resolver un pedido), así que además baja solo sin tener que cambiar de tab.
+  const { data: conteo } = useQuery({
+    queryKey: ['solicitudes-conteo'],
+    queryFn: () => api.get<{ pendientes: number }>('/solicitudes/conteo'),
+  });
+  const enEspera = conteo?.pendientes ?? 0;
 
   return (
     <div>

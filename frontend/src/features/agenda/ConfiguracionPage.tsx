@@ -3,6 +3,7 @@ import { api, ApiError } from '../../lib/api';
 import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { comprimirBanner } from '../portal/comprimirImagen';
 import { useSedes } from './hooks';
+import { useInvalidarProfesores } from '../profesores/useProfesores';
 import { formatoPlata } from '../alumnos/types';
 import type { Precios, Servicio } from '../cuotas/types';
 import s from './ConfiguracionPage.module.css';
@@ -17,6 +18,7 @@ function DirectorCard() {
   const [cargando, setCargando] = useState(true);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const invalidarProfes = useInvalidarProfesores();
 
   useEffect(() => {
     void api.get<DirectorConfig>('/configuracion/director')
@@ -32,6 +34,9 @@ function DirectorCard() {
     setDaClases(valor); // optimista: si falla, se revierte
     try {
       await api.put<DirectorConfig>('/configuracion/director', { daClases: valor });
+      // Este switch decide si el dueño aparece como profe asignable: la lista
+      // cacheada tiene que enterarse ya, no en 10 minutos.
+      await invalidarProfes();
     } catch (e) {
       setDaClases(anterior);
       setError(e instanceof ApiError ? e.message : 'No se pudo guardar.');

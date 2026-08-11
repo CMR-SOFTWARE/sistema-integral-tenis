@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '../../lib/api';
 // Mismo look que el panel de pedidos de clase individual: son dos bandejas de
 // entrada iguales, apiladas arriba del calendario.
@@ -17,24 +18,30 @@ interface Props {
 
 /** Pedidos de lugar en una clase con cupo: el profe acepta (lo suma) o rechaza. */
 export default function PanelSolicitudesCupo({ onCambio }: Props) {
-  const [solicitudes, setSolicitudes] = useState<SolicitudCupo[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [resolviendo, setResolviendo] = useState<string | null>(null);
+  const qc = useQueryClient();
 
-  const cargar = useCallback(() => {
-    api.get<SolicitudCupo[]>('/horarios/solicitudes-cupo')
-      .then(setSolicitudes)
-      .catch(() => setSolicitudes([]));
-  }, []);
-
-  useEffect(() => { cargar(); }, [cargar]);
+  // Cacheada: la bandeja se re-arma cada vez que el owner entra a la Agenda y casi
+  // siempre vuelve vacía. Las acciones de abajo la invalidan.
+  const { data: solicitudes = [] } = useQuery({
+    queryKey: ['solicitudes-cupo'],
+    queryFn: () => api.get<SolicitudCupo[]>('/horarios/solicitudes-cupo'),
+  });
+  // Resolver acá también mueve la lista de espera y su badge: el mismo pedido se
+  // ve desde las dos pantallas.
+  const cargar = () => Promise.all([
+    qc.invalidateQueries({ queryKey: ['solicitudes-cupo'] }),
+    qc.invalidateQueries({ queryKey: ['solicitudes'] }),
+    qc.invalidateQueries({ queryKey: ['solicitudes-conteo'] }),
+  ]);
 
   const resolver = async (sol: SolicitudCupo, accion: 'aceptar' | 'rechazar') => {
     setResolviendo(sol.id);
     setError(null);
     try {
       await api.post(`/horarios/solicitudes-cupo/${sol.id}/${accion}`, {});
-      cargar();
+      await cargar();
       if (accion === 'aceptar') onCambio();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo resolver el pedido.');

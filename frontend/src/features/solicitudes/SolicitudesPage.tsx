@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '../../lib/api';
 import { CAT_COLOR, CAT_LABEL, avatarColor, iniciales } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
@@ -18,21 +19,27 @@ import s from './SolicitudesPage.module.css';
  *    se puede rechazar, que NO le toca la ficha.
  */
 export default function SolicitudesPage() {
-  const [espera, setEspera] = useState<SolicitudPendiente[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [procesando, setProcesando] = useState<string | null>(null); // id en curso
   const confirmar = useConfirmar();
+  const qc = useQueryClient();
 
-  const cargar = useCallback(() => {
-    api.get<SolicitudPendiente[]>('/solicitudes')
-      .then(setEspera)
-      .catch((e) => setError(e instanceof Error ? e.message : 'Error cargando la lista de espera'));
-  }, []);
+  const query = useQuery({
+    queryKey: ['solicitudes'],
+    queryFn: () => api.get<SolicitudPendiente[]>('/solicitudes'),
+  });
+  const espera = query.data;
+  const error = query.error ? (query.error.message || 'Error cargando la lista de espera') : null;
 
-  useEffect(() => {
-    cargar();
-  }, [cargar]);
+  // Resolver un pedido mueve tres cosas a la vez: esta lista, el badge de la pestaña
+  // y —si era un pedido de cupo— la bandeja gemela que el profe ve en la Agenda.
+  // Sacar a alguien de la academia le borra la ficha, así que también el padrón.
+  const cargar = () => Promise.all([
+    qc.invalidateQueries({ queryKey: ['solicitudes'] }),
+    qc.invalidateQueries({ queryKey: ['solicitudes-conteo'] }),
+    qc.invalidateQueries({ queryKey: ['solicitudes-cupo'] }),
+    qc.invalidateQueries({ queryKey: ['alumnos'] }),
+  ]);
 
   const avisar = (msg: string) => {
     setToast(msg);
@@ -45,7 +52,7 @@ export default function SolicitudesPage() {
     try {
       await accion();
       avisar(ok);
-      cargar();
+      await cargar();
     } catch (e) {
       avisar(e instanceof ApiError ? e.message : 'No se pudo completar la acción.');
     } finally {

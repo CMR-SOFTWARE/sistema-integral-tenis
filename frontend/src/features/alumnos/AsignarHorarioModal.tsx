@@ -29,7 +29,7 @@ interface Props {
  * que se anota solo desde el portal, no para el profe armando su agenda.
  */
 export default function AsignarHorarioModal({ alumno, onClose, onCrearNueva, onAsignado }: Props) {
-  const { horarios, cargando, agregarAlumno } = useHorarios();
+  const { horarios, cargando, agregarAlumnos } = useHorarios();
   const [sumando, setSumando] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,7 +50,7 @@ export default function AsignarHorarioModal({ alumno, onClose, onCrearNueva, onA
     setError(null);
     setSumando(h.id);
     try {
-      await agregarAlumno(h.id, alumno.id);
+      await agregarAlumnos(h.id, [alumno.id]);
       onAsignado();
       onClose();
     } catch (e) {
