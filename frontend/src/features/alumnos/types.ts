@@ -221,22 +221,22 @@ export const CAT_LABEL: Record<Categoria, string> = {
   SinCategoria: 'S/C',
 };
 
-/** CAT_COLOR: varones (frío/verde) y damas (magenta/violeta) para distinguirlas de un vistazo. */
+/** CAT_COLOR: matices de la paleta CMR para distinguir categorías de un vistazo. */
 export const CAT_COLOR: Record<Categoria, string> = {
-  Primera: '#7c3aed', Segunda: '#2563eb', Tercera: '#0891b2', Cuarta: '#178a4c', Quinta: '#ca8a04', Sexta: '#ea580c',
-  A: '#db2777', B1: '#c026d3', B2: '#9333ea', C1: '#7c3aed', C2: '#e11d48', D: '#be123c',
-  SinCategoria: '#6b7770',
+  Primera: '#386641', Segunda: '#556b2f', Tercera: '#6a994e', Cuarta: '#3e5f4d', Quinta: '#6f8f7b', Sexta: '#8a9b63',
+  A: '#386641', B1: '#556b2f', B2: '#6a994e', C1: '#3e5f4d', C2: '#bc4749', D: '#8a6a2f',
+  SinCategoria: '#6f8f7b',
 };
 
 /** estadoChip del mockup (Suspendido se muestra "Pausado", Inactivo "Baja"). */
 export const ESTADO_UI: Record<Estado, { label: string; bg: string; fg: string }> = {
-  Activo: { label: 'Activo', bg: '#e7f6ec', fg: '#0e6b3c' },
-  Suspendido: { label: 'Pausado', bg: '#f3f4f6', fg: '#6b7280' },
-  Inactivo: { label: 'Baja', bg: '#fdeaea', fg: '#b91c1c' },
+  Activo: { label: 'Activo', bg: '#eaf3d8', fg: '#386641' },
+  Suspendido: { label: 'Pausado', bg: '#efe6c8', fg: '#5c6f4a' },
+  Inactivo: { label: 'Baja', bg: '#f8e8e8', fg: '#bc4749' },
 };
 
 /** AV_PAL del mockup: color de avatar estable según el nombre. */
-const AV_PAL = ['#178a4c', '#2563eb', '#7c3aed', '#0891b2', '#ea580c', '#be123c', '#ca8a04', '#0e7490'];
+const AV_PAL = ['#132a13', '#386641', '#6a994e', '#a7c957', '#4a7040', '#bc4749', '#5c7c3a', '#2d4a2d'];
 
 export function avatarColor(semilla: string): string {
   let hash = 0;

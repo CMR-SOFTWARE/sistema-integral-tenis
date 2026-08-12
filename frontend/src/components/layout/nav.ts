@@ -9,14 +9,17 @@ export interface NavItem {
   soloOwner?: boolean;
   /** Solo lo ve el admin de plataforma (dueño de la app). */
   soloAdmin?: boolean;
+  /** En mobile va a la barra inferior (máx. 3 + “Más”). */
+  enBarra?: boolean;
 }
 
 export const profNav: NavItem[] = [
-  { to: '/dashboard', label: 'Inicio', icon: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z' },
+  { to: '/dashboard', label: 'Inicio', icon: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', enBarra: true },
   {
     // Alumnos y Calendario los ve también el profe empleado (filtrados a lo suyo)
     to: '/alumnos',
     label: 'Alumnos',
+    enBarra: true,
     icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
   },
   {
@@ -25,6 +28,7 @@ export const profNav: NavItem[] = [
     to: '/agenda',
     label: 'Agenda',
     icon: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4',
+    enBarra: true,
   },
   {
     // La carta de presentación del profe. Sin soloOwner a propósito: el empleado
@@ -76,9 +80,9 @@ export const pageTitles: Record<string, string> = Object.fromEntries(
 // ── Portal del alumno (las 4 secciones del mockup) ──
 
 export const alumnoNav: NavItem[] = [
-  { to: '/portal', label: 'Inicio', icon: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z' },
-  { to: '/portal/turnos', label: 'Mis turnos', icon: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4' },
-  { to: '/portal/reservar', label: 'Reservar', icon: 'M12 8v8M8 12h8M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z' },
+  { to: '/portal', label: 'Inicio', icon: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', enBarra: true },
+  { to: '/portal/turnos', label: 'Mis turnos', icon: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4', enBarra: true },
+  { to: '/portal/reservar', label: 'Reservar', icon: 'M12 8v8M8 12h8M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z', enBarra: true },
   { to: '/portal/cuota', label: 'Mi cuota', icon: 'M1 5h22v14H1zM1 10h22' },
   { to: '/portal/servicios', label: 'Servicios', icon: 'M20 7h-9M14 17H5M17 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM7 13a4 4 0 1 0 0 8 4 4 0 0 0 0-8z' },
   { to: '/portal/perfil', label: 'Mi perfil', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0' },
@@ -88,3 +92,10 @@ export const alumnoNav: NavItem[] = [
 export const portalTitles: Record<string, string> = Object.fromEntries(
   alumnoNav.map((item) => [item.to, item.label]),
 );
+
+/** ¿Esta ruta es la activa para el ítem de nav? (Inicio del portal es exacto.) */
+export function coincideRuta(pathname: string, to: string): boolean {
+  if (to === '/portal') return pathname === '/portal';
+  if (to === '/dashboard') return pathname === '/dashboard' || pathname === '/';
+  return pathname === to || pathname.startsWith(`${to}/`);
+}

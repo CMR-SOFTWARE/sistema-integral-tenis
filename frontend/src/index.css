@@ -1,6 +1,5 @@
 @import './styles/tokens.css';
 
-/* Reset base — mismo que el helmet del mockup CourtSet */
 * {
   box-sizing: border-box;
 }
@@ -11,11 +10,28 @@ body {
   padding: 0;
 }
 
+html.theme-transicion,
+html.theme-transicion *,
+html.theme-transicion *::before,
+html.theme-transicion *::after {
+  transition:
+    background-color 0.45s ease,
+    color 0.45s ease,
+    border-color 0.45s ease !important;
+}
+
 body {
   font-family: var(--font-body);
+  font-weight: 400;
   color: var(--color-text);
-  background: var(--color-bg);
+  background-color: var(--color-bg);
   -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 input,
@@ -23,6 +39,15 @@ select,
 textarea,
 button {
   font-family: inherit;
+  font-weight: 400;
+  color: inherit;
+}
+
+input,
+select,
+textarea {
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
 }
 
 input:focus,
@@ -34,42 +59,78 @@ textarea:focus {
 }
 
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cdd6d1;
+  background: var(--color-sage);
   border-radius: 8px;
-  border: 2px solid var(--color-bg);
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 
 @keyframes pop {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
 }
 @keyframes fade {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 @keyframes slidein {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+.revelar {
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.55s ease, transform 0.55s ease;
+}
+.revelar.esVisible {
+  opacity: 1;
+  transform: none;
+}
+
+.bandaSuave {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--color-bg-sage);
+  color: #132a13;
+  margin: 0 -8px 16px;
+  padding: 24px 20px 16px;
+  clip-path: var(--clip-cmr);
+}
+
+[data-theme='dark'] .bandaSuave {
+  color: var(--color-text);
+}
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@keyframes cruzaHeader {
+  0% { transform: scaleX(0); opacity: 0.7; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
-  to {
+  .revelar {
     opacity: 1;
     transform: none;
   }

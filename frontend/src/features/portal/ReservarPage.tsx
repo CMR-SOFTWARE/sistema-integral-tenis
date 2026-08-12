@@ -10,6 +10,7 @@ import type { Categoria } from '../alumnos/types';
 import { aISO, fechaCorta, horaCorta, lunesDe, rangoSemana, sumarDias } from '../agenda/types';
 import { useReservarData, usePortalSedes } from './hooks';
 import type { ClaseSuelta, DatosPago, Disponibilidad, SlotReserva } from './types';
+import FranjaTenis from '../../components/tenis/FranjaTenis';
 import s from './ReservarPage.module.css';
 
 const DIA_IDX: Record<string, number> = {
@@ -196,6 +197,7 @@ export default function ReservarPage() {
 
   return (
     <div>
+      <FranjaTenis modo="rally" />
       <div className={s.toolbar}>
         {/* Las flechas y el período van en un contenedor propio: sueltos en la
             toolbar, al envolverse la › se caía sola al renglón de abajo. */}

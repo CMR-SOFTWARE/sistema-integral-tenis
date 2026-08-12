@@ -6,125 +6,146 @@
 }
 
 .vacio {
+  position: relative;
+  z-index: 1;
   padding: 18px 4px;
   color: var(--color-text-faint);
   font-size: 14px;
 }
 
-/* ── Hero (mismo look que el Inicio del alumno) ── */
 .hero {
   grid-column: 1 / -1;
   position: relative;
+  isolation: isolate;
   overflow: hidden;
-  border-radius: var(--radius-lg);
-  background: radial-gradient(circle at 82% 85%, #1ea35a 0%, #137a43 52%, #0d5e34 100%);
-  color: #fff;
-  padding: 30px 30px 44px;
-  min-height: 200px;
+  border-radius: var(--radius-cmr);
+  clip-path: var(--clip-cmr);
+  background: var(--color-bg-deep);
+  color: #f2e8cf;
+  padding: 32px 28px 24px;
+  min-height: 180px;
 }
 
-.heroPelota {
-  position: absolute;
-  right: -50px;
-  bottom: -70px;
-  width: 200px;
-  height: 200px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #d8fb5b, #b6e83a);
-  opacity: 0.9;
+.heroEyebrow,
+.heroFecha,
+.heroDetalle,
+.heroLugar {
+  position: relative;
+  z-index: 1;
 }
 
 .heroEyebrow {
-  position: relative;
-  font: 700 12px/1 var(--font-display);
-  letter-spacing: 0.22em;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #cdf57f;
-  margin-bottom: 16px;
+  color: #afc8b4;
+  margin-bottom: 12px;
 }
 
 .heroFecha {
-  position: relative;
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 46px;
+  font-family: var(--font-score);
+  font-weight: 600;
+  font-size: 48px;
   line-height: 1;
-  letter-spacing: -0.03em;
-  margin-bottom: 10px;
+  letter-spacing: 0.01em;
+  margin-bottom: 8px;
+  color: #f2e8cf;
 }
 
 .heroDetalle {
-  position: relative;
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 18px;
 }
 
 .heroLugar {
-  position: relative;
-  margin-top: 10px;
+  margin-top: 8px;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(242, 232, 207, 0.75);
 }
 
-/* ── Tarjetas ── */
+.heroLinea {
+  position: relative;
+  z-index: 1;
+}
+
 .tarjeta {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 20px;
+  border-radius: var(--radius-cmr);
+  padding: 24px 22px;
 }
 
 .tarjetaTitulo {
+  position: relative;
+  z-index: 1;
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 15px;
   margin: 0 0 14px;
 }
 
 .metricas {
+  position: relative;
+  z-index: 1;
   display: flex;
-  gap: 12px;
+  gap: 24px;
   margin-bottom: 16px;
 }
 
 .metrica {
   flex: 1;
   text-align: center;
-  background: var(--color-surface-subtle, #f5f7f5);
-  border-radius: var(--radius-md);
-  padding: 12px 6px;
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-cmr);
+  padding: 20px 14px 18px;
 }
 
 .metricaNumero {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 24px;
-  color: var(--color-primary-dark, #0e6b3c);
+  font-family: var(--font-score);
+  font-weight: 600;
+  font-size: 32px;
+  color: var(--color-primary);
 }
 
 .metricaLabel {
   font-size: 11px;
-  color: var(--color-text-muted);
-  margin-top: 2px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+  margin-top: 10px;
 }
 
 .btnPrimario {
+  position: relative;
+  z-index: 1;
   display: inline-block;
-  background: var(--color-primary-dark);
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-cream);
   font-weight: 700;
   font-size: 13px;
   padding: 9px 16px;
   border-radius: var(--radius-md);
   text-decoration: none;
+  transition: background 0.18s, transform 0.18s;
+}
+.btnPrimario:hover {
+  background: var(--color-accent);
+  transform: translateY(-1px);
 }
 
-/* ── Lista de próximas clases ── */
 .lista {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0;
 }
 
 .fila {
@@ -132,8 +153,15 @@
   align-items: center;
   gap: 14px;
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 10px 12px;
+  border-left: 3px solid var(--color-lime);
+  border-radius: var(--radius-cmr);
+  padding: 14px 16px;
+  background: var(--color-surface-subtle);
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.fila:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .filaDia {
@@ -149,7 +177,7 @@
 
 .filaHora {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 600;
   font-size: 14px;
 }
 
@@ -159,7 +187,7 @@
 }
 
 .filaTitulo {
-  font-weight: 700;
+  font-weight: 500;
   font-size: 14px;
 }
 
@@ -174,16 +202,10 @@
     grid-template-columns: 1fr;
   }
   .hero {
-    padding: 24px 20px 32px;
+    padding: 22px 18px 16px;
     min-height: 0;
   }
   .heroFecha {
     font-size: 34px;
-  }
-  .heroPelota {
-    width: 140px;
-    height: 140px;
-    right: -40px;
-    bottom: -50px;
   }
 }

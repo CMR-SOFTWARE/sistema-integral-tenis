@@ -185,7 +185,7 @@
   margin-top: 5px;
   font-size: 11px;
   font-weight: 700;
-  color: #1a56db;
+  color: var(--color-primary);
 }
 
 /* ── Form de clase individual ── */
@@ -267,9 +267,9 @@
 .btnSuelta:hover { filter: brightness(1.05); }
 
 .btnAvisar {
-  border: 1px solid #c7dbfa;
-  background: #fff;
-  color: #1a56db;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-subtle);
+  color: var(--color-primary);
   padding: 6px 14px;
   border-radius: 8px;
   font-weight: 700;
@@ -290,15 +290,15 @@
   white-space: nowrap;
 }
 
-.chipVerde { background: #e7f6ec; color: #0e6b3c; }
-.chipAzul  { background: #e8f0fe; color: #1a56db; }
-.chipRojo  { background: #fdeaea; color: #b91c1c; }
-.chipGris  { background: #f3f4f6; color: #6b7280; }
+.chipVerde { background: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface)); color: var(--color-primary); }
+.chipAzul  { background: color-mix(in srgb, var(--color-accent) 16%, var(--color-surface)); color: var(--color-primary); }
+.chipRojo  { background: var(--color-danger-soft); color: var(--color-danger); }
+.chipGris  { background: var(--color-surface-subtle); color: var(--color-text-muted); }
 
 /* ── Estados varios ── */
 .error {
-  background: #fdeaea;
-  color: #b91c1c;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
   border-radius: 10px;
   padding: 10px 14px;
   font-size: 13px;
@@ -306,9 +306,9 @@
 }
 
 .toast {
-  background: #e8f0fe;
-  border: 1px solid #c7dbfa;
-  color: #1a3d7c;
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
   border-radius: 10px;
   padding: 10px 14px;
   font-size: 13px;

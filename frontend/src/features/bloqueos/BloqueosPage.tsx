@@ -6,6 +6,7 @@ import ImpactoModal from './ImpactoModal';
 import { DIAS, fechaCorta } from '../agenda/types';
 import { franjaLegible } from './types';
 import type { CreateBloqueo, Impacto } from './types';
+import FranjaTenis from '../../components/tenis/FranjaTenis';
 import s from './BloqueosPage.module.css';
 
 interface Pendiente {
@@ -58,6 +59,7 @@ export default function BloqueosPage() {
 
   return (
     <div>
+      <FranjaTenis modo="bote" />
       <div className={s.toolbar}>
         <div className={s.titulo}>
           Franjas no disponibles: los turnos que pisan se cancelan y los futuros no se generan.

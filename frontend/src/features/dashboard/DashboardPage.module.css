@@ -5,18 +5,18 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #e8f0fe;
-  border: 1px solid #c7dbfa;
-  color: #1a3d7c;
-  border-radius: var(--radius-lg);
-  padding: 12px 16px;
+  background: var(--color-surface-sand);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  border-radius: var(--radius-cmr);
+  padding: 14px 18px;
   margin-bottom: 16px;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 500;
   text-decoration: none;
 }
 
-.avisoPedidos:hover { background: #dbe8fd; }
+.avisoPedidos:hover { background: var(--color-surface-hover); }
 
 .avisoPedidosBadge {
   display: inline-flex;
@@ -26,10 +26,162 @@
   height: 24px;
   padding: 0 7px;
   border-radius: 999px;
-  background: #1a56db;
-  color: #fff;
-  font-weight: 800;
+  background: var(--color-primary);
+  color: var(--color-cream);
+  font-weight: 600;
   font-size: 13px;
+}
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--color-bg-sand);
+  color: var(--color-text);
+  padding: 16px 8px 32px;
+  margin: 0 -8px 12px;
+  clip-path: var(--clip-cmr);
+}
+
+.heroContenido {
+  position: relative;
+  z-index: 1;
+}
+
+.heroEyebrow,
+.heroTitulo,
+.heroMetricas,
+.ranking {
+  position: relative;
+  z-index: 1;
+}
+
+.heroEyebrow {
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin: 0 0 6px;
+}
+
+.heroTitulo {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 34px;
+  letter-spacing: 0.01em;
+  margin: 0 0 8px;
+  line-height: 1.05;
+  color: var(--color-text);
+}
+
+.heroMetricas {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px 20px;
+  margin: 16px 0 24px;
+}
+
+.heroMetrica {
+  padding: 20px 14px 18px;
+  text-align: center;
+  background: color-mix(in srgb, var(--color-surface) 55%, transparent);
+  border-radius: var(--radius-cmr);
+}
+
+.heroNum {
+  font-family: var(--font-score);
+  font-weight: 600;
+  font-size: 42px;
+  letter-spacing: -0.03em;
+  line-height: 0.95;
+  color: var(--color-primary);
+}
+
+.heroLabel {
+  margin-top: 12px;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+}
+
+.hero .chip {
+  background: var(--color-chip-bg);
+  color: var(--color-chip-fg);
+  min-width: 42px;
+}
+
+.hero .barraFondo {
+  background: var(--color-surface-sand);
+}
+
+.hero .barra {
+  background: var(--color-primary);
+  transform: scaleX(0);
+  transform-origin: left;
+}
+
+.hero .rankingNum {
+  color: var(--color-text);
+}
+
+.sectorSage {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--color-bg-sage);
+  color: #132a13;
+  margin: 0 -8px 16px;
+  padding: 24px 20px 12px;
+  clip-path: var(--clip-cmr);
+}
+
+[data-theme='dark'] .sectorSage {
+  color: var(--color-text);
+}
+
+.sectorSand {
+  background: var(--color-surface-sand);
+}
+
+/* .tarjeta va después y pisa el fondo: hay que ganar con ambas clases. */
+.tarjeta.sectorDeep {
+  background: var(--color-bg-deep);
+  border-color: transparent;
+  color: #f2e8cf;
+}
+
+.tarjeta.sectorDeep .tarjetaTitulo,
+.tarjeta.sectorDeep .linkReal,
+.tarjeta.sectorDeep .statLabel,
+.tarjeta.sectorDeep .vacio {
+  color: #f2e8cf;
+}
+
+.tarjeta.sectorDeep .linkReal {
+  opacity: 0.9;
+}
+
+.tarjeta.sectorDeep .statValor {
+  color: #f2e8cf;
+}
+
+.tarjeta.sectorDeep .statCuota {
+  background: rgba(242, 232, 207, 0.1);
+  border-color: rgba(242, 232, 207, 0.2);
+}
+
+.tarjeta.sectorDeep .statLabel {
+  color: rgba(242, 232, 207, 0.78);
+}
+
+.ranking.esVisible .barra,
+.revelar.esVisible .barra {
+  transform: scaleX(1);
+  transition: transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .metricas {
@@ -42,8 +194,8 @@
 .metrica {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 18px;
+  border-radius: var(--radius-cmr);
+  padding: 22px 20px;
 }
 
 .metricaIcono {
@@ -58,7 +210,7 @@
 
 .metricaValor {
   font-family: var(--font-display);
-  font-weight: 900;
+  font-weight: 600;
   font-size: 30px;
   letter-spacing: -0.03em;
   line-height: 1;
@@ -85,16 +237,22 @@
 }
 
 .tarjeta {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 20px;
+  border-radius: var(--radius-cmr);
+  padding: 24px 22px;
+  box-shadow: var(--shadow-card);
 }
 
 /* Card que va sola en su fila (a lo ancho): necesita separación de la fila siguiente. */
 .tarjetaSola { margin-bottom: 16px; }
 
 .tarjetaHeader {
+  position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -102,9 +260,11 @@
 }
 
 .tarjetaTitulo {
+  position: relative;
+  z-index: 1;
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 16px;
+  font-weight: 600;
+  font-size: 18px;
   margin: 0 0 16px;
 }
 
@@ -119,10 +279,12 @@
 }
 
 .linkReal {
+  position: relative;
+  z-index: 1;
   display: inline-block;
   margin-top: 14px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--color-primary);
   text-decoration: none;
 }
@@ -147,15 +309,17 @@
   padding: 3px 9px;
   border-radius: 7px;
   font-family: var(--font-display);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 11px;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.04em;
+  background: var(--color-chip-bg);
+  color: var(--color-chip-fg);
 }
 
 .barraFondo {
   flex: 1;
   height: 9px;
-  background: #f0f3f1;
+  background: rgba(242, 232, 207, 0.1);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -168,37 +332,113 @@
 
 .rankingNum {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 600;
   font-size: 14px;
   width: 22px;
   text-align: right;
 }
 
 .vacio {
+  position: relative;
+  z-index: 1;
   font-size: 13px;
   color: var(--color-text-faint);
-  padding: 20px;
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-md);
-  text-align: center;
+  padding: 12px 0;
+  text-align: left;
 }
 
 /* ── Listas de clases / cancelaciones ── */
 
 .lista {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
 
+.match,
+.matchOff,
 .fila,
 .filaCancelada {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 9px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: transparent;
+  transition: background 0.18s ease;
+}
+
+.match::after,
+.fila::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  height: 1px;
+  width: 0;
+  background: var(--color-primary);
+  transition: width 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.match:hover::after,
+.fila:hover::after {
+  width: 100%;
+}
+
+.matchHora {
+  font-family: var(--font-score);
+  font-weight: 600;
+  font-size: 28px;
+  letter-spacing: -0.03em;
+  min-width: 64px;
+  color: var(--color-primary);
+}
+
+.matchScore {
+  margin-left: auto;
+  text-align: right;
+  font-family: var(--font-score);
+  font-weight: 600;
+  font-size: 22px;
+  color: var(--color-primary);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.live {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  color: var(--color-primary);
+}
+
+.liveDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-lime);
+  animation: livePulse 1.6s ease-in-out infinite;
+}
+
+.matchBadgeOff {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--color-danger);
+}
+
+.matchOff {
+  opacity: 0.55;
+  border-left-color: var(--color-danger);
 }
 
 .filaCancelada {
@@ -211,7 +451,7 @@
 
 .filaHora {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 600;
   font-size: 13px;
   min-width: 52px;
 }
@@ -221,7 +461,7 @@
 }
 
 .filaTitulo {
-  font-weight: 700;
+  font-weight: 500;
   font-size: 13px;
 }
 
@@ -244,18 +484,20 @@
 }
 
 .chipPorProfe {
-  background: #fdeaea;
-  color: #b91c1c;
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
 }
 
 .chipPorAlumno {
-  background: #fef6e7;
-  color: #b7791f;
+  background: color-mix(in srgb, var(--color-lime) 18%, transparent);
+  color: var(--color-primary);
 }
 
 /* ── Stats de cuotas ── */
 
 .statsCuotas {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 12px;
@@ -263,16 +505,18 @@
 
 .statCuota {
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 14px;
+  border-radius: var(--radius-cmr);
+  padding: 22px 16px 20px;
   text-align: center;
+  background: var(--color-surface-subtle);
 }
 
 .statValor {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 22px;
+  font-family: var(--font-score);
+  font-weight: 600;
+  font-size: 28px;
   letter-spacing: -0.02em;
+  color: var(--color-primary);
 }
 
 .statVencida {
@@ -282,8 +526,10 @@
 .statLabel {
   font-size: 12px;
   color: var(--color-text-muted);
-  font-weight: 600;
-  margin-top: 3px;
+  font-weight: 500;
+  margin-top: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .cargando,
@@ -304,9 +550,27 @@
 
 /* ── Móvil ── */
 @media (max-width: 760px) {
-  .metricas {
-    grid-template-columns: repeat(2, 1fr); /* 2x2: mejor que 4 tarjetas apiladas */
-    gap: 12px;
+  .metricas,
+  .heroMetricas {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+
+  .hero {
+    padding: 20px 16px 24px;
+    margin: 0 0 12px;
+  }
+
+  .heroMetrica {
+    padding: 16px 10px 14px;
+  }
+
+  .heroTitulo {
+    font-size: 22px;
+  }
+
+  .heroNum {
+    font-size: 22px;
   }
 
   .filaPrincipal,
@@ -317,5 +581,10 @@
 
   .metricaValor {
     font-size: 24px;
+  }
+
+  .matchHora {
+    font-size: 18px;
+    min-width: 52px;
   }
 }

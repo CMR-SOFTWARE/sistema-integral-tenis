@@ -10,11 +10,10 @@
 
 .filtros {
   display: flex;
-  gap: 6px;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 4px;
+  gap: 4px;
+  background: transparent;
+  border: none;
+  padding: 0;
 }
 
 .filtro,
@@ -24,11 +23,11 @@
   padding: 7px 12px;
   border-radius: 8px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   font-family: var(--font-display);
   cursor: pointer;
   color: var(--color-text-muted);
-  transition: all 0.15s;
+  transition: color 0.15s, box-shadow 0.15s;
 }
 
 .filtro:hover {
@@ -37,8 +36,9 @@
 }
 
 .filtroActivo {
-  background: var(--color-primary-dark);
-  color: #fff;
+  background: transparent;
+  color: var(--color-lime);
+  box-shadow: inset 0 -2px 0 var(--color-lime);
 }
 
 .selectEstado {
@@ -84,30 +84,32 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  background: var(--color-primary-dark);
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-cream);
   border: none;
   padding: 11px 16px;
   border-radius: var(--radius-md);
-  font-weight: 700;
+  font-weight: 600;
   font-size: 14px;
   cursor: pointer;
   font-family: var(--font-display);
-  transition: background 0.15s;
+  transition: background 0.18s, transform 0.18s;
 }
 
 .btnNuevo:hover {
-  background: var(--color-primary-darker);
+  background: var(--color-accent);
+  transform: translateY(-1px);
 }
 
 /* La tabla no entra en un celular: se desliza en horizontal. Antes era
    `overflow: hidden` y las últimas columnas quedaban cortadas, sin forma de
    llegar a ellas. Este contenedor lo comparten Alumnos y Profesores. */
 .tarjeta {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
+  background: transparent;
+  border: none;
+  border-radius: 0;
   overflow-x: auto;
+  box-shadow: none;
 }
 
 .tabla {
@@ -119,7 +121,7 @@
 }
 
 .tabla thead tr {
-  background: var(--color-surface-subtle);
+  background: transparent;
   text-align: left;
 }
 
@@ -141,8 +143,11 @@
   border-top: 1px solid var(--color-border-subtle);
 }
 
+.tabla tbody tr {
+  transition: background 0.18s;
+}
 .tabla tbody tr:hover {
-  background: #f9fbfa;
+  background: rgba(167, 201, 87, 0.08);
 }
 
 .celdaAlumno {
@@ -165,7 +170,9 @@
 }
 
 .nombre {
-  font-weight: 700;
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .dni {
@@ -188,8 +195,8 @@
 .chipEspera {
   composes: chip;
   margin-left: 6px;
-  background: #fef6e7;
-  color: #b7791f;
+  background: #efe6c8;
+  color: #a67c2a;
 }
 
 .tel {
@@ -294,17 +301,17 @@
 
 .toast {
   position: fixed;
-  bottom: 26px;
+  bottom: max(26px, calc(72px + env(safe-area-inset-bottom)));
   left: 50%;
   transform: translateX(-50%);
   z-index: 90;
-  background: var(--color-text);
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-cream);
   padding: 13px 20px;
   border-radius: 13px;
   font-weight: 600;
   font-size: 14px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 12px 28px rgba(19, 42, 19, 0.18);
   display: flex;
   align-items: center;
   gap: 10px;

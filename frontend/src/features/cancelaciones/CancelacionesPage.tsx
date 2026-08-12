@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../lib/api';
 import { fechaCorta, horaCorta } from '../agenda/types';
 import type { Cancelacion } from './types';
+import FranjaTenis from '../../components/tenis/FranjaTenis';
 import s from './CancelacionesPage.module.css';
 
 /** Cancelaciones recientes (mockup): turnos que canceló el profe (a mano o
@@ -26,6 +27,7 @@ export default function CancelacionesPage() {
 
   return (
     <div>
+      <FranjaTenis modo="slice" />
       <div className={s.intro}>
         Clases canceladas por vos (a mano o por bloqueos) y avisos de tus
         alumnos. El aviso del alumno no mueve la plata: la recuperación queda
@@ -33,7 +35,7 @@ export default function CancelacionesPage() {
       </div>
 
       {cancelaciones.length === 0 && (
-        <div className={s.vacioCard}>No hay cancelaciones recientes. 🎾</div>
+        <div className={s.vacioCard}>No hay cancelaciones recientes.</div>
       )}
 
       <div className={s.lista}>

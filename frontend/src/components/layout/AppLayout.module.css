@@ -1,62 +1,69 @@
-/* Shell Profesor — medidas y colores calcados del mockup CourtSet */
+/* Shell cancha: nav profunda, contenido sobre césped oscuro. */
 
 .shell {
   display: flex;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
-/* ── Sidebar ── */
 .sidebar {
   width: 248px;
   flex: none;
-  background: var(--color-surface);
+  background: var(--color-nav);
   border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   position: sticky;
   top: 0;
-  height: 100vh; /* fallback para navegadores sin soporte de dvh */
-  height: 100dvh; /* altura real visible: descuenta la barra del navegador mobile */
+  height: 100vh;
+  height: 100dvh;
+  color: var(--color-nav-text);
 }
 
 .brand {
-  padding: 20px 20px 14px;
+  padding: 22px 20px 14px;
   display: flex;
   align-items: center;
-  gap: 11px;
+  gap: 12px;
 }
 
 .brandLogo {
   width: 38px;
   height: 38px;
-  border-radius: var(--radius-md);
-  background: var(--color-primary-dark);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
+  border-radius: 10px;
+  background: var(--color-cream);
+  display: grid;
+  place-items: center;
+  color: var(--color-nav);
   font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 19px;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.06em;
 }
 
 .brandName {
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 16px;
-  letter-spacing: -0.02em;
+  font-weight: 600;
+  font-size: 20px;
+  letter-spacing: 0.04em;
+  line-height: 1;
 }
 
 .brandTenant {
   font-size: 11px;
-  color: var(--color-text-faint);
-  font-weight: 600;
+  color: var(--color-nav-muted);
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 3px;
 }
 
 .nav {
+  position: relative;
   flex: 1;
+  overflow-x: hidden;
   overflow-y: auto;
-  padding: 8px 12px;
+  padding: 6px 12px 16px;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -66,35 +73,39 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 11px;
+  padding: 10px 44px 10px 12px;
   border-radius: 10px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--color-text-muted);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.03em;
+  color: var(--color-nav-muted);
   text-decoration: none;
-  transition: all 0.15s;
+  border-left: 2px solid transparent;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
 }
 
 .navItem:hover {
-  background: var(--color-surface-hover);
-  color: var(--color-text);
+  background: var(--color-nav-hover);
+  color: var(--color-nav-text);
 }
 
 .navItemActive,
 .navItemActive:hover {
-  background: var(--color-primary-dark);
-  color: #fff;
+  background: var(--color-nav-active);
+  color: var(--color-nav-text);
+  border-left-color: var(--color-lime-bright);
 }
 
 .sidebarFooter {
   padding: 12px;
-  border-top: 1px solid var(--color-border-subtle);
+  border-top: 1px solid var(--color-border);
 }
 
 .desvincular {
   width: 100%;
   margin-top: 8px;
-  border: 1px solid var(--color-border);
+  border: none;
   background: none;
   color: var(--color-text-muted);
   font-size: 12px;
@@ -105,30 +116,27 @@
 }
 .desvincular:hover {
   color: var(--color-danger);
-  border-color: var(--color-danger-border);
 }
 
 .userCard {
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 8px 10px;
-  border-radius: 12px;
-  background: #f5f8f6;
+  padding: 6px 4px;
 }
 
 .userAvatar {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: var(--color-primary-dark);
-  color: #fff;
+  background: var(--color-cream);
+  color: var(--color-nav);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 14px;
+  font-family: var(--font-score);
+  font-weight: 600;
+  font-size: 16px;
 }
 
 .userInfo {
@@ -137,23 +145,24 @@
 }
 
 .userName {
-  font-weight: 700;
+  font-weight: 500;
   font-size: 13px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--color-nav-text);
 }
 
 .userRole {
   font-size: 11px;
-  color: var(--color-text-faint);
+  color: var(--color-nav-muted);
 }
 
 .logout {
   border: none;
   background: none;
   cursor: pointer;
-  color: var(--color-text-faint);
+  color: var(--color-nav-muted);
   padding: 4px;
   display: flex;
   transition: color 0.15s;
@@ -163,7 +172,6 @@
   color: var(--color-danger);
 }
 
-/* ── Main ── */
 .main {
   flex: 1;
   min-width: 0;
@@ -175,62 +183,131 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  background: rgba(255, 255, 255, 0.86);
-  backdrop-filter: blur(10px);
+  background: color-mix(in srgb, var(--color-bg) 88%, transparent);
+  backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--color-border);
-  padding: 15px 30px;
+  padding: 14px 28px;
   display: flex;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
+  overflow: hidden;
+}
+
+.pelotaRuta {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 50%;
+  height: 1px;
+  background: var(--court-line);
+  transform-origin: left center;
+  transform: scaleX(0);
+  pointer-events: none;
+  animation: cruzaHeader 0.9s cubic-bezier(0.4, 0, 0.2, 1) both;
+  opacity: 0.45;
+}
+
+.headerVivo {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  pointer-events: none;
+  background: var(--court-line);
+  opacity: 0.22;
+}
+
+.headerVivo::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 8px;
+  height: 8px;
+  border: 1.3px solid var(--color-primary);
+  border-radius: 50%;
+  background: none;
+  animation: recorreHeader 18s linear infinite;
+}
+
+@keyframes recorreHeader {
+  0% { left: -12px; opacity: 0; }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.6; }
+  100% { left: 100%; opacity: 0; }
 }
 
 .headerTitles {
   flex: 1;
+  min-width: 0;
 }
 
 .pageTitle {
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 22px;
-  letter-spacing: -0.02em;
+  font-weight: 600;
+  font-size: 24px;
+  letter-spacing: 0.02em;
   margin: 0;
+  line-height: 1.1;
+  color: var(--color-text);
 }
 
 .pageDate {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--color-text-faint);
   font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 3px;
 }
 
-/* Switcher panel de profe ↔ portal de alumno (para quien es las dos cosas). */
+.selectorMiembro {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-weight: 600;
+}
+
+.selectorMiembro select {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  font-weight: 600;
+  background: transparent;
+  color: var(--color-text);
+}
+
 .switcher {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  padding: 8px 14px;
-  border: 1px solid var(--color-border);
+  padding: 8px 12px;
+  border: none;
   border-radius: var(--radius-md);
-  background: var(--color-surface);
+  background: transparent;
   color: var(--color-text-muted);
   font-weight: 600;
   font-size: 13px;
   cursor: pointer;
   white-space: nowrap;
+  transition: color 0.15s, background 0.15s;
 }
 
 .switcher:hover {
-  background: var(--color-surface-hover);
   color: var(--color-text);
+  background: var(--color-nav-hover);
 }
 
 .content {
   flex: 1;
-  padding: 28px 30px 56px;
-  max-width: 1280px;
+  padding: 28px 32px 64px;
+  max-width: 1180px;
   width: 100%;
 }
-
-/* ── Badge de solicitudes pendientes ── */
 
 .badge {
   margin-left: auto;
@@ -238,36 +315,63 @@
   height: 20px;
   padding: 0 6px;
   border-radius: 999px;
-  background: #b91c1c;
+  background: var(--color-danger);
   color: #fff;
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 700;
   font-size: 11px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
 
-/* ── Móvil: el sidebar pasa a ser un drawer con hamburguesa ── */
-
-/* Botón ☰ del header: oculto en escritorio, visible al colapsar el sidebar */
 .hamburguesa {
   display: none;
   width: 40px;
   height: 40px;
   flex: none;
-  border: 1px solid var(--color-border);
+  border: none;
   border-radius: var(--radius-md);
-  background: var(--color-surface);
-  color: var(--color-text-soft);
+  background: transparent;
+  color: var(--color-text);
   cursor: pointer;
   align-items: center;
   justify-content: center;
 }
 
-/* Fondo oscurecido detrás del drawer abierto */
 .backdrop {
   display: none;
+}
+
+.barraInferior {
+  display: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.barraItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  padding: 8px 4px 6px;
+  border: none;
+  background: none;
+  color: var(--color-nav-muted);
+  text-decoration: none;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-family: var(--font-display);
+  cursor: pointer;
+  min-width: 0;
+  transition: color 0.15s;
+}
+
+.barraItemActivo {
+  color: var(--color-cream);
 }
 
 @media (max-width: 900px) {
@@ -284,7 +388,8 @@
     max-width: 84vw;
     transform: translateX(-100%);
     transition: transform 0.22s ease;
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.18);
+    background: var(--color-nav);
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.4);
   }
 
   .sidebarAbierto {
@@ -296,8 +401,7 @@
     position: fixed;
     inset: 0;
     z-index: 30;
-    background: rgba(16, 40, 28, 0.42);
-    backdrop-filter: blur(2px);
+    background: rgba(12, 28, 12, 0.72);
     border: none;
     animation: fadeBackdrop 0.2s ease;
   }
@@ -306,9 +410,33 @@
     from { opacity: 0; }
     to { opacity: 1; }
   }
-}
 
-/* ── Móvil chico: menos aire, títulos más contenidos ── */
+  .barraInferior {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 25;
+    background: var(--color-nav);
+    border-top: 1px solid var(--color-border);
+    padding: 10px 6px calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .content {
+    padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+
+  .pelotaRuta {
+    display: none;
+  }
+
+  .headerVivo::after {
+    width: 6px;
+    height: 6px;
+    animation-duration: 22s;
+  }
+}
 
 @media (max-width: 760px) {
   .header {
@@ -321,10 +449,10 @@
   }
 
   .pageDate {
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .content {
-    padding: 18px 16px 48px;
+    padding: 18px 16px calc(88px + env(safe-area-inset-bottom));
   }
 }

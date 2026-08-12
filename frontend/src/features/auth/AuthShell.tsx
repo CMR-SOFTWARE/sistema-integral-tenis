@@ -1,4 +1,7 @@
 import type { ReactNode } from 'react';
+import PelotaTrayectoria from '../../components/tenis/PelotaTrayectoria';
+import RaquetaLineArt from '../../components/tenis/RaquetaLineArt';
+import { BotonTema } from '../../theme/Tema';
 import s from './LoginPage.module.css';
 
 /**
@@ -11,22 +14,20 @@ export default function AuthShell({ children }: { children: ReactNode }) {
     <div className={s.pantalla}>
       {/* ── Panel izquierdo: marca ── */}
       <div className={s.panelMarca}>
-        <div className={s.grilla} />
-        <div className={s.pelota} />
-        <div className={s.aro} />
-
         <div className={s.marca}>
-          <div className={s.marcaLogo}>C</div>
-          <div className={s.marcaNombre}>CourtSet</div>
+          <div className={s.marcaLogo}>CMR</div>
+          <div className={s.marcaNombre}>CMR Tennis</div>
         </div>
 
         <div className={s.heroTexto}>
-          <div className={s.eyebrow}>Gestión deportiva</div>
+          <div className={s.eyebrow}>Ecosistema de tenis</div>
           <h1 className={s.titulo}>Tu cancha,<br />bajo control.</h1>
           <p className={s.bajada}>
             Alumnos, turnos, clases por categoría, cuotas y disponibilidad.
             Todo en un solo lugar, rápido y claro.
           </p>
+          <PelotaTrayectoria className={s.trayectoria} variante="saque" />
+          <RaquetaLineArt oscilar className={s.raquetaMarca} />
         </div>
 
         <div className={s.stats}>
@@ -40,6 +41,7 @@ export default function AuthShell({ children }: { children: ReactNode }) {
 
       {/* ── Panel derecho: el contenido de cada pantalla ── */}
       <div className={s.panelLogin}>
+        <div className={s.temaLogin}><BotonTema /></div>
         <div className={s.caja}>{children}</div>
       </div>
     </div>

@@ -9,48 +9,35 @@
 /* ── Panel izquierdo ── */
 .panelMarca {
   position: relative;
-  background: radial-gradient(circle at 78% 18%, #1ea35a 0%, #137a43 46%, #0d5e34 100%);
+  isolation: isolate;
+  background: #3e5f4d;
   overflow: hidden;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding: 54px 56px;
-  color: #fff;
+  color: #f2e8cf;
 }
 
-.grilla {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.07) 2px, transparent 2px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.07) 2px, transparent 2px);
-  background-size: 64px 64px;
-  opacity: 0.5;
+.trayectoria {
+  position: relative;
+  z-index: 1;
+  margin-top: 28px;
+  max-width: 360px;
 }
 
-.pelota {
-  position: absolute;
-  right: -90px;
-  top: -70px;
-  width: 340px;
-  height: 340px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #d8fb5b, #b6e83a);
-  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
-}
-
-.aro {
-  position: absolute;
-  right: 36px;
-  top: 96px;
-  width: 178px;
-  height: 178px;
-  border-radius: 50%;
-  border: 3px solid rgba(13, 94, 52, 0.55);
+.raquetaMarca {
+  position: relative;
+  z-index: 1;
+  margin-top: 18px;
+  width: 28px;
+  height: 50px;
+  color: #f2e8cf;
 }
 
 .marca {
   position: relative;
+  z-index: 1;
   display: flex;
   align-items: center;
   gap: 13px;
@@ -59,42 +46,46 @@
 .marcaLogo {
   width: 48px;
   height: 48px;
-  border-radius: 14px;
-  background: #fff;
+  border-radius: 12px;
+  background: rgba(242, 232, 207, 0.14);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #137a43;
+  color: var(--color-cream);
   font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 24px;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.04em;
 }
 
 .marcaNombre {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 600;
   font-size: 19px;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.04em;
 }
 
 .heroTexto {
   position: relative;
+  z-index: 1;
 }
 
 .eyebrow {
-  font: 700 13px/1 var(--font-display);
-  letter-spacing: 0.22em;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #cdf57f;
+  color: #afc8b4;
   margin-bottom: 18px;
 }
 
 .titulo {
   font-family: var(--font-display);
-  font-weight: 900;
+  font-weight: 600;
   font-size: 50px;
   line-height: 0.98;
-  letter-spacing: -0.03em;
+  letter-spacing: 0.01em;
   margin: 0 0 18px;
 }
 
@@ -102,39 +93,49 @@
   max-width: 380px;
   font-size: 16px;
   line-height: 1.5;
-  color: rgba(255, 255, 255, 0.86);
+  color: rgba(242, 232, 207, 0.86);
   margin: 0;
 }
 
 .stats {
   position: relative;
+  z-index: 1;
   display: flex;
   gap: 26px;
   font-family: var(--font-display);
 }
 
 .statNum {
-  font-weight: 900;
-  font-size: 26px;
+  font-family: var(--font-score);
+  font-weight: 600;
+  font-size: 28px;
 }
 
 .statLabel {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(242, 232, 207, 0.75);
 }
 
 .statSep {
   width: 1px;
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(242, 232, 207, 0.25);
 }
 
 /* ── Panel derecho ── */
 .panelLogin {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 40px;
-  background: var(--color-surface);
+  background: #f2e8cf;
+  color: #132a13;
+}
+
+.temaLogin {
+  position: absolute;
+  top: 18px;
+  right: 18px;
 }
 
 .caja {
@@ -145,14 +146,15 @@
 
 .cajaTitulo {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 600;
   font-size: 27px;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.01em;
   margin: 0 0 6px;
+  color: #132a13;
 }
 
 .cajaBajada {
-  color: var(--color-text-muted);
+  color: #386641;
   font-size: 15px;
   margin: 0 0 30px;
 }
@@ -163,19 +165,20 @@
   gap: 16px;
   width: 100%;
   text-align: left;
-  padding: 18px;
-  margin-bottom: 14px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
+  padding: 18px 18px;
+  margin-bottom: 10px;
+  border: 1px solid #d8c7a6;
+  border-radius: var(--radius-cmr);
+  background: #f4ebdd;
+  color: var(--color-ink);
   cursor: pointer;
-  transition: all 0.15s;
+  transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
 }
 
 .tarjetaRol:hover:not(:disabled) {
   border-color: var(--color-primary);
-  box-shadow: var(--shadow-card-hover);
-  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(19, 42, 19, 0.08);
+  transform: translateY(-2px);
 }
 
 .tarjetaDeshabilitada {
@@ -198,7 +201,7 @@
 }
 
 .rolIconoAlumno {
-  background: #eef6f0;
+  background: #afc8b4;
 }
 
 .rolTexto {
@@ -230,9 +233,9 @@
 .pie {
   margin-top: 30px;
   padding-top: 22px;
-  border-top: 1px solid var(--color-border-subtle);
+  border-top: 1px solid #e0d4b0;
   font-size: 13px;
-  color: var(--color-text-faint);
+  color: #5c6f4a;
   text-align: center;
 }
 
@@ -247,15 +250,17 @@
 .campo > span {
   font-size: 12px;
   font-weight: 700;
-  color: var(--color-text-soft);
+  color: #386641;
 }
 
 .campo input {
   width: 100%;
   padding: 12px 14px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border: 1.5px solid #d8c7a6;
+  border-radius: var(--radius-cmr);
   font-size: 14px;
+  background: #f4ebdd;
+  color: var(--color-ink);
 }
 
 .campo input:focus {
@@ -266,19 +271,21 @@
 .campo select {
   width: 100%;
   padding: 12px 14px;
-  border: 1.5px solid var(--color-border);
-  border-radius: var(--radius-md);
+  border: 1.5px solid #d8c7a6;
+  border-radius: var(--radius-cmr);
   font-size: 14px;
-  background: #fff;
+  background: #f4ebdd;
+  color: var(--color-ink);
 }
 
 /* ── Checkout (simulado) ── */
 
 .checkoutResumen {
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  padding: 16px;
+  border-radius: var(--radius-cmr);
+  padding: 18px;
   margin-bottom: 16px;
+  background: #f4ebdd;
 }
 
 .checkoutFila {
@@ -314,13 +321,19 @@
   margin-top: 6px;
   padding: 13px;
   border: none;
-  border-radius: var(--radius-md);
-  background: var(--color-primary-dark);
-  color: #fff;
+  border-radius: var(--radius-cmr);
+  background: var(--color-primary);
+  color: var(--color-cream);
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 15px;
   cursor: pointer;
+  transition: background 0.18s, transform 0.18s;
+}
+
+.btnEntrar:hover:not(:disabled) {
+  background: var(--color-accent);
+  transform: translateY(-1px);
 }
 
 .btnEntrar:disabled {
@@ -335,7 +348,7 @@
   padding: 10px;
   border: none;
   background: none;
-  color: var(--color-text-muted);
+  color: #5c6f4a;
   font-size: 14px;
   cursor: pointer;
   text-align: center;

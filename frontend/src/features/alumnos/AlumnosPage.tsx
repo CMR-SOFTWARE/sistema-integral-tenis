@@ -13,6 +13,7 @@ import { useProfesores } from '../profesores/useProfesores';
 import { CAT_COLOR, CAT_LABEL, ESTADO_UI, subPorEdad } from './types';
 import CategoriaOptions from './CategoriaOptions';
 import type { Alumno, Categoria, Estado, Lista } from './types';
+import FranjaTenis from '../../components/tenis/FranjaTenis';
 import s from './AlumnosPage.module.css';
 
 interface Credenciales {
@@ -182,6 +183,7 @@ export default function AlumnosPage({ lista = 'Todos' }: Props) {
 
   return (
     <div>
+      <FranjaTenis modo="rally" />
       <div className={s.toolbar}>
         {/* Buscador por nombre/apellido/DNI (client-side sobre lo ya cargado) */}
         <input
@@ -278,18 +280,18 @@ export default function AlumnosPage({ lista = 'Todos' }: Props) {
                         {CAT_LABEL[a.categoria]}
                       </span>
                       {sub && (
-                        <span className={s.chip} style={{ background: '#eef2ff', color: '#4f46e5', marginLeft: 6 }}>
+                        <span className={s.chip} style={{ background: '#efe6c8', color: '#386641', marginLeft: 6 }}>
                           {sub}
                         </span>
                       )}
                     </td>
                     <td>
                       {a.deudaVencida ? (
-                        <span className={s.chip} style={{ background: '#fdeaea', color: '#b91c1c' }}>
+                        <span className={s.chip} style={{ background: '#f8e8e8', color: '#bc4749' }}>
                           Vencida
                         </span>
                       ) : (
-                        <span className={s.chip} style={{ background: '#e7f6ec', color: '#0e6b3c' }}>
+                        <span className={s.chip} style={{ background: '#eaf3d8', color: '#386641' }}>
                           Al día
                         </span>
                       )}

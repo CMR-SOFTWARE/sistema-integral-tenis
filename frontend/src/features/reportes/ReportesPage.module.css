@@ -8,22 +8,29 @@
 }
 
 .tarjeta {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 20px;
+  border-radius: var(--radius-cmr);
+  padding: 24px 22px;
 }
 
 .tarjetaTitulo {
+  position: relative;
+  z-index: 1;
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 16px;
+  font-weight: 600;
+  font-size: 18px;
   margin: 0 0 16px;
 }
 
 /* ── Gráfico de barras verticales ── */
 
 .grafico {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 12px;
@@ -59,8 +66,13 @@
   width: 70%;
   min-height: 3px;
   border-radius: 8px 8px 3px 3px;
-  background: linear-gradient(180deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
-  transition: height 0.4s ease;
+  background: linear-gradient(180deg, var(--color-lime) 0%, var(--color-primary) 100%);
+  transform: scaleY(0);
+  transform-origin: bottom;
+}
+.revelar.esVisible .barraMes {
+  transform: scaleY(1);
+  transition: transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .mesLabel {
@@ -71,6 +83,8 @@
 }
 
 .pie {
+  position: relative;
+  z-index: 1;
   margin-top: 14px;
   font-size: 12px;
   color: var(--color-text-faint);
@@ -79,6 +93,8 @@
 /* ── Ranking por categoría (mismo patrón que el dashboard) ── */
 
 .ranking {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 11px;
@@ -106,7 +122,7 @@
 .barraFondo {
   flex: 1;
   height: 9px;
-  background: #f0f3f1;
+  background: rgba(242, 232, 207, 0.1);
   border-radius: 6px;
   overflow: hidden;
 }
@@ -114,12 +130,17 @@
 .barra {
   height: 100%;
   border-radius: 6px;
-  transition: width 0.4s ease;
+  transform: scaleX(0);
+  transform-origin: left;
+}
+.revelar.esVisible .barra {
+  transform: scaleX(1);
+  transition: transform 0.85s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .rankingNum {
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 600;
   font-size: 14px;
   width: 22px;
   text-align: right;
@@ -129,7 +150,7 @@
   display: inline-block;
   margin-top: 14px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--color-primary);
   text-decoration: none;
 }

@@ -10,15 +10,20 @@ import { MESES } from '../cuotas/types';
 import AccesosRapidos from '../dashboard/AccesosRapidos';
 import type { Acceso } from '../dashboard/AccesosRapidos';
 import CrearAlumnoRapido from '../dashboard/CrearAlumnoRapido';
+import Contador from '../../components/tenis/Contador';
+import EscenaRally from '../../components/tenis/EscenaRally';
+import FranjaTenis from '../../components/tenis/FranjaTenis';
+import PelotaTrayectoria from '../../components/tenis/PelotaTrayectoria';
+import Seccion from '../../components/tenis/Seccion';
 import s from './StaffDashboardPage.module.css';
 
 const DIA_LABEL: Record<string, string> = Object.fromEntries(DIAS.map((d) => [d.valor, d.corto]));
 
 /** Accesos del profe empleado: crear/ver lo suyo (el alta rápida queda a su nombre). */
 const ACCESOS: Acceso[] = [
-  { to: '/agenda?tab=calendario&nuevo=1', label: 'Nuevo horario', color: '#178a4c', icon: 'M12 5v14M5 12h14' },
-  { to: '/agenda?tab=calendario', label: 'Mi agenda', color: '#2563eb', icon: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4' },
-  { to: '/alumnos', label: 'Mis alumnos', color: '#0e6b3c', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
+  { to: '/agenda?tab=calendario&nuevo=1', label: 'Nuevo horario', color: '#386641', icon: 'M12 5v14M5 12h14' },
+  { to: '/agenda?tab=calendario', label: 'Mi agenda', color: '#556b2f', icon: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4' },
+  { to: '/alumnos', label: 'Mis alumnos', color: '#3e5f4d', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
 ];
 
 /**
@@ -56,13 +61,15 @@ export default function StaffDashboardPage() {
   return (
     <div>
       {/* ── Accesos directos + alta rápida ── */}
-      <AccesosRapidos accesos={ACCESOS} />
-      <CrearAlumnoRapido />
+      <Seccion>
+        <FranjaTenis modo="cancha" />
+        <AccesosRapidos accesos={ACCESOS} />
+        <CrearAlumnoRapido />
+      </Seccion>
 
     <div className={s.grilla}>
       {/* ── Hero: tu próxima clase (mismo look que el Inicio del alumno) ── */}
       <div className={s.hero}>
-        <div className={s.heroPelota} />
         <div className={s.heroEyebrow}>Hola, {nombre.split(' ')[0]} — tu próxima clase</div>
         {proxima ? (
           <>
@@ -75,14 +82,16 @@ export default function StaffDashboardPage() {
         ) : (
           <div className={s.heroDetalle}>No tenés clases programadas esta semana.</div>
         )}
+        <PelotaTrayectoria variante="bote" className={s.heroLinea} />
       </div>
 
       {/* ── Métricas de la semana ── */}
-      <div className={s.tarjeta}>
+      <Seccion className={s.tarjeta}>
+        <FranjaTenis modo="lateral" />
         <h3 className={s.tarjetaTitulo}>Tu semana</h3>
         <div className={s.metricas}>
           <div className={s.metrica}>
-            <div className={s.metricaNumero}>{programados.length}</div>
+            <div className={s.metricaNumero}><Contador valor={programados.length} /></div>
             <div className={s.metricaLabel}>clases a dar</div>
           </div>
           <div className={s.metrica}>
@@ -90,15 +99,15 @@ export default function StaffDashboardPage() {
             <div className={s.metricaLabel}>horas</div>
           </div>
           <div className={s.metrica}>
-            <div className={s.metricaNumero}>{alumnos.length}</div>
+            <div className={s.metricaNumero}><Contador valor={alumnos.length} /></div>
             <div className={s.metricaLabel}>alumnos</div>
           </div>
         </div>
         <Link to="/agenda?tab=calendario" className={s.btnPrimario}>Ver mi calendario</Link>
-      </div>
+      </Seccion>
 
       {/* ── Mi sueldo del mes (horas dadas × valor hora) ── */}
-      <div className={s.tarjeta}>
+      <Seccion className={s.tarjeta}>
         <h3 className={s.tarjetaTitulo}>Mi sueldo — {MESES[miSueldo.mes - 1]}</h3>
         {miSueldo.cargando ? (
           <div className={s.vacio}>Calculando…</div>
@@ -154,10 +163,11 @@ export default function StaffDashboardPage() {
             )}
           </>
         )}
-      </div>
+      </Seccion>
 
       {/* ── Próximas clases ── */}
-      <div className={s.tarjeta}>
+      <Seccion className={s.tarjeta}>
+        <FranjaTenis modo="bote" />
         <h3 className={s.tarjetaTitulo}>Próximas clases</h3>
         {proximas.length === 0 && <div className={s.vacio}>Sin clases próximas.</div>}
         <div className={s.lista}>
@@ -176,8 +186,9 @@ export default function StaffDashboardPage() {
             </div>
           ))}
         </div>
-      </div>
+      </Seccion>
     </div>
+      <EscenaRally />
     </div>
   );
 }

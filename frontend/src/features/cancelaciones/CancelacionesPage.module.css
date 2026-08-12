@@ -107,13 +107,21 @@
 }
 
 .vacioCard {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   background: var(--color-surface);
   border: 1px dashed var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-cmr);
   padding: 32px;
   text-align: center;
   font-size: 13px;
   color: var(--color-text-muted);
+}
+
+.vacioCard > span {
+  position: relative;
+  z-index: 1;
 }
 
 /* ── Móvil: la fila apila el botón de WhatsApp abajo, a lo ancho ── */

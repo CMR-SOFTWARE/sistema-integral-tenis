@@ -1,23 +1,32 @@
-/* La tarjeta de una clase en el calendario. La comparten las tres vistas (día,
-   semana y el detalle del mes), por eso vive en su propio módulo y no en el CSS
-   de una pantalla. Hereda el look que ya tenía la tarjeta de la grilla semanal. */
+/* Marcador de clase: misma tarjeta en día / semana / mes. */
 
 .tarjeta {
+  position: relative;
   display: block;
   width: 100%;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 10px;
-  padding: 8px 9px;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  padding: 8px 4px 10px;
   font-size: 12px;
   text-align: left;
-  background: var(--color-surface);
+  background: transparent;
   cursor: pointer;
-  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
-.tarjeta:hover {
-  border-color: var(--color-primary);
-  box-shadow: 0 4px 12px rgba(23, 138, 76, 0.12);
+.tarjeta::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  height: 1px;
+  width: 0;
+  background: var(--color-primary);
+  transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tarjeta:hover::after {
+  width: 100%;
 }
 
 .tarjeta:focus-visible {
@@ -28,6 +37,7 @@
 .cancelada {
   opacity: 0.55;
   background: var(--color-surface-subtle);
+  border-left-color: var(--color-danger);
 }
 
 .cancelada .tituloTexto {
@@ -35,10 +45,11 @@
 }
 
 .hora {
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 13px;
-  color: var(--color-text);
+  font-family: var(--font-score);
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  color: var(--color-primary);
 }
 
 .titulo {
@@ -49,14 +60,13 @@
 }
 
 .tituloTexto {
-  font-weight: 700;
+  font-weight: 500;
   color: var(--color-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-/* Alguien de esta clase debe la cuota: se ve sin abrir el turno. */
 .puntoDeuda {
   width: 7px;
   height: 7px;
@@ -66,8 +76,6 @@
   margin-left: auto;
 }
 
-/* Quiénes vienen. Se corta a dos líneas: en la semana las columnas son angostas,
-   en día y mobile entra cómodo. */
 .alumnos {
   color: var(--color-text-soft);
   font-size: 11.5px;
@@ -92,7 +100,7 @@
   margin-top: 3px;
   font-size: 11px;
   font-weight: 600;
-  color: var(--color-primary-dark);
+  color: var(--color-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

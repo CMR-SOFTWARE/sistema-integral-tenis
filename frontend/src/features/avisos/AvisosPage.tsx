@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { api, ApiError } from '../../lib/api';
 import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { fechaCorta } from '../agenda/types';
+import FranjaTenis from '../../components/tenis/FranjaTenis';
 import s from './AvisosPage.module.css';
 
 /** Espejo de AvisoDto. */
@@ -83,6 +84,7 @@ export default function AvisosPage() {
 
   return (
     <div>
+      <FranjaTenis modo="globo" />
       <div className={s.toolbar}>
         <div className={s.titulo}>
           Avisos que ven todos tus alumnos en el Inicio de su portal. Poné un vencimiento

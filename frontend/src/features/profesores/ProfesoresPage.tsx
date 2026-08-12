@@ -10,6 +10,7 @@ import EditarEmpleadoModal from './EditarEmpleadoModal';
 import DetalleEmpleadoModal from './DetalleEmpleadoModal';
 import { useInvalidarProfesores } from './useProfesores';
 import type { Staff, StaffCreado, UpdateEmpleado } from './types';
+import FranjaTenis from '../../components/tenis/FranjaTenis';
 import s from '../alumnos/AlumnosPage.module.css';
 
 /**
@@ -105,6 +106,7 @@ export default function ProfesoresPage() {
 
   return (
     <div>
+      <FranjaTenis modo="golpe" />
       <div className={s.toolbar}>
         <input
           className={s.buscador}

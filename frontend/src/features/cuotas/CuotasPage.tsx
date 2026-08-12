@@ -10,6 +10,7 @@ import { ESTADO_LIQ_UI, MESES } from './types';
 import type { EstadoLiquidacion } from './types';
 import type { Liquidacion, Medio } from './types';
 import { avatarColor, formatoPlata, iniciales } from '../alumnos/types';
+import FranjaTenis from '../../components/tenis/FranjaTenis';
 import s from './CuotasPage.module.css';
 
 /** Cuotas del mes: la cuenta corriente por alumno, generada desde los turnos. */
@@ -58,6 +59,7 @@ export default function CuotasPage() {
 
   return (
     <div>
+      <FranjaTenis modo="globo" />
       <div className={s.toolbar}>
         <button className={s.nav} onClick={mesAnterior}>‹</button>
         <div className={s.rango}>{MESES[mes - 1]} {anio}</div>
@@ -95,11 +97,11 @@ export default function CuotasPage() {
           {/* ── Panel financiero del mes (datos reales) ── */}
           <div className={s.stats}>
             <div className={s.stat}>
-              <div className={s.statValor} style={{ color: '#0e6b3c' }}>{formatoPlata(datos.totalCobrado)}</div>
+              <div className={`${s.statValor} ${s.statOk}`}>{formatoPlata(datos.totalCobrado)}</div>
               <div className={s.statLabel}>Recaudado</div>
             </div>
             <div className={s.stat}>
-              <div className={s.statValor} style={{ color: '#b7791f' }}>{formatoPlata(datos.totalPendiente)}</div>
+              <div className={`${s.statValor} ${s.statPend}`}>{formatoPlata(datos.totalPendiente)}</div>
               <div className={s.statLabel}>Por cobrar</div>
             </div>
             <div className={s.stat}>
@@ -107,7 +109,7 @@ export default function CuotasPage() {
               <div className={s.statLabel}>Potencial del mes</div>
             </div>
             <div className={s.stat}>
-              <div className={s.statValor} style={{ color: datos.alumnosVencidos > 0 ? '#b91c1c' : undefined }}>
+              <div className={`${s.statValor} ${datos.alumnosVencidos > 0 ? s.statVenc : ''}`.trim()}>
                 {datos.alumnosVencidos}
               </div>
               <div className={s.statLabel}>Vencidos</div>

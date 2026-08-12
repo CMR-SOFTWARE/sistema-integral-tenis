@@ -1,0 +1,10 @@
+.franja {
+  position: relative;
+  overflow: hidden;
+  pointer-events: none;
+  margin: 2px 0 10px;
+}
+
+@media (max-width: 760px) {
+  .franja { margin: 0 0 8px; }
+}

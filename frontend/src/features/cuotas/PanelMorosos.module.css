@@ -1,9 +1,9 @@
 /* Panel de morosos — aviso plegable arriba de la liquidación */
 
 .panel {
-  background: #fffbf4;
-  border: 1px solid #f0dcc0;
-  border-radius: var(--radius-lg);
+  background: #f4ebdd;
+  border: 1px solid #d8c7a6;
+  border-radius: var(--radius-cmr);
   margin-bottom: 16px;
   overflow: hidden;
 }

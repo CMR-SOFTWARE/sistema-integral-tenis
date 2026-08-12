@@ -17,6 +17,7 @@ import { aISO, fechaLarga, lunesDe, rangoSemana, sumarDias } from './types';
 import type { Horario, Turno } from './types';
 import { MESES } from '../cuotas/types';
 import { useBloqueos } from '../bloqueos/useBloqueos';
+import FranjaTenis from '../../components/tenis/FranjaTenis';
 import s from './CalendarioPage.module.css';
 
 type Vista = 'dia' | 'semana' | 'mes';
@@ -172,6 +173,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
 
   return (
     <div>
+      <FranjaTenis modo="golpe" />
       <div className={s.toolbar}>
         {/* Las flechas y el período van juntos en un bloque: sueltos en la toolbar,
             el texto largo del rango los separaba al envolverse en pantallas chicas. */}

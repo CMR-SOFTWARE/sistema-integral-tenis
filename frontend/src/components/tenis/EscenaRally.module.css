@@ -1,0 +1,124 @@
+.escena {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: 100%;
+  max-width: 520px;
+  margin: 40px auto 8px;
+  padding: 20px 12px 12px;
+  pointer-events: none;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: 96px;
+}
+
+.trazo {
+  fill: none;
+  stroke: var(--court-line);
+  stroke-width: 1.1;
+  stroke-linecap: square;
+  opacity: 0.28;
+  stroke-dasharray: 280;
+  stroke-dashoffset: 280;
+  animation: dibuja 10s ease-in-out infinite;
+}
+
+.raquetaIzq,
+.raquetaDer {
+  stroke: var(--color-primary);
+  stroke-width: 1.35;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  fill: none;
+  transform-origin: center;
+}
+
+.raquetaIzq {
+  transform-origin: 42px 86px;
+  animation: golpeIzq 10s ease-in-out infinite;
+}
+
+.raquetaDer {
+  transform-origin: 318px 86px;
+  animation: golpeDer 10s ease-in-out infinite;
+}
+
+.pelota {
+  position: absolute;
+  top: 28%;
+  left: 18%;
+  width: 18px;
+  height: 18px;
+  color: var(--color-primary);
+  animation: rally 10s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+@keyframes dibuja {
+  0%, 8% { stroke-dashoffset: 280; opacity: 0; }
+  18%, 82% { stroke-dashoffset: 0; opacity: 0.28; }
+  92%, 100% { stroke-dashoffset: -40; opacity: 0; }
+}
+
+@keyframes golpeIzq {
+  0%, 8% { transform: rotate(-14deg); }
+  12%, 18% { transform: rotate(10deg); }
+  28%, 100% { transform: rotate(-8deg); }
+}
+
+@keyframes golpeDer {
+  0%, 48% { transform: rotate(8deg); }
+  52%, 58% { transform: rotate(-10deg); }
+  68%, 100% { transform: rotate(8deg); }
+}
+
+@keyframes rally {
+  0%, 10% {
+    left: 16%;
+    top: 34%;
+    opacity: 0;
+  }
+  14% { opacity: 1; }
+  48% {
+    left: 76%;
+    top: 26%;
+    opacity: 1;
+  }
+  52%, 58% {
+    left: 78%;
+    top: 34%;
+  }
+  90% {
+    left: 18%;
+    top: 26%;
+    opacity: 1;
+  }
+  96%, 100% {
+    left: 16%;
+    top: 34%;
+    opacity: 0;
+  }
+}
+
+@media (max-width: 760px) {
+  .escena {
+    margin: 28px auto 4px;
+    padding: 12px 4px 8px;
+    max-width: 100%;
+  }
+  .svg { height: 72px; }
+  .pelota { width: 14px; height: 14px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trazo,
+  .raquetaIzq,
+  .raquetaDer,
+  .pelota { animation: none; }
+  .trazo { stroke-dashoffset: 0; opacity: 0.28; }
+  .pelota { left: 48%; top: 30%; opacity: 0.85; }
+  .raquetaIzq { transform: rotate(-6deg); }
+  .raquetaDer { transform: rotate(6deg); }
+}

@@ -1,11 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { cerrarSesion, obtenerSesion } from '../../features/auth/sesion';
 import BotonMenu from './BotonMenu';
+import BarraInferior from './BarraInferior';
 import { useConfirmar } from '../confirmar/ConfirmarProvider';
-import { profNav, pageTitles } from './nav';
+import { BotonTema } from '../../theme/Tema';
+import PelotaNav from '../tenis/PelotaNav';
+import { coincideRuta, profNav, pageTitles } from './nav';
 import s from './AppLayout.module.css';
+
+/** Pelota que cruza el header una vez al cambiar de pantalla. */
+function PelotaRuta() {
+  return <span className={s.pelotaRuta} aria-hidden />;
+}
 
 /** Fecha de hoy estilo "Jueves 18 de junio, 2026" (como en el mockup). */
 function fechaDeHoy(): string {
@@ -27,9 +35,13 @@ export default function AppLayout() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const confirmar = useConfirmar();
-  const title = pageTitles[pathname] ?? 'CourtSet';
+  const title = pageTitles[pathname] ?? 'CMR';
   const sesion = obtenerSesion();
   const [menuAbierto, setMenuAbierto] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+  const navItems = profNav.filter(
+    (item) => (!item.soloOwner || sesion?.rol === 'owner') && (!item.soloAdmin || sesion?.esAdmin),
+  );
 
   // Al navegar se cierra el drawer (en escritorio no se ve: CSS)
   useEffect(() => {
@@ -83,20 +95,20 @@ export default function AppLayout() {
 
       <aside className={`${s.sidebar} ${menuAbierto ? s.sidebarAbierto : ''}`}>
         <div className={s.brand}>
-          <div className={s.brandLogo}>C</div>
+          <div className={s.brandLogo} aria-hidden>CMR</div>
           <div>
-            <div className={s.brandName}>CourtSet</div>
-            <div className={s.brandTenant}>Club Demo</div>
+            <div className={s.brandName}>CMR</div>
+            <div className={s.brandTenant}>{sesion?.rol === 'staff' ? 'Staff' : 'Tenis'}</div>
           </div>
         </div>
 
-        <nav className={s.nav}>
-          {profNav
-            .filter((item) => (!item.soloOwner || sesion?.rol === 'owner') && (!item.soloAdmin || sesion?.esAdmin))
-            .map((item) => (
+        <nav ref={navRef} className={s.nav}>
+          <PelotaNav contenedorRef={navRef} />
+          {navItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
+              data-nav-activo={coincideRuta(pathname, item.to) ? '1' : undefined}
               className={({ isActive }) => (isActive ? `${s.navItem} ${s.navItemActive}` : s.navItem)}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -132,6 +144,8 @@ export default function AppLayout() {
 
       <div className={s.main}>
         <header className={s.header}>
+          <PelotaRuta key={pathname} />
+          <span className={s.headerVivo} aria-hidden />
           <BotonMenu onClick={() => setMenuAbierto(true)} />
           <div className={s.headerTitles}>
             <h1 className={s.pageTitle}>{title}</h1>
@@ -143,12 +157,18 @@ export default function AppLayout() {
               Mi portal
             </button>
           )}
+          <BotonTema />
         </header>
 
         <main className={s.content}>
           <Outlet />
         </main>
       </div>
+
+      <BarraInferior
+        items={profNav.filter((item) => item.enBarra && (!item.soloOwner || sesion?.rol === 'owner'))}
+        onMas={() => setMenuAbierto(true)}
+      />
     </div>
   );
 }

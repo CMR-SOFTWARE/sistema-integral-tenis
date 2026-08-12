@@ -1,16 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { cerrarSesion, guardarSesion, obtenerSesion } from '../auth/sesion';
 import type { Sesion } from '../auth/sesion';
 import BotonMenu from '../../components/layout/BotonMenu';
+import BarraInferior from '../../components/layout/BarraInferior';
 import Avatar from '../../components/Avatar';
 import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
-import { alumnoNav, portalTitles } from '../../components/layout/nav';
+import { alumnoNav, coincideRuta, portalTitles } from '../../components/layout/nav';
+import PelotaNav from '../../components/tenis/PelotaNav';
 import { CAT_LABEL } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import type { MiPerfil } from './types';
 import { FichaActivaProvider, useFichaActiva } from './FichaActivaContext';
+import { BotonTema } from '../../theme/Tema';
 import s from '../../components/layout/AppLayout.module.css';
 
 /** Selector de miembro de la familia (Capa 2): solo aparece si hay más de uno. */
@@ -19,12 +22,11 @@ function SelectorMiembro() {
   const { alumnoId, setAlumnoId } = useFichaActiva();
   if (alumnos.length <= 1) return null;
   return (
-    <label style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-      <span style={{ color: '#6b7770', fontWeight: 600 }}>Viendo a</span>
+    <label className={s.selectorMiembro}>
+      <span>Viendo a</span>
       <select
         value={alumnoId ?? ''}
         onChange={(e) => setAlumnoId(e.target.value)}
-        style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid #dde5da', fontWeight: 600 }}
       >
         {alumnos.map((a) => (
           <option key={a.alumnoId} value={a.alumnoId}>{a.nombre} {a.apellido}</option>
@@ -57,7 +59,8 @@ export default function PortalLayout() {
   const [sesion, setSesion] = useState<Sesion | null>(obtenerSesion());
   const [perfil, setPerfil] = useState<MiPerfil | null>(null);
   const [menuAbierto, setMenuAbierto] = useState(false);
-  const title = portalTitles[pathname] ?? 'CourtSet';
+  const title = portalTitles[pathname] ?? 'CMR';
+  const navRef = useRef<HTMLElement>(null);
 
   // Al navegar se cierra el drawer (en escritorio no se ve: CSS)
   useEffect(() => {
@@ -112,19 +115,21 @@ export default function PortalLayout() {
 
       <aside className={`${s.sidebar} ${menuAbierto ? s.sidebarAbierto : ''}`}>
         <div className={s.brand}>
-          <div className={s.brandLogo}>C</div>
+          <div className={s.brandLogo} aria-hidden>CMR</div>
           <div>
-            <div className={s.brandName}>CourtSet</div>
-            <div className={s.brandTenant}>Portal del alumno</div>
+            <div className={s.brandName}>CMR</div>
+            <div className={s.brandTenant}>{sesion?.alumno?.club ?? 'Portal'}</div>
           </div>
         </div>
 
-        <nav className={s.nav}>
+        <nav ref={navRef} className={s.nav}>
+          <PelotaNav contenedorRef={navRef} />
           {alumnoNav.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
               end={item.to === '/portal'}
+              data-nav-activo={coincideRuta(pathname, item.to) ? '1' : undefined}
               className={({ isActive }) => (isActive ? `${s.navItem} ${s.navItemActive}` : s.navItem)}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -159,6 +164,8 @@ export default function PortalLayout() {
 
       <div className={s.main}>
         <header className={s.header}>
+          <span key={pathname} className={s.pelotaRuta} aria-hidden />
+          <span className={s.headerVivo} aria-hidden />
           <BotonMenu onClick={() => setMenuAbierto(true)} />
           <div className={s.headerTitles}>
             <h1 className={s.pageTitle}>{title}</h1>
@@ -171,12 +178,18 @@ export default function PortalLayout() {
             </button>
           )}
           <SelectorMiembro />
+          <BotonTema />
         </header>
 
         <main className={s.content}>
           <Outlet />
         </main>
       </div>
+
+      <BarraInferior
+        items={alumnoNav.filter((item) => item.enBarra)}
+        onMas={() => setMenuAbierto(true)}
+      />
     </div>
     </FichaActivaProvider>
   );

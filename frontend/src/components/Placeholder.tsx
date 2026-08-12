@@ -1,3 +1,4 @@
+import RaquetaLineArt from './tenis/RaquetaLineArt';
 import s from './Placeholder.module.css';
 
 /**
@@ -7,7 +8,7 @@ import s from './Placeholder.module.css';
 export default function Placeholder({ titulo }: { titulo: string }) {
   return (
     <div className={s.card}>
-      <div className={s.icon}>🎾</div>
+      <RaquetaLineArt oscilar className={s.icon} />
       <h2 className={s.title}>{titulo}</h2>
       <p className={s.text}>
         Esta sección llega en una próxima vertical. Estamos construyendo el

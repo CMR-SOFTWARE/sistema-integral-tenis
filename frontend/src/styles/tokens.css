@@ -1,53 +1,143 @@
 /* ─────────────────────────────────────────────
-   Tokens de diseño — extraídos del mockup CourtSet
-   (Turnos Tenis.dc.html). Toda pantalla nueva usa
-   estas variables, nunca colores hardcodeados.
+   CMR Tennis — claro cálido (crema/arena/sage),
+   oscuro con varios verdes. Nunca blanco puro.
    ───────────────────────────────────────────── */
-:root {
-  /* Tipografías */
-  --font-display: 'Archivo', sans-serif; /* títulos, botones, números */
-  --font-body: 'Hanken Grotesk', sans-serif; /* todo lo demás */
+:root,
+[data-theme='light'] {
+  --font-display: 'Rajdhani', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-score: 'Rajdhani', sans-serif;
 
-  /* Fondos y superficies */
-  --color-bg: #eef2f0; /* fondo general de la app */
-  --color-surface: #ffffff; /* tarjetas, sidebar, modales */
-  --color-surface-subtle: #f7faf8; /* thead, inputs, bloques suaves */
-  --color-surface-hover: #f3f6f4; /* hover de filas y chips neutros */
+  --color-bg: #f2e8cf;
+  --color-bg-sage: #afc8b4;
+  --color-bg-sand: #f4ebdd;
+  --color-bg-arena: #d8c7a6;
+  --color-bg-deep: #3e5f4d;
 
-  /* Bordes */
-  --color-border: #e6ebe8;
-  --color-border-subtle: #eef2f0;
+  --color-surface: #f4ebdd;
+  --color-surface-card: #f4ebdd;
+  --color-surface-subtle: #efe4cf;
+  --color-surface-hover: #e6d7b8;
+  --color-surface-sand: #d8c7a6;
 
-  /* Texto */
-  --color-text: #16241c;
-  --color-text-soft: #4a5751;
-  --color-text-muted: #6b7770;
-  --color-text-faint: #9aa7a0;
+  --color-border: rgba(62, 95, 77, 0.22);
+  --color-border-subtle: rgba(62, 95, 77, 0.14);
 
-  /* Marca (verde) */
-  --color-primary: #178a4c; /* acciones, links, focus */
-  --color-primary-dark: #0e6b3c; /* botones principales */
-  --color-primary-darker: #0b5730; /* hover de botón principal */
-  --color-primary-deep: #137a43; /* gradientes del login */
+  --color-text: #132a13;
+  --color-text-soft: #3e5f4d;
+  --color-text-muted: #3e5a3f;
+  --color-text-faint: #4a6348;
 
-  /* Acento lima */
-  --color-lime: #d8fb5b;
-  --color-lime-soft: #cdf57f;
+  --color-primary: #386641;
+  --color-primary-dark: #386641;
+  --color-primary-darker: #2d5334;
+  --color-primary-deep: #132a13;
+  --color-accent: #6a994e;
+  --color-lime: #556b2f;
+  --color-lime-soft: #8a9b63;
+  --color-lime-bright: #a7c957;
+  --color-cream: #f2e8cf;
+  --color-sand: #d8c7a6;
+  --color-sage: #afc8b4;
+  --color-olive: #8a9b63;
+  --color-ink: #132a13;
 
-  /* Semánticos */
-  --color-danger: #dc2626;
-  --color-danger-soft: #fef2f2;
-  --color-danger-border: #f0c8c8;
-  --color-warning: #d9920a;
+  --color-nav: #3e5f4d;
+  --color-nav-text: #f2e8cf;
+  --color-nav-muted: #afc8b4;
+  --color-nav-hover: rgba(242, 232, 207, 0.1);
+  --color-nav-active: rgba(138, 155, 99, 0.28);
 
-  /* Radios (el diseño usa esquinas bien redondeadas) */
-  --radius-sm: 9px;
-  --radius-md: 11px;
-  --radius-lg: 16px;
-  --radius-xl: 20px;
+  --color-danger: #bc4749;
+  --color-danger-soft: #f0e2d8;
+  --color-danger-border: #e2b8b4;
+  --color-warning: #8a6a2f;
 
-  /* Sombras y focus */
-  --shadow-modal: 0 30px 70px rgba(0, 0, 0, 0.3);
-  --shadow-card-hover: 0 8px 24px rgba(23, 138, 76, 0.13);
-  --focus-ring: 0 0 0 3px rgba(23, 138, 76, 0.15);
+  --color-chip-bg: #d8c7a6;
+  --color-chip-fg: #132a13;
+
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-cmr: 3px 16px 3px 16px;
+  --chamfer: 14px;
+  --clip-cmr: polygon(
+    var(--chamfer) 0,
+    100% 0,
+    100% calc(100% - var(--chamfer)),
+    calc(100% - var(--chamfer)) 100%,
+    0 100%,
+    0 var(--chamfer)
+  );
+
+  --space-xs: 6px;
+  --space-sm: 10px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+
+  --shadow-modal: 0 20px 48px rgba(19, 42, 19, 0.16);
+  --shadow-card: none;
+  --shadow-card-hover: none;
+  --focus-ring: 0 0 0 3px rgba(56, 102, 65, 0.28);
+
+  --court-line: #6f8f7b;
+}
+
+[data-theme='dark'] {
+  --color-bg: #132a13;
+  --color-bg-sage: #3e5f4d;
+  --color-bg-sand: #1e3324;
+  --color-bg-arena: #386641;
+  --color-bg-deep: #0f1f10;
+
+  --color-surface: #1a2e1e;
+  --color-surface-card: #243d2c;
+  --color-surface-subtle: #1a2e1e;
+  --color-surface-hover: #2f4a36;
+  --color-surface-sand: #3e5f4d;
+
+  --color-border: rgba(175, 200, 180, 0.18);
+  --color-border-subtle: rgba(175, 200, 180, 0.1);
+
+  --color-text: #f2e8cf;
+  --color-text-soft: #f4ebdd;
+  --color-text-muted: #c5d6c0;
+  --color-text-faint: #a8bfa0;
+
+  --color-primary: #6a994e;
+  --color-primary-dark: #6a994e;
+  --color-primary-darker: #556b2f;
+  --color-primary-deep: #132a13;
+  --color-accent: #8a9b63;
+  --color-lime: #afc8b4;
+  --color-lime-soft: #c9b28a;
+  --color-lime-bright: #a7c957;
+  --color-cream: #f2e8cf;
+  --color-sand: #c9b28a;
+  --color-sage: #6f8f7b;
+  --color-olive: #8a9b63;
+  --color-ink: #f2e8cf;
+
+  --color-nav: #0f1f10;
+  --color-nav-text: #f2e8cf;
+  --color-nav-muted: #afc8b4;
+  --color-nav-hover: rgba(175, 200, 180, 0.1);
+  --color-nav-active: rgba(62, 95, 77, 0.8);
+
+  --color-danger: #bc4749;
+  --color-danger-soft: rgba(188, 71, 73, 0.18);
+  --color-danger-border: rgba(188, 71, 73, 0.4);
+  --color-warning: #c9b28a;
+
+  --color-chip-bg: #3e5f4d;
+  --color-chip-fg: #f2e8cf;
+
+  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.4);
+  --shadow-card: none;
+  --shadow-card-hover: none;
+  --focus-ring: 0 0 0 3px rgba(175, 200, 180, 0.28);
+
+  --court-line: #8a9b63;
 }

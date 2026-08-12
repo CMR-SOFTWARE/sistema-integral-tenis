@@ -2,16 +2,21 @@
 
 /* ── Base compartida ── */
 .tarjeta {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
-  border-radius: var(--radius-lg);
-  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-cmr);
+  padding: 24px 22px;
 }
 
 .tarjetaTitulo {
+  position: relative;
+  z-index: 1;
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 16px;
+  font-weight: 600;
+  font-size: 18px;
   margin: 0 0 12px;
 }
 
@@ -92,6 +97,8 @@
 }
 
 .chip {
+  position: relative;
+  z-index: 1;
   display: inline-block;
   padding: 4px 11px;
   border-radius: 999px;
@@ -100,11 +107,11 @@
   white-space: nowrap;
 }
 
-.chipVerde { background: #e7f6ec; color: #0e6b3c; }
-.chipAmbar { background: #fef6e7; color: #b7791f; }
-.chipRojo  { background: #fdeaea; color: #b91c1c; }
-.chipGris  { background: #f3f4f6; color: #6b7280; }
-.chipAzul  { background: #e8f0fe; color: #1a56db; }
+.chipVerde { background: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface)); color: var(--color-primary); }
+.chipAmbar { background: color-mix(in srgb, var(--color-warning) 16%, var(--color-surface)); color: var(--color-warning); }
+.chipRojo  { background: var(--color-danger-soft); color: var(--color-danger); }
+.chipGris  { background: var(--color-surface-subtle); color: var(--color-text-muted); }
+.chipAzul  { background: color-mix(in srgb, var(--color-primary) 14%, var(--color-surface)); color: var(--color-primary); }
 
 .chipCat {
   padding: 3px 8px;
@@ -124,40 +131,42 @@
 
 .hero {
   position: relative;
+  isolation: isolate;
   overflow: hidden;
-  border-radius: var(--radius-lg);
-  background: radial-gradient(circle at 82% 85%, #1ea35a 0%, #137a43 52%, #0d5e34 100%);
-  color: #fff;
-  padding: 30px 30px 44px;
-  min-height: 200px;
+  border-radius: var(--radius-cmr);
+  clip-path: var(--clip-cmr);
+  background: var(--color-bg-deep);
+  color: #f2e8cf;
+  padding: 32px 28px 24px;
+  min-height: 180px;
 }
 
-.heroPelota {
-  position: absolute;
-  right: -50px;
-  bottom: -70px;
-  width: 200px;
-  height: 200px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #d8fb5b, #b6e83a);
-  opacity: 0.9;
+.heroEyebrow,
+.heroFecha,
+.heroDetalle,
+.heroCompaneros {
+  position: relative;
+  z-index: 1;
 }
 
 .heroEyebrow {
-  font: 700 12px/1 var(--font-display);
-  letter-spacing: 0.22em;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #cdf57f;
-  margin-bottom: 16px;
+  color: #afc8b4;
+  margin-bottom: 12px;
 }
 
 .heroFecha {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 46px;
+  font-family: var(--font-score);
+  font-weight: 600;
+  font-size: 48px;
   line-height: 1;
-  letter-spacing: -0.03em;
-  margin-bottom: 10px;
+  letter-spacing: 0.01em;
+  margin-bottom: 8px;
+  color: #f2e8cf;
 }
 
 .heroDetalle {
@@ -167,20 +176,31 @@
 }
 
 .heroCompaneros {
-  margin-top: 10px;
+  margin-top: 8px;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(242, 232, 207, 0.75);
+}
+
+.heroLinea {
+  position: relative;
+  z-index: 1;
 }
 
 .cuotaMonto {
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 34px;
+  position: relative;
+  z-index: 1;
+  font-family: var(--font-score);
+  font-weight: 600;
+  font-size: 40px;
   letter-spacing: -0.02em;
-  margin-bottom: 10px;
+  margin: 12px 0 14px;
+  padding: 8px 0;
+  color: var(--color-primary);
 }
 
 .cuotaVence {
+  position: relative;
+  z-index: 1;
   margin-top: 10px;
   font-size: 13px;
   color: var(--color-text-muted);
@@ -191,58 +211,68 @@
   margin-top: 12px;
   width: 100%;
   border: none;
-  background: var(--color-primary-dark, #0e6b3c);
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-cream);
   padding: 10px 16px;
   border-radius: 10px;
   font-weight: 700;
   font-size: 14px;
   cursor: pointer;
+  transition: background 0.18s, transform 0.18s;
 }
 
-.btnInformar:hover { filter: brightness(1.05); }
+.btnInformar:hover { background: var(--color-accent); transform: translateY(-1px); }
 
 /* "Avisar pago" de un cargo puntual (más discreto, va en la fila del cargo) */
 .btnAvisarCargo {
-  border: 1px solid #c7dbfa;
-  background: #fff;
-  color: #1a56db;
-  padding: 5px 12px;
-  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--color-primary);
+  padding: 5px 0;
+  border-radius: 0;
   font-weight: 700;
   font-size: 12px;
   cursor: pointer;
 }
 
-.btnAvisarCargo:hover { background: #e8f0fe; }
+.btnAvisarCargo:hover { color: var(--color-accent); }
 
 /* Confirmación tras enviar el aviso */
 .avisoOk {
-  background: #e8f0fe;
-  border: 1px solid #c7dbfa;
-  color: #1a3d7c;
-  border-radius: 10px;
-  padding: 10px 14px;
+  background: rgba(167, 201, 87, 0.2);
+  border: none;
+  color: var(--color-primary);
+  border-radius: 0;
+  padding: 10px 0;
   font-size: 13px;
   font-weight: 600;
   margin-bottom: 14px;
 }
 
 .btnPrimario {
+  position: relative;
+  z-index: 1;
   display: block;
   margin-top: 16px;
   padding: 12px;
   border-radius: var(--radius-md);
-  background: var(--color-primary-dark);
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-cream);
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 14px;
   text-align: center;
   text-decoration: none;
+  transition: background 0.18s, transform 0.18s;
+}
+.btnPrimario:hover {
+  background: var(--color-accent);
+  transform: translateY(-1px);
 }
 
 .horariosLista {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -252,9 +282,15 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 12px;
-  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-cmr);
+  padding: 14px 16px;
+  background: var(--color-surface-subtle);
+  transition: transform 0.18s, border-color 0.18s;
+}
+.horarioFila:hover {
+  transform: translateY(-2px);
+  border-color: rgba(167, 201, 87, 0.4);
 }
 
 .horarioDia {
@@ -296,9 +332,15 @@
   align-items: center;
   gap: 16px;
   background: var(--color-surface);
-  border: 1px solid var(--color-border-subtle);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-lime);
   border-radius: var(--radius-lg);
   padding: 16px 18px;
+  transition: transform 0.18s, box-shadow 0.18s;
+}
+.turno:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .turnoCancelado {
@@ -504,12 +546,17 @@
   padding: 9px 16px;
   border: none;
   border-radius: var(--radius-md);
-  background: var(--color-primary-dark);
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-cream);
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 13px;
   cursor: pointer;
+  transition: background 0.18s, transform 0.18s;
+}
+.btnGuardar:hover:not(:disabled) {
+  background: var(--color-accent);
+  transform: translateY(-1px);
 }
 
 .btnGuardar:disabled {
@@ -574,9 +621,12 @@
 /* ── Estado "sin club" ── */
 
 .sinClub {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
   background: var(--color-surface);
   border: 1px dashed var(--color-border);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-cmr);
   padding: 48px 32px;
   text-align: center;
   max-width: 520px;
@@ -584,18 +634,25 @@
 }
 
 .sinClubIcono {
-  font-size: 40px;
-  margin-bottom: 12px;
+  position: relative;
+  z-index: 1;
+  width: 40px;
+  height: 72px;
+  margin: 0 auto 12px;
 }
 
 .sinClubTitulo {
+  position: relative;
+  z-index: 1;
   font-family: var(--font-display);
-  font-weight: 800;
+  font-weight: 600;
   font-size: 19px;
   margin: 0 0 8px;
 }
 
 .sinClubTexto {
+  position: relative;
+  z-index: 1;
   font-size: 14px;
   color: var(--color-text-muted);
   line-height: 1.5;
@@ -688,19 +745,12 @@
   }
 
   .hero {
-    padding: 24px 20px 32px;
+    padding: 22px 18px 16px;
     min-height: 0;
   }
 
   .heroFecha {
     font-size: 34px;
-  }
-
-  .heroPelota {
-    width: 140px;
-    height: 140px;
-    right: -40px;
-    bottom: -50px;
   }
 
   .cuotaMonto {

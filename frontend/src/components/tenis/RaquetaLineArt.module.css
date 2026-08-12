@@ -1,0 +1,26 @@
+.raqueta {
+  display: block;
+  width: 36px;
+  height: 64px;
+  color: var(--color-primary);
+  stroke: currentColor;
+  stroke-width: 1.35;
+  stroke-linecap: square;
+  stroke-linejoin: miter;
+  fill: none;
+  pointer-events: none;
+}
+
+.oscilar {
+  transform-origin: 20px 66px;
+  animation: oscilar 5.5s ease-in-out infinite;
+}
+
+@keyframes oscilar {
+  0%, 100% { transform: rotate(-8deg); }
+  50% { transform: rotate(10deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oscilar { animation: none; }
+}

@@ -3,6 +3,9 @@ import { Link } from 'react-router-dom';
 import { api } from '../../lib/api';
 import { CAT_COLOR, CAT_LABEL, formatoPlata } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
+import Contador from '../../components/tenis/Contador';
+import FranjaTenis from '../../components/tenis/FranjaTenis';
+import Seccion from '../../components/tenis/Seccion';
 import s from './ReportesPage.module.css';
 
 interface MesRecaudacion {
@@ -44,7 +47,8 @@ export default function ReportesPage() {
   return (
     <div className={s.grilla}>
       {/* ── Recaudación últimos 6 meses (barras CSS, sin librerías) ── */}
-      <div className={s.tarjeta}>
+      <Seccion className={s.tarjeta}>
+        <FranjaTenis modo="slice" />
         <h3 className={s.tarjetaTitulo}>Recaudación últimos 6 meses</h3>
         <div className={s.grafico}>
           {reportes.recaudacionMensual.map((m) => (
@@ -63,10 +67,11 @@ export default function ReportesPage() {
           ))}
         </div>
         <div className={s.pie}>Cuotas confirmadas, por mes del cargo.</div>
-      </div>
+      </Seccion>
 
       {/* ── Ranking por categoría (mismos datos que el dashboard) ── */}
-      <div className={s.tarjeta}>
+      <Seccion className={s.tarjeta}>
+        <FranjaTenis modo="red" />
         <h3 className={s.tarjetaTitulo}>Alumnos por categoría</h3>
         <div className={s.ranking}>
           {reportes.porCategoria.map((c) => {
@@ -82,13 +87,13 @@ export default function ReportesPage() {
                     style={{ width: `${Math.round((c.cantidad / maxCategoria) * 100)}%`, background: color }}
                   />
                 </div>
-                <span className={s.rankingNum}>{c.cantidad}</span>
+                <span className={s.rankingNum}><Contador valor={c.cantidad} /></span>
               </div>
             );
           })}
         </div>
         <Link to="/alumnos" className={s.linkReal}>Ver alumnos →</Link>
-      </div>
+      </Seccion>
     </div>
   );
 }

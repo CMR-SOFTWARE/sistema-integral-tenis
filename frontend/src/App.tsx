@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom
 import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from './lib/queryClient';
 import { ConfirmarProvider } from './components/confirmar/ConfirmarProvider';
+import { TemaProvider } from './theme/Tema';
 import AppLayout from './components/layout/AppLayout';
 import AlumnosSeccionPage from './features/alumnos/AlumnosSeccionPage';
 import LoginPage from './features/auth/LoginPage';
@@ -77,6 +78,7 @@ function Dashboard() {
 export default function App() {
   return (
     <QueryClientProvider client={queryClient}>
+    <TemaProvider>
     <BrowserRouter>
       <ConfirmarProvider>
         <Routes>
@@ -131,6 +133,7 @@ export default function App() {
         </Routes>
       </ConfirmarProvider>
     </BrowserRouter>
+    </TemaProvider>
     </QueryClientProvider>
   );
 }

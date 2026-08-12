@@ -1,7 +1,7 @@
 .panel {
-  background: #e8f0fe;
-  border: 1px solid #c7dbfa;
-  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-surface));
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-cmr);
   padding: 14px 16px;
   margin-bottom: 16px;
 }
@@ -10,16 +10,16 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 800;
+  font-weight: 600;
   font-family: var(--font-display);
-  color: #1a3d7c;
+  color: var(--color-text);
   font-size: 15px;
   margin-bottom: 10px;
 }
 
 .badge {
-  background: #1a56db;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-cream);
   border-radius: 999px;
   min-width: 22px;
   height: 22px;
@@ -38,27 +38,34 @@
   gap: 12px;
   flex-wrap: wrap;
   padding: 10px 0;
-  border-top: 1px solid #d3e2fb;
+  border-top: 1px solid var(--color-border-subtle);
 }
 
-.texto { font-size: 14px; color: #1a3d7c; }
+.texto {
+  flex: 1;
+  min-width: 180px;
+  font-size: 13px;
+  color: var(--color-text);
+  line-height: 1.4;
+}
 
 .acciones { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 
 .select {
   padding: 7px 10px;
-  border: 1px solid #c7dbfa;
-  border-radius: var(--radius-sm);
-  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-cmr);
+  background: var(--color-surface-subtle);
+  color: var(--color-text);
   font-size: 13px;
 }
 
-.sinCancha { font-size: 12px; color: #b91c1c; font-weight: 600; }
+.sinCancha { font-size: 12px; color: var(--color-danger); font-weight: 600; }
 
 .btnAceptar {
   border: none;
-  background: var(--color-primary-dark, #0e6b3c);
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-cream);
   padding: 8px 16px;
   border-radius: var(--radius-sm);
   font-weight: 700;
@@ -70,9 +77,9 @@
 .btnAceptar:disabled { opacity: 0.6; cursor: default; }
 
 .btnRechazar {
-  border: 1px solid #e3b7b7;
-  background: #fff;
-  color: #b91c1c;
+  border: 1px solid var(--color-danger-border);
+  background: var(--color-surface-subtle);
+  color: var(--color-danger);
   padding: 8px 14px;
   border-radius: var(--radius-sm);
   font-weight: 700;
@@ -81,4 +88,4 @@
   font-family: var(--font-display);
 }
 
-.error { color: #b91c1c; font-size: 13px; margin-bottom: 8px; }
+.error { color: var(--color-danger); font-size: 13px; margin-bottom: 8px; }

@@ -7,6 +7,10 @@ import { ESTADO_LIQ_UI, MESES } from '../cuotas/types';
 import { fechaCorta, horaCorta, DIAS } from '../agenda/types';
 import { useMisTurnos, useMiCuota, usePublicidad, useAvisos, useNotas } from './hooks';
 import type { MiTurno } from './types';
+import EscenaRally from '../../components/tenis/EscenaRally';
+import FranjaTenis from '../../components/tenis/FranjaTenis';
+import PelotaTrayectoria from '../../components/tenis/PelotaTrayectoria';
+import Seccion from '../../components/tenis/Seccion';
 import s from './PortalPages.module.css';
 
 /** "2026-07-14" → "MAR" (para la columna de horarios asignados). */
@@ -44,7 +48,7 @@ export default function InicioPage() {
   if (ficha?.enEspera) {
     return (
       <div className={s.tarjeta}>
-        <h3 className={s.tarjetaTitulo}>Estás en la lista de espera 🎾</h3>
+        <h3 className={s.tarjetaTitulo}>Estás en la lista de espera</h3>
         <p className={s.sinClubTexto}>
           Ya sos parte de <b>{ficha.club}</b>. Tu profe te va a sumar a una clase;
           cuando lo haga, acá vas a ver tus horarios y tu cuota.
@@ -68,7 +72,6 @@ export default function InicioPage() {
     <div className={s.inicioGrilla}>
       {/* ── Hero: tu próxima clase ── */}
       <div className={s.hero}>
-        <div className={s.heroPelota} />
         <div className={s.heroEyebrow}>Tu próxima clase</div>
         {proxima ? (
           <>
@@ -85,10 +88,12 @@ export default function InicioPage() {
         ) : (
           <div className={s.heroDetalle}>No tenés clases programadas por ahora.</div>
         )}
+        <PelotaTrayectoria variante="rally" className={s.heroLinea} />
       </div>
 
       {/* ── Estado de la cuota ── */}
-      <div className={s.tarjeta}>
+      <Seccion className={s.tarjeta}>
+        <FranjaTenis modo="globo" />
         <h3 className={s.tarjetaTitulo}>Estado de tu cuota</h3>
         <div className={s.cuotaMonto}>{formatoPlata(cuota ? cuota.saldo : 0)}</div>
         {estadoCuota ? (
@@ -100,10 +105,11 @@ export default function InicioPage() {
         )}
         <div className={s.cuotaVence}>Vence el 10 de {MESES[hoy.getMonth()].toLowerCase()}</div>
         <Link to="/portal/cuota" className={s.btnPrimario}>Ver mi cuota</Link>
-      </div>
+      </Seccion>
 
       {/* ── Tus horarios asignados ── */}
-      <div className={s.tarjeta}>
+      <Seccion className={s.tarjeta}>
+        <FranjaTenis modo="lateral" />
         <h3 className={s.tarjetaTitulo}>Tus horarios asignados</h3>
         {turnos.proximos.length === 0 && <div className={s.vacio}>Sin clases próximas.</div>}
         <div className={s.horariosLista}>
@@ -126,10 +132,10 @@ export default function InicioPage() {
             </div>
           ))}
         </div>
-      </div>
+      </Seccion>
 
       {/* ── Avisos del profe ── */}
-      <div className={s.tarjeta}>
+      <Seccion className={s.tarjeta}>
         <h3 className={s.tarjetaTitulo}>Avisos del profe</h3>
         {avisos.length === 0 ? (
           <div className={s.vacio}>No hay avisos por ahora.</div>
@@ -143,11 +149,11 @@ export default function InicioPage() {
             ))}
           </div>
         )}
-      </div>
+      </Seccion>
 
       {/* ── Notas de tu profe (seguimiento compartido) ── */}
       {notas.length > 0 && (
-        <div className={s.tarjeta}>
+        <Seccion className={s.tarjeta}>
           <h3 className={s.tarjetaTitulo}>Notas de tu profe</h3>
           <div className={s.avisosLista}>
             {notas.map((n) => (
@@ -159,7 +165,7 @@ export default function InicioPage() {
               </div>
             ))}
           </div>
-        </div>
+        </Seccion>
       )}
 
       {/* ── Publicidad (M6): carrusel de banners del club (desliza al costado) ── */}
@@ -185,6 +191,8 @@ export default function InicioPage() {
           </div>
         </div>
       )}
+
+      <EscenaRally />
     </div>
   );
 }
