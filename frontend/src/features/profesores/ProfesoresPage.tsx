@@ -143,7 +143,9 @@ export default function ProfesoresPage() {
             <tbody>
               {visibles.map((p) => (
                 <tr key={p.esDueño ? 'director' : p.id}>
-                  <td>
+                  {/* Las clases td* son las que ordenan la fila en el celular (el CSS
+                      es el mismo de Alumnos). */}
+                  <td className={s.tdAlumno}>
                     <div className={s.celdaAlumno}>
                       <Avatar nombre={p.nombre} apellido={p.apellido} size={40} radius={12} />
                       <div>
@@ -157,10 +159,10 @@ export default function ProfesoresPage() {
                   </td>
                   {/* El director no tiene club fijo ni valor hora: trabaja donde haga
                       falta y no se paga sueldo a sí mismo. */}
-                  <td>{p.esDueño ? 'Todos' : p.sedeNombre ?? '—'}</td>
-                  <td>{p.valorHora != null ? `${formatoPlata(p.valorHora)}/h` : '—'}</td>
-                  <td className={s.tel}>{p.telefono || '—'}</td>
-                  <td>
+                  <td className={s.tdCategoria}>{p.esDueño ? 'Todos' : p.sedeNombre ?? '—'}</td>
+                  <td className={s.tdExtra}>{p.valorHora != null ? `${formatoPlata(p.valorHora)}/h` : '—'}</td>
+                  <td className={`${s.tel} ${s.tdCuota}`}>{p.telefono || '—'}</td>
+                  <td className={s.tdEstado}>
                     {p.esDueño ? (
                       <span
                         className={s.chip}
@@ -181,7 +183,7 @@ export default function ProfesoresPage() {
                       </span>
                     )}
                   </td>
-                  <td>
+                  <td className={s.tdAcciones}>
                     <div className={s.acciones}>
                       <button className={s.accion} title="Ver ficha" onClick={() => setDetalle(p)}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

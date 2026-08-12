@@ -41,6 +41,15 @@ public interface IAlumnoRepository
     Task<Alumno?> ObtenerAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>
+    /// Las fichas del tenant cuyo id se pide. Existe para no traer el padrón entero
+    /// cuando el caller ya sabe a quiénes quiere: la lista de espera arma su conjunto
+    /// por motivo y después necesita esas fichas, no las demás (que hoy cargan la foto
+    /// en base64 en la fila).
+    /// </summary>
+    Task<IReadOnlyList<Alumno>> ListarPorIdsAsync(
+        IReadOnlyCollection<Guid> ids, CancellationToken ct = default);
+
+    /// <summary>
     /// Vincula un tutor a un alumno YA existente (completar la ficha después de
     /// marcarlo menor). Si ya hay un tutor con ese DNI en el tenant, lo REUTILIZA
     /// (índice único TenantId+Dni); si no, crea el nuevo. Persiste con GuardarCambiosAsync.

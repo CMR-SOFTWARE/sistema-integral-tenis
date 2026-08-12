@@ -17,17 +17,20 @@ public class SolicitudService : ISolicitudService
     private readonly IAlumnoRepository _alumnoRepo;
     private readonly ISolicitudCupoRepository _pedidos;
     private readonly ITenantRepository _tenants;
+    private readonly IMembresiaTenantRepository _membresias;
     private readonly ITenantActual _tenantActual;
     private readonly IUsuarioActual _usuario;
 
     public SolicitudService(
         IAlumnoService alumnos, IAlumnoRepository alumnoRepo, ISolicitudCupoRepository pedidos,
-        ITenantRepository tenants, ITenantActual tenantActual, IUsuarioActual usuario)
+        ITenantRepository tenants, IMembresiaTenantRepository membresias,
+        ITenantActual tenantActual, IUsuarioActual usuario)
     {
         _alumnos = alumnos;
         _alumnoRepo = alumnoRepo;
         _pedidos = pedidos;
         _tenants = tenants;
+        _membresias = membresias;
         _tenantActual = tenantActual;
         _usuario = usuario;
     }
@@ -77,18 +80,22 @@ public class SolicitudService : ISolicitudService
         Task.FromResult<IReadOnlyList<MiSolicitudDto>>([]);
 
     /// <summary>
-    /// La lista de espera del club, derivada de dos motivos:
+    /// Quién espera y por qué, sin los datos de la ficha. Es la regla del negocio pura, y
+    /// vive aparte del mapeo porque el badge de la pestaña solo necesita CONTAR: si
+    /// contar arrastrara el armado de las filas (deuda, foto, club) le pagaríamos tres
+    /// consultas de más a una pantalla que se abre todo el tiempo.
+    ///
+    /// Los motivos, por prioridad:
     /// <list type="bullet">
-    /// <item>los ACTIVOS sin ninguna clase asignada (el pausado y el de baja no están
-    /// esperando nada, así que no entran);</item>
-    /// <item>los que tienen un pedido de cupo sin resolver — tengan clase o no. Es el
-    /// caso que pone a alguien en Alumnos y en la espera al mismo tiempo.</item>
+    /// <item><b>PidioCupo</b>: pidió sumarse a una clase y el profe no resolvió — tenga
+    /// clase o no. Es el caso que pone a alguien en Alumnos y en la espera a la vez.</item>
+    /// <item><b>SinClase</b>: activo y sin ninguna clase asignada (el pausado y el de baja
+    /// no están esperando nada, así que no entran).</item>
+    /// <item><b>LoAnotoElProfe</b>: ya es alumno y el profe lo anotó a mano.</item>
     /// </list>
-    /// Alguien sin clase Y con un pedido aparece una sola vez, como pedido: es la fila
-    /// que le da al profe algo para hacer.
+    /// Una fila por persona: gana el motivo más concreto.
     /// </summary>
-    public async Task<IReadOnlyList<SolicitudPendienteDto>> PendientesAsync(
-        CancellationToken ct = default)
+    private async Task<IReadOnlyList<EnEspera>> IdsEnEsperaAsync(CancellationToken ct)
     {
         var conClase = await _alumnoRepo.ListarConClaseAsync(ct);
         IEnumerable<Alumno> fichas = await _alumnoRepo.ListarAsync(null, EstadoAlumno.Activo, ct);
@@ -103,30 +110,71 @@ public class SolicitudService : ISolicitudService
             .ToList();
         var conPedido = pedidos.Select(p => p.AlumnoId).ToHashSet();
 
-        var filas = pedidos.Select(p => Fila(
-            mias[p.AlumnoId],
+        var filas = pedidos.Select(p => new EnEspera(
+            mias[p.AlumnoId].Id,
             MotivoEspera.PidioCupo,
             p.Id,
-            p.Horario is { } h ? HorarioService.TituloDe(h.Nombre, h.Alumnos) : null));
+            p.Horario is { } h ? HorarioService.TituloDe(h.Nombre, h.Alumnos) : null,
+            mias[p.AlumnoId].CreadoEl));
 
+        // El profe (director o empleado) que además se dio de alta para tener su ficha no
+        // está esperando una clase: está trabajando. Sin esto, el director que se anota
+        // para ponerse su categoría aparece como si le faltara horario.
+        var deProfes = await UserIdsDeProfesAsync(ct);
         var sinClase = mias.Values
             .Where(a => !conClase.Contains(a.Id) && !conPedido.Contains(a.Id))
-            .Select(a => Fila(a, MotivoEspera.SinClase, null, null));
+            .Where(a => a.UserId is not { } uid || !deProfes.Contains(uid))
+            .Select(a => new EnEspera(a.Id, MotivoEspera.SinClase, null, null, a.CreadoEl));
 
         // Tercer motivo: el que YA es alumno y el profe anotó a mano. Al que no tiene
         // ninguna clase la marca no le agrega nada (ya está arriba, en sinClase) y
         // gana ese motivo, que es el que ofrece sacarlo de la academia.
+        //
+        // Acá el profe SÍ entra: si alguien lo anotó a mano es porque quiere clase.
         var anotados = mias.Values
             .Where(a => a.EnEsperaDesde is not null && conClase.Contains(a.Id) && !conPedido.Contains(a.Id))
-            .Select(a => Fila(a, MotivoEspera.LoAnotoElProfe, null, null));
+            .Select(a => new EnEspera(
+                a.Id, MotivoEspera.LoAnotoElProfe, null, null, a.EnEsperaDesde ?? a.CreadoEl));
 
-        return [.. filas.Concat(sinClase).Concat(anotados).OrderBy(f => f.CreadoEl)];
+        return [.. filas.Concat(sinClase).Concat(anotados).OrderBy(f => f.EsperaDesde)];
+    }
+
+    /// <summary>
+    /// Los usuarios que trabajan en el club: el dueño y los empleados ACTIVOS. El
+    /// empleado dado de baja vuelve a ser una persona común, así que si no tiene clase
+    /// espera como cualquiera.
+    /// </summary>
+    private async Task<HashSet<Guid>> UserIdsDeProfesAsync(CancellationToken ct)
+    {
+        var tenant = await _tenants.ObtenerActualAsync(ct);
+        var profes = (await _membresias.ListarConUsuarioAsync(ct))
+            .Where(x => x.Membresia.Activo)
+            .Select(x => x.Membresia.UserId)
+            .ToHashSet();
+
+        if (tenant.OwnerUserId is { } ownerId) profes.Add(ownerId);
+        return profes;
+    }
+
+    public async Task<IReadOnlyList<EsperaResponseDto>> PendientesAsync(
+        CancellationToken ct = default)
+    {
+        var espera = await IdsEnEsperaAsync(ct);
+        if (espera.Count == 0) return [];
+
+        // La ficha se mapea con el MISMO camino que la pestaña Alumnos: así las dos
+        // tablas muestran lo mismo (club, profe, cuota, estado) sin duplicar el mapeo.
+        var fichas = (await _alumnos.ListarPorIdsAsync([.. espera.Select(e => e.AlumnoId)], ct))
+            .ToDictionary(a => a.Id);
+
+        return [.. espera
+            .Where(e => fichas.ContainsKey(e.AlumnoId))
+            .Select(e => Fila(fichas[e.AlumnoId], e))];
     }
 
     public async Task<int> ContarPendientesAsync(CancellationToken ct = default) =>
-        // Cuenta lo mismo que muestra la lista: son dos queries, no vale la pena un
-        // atajo que después se desincronice del criterio de arriba.
-        (await PendientesAsync(ct)).Count;
+        // Mismo criterio que la lista, sin el costo de armar las filas.
+        (await IdsEnEsperaAsync(ct)).Count;
 
     /// <summary>
     /// Saca de la academia al que espera SIN clase: borrado real de la ficha. Al que
@@ -187,25 +235,46 @@ public class SolicitudService : ISolicitudService
         await _alumnoRepo.GuardarCambiosAsync(ct);
     }
 
-    private static SolicitudPendienteDto Fila(
-        Alumno a, MotivoEspera motivo, Guid? solicitudId, string? clase) => new()
+    /// <summary>
+    /// Quién espera, por qué y desde cuándo — sin los datos de la ficha, que se resuelven
+    /// después en una sola pasada.
+    /// </summary>
+    private readonly record struct EnEspera(
+        Guid AlumnoId, MotivoEspera Motivo, Guid? SolicitudId, string? Clase, DateTime EsperaDesde);
+
+    /// <summary>La ficha (mapeada como en Alumnos) más lo propio de la espera.</summary>
+    private static EsperaResponseDto Fila(AlumnoResponseDto a, EnEspera e) => new()
     {
-        Id = a.Id, // el id de la FICHA (el del pedido va aparte, en SolicitudId)
+        // Los datos de la ficha se copian del DTO que ya armó AlumnoService: si mañana
+        // gana un campo, se agrega en un solo lugar y las dos tablas lo muestran.
+        Id = a.Id,
         Nombre = a.Nombre,
         Apellido = a.Apellido,
-        Email = a.Email ?? string.Empty,
         Dni = a.Dni,
         Telefono = a.Telefono,
+        Email = a.Email,
         FechaNacimiento = a.FechaNacimiento,
         EsMenor = a.EsMenor,
-        Categoria = a.Categoria.ToString(),
-        Mensaje = a.Notas,
-        // Desde cuándo espera, que es lo que ordena la lista. Para el anotado a mano
-        // es cuándo lo anotaste: su ficha puede ser de hace dos años y recién ahora
-        // haberte pedido otra clase.
-        CreadoEl = motivo == MotivoEspera.LoAnotoElProfe ? a.EnEsperaDesde ?? a.CreadoEl : a.CreadoEl,
-        Motivo = motivo.ToString(),
-        SolicitudId = solicitudId,
-        Clase = clase,
+        Categoria = a.Categoria,
+        Estado = a.Estado,
+        Modalidad = a.Modalidad,
+        Arancel = a.Arancel,
+        Notas = a.Notas,
+        TutorId = a.TutorId,
+        CreadoEl = a.CreadoEl,
+        DeudaVencida = a.DeudaVencida,
+        TieneUsuario = a.TieneUsuario,
+        FamiliaId = a.FamiliaId,
+        FotoUrl = a.FotoUrl,
+        ProfesorUserId = a.ProfesorUserId,
+        SedeId = a.SedeId,
+        SedeNombre = a.SedeNombre,
+        TieneClase = a.TieneClase,
+        EnEspera = a.EnEspera,
+        // Lo propio de la espera
+        Motivo = e.Motivo.ToString(),
+        SolicitudId = e.SolicitudId,
+        Clase = e.Clase,
+        EsperaDesde = e.EsperaDesde,
     };
 }

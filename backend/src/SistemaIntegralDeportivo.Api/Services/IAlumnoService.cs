@@ -44,6 +44,16 @@ public interface IAlumnoService
         CategoriaAlumno? categoria, EstadoAlumno? estado,
         ListaAlumnos lista = ListaAlumnos.Todos, CancellationToken ct = default);
 
+    /// <summary>
+    /// Las fichas pedidas, mapeadas EXACTAMENTE igual que <see cref="ListarAsync"/>
+    /// (deuda y "tiene clase" resueltos en batch, no una consulta por alumno). La usa la
+    /// lista de espera, que arma su propio conjunto por motivo pero muestra la misma fila
+    /// que Alumnos. No aplica el recorte del profe empleado: el caller ya eligió a quién
+    /// pide, y el aislamiento por tenant lo garantiza el repositorio.
+    /// </summary>
+    Task<IReadOnlyList<AlumnoResponseDto>> ListarPorIdsAsync(
+        IReadOnlyCollection<Guid> ids, CancellationToken ct = default);
+
     /// <summary>Un alumno por id, o null si no existe en el tenant.</summary>
     Task<AlumnoResponseDto?> ObtenerAsync(Guid id, CancellationToken ct = default);
 

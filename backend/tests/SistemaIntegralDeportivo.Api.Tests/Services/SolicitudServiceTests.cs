@@ -17,11 +17,13 @@ public class SolicitudServiceTests
 {
     private static readonly Guid UserId = Guid.NewGuid();
     private static readonly Guid TenantId = Guid.NewGuid();
+    private static readonly Guid DirectorUserId = Guid.NewGuid();
 
     private readonly Mock<IAlumnoService> _alumnos;
     private readonly Mock<IAlumnoRepository> _alumnoRepo;
     private readonly Mock<ISolicitudCupoRepository> _pedidos;
     private readonly Mock<ITenantRepository> _tenants;
+    private readonly Mock<IMembresiaTenantRepository> _membresias;
     private readonly Mock<ITenantActual> _tenantActual;
     private readonly Mock<IUsuarioActual> _usuario;
     private readonly SolicitudService _service;
@@ -32,18 +34,21 @@ public class SolicitudServiceTests
         _alumnoRepo = new Mock<IAlumnoRepository>();
         _pedidos = new Mock<ISolicitudCupoRepository>();
         _tenants = new Mock<ITenantRepository>();
+        _membresias = new Mock<IMembresiaTenantRepository>();
         _tenantActual = new Mock<ITenantActual>();
         _usuario = new Mock<IUsuarioActual>(); // por defecto: no es staff (dueño ve toda la espera)
         _service = new SolicitudService(
             _alumnos.Object, _alumnoRepo.Object, _pedidos.Object,
-            _tenants.Object, _tenantActual.Object, _usuario.Object);
+            _tenants.Object, _membresias.Object, _tenantActual.Object, _usuario.Object);
 
         // Por defecto: el club existe y está activo, sin ficha previa
         _tenants.Setup(t => t.ObtenerPorIdAsync(TenantId, It.IsAny<CancellationToken>()))
                 .ReturnsAsync(ClubActivo());
+        _tenants.Setup(t => t.ObtenerActualAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(ClubActivo());
         _alumnoRepo.Setup(a => a.ObtenerPorUserIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
                    .ReturnsAsync((Alumno?)null);
-        // Por defecto: nadie tiene clase y no hay pedidos pendientes
+        // Por defecto: nadie tiene clase, no hay pedidos pendientes y no hay empleados
         _alumnoRepo.Setup(a => a.ListarConClaseAsync(It.IsAny<CancellationToken>()))
                    .ReturnsAsync([]);
         _alumnoRepo.Setup(a => a.FiltrarConClaseAsync(
@@ -52,7 +57,35 @@ public class SolicitudServiceTests
         _pedidos.Setup(p => p.ListarPorEstadoAsync(
                     EstadoSolicitudGrupo.Pendiente, It.IsAny<CancellationToken>()))
                 .ReturnsAsync([]);
+        _membresias.Setup(m => m.ListarConUsuarioAsync(It.IsAny<CancellationToken>()))
+                   .ReturnsAsync([]);
+        Activas(); // sin fichas: las listas arrancan vacías
     }
+
+    /// <summary>
+    /// La ficha como la devuelve AlumnoService. El mapeo de verdad se prueba en
+    /// <c>AlumnoServiceTests</c>; acá solo hace falta que la fila salga con los datos de
+    /// esa persona, para verificar QUIÉN entra a la espera y por qué.
+    /// </summary>
+    private static AlumnoResponseDto Dto(Alumno a) => new()
+    {
+        Id = a.Id,
+        Nombre = a.Nombre,
+        Apellido = a.Apellido,
+        Dni = a.Dni,
+        Telefono = a.Telefono,
+        Email = a.Email,
+        Notas = a.Notas,
+        Categoria = a.Categoria.ToString(),
+        Estado = a.Estado.ToString(),
+        CreadoEl = a.CreadoEl,
+        EnEspera = a.EnEsperaDesde is not null,
+    };
+
+    /// <summary>Empleados del club (con su membresía) que devuelve el repo.</summary>
+    private void Empleados(params MembresiaTenant[] membresias) =>
+        _membresias.Setup(m => m.ListarConUsuarioAsync(It.IsAny<CancellationToken>()))
+                   .ReturnsAsync([.. membresias.Select(m => (m, new Usuario { Nombre = "P", Apellido = "P" }))]);
 
     /// <summary>Ficha activa del club, con el mínimo para construir el DTO.</summary>
     private static Alumno Ficha(string nombre, Guid? profe = null) => new()
@@ -61,10 +94,20 @@ public class SolicitudServiceTests
         Estado = EstadoAlumno.Activo, ProfesorUserId = profe,
     };
 
-    /// <summary>Las fichas activas que devuelve el repo para el tenant.</summary>
-    private void Activas(params Alumno[] fichas) =>
+    /// <summary>
+    /// Las fichas activas que devuelve el repo para el tenant. De paso deja listo el
+    /// mapeo: la espera pide las fichas que eligió por motivo y AlumnoService se las
+    /// devuelve armadas (el mismo camino que la pestaña Alumnos).
+    /// </summary>
+    private void Activas(params Alumno[] fichas)
+    {
         _alumnoRepo.Setup(a => a.ListarAsync(null, EstadoAlumno.Activo, It.IsAny<CancellationToken>()))
                    .ReturnsAsync(fichas);
+        _alumnos.Setup(a => a.ListarPorIdsAsync(
+                    It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync((IReadOnlyCollection<Guid> ids, CancellationToken _) =>
+                    [.. fichas.Where(f => ids.Contains(f.Id)).Select(Dto)]);
+    }
 
     private void ConClase(params Alumno[] fichas) =>
         _alumnoRepo.Setup(a => a.ListarConClaseAsync(It.IsAny<CancellationToken>()))
@@ -81,7 +124,7 @@ public class SolicitudServiceTests
     private static Tenant ClubActivo() => new()
     {
         Id = TenantId, Subdominio = "club-x", Nombre = "Club X",
-        Estado = EstadoTenant.Activo,
+        Estado = EstadoTenant.Activo, OwnerUserId = DirectorUserId,
     };
 
     /// <summary>Jugador con datos completos (registro segmentado C1).</summary>
@@ -186,7 +229,7 @@ public class SolicitudServiceTests
         var item = Assert.Single(await _service.PendientesAsync());
 
         Assert.Equal("Ana", item.Nombre);
-        Assert.Equal("Los jueves", item.Mensaje);
+        Assert.Equal("Los jueves", item.Notas);
         Assert.Equal(nameof(MotivoEspera.SinClase), item.Motivo);
         Assert.Null(item.SolicitudId);
     }
@@ -294,6 +337,75 @@ public class SolicitudServiceTests
                 });
 
         Assert.Empty(await _service.PendientesAsync());
+    }
+
+    // ── El profe que además tiene ficha: trabaja acá, no espera clase ──
+
+    [Fact]
+    public async Task Pendientes_ElDirectorSinClase_NoAparece()
+    {
+        // El director se da de alta para tener su ficha (su categoría, sus raquetas) y
+        // no toma clases: sin esto aparecía en la cola como si le faltara horario.
+        var director = Ficha("Director");
+        director.UserId = DirectorUserId;
+        Activas(director);
+
+        Assert.Empty(await _service.PendientesAsync());
+    }
+
+    [Fact]
+    public async Task Pendientes_ProfeEmpleadoSinClase_NoAparece()
+    {
+        var profeUserId = Guid.NewGuid();
+        var profe = Ficha("Profe");
+        profe.UserId = profeUserId;
+        Activas(profe);
+        Empleados(new MembresiaTenant { UserId = profeUserId, Activo = true });
+
+        Assert.Empty(await _service.PendientesAsync());
+    }
+
+    [Fact]
+    public async Task Pendientes_ExEmpleadoSinClase_Aparece()
+    {
+        // Dado de baja como profe, vuelve a ser una persona común: si quiere clase,
+        // espera como cualquiera.
+        var exProfeUserId = Guid.NewGuid();
+        var exProfe = Ficha("ExProfe");
+        exProfe.UserId = exProfeUserId;
+        Activas(exProfe);
+        Empleados(new MembresiaTenant { UserId = exProfeUserId, Activo = false });
+
+        var item = Assert.Single(await _service.PendientesAsync());
+
+        Assert.Equal("ExProfe", item.Nombre);
+    }
+
+    [Fact]
+    public async Task Pendientes_ElDirectorConPedidoDeCupo_ApareceIgual()
+    {
+        // El filtro es solo para "no tiene ninguna clase". Si el director pidió lugar en
+        // una clase, eso es un pedido de verdad que alguien tiene que resolver.
+        var director = Ficha("Director");
+        director.UserId = DirectorUserId;
+        Activas(director);
+        _pedidos.Setup(p => p.ListarPorEstadoAsync(
+                    EstadoSolicitudGrupo.Pendiente, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new[] { new SolicitudCupo { AlumnoId = director.Id } });
+
+        var item = Assert.Single(await _service.PendientesAsync());
+
+        Assert.Equal(nameof(MotivoEspera.PidioCupo), item.Motivo);
+    }
+
+    [Fact]
+    public async Task Pendientes_FichaSinUsuario_Aparece()
+    {
+        // La ficha que cargó el profe a mano no tiene login: no puede ser la de un profe,
+        // así que el filtro no la puede tocar.
+        Activas(Ficha("Ana"));
+
+        Assert.Single(await _service.PendientesAsync());
     }
 
     // ── Anotado a mano: el que ya viene y le pide otro día al profe en la cancha ──

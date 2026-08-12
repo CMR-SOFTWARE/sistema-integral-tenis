@@ -36,22 +36,15 @@ public enum MotivoEspera
     LoAnotoElProfe,
 }
 
-/// <summary>Una fila de la lista de espera vista por el PROFE (datos para decidir).</summary>
-public class SolicitudPendienteDto
+/// <summary>
+/// Una fila de la lista de espera vista por el PROFE. Hereda de
+/// <see cref="AlumnoResponseDto"/> a propósito: la espera muestra la MISMA tabla que
+/// Alumnos (mismos datos, mismos filtros, misma ficha), y heredar es lo que evita que
+/// las dos se desincronicen el día que la fila del alumno gane una columna. Lo propio
+/// de la espera —por qué está y desde cuándo— se agrega acá.
+/// </summary>
+public class EsperaResponseDto : AlumnoResponseDto
 {
-    /// <summary>Id de la FICHA del alumno (no del pedido).</summary>
-    public Guid Id { get; set; }
-    public string Nombre { get; set; } = string.Empty;
-    public string Apellido { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string? Dni { get; set; }
-    public string? Telefono { get; set; }
-    public DateTime? FechaNacimiento { get; set; }
-    public bool EsMenor { get; set; }
-    public string? Categoria { get; set; }
-    public string? Mensaje { get; set; }
-    public DateTime CreadoEl { get; set; }
-
     /// <summary>SinClase | PidioCupo | LoAnotoElProfe: decide qué acciones ofrece la fila.</summary>
     public string Motivo { get; set; } = string.Empty;
 
@@ -60,6 +53,13 @@ public class SolicitudPendienteDto
 
     /// <summary>La clase que pidió; solo cuando el motivo es PidioCupo.</summary>
     public string? Clase { get; set; }
+
+    /// <summary>
+    /// Desde cuándo espera, que es lo que ordena la lista. NO es <c>CreadoEl</c>: al
+    /// anotado a mano se le cuenta desde que el profe lo anotó, porque su ficha puede
+    /// ser de hace dos años y recién ahora haberle pedido otra clase.
+    /// </summary>
+    public DateTime EsperaDesde { get; set; }
 }
 
 /// <summary>Conteo para el badge del sidebar del profe.</summary>

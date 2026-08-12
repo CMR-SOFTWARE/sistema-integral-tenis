@@ -1,132 +1,91 @@
-/* Solicitudes de alumnos — tarjetas aprobar/rechazar */
+/* Lista de espera — la MISMA tabla que Alumnos (TablaAlumnos + su CSS), más la
+   columna del motivo y los botones propios de la fila. */
 
-.intro {
-  font-size: 13px;
-  color: var(--color-text-muted);
-  margin-bottom: 16px;
-}
-
-.lista {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.tarjetaSol {
-  display: flex;
-  align-items: center;
-  gap: 14px;
+/* Igual que en Alumnos: la tabla no entra en un celular, así que se desliza. */
+.tarjeta {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  padding: 16px 18px;
+  overflow-x: auto;
 }
 
-.avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 13px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 15px;
-  flex: none;
-}
-
-.cuerpo {
-  flex: 1;
-  min-width: 0;
-}
-
-.nombreFila {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.nombre {
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 15px;
-}
-
-.chip {
-  display: inline-flex;
-  padding: 3px 9px;
-  border-radius: 7px;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 11px;
-}
-
-.chipMenor {
-  display: inline-flex;
-  padding: 3px 9px;
-  border-radius: 7px;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 11px;
-  background: #fef6e7;
-  color: #b7791f;
-}
-
-/* Por qué está esperando: es lo que decide qué botones ve el profe, así que va
-   antes que los datos de contacto y con más peso. */
+/* Por qué está esperando: es lo que decide qué botones ve el profe. Sin nowrap a
+   propósito — con él la celda no se dejaba angostar y estiraba la fila entera, que
+   en el celular terminaba cortada contra el borde de la tarjeta. */
 .motivo {
   font-size: 13px;
   color: var(--color-text-soft);
-  margin-top: 3px;
 }
 
-.detalle {
-  font-size: 13px;
-  color: var(--color-text-muted);
-  margin-top: 2px;
+.desde {
+  font-size: 12px;
+  color: var(--color-text-faint);
 }
 
-.mensaje {
-  font-size: 13px;
-  font-style: italic;
+/* Botones de la fila: compactos, para que entren al lado del resto de las celdas
+   (los de tarjeta anteriores eran el doble de altos que una fila de tabla). */
+.btnFila,
+.btnFilaRojo {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.btnFila {
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
   color: var(--color-text-soft);
-  margin-top: 6px;
 }
 
-.acciones {
+.btnFila:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btnFilaRojo {
+  border: 1px solid var(--color-danger-border);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.btnFilaRojo:hover {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: #fff;
+}
+
+.btnFila:disabled,
+.btnFilaRojo:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* El ojo de "ver ficha": el mismo cuadrado de 32 px que usa la fila de Alumnos. */
+.accionIcono {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  cursor: pointer;
   display: flex;
-  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-soft);
   flex: none;
 }
 
-.btnAprobar {
-  padding: 9px 16px;
-  border: none;
-  border-radius: var(--radius-md);
-  background: var(--color-primary-dark);
-  color: #fff;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.btnRechazar {
-  padding: 9px 14px;
-  border: 1px solid var(--color-danger-border);
-  border-radius: var(--radius-md);
-  background: var(--color-danger-soft);
-  color: var(--color-danger);
-  font-weight: 700;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.btnAprobar:disabled,
-.btnRechazar:disabled {
-  opacity: 0.55;
-  cursor: default;
+.accionIcono:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
 }
 
 .vacio,
@@ -145,16 +104,6 @@
   font-weight: 600;
 }
 
-.vacioCard {
-  background: var(--color-surface);
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-lg);
-  padding: 32px;
-  text-align: center;
-  font-size: 13px;
-  color: var(--color-text-muted);
-}
-
 .toast {
   position: fixed;
   bottom: 24px;
@@ -167,24 +116,4 @@
   border-radius: var(--radius-md);
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.18);
   z-index: 50;
-}
-
-/* ── Móvil: la tarjeta se apila y los botones ocupan el ancho ── */
-@media (max-width: 760px) {
-  .tarjetaSol {
-    flex-wrap: wrap;
-  }
-
-  .cuerpo {
-    flex-basis: calc(100% - 58px); /* deja el avatar a la izquierda */
-  }
-
-  .acciones {
-    width: 100%;
-  }
-
-  .btnAprobar,
-  .btnRechazar {
-    flex: 1;
-  }
 }

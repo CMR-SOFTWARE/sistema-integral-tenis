@@ -2,27 +2,35 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '../../lib/api';
-import { CAT_COLOR, CAT_LABEL, avatarColor, iniciales } from '../alumnos/types';
-import type { Categoria } from '../alumnos/types';
+import { haceCuanto } from '../alumnos/types';
+import FiltrosAlumnos from '../alumnos/FiltrosAlumnos';
+import TablaAlumnos from '../alumnos/TablaAlumnos';
+import DetalleAlumnoModal from '../alumnos/DetalleAlumnoModal';
+import { useFiltrosAlumnos } from '../alumnos/useFiltrosAlumnos';
 import type { SolicitudPendiente } from './types';
 import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import s from './SolicitudesPage.module.css';
 
 /**
- * Lista de espera: quién está esperando una clase. Son dos casos distintos, y cada
- * uno tiene su acción:
+ * Lista de espera: quién está esperando una clase. Es la MISMA tabla que Alumnos
+ * —mismos datos, mismos filtros, misma ficha— con una columna que dice por qué está
+ * y desde cuándo, porque el motivo es lo que decide qué se puede hacer con la fila:
  *
  *  - **Sin clase**: se anotó (o lo cargó el profe) y todavía no le asignaron nada.
  *    Se le asigna un horario, o se lo saca de la academia (borra la ficha).
  *  - **Pidió cupo**: pidió sumarse a una clase desde su portal. Puede ser un alumno
  *    que ya viene —por eso está acá Y en Alumnos—. Se acepta desde la Agenda; acá
  *    se puede rechazar, que NO le toca la ficha.
+ *  - **Lo anotó el profe**: ya es alumno y le pidió otra clase hablando. Sacarlo de
+ *    la espera solo apaga esa marca.
  */
 export default function SolicitudesPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [procesando, setProcesando] = useState<string | null>(null); // id en curso
+  const [detalle, setDetalle] = useState<SolicitudPendiente | null>(null);
   const confirmar = useConfirmar();
   const qc = useQueryClient();
+  const filtros = useFiltrosAlumnos();
 
   const query = useQuery({
     queryKey: ['solicitudes'],
@@ -112,90 +120,80 @@ export default function SolicitudesPage() {
   if (error) return <div className={s.error}>{error}</div>;
   if (!espera) return <div className={s.vacio}>Cargando…</div>;
 
+  const visibles = filtros.aplicar(espera);
+
   return (
     <div>
-      <div className={s.intro}>
-        Los que están esperando una clase: los que se unieron (o cargaste) y todavía no
-        tienen ninguna, los que <b>pidieron sumarse</b> a una desde su portal, y los que
-        <b> anotaste vos</b> desde Alumnos porque te la pidieron hablando. Los dos últimos
-        pueden ser alumnos que ya vienen, así que también los vas a ver en "Alumnos".
-      </div>
+      {/* Sin el select de estado: acá son todos activos, sería un control muerto. */}
+      <FiltrosAlumnos
+        filtros={filtros}
+        conEstado={false}
+        contador={`${visibles.length} esperando`}
+      />
 
-      {espera.length === 0 && (
-        <div className={s.vacioCard}>
-          No hay nadie esperando. Cuando alguien se una desde su portal —o lo cargues
-          sin asignarle clase— aparece acá.
-        </div>
-      )}
-
-      <div className={s.lista}>
-        {espera.map((sol) => {
-          const av = avatarColor(sol.nombre + sol.apellido);
-          const cat = sol.categoria ? CAT_COLOR[sol.categoria as Categoria] : null;
-          const pidio = sol.motivo === 'PidioCupo';
-          const anotado = sol.motivo === 'LoAnotoElProfe';
-          const enCurso = procesando === sol.id;
-          return (
-            <div key={sol.id} className={s.tarjetaSol}>
-              <div className={s.avatar} style={{ background: `${av}1a`, color: av }}>
-                {iniciales(sol.nombre, sol.apellido)}
-              </div>
-              <div className={s.cuerpo}>
-                <div className={s.nombreFila}>
-                  <span className={s.nombre}>{sol.nombre} {sol.apellido}</span>
-                  {cat && (
-                    <span className={s.chip} style={{ background: `${cat}1a`, color: cat }}>
-                      {CAT_LABEL[sol.categoria as Categoria]}
-                    </span>
-                  )}
-                  {sol.esMenor && <span className={s.chipMenor}>Con responsable</span>}
-                </div>
-                {/* Por qué está esperando: cambia las acciones de la derecha. */}
-                <div className={s.motivo}>
-                  {pidio
-                    ? <>Pidió sumarse a <b>{sol.clase ?? 'una clase'}</b></>
-                    : anotado
-                      ? <>Ya es alumno y <b>lo anotaste vos</b>: quiere otra clase</>
-                      : 'Todavía sin clase asignada'}
-                </div>
-                <div className={s.detalle}>
-                  {sol.email}
-                  {sol.dni && ` · DNI ${sol.dni}`}
-                  {sol.telefono && ` · ${sol.telefono}`}
-                </div>
-                {sol.mensaje && <div className={s.mensaje}>"{sol.mensaje}"</div>}
-              </div>
-              <div className={s.acciones}>
-                {pidio ? (
-                  <>
-                    {/* Aceptar vive en el panel de la Agenda, que ya existe: no se duplica. */}
-                    <Link to="/agenda" className={s.btnAprobar}>Verlo en la Agenda</Link>
-                    <button className={s.btnRechazar} disabled={enCurso} onClick={() => void rechazar(sol)}>
-                      {enCurso ? '…' : 'Rechazar'}
-                    </button>
-                  </>
-                ) : anotado ? (
-                  <>
-                    {/* Ya es alumno: sacarlo de la espera NO le toca la ficha, así que
-                        acá no va ni confirmación ni el botón rojo de eliminar. */}
-                    <Link to="/agenda" className={s.btnAprobar}>Asignarle un horario</Link>
-                    <button className={s.btnRechazar} disabled={enCurso} onClick={() => void sacarDeLaEspera(sol)}>
-                      {enCurso ? '…' : 'Sacar de la espera'}
-                    </button>
-                  </>
+      <div className={s.tarjeta}>
+        <TablaAlumnos
+          alumnos={visibles}
+          columna={{
+            titulo: 'Espera',
+            // Desde cuándo espera, que es lo que ordena la cola. El motivo NO se escribe:
+            // "Sin clase asignada" y "Lo anotaste vos" ocupaban una línea para decir algo
+            // que la fila ya muestra —los botones cambian según el motivo, y al anotado a
+            // mano lo marca el chip "En espera"—. Solo se nombra la clase del que pidió
+            // cupo, que es el único dato que no está en ninguna otra parte de la fila.
+            render: (sol) => (
+              <span className={s.motivo}>
+                {sol.motivo === 'PidioCupo' && <>Pidió <b>{sol.clase ?? 'una clase'}</b> · </>}
+                <span className={s.desde}>{haceCuanto(sol.esperaDesde.slice(0, 10))}</span>
+              </span>
+            ),
+          }}
+          acciones={(sol) => {
+            const enCurso = procesando === sol.id;
+            return (
+              <>
+                {/* La ficha: es donde viven el mail, el teléfono y la nota con la que se
+                    anotó (la tabla no los muestra, igual que en Alumnos). */}
+                <button className={s.accionIcono} title="Ver ficha" onClick={() => setDetalle(sol)}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7z" /><circle cx="12" cy="12" r="3" />
+                  </svg>
+                </button>
+                {/* Aceptar (o asignar) vive en la Agenda, que ya lo resuelve: no se duplica. */}
+                <Link to="/agenda" className={s.btnFila}>
+                  {sol.motivo === 'PidioCupo' ? 'Ver en Agenda' : 'Asignar horario'}
+                </Link>
+                {sol.motivo === 'PidioCupo' ? (
+                  <button className={s.btnFilaRojo} disabled={enCurso} onClick={() => void rechazar(sol)}>
+                    {enCurso ? '…' : 'Rechazar'}
+                  </button>
+                ) : sol.motivo === 'LoAnotoElProfe' ? (
+                  // Ya es alumno: sacarlo de la espera NO le toca la ficha, así que
+                  // acá no va ni confirmación ni el botón rojo.
+                  <button className={s.btnFila} disabled={enCurso} onClick={() => void sacarDeLaEspera(sol)}>
+                    {enCurso ? '…' : 'Sacar de la espera'}
+                  </button>
                 ) : (
-                  <>
-                    <Link to="/agenda" className={s.btnAprobar}>Asignarle un horario</Link>
-                    <button className={s.btnRechazar} disabled={enCurso} onClick={() => void eliminar(sol)}>
-                      {enCurso ? '…' : 'Eliminar'}
-                    </button>
-                  </>
+                  <button className={s.btnFilaRojo} disabled={enCurso} onClick={() => void eliminar(sol)}>
+                    {enCurso ? '…' : 'Eliminar'}
+                  </button>
                 )}
-              </div>
-            </div>
-          );
-        })}
+              </>
+            );
+          }}
+          vacio={espera.length === 0 && !filtros.hayFiltros
+            ? 'No hay nadie esperando. Cuando alguien se una desde su portal —o lo cargues sin asignarle clase— aparece acá.'
+            : 'No se encontraron resultados con ese filtro o búsqueda.'}
+        />
       </div>
+
+      {detalle && (
+        <DetalleAlumnoModal
+          alumno={detalle}
+          hermanos={espera.filter((o) => o.familiaId && o.familiaId === detalle.familiaId && o.id !== detalle.id)}
+          onClose={() => setDetalle(null)}
+        />
+      )}
 
       {toast && <div className={s.toast}>{toast}</div>}
     </div>

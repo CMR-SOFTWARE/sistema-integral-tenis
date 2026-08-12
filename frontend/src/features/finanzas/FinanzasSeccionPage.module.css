@@ -37,3 +37,22 @@
   color: var(--color-primary-dark);
   border-bottom-color: var(--color-primary);
 }
+
+/* Celular: mismo criterio que Alumnos y Mi academia (acá son dos pestañas y ya
+   entraban, pero el padding grande las dejaba pegadas al borde). */
+@media (max-width: 760px) {
+  .tabs {
+    flex: 1 1 100%;
+  }
+
+  .tab,
+  .tabActivo {
+    flex: 1 1 0;
+    min-width: 0;
+    padding: 10px 4px;
+    font-size: 13px;
+    white-space: normal;
+    line-height: 1.2;
+    text-align: center;
+  }
+}

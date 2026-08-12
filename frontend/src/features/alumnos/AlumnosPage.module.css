@@ -70,6 +70,17 @@
   font-weight: 500;
 }
 
+/* Los filtros juntos en un contenedor propio, que ENVUELVE. Nada de deslizar de
+   costado: la barra de filtros se lee de un vistazo, y una tira que se desplaza
+   esconde la mitad de los filtros sin avisar que están ahí. En escritorio conservan
+   su ancho natural; el acomodo del celular está en el media query de abajo. */
+.selects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
 .spacer {
   flex: 1;
 }
@@ -171,6 +182,15 @@
 .dni {
   font-size: 12px;
   color: var(--color-text-faint);
+}
+
+/* Dónde entrena y con qué profe. Reemplaza al teléfono que estaba antes acá: es lo
+   que el profe necesita para ubicar a alguien cuando el club tiene varias sedes. */
+.clubProfe {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  margin-top: 1px;
 }
 
 .chip {
@@ -313,17 +333,29 @@
 
 /* ── Móvil: la tabla deja de ser tabla y cada alumno es una TARJETA ──
    (deslizar de lado para ver estado y acciones es incómodo en el celular).
-   Se reordenan las celdas con flex+order, sin tocar el JSX:
+   Se reordenan las celdas con flex+order:
 
-     [AV] Nombre Apellido            [ver][pausar][baja]
+     [AV] Nombre Apellido            [ver][estado ▾]
           DNI 12345678
-     [4ta] [Al día] [Activo]              3364204567          */
+          Club Norte · Ana Pérez
+     [4ta] [motivo] [Activo]                 [Al día]
+
+   El orden va por CLASE y no por nth-child: la lista de espera tiene una columna
+   más, y con nth-child cada tabla habría quedado ordenada distinto. */
 @media (max-width: 900px) {
   .tabla,
   .tabla tbody,
   .tabla tr,
   .tabla td {
     display: block;
+  }
+
+  /* El min-width de arriba existe para que las COLUMNAS no se aplasten, y acá ya no
+     hay columnas: la fila es una tarjeta que envuelve. Si se queda puesto, la tarjeta
+     mide 560 px en una pantalla de 390 y las acciones se van fuera de la vista —
+     había que deslizar de costado para llegar al ojo y al estado. */
+  .tabla {
+    min-width: 0;
   }
 
   .tabla thead {
@@ -342,33 +374,54 @@
   .tabla td {
     padding: 0;
     border: none;
+    min-width: 0; /* sin esto una celda larga estira la fila y vuelve el desborde */
   }
 
-  /* Primera línea: el alumno ocupa el ancho y las acciones van a la derecha */
-  .tabla td:nth-child(1) {
+  /* Los botones de la fila envuelven en vez de empujar el ancho (la espera tiene
+     tres y no entran al lado del nombre). */
+  .acciones {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  /* TRES BANDAS, en este orden: quién es → cómo está → qué puedo hacer.
+     Antes los chips y los botones compartían línea y se mezclaban; y la cuota, con
+     un `margin-left: auto`, se iba sola a la derecha de la línea siguiente. */
+
+  /* 1. La identidad se lleva la primera línea entera (nombre, DNI, club y profe) */
+  .tdAlumno {
     order: 1;
-    flex: 1 1 60%;
+    flex: 1 1 100%;
   }
 
-  .tabla td:nth-child(6) {
-    order: 2;
-  }
+  /* 2. Todos los chips juntos, que es como se leen: categoría, motivo, estado, cuota */
+  .tdCategoria { order: 2; }
+  .tdExtra { order: 3; }
+  .tdEstado { order: 4; }
+  .tdCuota { order: 5; }
 
-  /* Segunda línea: los chips juntos y el teléfono al final */
-  .tabla td:nth-child(2) { order: 3; }
-  .tabla td:nth-child(4) { order: 4; }
-  .tabla td:nth-child(5) { order: 5; }
-
-  .tabla td:nth-child(3) {
+  /* 3. Los botones abajo, con la línea entera: son lo único accionable de la fila */
+  .tdAcciones {
     order: 6;
-    margin-left: auto;
-    font-size: 13px;
+    flex: 1 1 100%;
+    margin-top: 2px;
   }
 }
 
 @media (max-width: 760px) {
   .toolbar {
     gap: 8px;
+  }
+
+  /* Los filtros toman la línea entera y se acomodan de a dos: sueltos caía uno por
+     línea y la barra se hacía altísima. */
+  .selects {
+    flex: 1 1 100%;
+  }
+
+  .selects > select {
+    flex: 1 1 46%;
+    min-width: 0;
   }
 
   .filtros {
