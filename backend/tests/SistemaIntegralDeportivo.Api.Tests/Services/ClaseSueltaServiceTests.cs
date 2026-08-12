@@ -149,7 +149,8 @@ public class ClaseSueltaServiceTests
     {
         // Otra clase suelta ya ocupa la Cancha 1 esa fecha 18:00
         _turnos.Setup(t => t.ListarEntreAsync(Manana, Manana, It.IsAny<CancellationToken>()))
-               .ReturnsAsync([new Turno { CanchaId = CanchaId, Fecha = Manana, HoraInicio = new TimeOnly(18, 0), DuracionMinutos = 60, Estado = EstadoTurno.Programado }]);
+               .ReturnsAsync([TurnosDePrueba.Agenda(
+                   canchaId: CanchaId, fecha: Manana, hora: new TimeOnly(18, 0))]);
 
         var libres = await _service.CanchasLibresAsync(SedeId, Manana, new TimeOnly(18, 30), 60);
 

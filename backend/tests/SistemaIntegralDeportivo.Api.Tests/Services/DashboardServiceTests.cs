@@ -31,7 +31,7 @@ public class DashboardServiceTests
         // Por defecto: hay una clase hoy, sin cargos ni cancelaciones, y ningún alumno.
         _turnos.Setup(t => t.ListarEntreAsync(
                    It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
-               .ReturnsAsync([new Turno { Fecha = Hoy, HoraInicio = new TimeOnly(18, 0), DuracionMinutos = 60 }]);
+               .ReturnsAsync([TurnosDePrueba.Agenda(fecha: Hoy)]);
         _cargos.Setup(c => c.ListarDelMesAsync(
                    It.IsAny<int>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
                .ReturnsAsync([]);
@@ -139,7 +139,7 @@ public class DashboardServiceTests
     {
         // Primer acceso del mes sin haber pasado por la Agenda: las clases de hoy
         // tienen que aparecer igual.
-        var recienGenerado = new Turno { Fecha = Hoy, HoraInicio = new TimeOnly(9, 0), DuracionMinutos = 60 };
+        var recienGenerado = TurnosDePrueba.Agenda(fecha: Hoy, hora: new TimeOnly(9, 0));
         _turnos.SetupSequence(t => t.ListarEntreAsync(
                    It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
                .ReturnsAsync([])

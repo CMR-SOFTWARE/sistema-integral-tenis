@@ -17,7 +17,7 @@ public class SueldoPorHoraTests
     private readonly Mock<IMembresiaTenantRepository> _membresias = new();
     private readonly SueldoPorHora _politica;
 
-    private readonly List<Turno> _delMes = [];
+    private readonly List<TurnoAgenda> _delMes = [];
     private readonly List<(MembresiaTenant, Usuario)> _empleados = [];
 
     public SueldoPorHoraTests()
@@ -52,16 +52,19 @@ public class SueldoPorHoraTests
             DuracionMinutos = dur,
         };
 
+    // El repositorio ya no devuelve la entidad sino el turno proyectado; el Horario
+    // se sigue usando acá como fuente de los datos de la clase.
     private void Turno(Horario h, EstadoTurno estado = EstadoTurno.Programado, int diaMes = 6) =>
-        _delMes.Add(new Turno
-        {
-            HorarioId = h.Id,
-            Horario = h,
-            Estado = estado,
-            DuracionMinutos = h.DuracionMinutos,
-            HoraInicio = h.HoraInicio,
-            Fecha = new DateOnly(2026, 7, diaMes),
-        });
+        _delMes.Add(TurnosDePrueba.Agenda(
+            fecha: new DateOnly(2026, 7, diaMes),
+            hora: h.HoraInicio,
+            duracion: h.DuracionMinutos,
+            estado: estado,
+            horarioId: h.Id,
+            profesorUserId: h.ProfesorUserId,
+            valorHoraProfe: h.ValorHoraProfe,
+            horarioDia: h.Dia,
+            horarioHoraInicio: h.HoraInicio));
 
     // ─────────────────────────────────────────────
 

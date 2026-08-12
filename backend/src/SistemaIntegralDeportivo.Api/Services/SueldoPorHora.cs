@@ -39,8 +39,8 @@ public class SueldoPorHora : IPoliticaDeSueldo
         // Solo clases DADAS que cuelgan de un horario CON profe (las sueltas no
         // tienen horario → no son de nadie a la hora de liquidar).
         var porProfe = turnos
-            .Where(t => t.Estado == EstadoTurno.Programado && t.Horario?.ProfesorUserId is not null)
-            .ToLookup(t => t.Horario!.ProfesorUserId!.Value);
+            .Where(t => t.Estado == EstadoTurno.Programado && t.ProfesorUserId is not null)
+            .ToLookup(t => t.ProfesorUserId!.Value);
 
         var empleados = await _membresias.ListarConUsuarioAsync(ct);
         var resultado = new List<SueldoCalculadoDto>();
@@ -57,15 +57,17 @@ public class SueldoPorHora : IPoliticaDeSueldo
                 .GroupBy(t => t.HorarioId!.Value)
                 .Select(g =>
                 {
-                    var horario = g.First().Horario!;
-                    var valor = horario.ValorHoraProfe ?? m.ValorHora; // override o base
-                    var horas = g.Sum(t => t.DuracionMinutos) / 60m;    // /60m → decimal, no entero
+                    var clase = g.First(); // todos los turnos del grupo son del mismo horario
+                    var valor = clase.ValorHoraProfe ?? m.ValorHora; // override o base
+                    var horas = g.Sum(t => t.DuracionMinutos) / 60m;  // /60m → decimal, no entero
                     return new SueldoHorarioDto
                     {
                         HorarioId = g.Key,
-                        Titulo = Titulo(horario),
-                        Dia = horario.Dia.ToString(),
-                        HoraInicio = horario.HoraInicio,
+                        Titulo = TurnoService.TituloDe(clase),
+                        // Día y hora DE LA PLANTILLA (no del turno): si el profe la movió,
+                        // el detalle muestra dónde está la clase hoy.
+                        Dia = clase.HorarioDia?.ToString() ?? string.Empty,
+                        HoraInicio = clase.HorarioHoraInicio ?? clase.HoraInicio,
                         ValorHora = valor,
                         Clases = g.Count(),
                         Horas = horas,

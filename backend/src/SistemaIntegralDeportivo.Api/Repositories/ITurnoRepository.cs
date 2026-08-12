@@ -5,8 +5,12 @@ namespace SistemaIntegralDeportivo.Api.Repositories;
 /// <summary>Contrato de datos de Turnos (instancias concretas de la agenda).</summary>
 public interface ITurnoRepository
 {
-    /// <summary>Turnos del tenant en un rango de fechas, con participantes y contexto.</summary>
-    Task<IReadOnlyList<Turno>> ListarEntreAsync(
+    /// <summary>
+    /// Turnos del tenant en un rango, ya proyectados a lo que se muestra. NO devuelve
+    /// entidades: traía la ficha entera de cada alumno (con la foto en base64) por cada
+    /// fila del roster Y de los participantes, multiplicadas entre sí por el JOIN.
+    /// </summary>
+    Task<IReadOnlyList<TurnoAgenda>> ListarEntreAsync(
         DateOnly desde, DateOnly hasta, CancellationToken ct = default);
 
     /// <summary>
@@ -60,3 +64,38 @@ public interface ITurnoRepository
 
     Task GuardarCambiosAsync(CancellationToken ct = default);
 }
+
+/// <summary>
+/// Un turno de la agenda con lo que de verdad se muestra. Es la lectura de cinco
+/// pantallas (semana, mes, inicio, sueldos y clases sueltas), así que junta lo que
+/// necesitan todas — que sigue siendo mucho menos que la entidad entera.
+/// </summary>
+/// <param name="MiembrosActivos">
+/// Cuántos vienen a la CLASE hoy (no al turno). Junto con <paramref name="UnicoMiembro"/>
+/// alcanza para el título, y evita traer el roster: esa era la segunda colección, la que
+/// multiplicaba las filas contra los participantes.
+/// </param>
+/// <param name="UnicoMiembro">Nombre y apellido del primero del roster; solo se usa cuando son exactamente uno.</param>
+/// <param name="HorarioDia">Día y hora DE LA PLANTILLA (el detalle de sueldos los muestra, y pueden diferir del turno ya generado).</param>
+public record TurnoAgenda(
+    Guid Id,
+    DateOnly Fecha,
+    TimeOnly HoraInicio,
+    int DuracionMinutos,
+    EstadoTurno Estado,
+    string? CanceladoMotivo,
+    Guid CanchaId,
+    string Cancha,
+    string Sede,
+    Guid? HorarioId,
+    string? HorarioNombre,
+    Guid? ProfesorUserId,
+    decimal? ValorHoraProfe,
+    DayOfWeek? HorarioDia,
+    TimeOnly? HorarioHoraInicio,
+    int MiembrosActivos,
+    string? UnicoMiembro,
+    IReadOnlyList<ParticipanteAgenda> Participantes);
+
+/// <summary>Un alumno anotado en ese turno, con lo justo para la tarjeta y la asistencia.</summary>
+public record ParticipanteAgenda(Guid AlumnoId, string Nombre, string Apellido, bool Presente);

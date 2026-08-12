@@ -205,17 +205,14 @@ public class TurnoServiceTests
     public async Task Semana_MarcaALosDeudoresEnElRoster()
     {
         // Turno con Juan y Sofía; Juan debe una clase de hace 2 meses (vencida)
-        var turno = new Turno
-        {
-            HorarioId = HorarioId,
-            Fecha = Lunes.AddDays(1),
-            HoraInicio = new TimeOnly(18, 0),
-            DuracionMinutos = 60,
-        };
-        turno.Participantes.Add(new TurnoParticipante { Turno = turno, AlumnoId = AlumnoJuan });
-        turno.Participantes.Add(new TurnoParticipante { Turno = turno, AlumnoId = AlumnaSofia });
         _turnos.Setup(t => t.ListarEntreAsync(It.IsAny<DateOnly>(), It.IsAny<DateOnly>(), It.IsAny<CancellationToken>()))
-               .ReturnsAsync([turno]);
+               .ReturnsAsync([TurnosDePrueba.Agenda(
+                   horarioId: HorarioId,
+                   fecha: Lunes.AddDays(1),
+                   participantes: [
+                       TurnosDePrueba.Participante(AlumnoJuan, "Juan", "Pérez"),
+                       TurnosDePrueba.Participante(AlumnaSofia, "Sofía", "Gómez"),
+                   ])]);
         _cargos.Setup(c => c.ListarImpagosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
                .ReturnsAsync([new Cargo
                {
@@ -514,14 +511,8 @@ public class TurnoServiceTests
     // Vista mensual: el staff ve solo lo suyo (igual que la semana)
     // ─────────────────────────────────────────────
 
-    private static Turno TurnoConHorarioDe(Guid profeId) => new()
-    {
-        HorarioId = Guid.NewGuid(),
-        Fecha = new DateOnly(2026, 7, 14),
-        HoraInicio = new TimeOnly(18, 0),
-        DuracionMinutos = 60,
-        Horario = new Horario { ProfesorUserId = profeId, CanchaId = Guid.NewGuid() },
-    };
+    private static TurnoAgenda TurnoConHorarioDe(Guid profeId) =>
+        TurnosDePrueba.Agenda(horarioId: Guid.NewGuid(), profesorUserId: profeId);
 
     [Fact]
     public async Task MesVista_Staff_SoloDevuelveSusTurnos()
@@ -619,5 +610,66 @@ public class TurnoServiceTests
     public void Titulo_TurnoSueltoSinParticipantes_NoRompe()
     {
         Assert.Equal("Clase suelta", TurnoService.TituloDe(new Turno { Fecha = Lunes, HorarioId = null }));
+    }
+
+    // ── El mismo título, por el camino de la agenda ──
+    //
+    // La agenda ya no recibe la entidad sino el turno proyectado (el roster viene
+    // contado, no entero). Es el camino que usan de verdad la semana, el mes y el
+    // inicio, así que las cuatro formas del título se prueban también acá.
+
+    [Fact]
+    public void TituloProyectado_ClaseConNombre_UsaEseNombre()
+    {
+        var t = TurnosDePrueba.Agenda(
+            horarioId: HorarioId, horarioNombre: "Intermedios",
+            miembrosActivos: 2, unicoMiembro: "Juan Pérez");
+
+        Assert.Equal("Intermedios", TurnoService.TituloDe(t));
+    }
+
+    [Fact]
+    public void TituloProyectado_ClaseSinNombreConVarios_DiceCuantosSon()
+    {
+        var t = TurnosDePrueba.Agenda(
+            horarioId: HorarioId, miembrosActivos: 3, unicoMiembro: "Juan Pérez");
+
+        var titulo = TurnoService.TituloDe(t);
+
+        Assert.Equal("Grupo de 3", titulo);
+        Assert.DoesNotContain("suelta", titulo);
+    }
+
+    [Fact]
+    public void TituloProyectado_ClaseSinNombreConUnoSolo_EsElNombreDelAlumno()
+    {
+        var t = TurnosDePrueba.Agenda(
+            horarioId: HorarioId, miembrosActivos: 1, unicoMiembro: "Juan Pérez");
+
+        Assert.Equal("Juan Pérez", TurnoService.TituloDe(t));
+    }
+
+    [Fact]
+    public void TituloProyectado_ClaseVacia_LoDice()
+    {
+        var t = TurnosDePrueba.Agenda(horarioId: HorarioId, miembrosActivos: 0);
+
+        Assert.Equal("Clase sin alumnos", TurnoService.TituloDe(t));
+    }
+
+    [Fact]
+    public void TituloProyectado_TurnoSuelto_SeNombraPorQuienLoPidio()
+    {
+        // Sin horario: el nombre sale del participante, no del roster.
+        var t = TurnosDePrueba.Agenda(
+            participantes: [TurnosDePrueba.Participante(Guid.NewGuid(), "Mateo", "Ruiz")]);
+
+        Assert.Equal("Mateo Ruiz (suelta)", TurnoService.TituloDe(t));
+    }
+
+    [Fact]
+    public void TituloProyectado_TurnoSueltoSinParticipantes_NoRompe()
+    {
+        Assert.Equal("Clase suelta", TurnoService.TituloDe(TurnosDePrueba.Agenda()));
     }
 }
