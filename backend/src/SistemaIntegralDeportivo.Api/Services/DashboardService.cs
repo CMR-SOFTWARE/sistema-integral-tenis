@@ -107,7 +107,7 @@ public class DashboardService : IDashboardService
                     HoraInicio = t.HoraInicio,
                     DuracionMinutos = t.DuracionMinutos,
                     Titulo = Titulo(t),
-                    Cancha = t.Cancha?.Nombre ?? string.Empty,
+                    Cancha = t.Cancha,
                     Participantes = t.Participantes.Count,
                     Estado = t.Estado.ToString(),
                 })
@@ -125,5 +125,5 @@ public class DashboardService : IDashboardService
 
     // Una sola definición del título, en TurnoService: las copias sueltas se
     // desactualizaron cuando el grupo dejó de existir.
-    private static string Titulo(Turno t) => TurnoService.TituloDe(t);
+    private static string Titulo(TurnoAgenda t) => TurnoService.TituloDe(t);
 }
