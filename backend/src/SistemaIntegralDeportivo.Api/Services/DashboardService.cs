@@ -47,11 +47,17 @@ public class DashboardService : IDashboardService
         var hoy = DateOnly.FromDateTime(ahora);
         var inicioDeMes = new DateTime(ahora.Year, ahora.Month, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        // Materializar los turnos del mes para que "clases de hoy" no dependa
-        // de haber paseado por el Calendario (idempotente, mismo patrón que
-        // Portal y Cuotas)
-        await _turnoService.GenerarTurnosDelMesAsync(hoy.Year, hoy.Month, ct);
+        // "Clases de hoy" no puede depender de haber paseado por el Calendario, así
+        // que si no hay nada materializado se genera el mes acá mismo (idempotente,
+        // mismo patrón que Portal y Cuotas). Se pregunta PRIMERO porque casi siempre
+        // ya están generados: generar de entrada eran tres idas a la base al pedo en
+        // cada carga del inicio, y cada una cuesta ~115 ms.
         var turnosHoy = await _turnos.ListarEntreAsync(hoy, hoy, ct);
+        if (turnosHoy.Count == 0)
+        {
+            await _turnoService.GenerarTurnosDelMesAsync(hoy.Year, hoy.Month, ct);
+            turnosHoy = await _turnos.ListarEntreAsync(hoy, hoy, ct);
+        }
 
         // Cuotas del mes en curso: SOLO cargos ya materializados — la
         // liquidación (que genera cargos y exige precios configurados) se
@@ -69,21 +75,28 @@ public class DashboardService : IDashboardService
             .Select(a => CuotaService.CalcularEstado(hoy.Year, hoy.Month, a.Saldo, hoy))
             .ToList();
 
-        var porCategoria = await _alumnos.ContarPorCategoriaAsync(ct);
+        // Los cuatro números de alumnos salen de UNA sola consulta y se cuentan acá:
+        // eran cuatro idas a la misma tabla, con el mismo dato leído cuatro veces.
+        var fichas = await _alumnos.ResumenAsync(ct);
+        var conClase = fichas.Where(f => f.TieneClase).ToList();
 
         return new DashboardResumenDto
         {
             // "Mis alumnos" son los que tienen clase: contar todos los activos metería
             // en el número a los que todavía están esperando que les asignen una.
-            AlumnosActivos = await _alumnos.ContarActivosConClaseAsync(ct),
-            NuevosEsteMes = await _alumnos.ContarNuevosDesdeAsync(inicioDeMes, ct),
-            Pausados = await _alumnos.ContarPorEstadoAsync(EstadoAlumno.Suspendido, ct),
+            AlumnosActivos = conClase.Count(f => f.Estado == EstadoAlumno.Activo),
+            NuevosEsteMes = fichas.Count(f => f.CreadoEl >= inicioDeMes),
+            Pausados = fichas.Count(f => f.Estado == EstadoAlumno.Suspendido),
             RecaudacionDelMes = cargosMes.Where(c => c.PagadoEl is not null).Sum(c => c.Monto),
+            // El desglose cuenta a los que tienen clase y no están de baja, para que
+            // sume lo mismo que el total de arriba (si contara también a los que
+            // esperan, el dashboard mostraría dos números que no cierran).
             PorCategoria = OrdenCategorias
                 .Select(c => new CategoriaConteoDto
                 {
                     Categoria = c.ToString(),
-                    Cantidad = porCategoria.GetValueOrDefault(c),
+                    Cantidad = conClase.Count(f =>
+                        f.Categoria == c && f.Estado != EstadoAlumno.Inactivo),
                 })
                 .ToList(),
             ClasesHoy = turnosHoy
