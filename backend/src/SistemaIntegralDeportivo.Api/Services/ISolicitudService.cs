@@ -23,7 +23,7 @@ public interface ISolicitudService
     Task<IReadOnlyList<MiSolicitudDto>> MisAsync(Guid userId, CancellationToken ct = default);
 
     /// <summary>La lista de espera de MI club: los sin clase + los pedidos sin resolver.</summary>
-    Task<IReadOnlyList<SolicitudPendienteDto>> PendientesAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<EsperaResponseDto>> PendientesAsync(CancellationToken ct = default);
 
     /// <summary>Conteo para el badge de la pestaña (cuántos hay esperando).</summary>
     Task<int> ContarPendientesAsync(CancellationToken ct = default);
