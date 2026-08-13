@@ -19,8 +19,22 @@
 }
 
 /* "Nuevo horario": la acción principal de la agenda, empujada a la derecha. */
+/* Los dos botones de crear, JUNTOS en su contenedor: sueltos en la toolbar, al
+   envolverse cada uno se iba por su lado y el segundo quedaba colgado en la línea de
+   abajo. En el celular se reparten la fila entera; el empujón a la derecha es cosa de
+   escritorio (media query de abajo). */
+.crear {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.crear > button {
+  flex: 1;
+  justify-content: center;
+}
+
 .btnNuevo {
-  margin-left: auto;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -40,6 +54,34 @@
 }
 
 .btnNuevo:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+/* "+ Clase suelta": va al lado del principal pero en segundo plano — la clase que se
+   repite es lo que el profe arma todos los días; la suelta es la excepción. Sin
+   `margin-left: auto`, que ya lo pone el de al lado. */
+.btnSecundario {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: var(--color-surface);
+  color: var(--color-text-soft);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.btnSecundario:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.btnSecundario:disabled {
   opacity: 0.5;
   cursor: default;
 }
@@ -467,6 +509,16 @@
   /* El bloque de navegación deja de ocupar la fila entera y convive con los toggles */
   .navegador {
     width: auto;
+  }
+
+  /* Los botones de crear dejan de repartirse la fila y se van al costado, juntos. */
+  .crear {
+    width: auto;
+    margin-left: auto;
+  }
+
+  .crear > button {
+    flex: none;
   }
 
   .rango {

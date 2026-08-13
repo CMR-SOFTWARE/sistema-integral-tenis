@@ -41,7 +41,12 @@ public class TurnoRepository : ITurnoRepository
                 t.Cancha.Sede!.Nombre,
                 t.HorarioId,
                 t.Horario!.Nombre,
-                t.Horario.ProfesorUserId,
+                // El turno normal saca su profe del horario; el SUELTO lo lleva propio.
+                // Resolverlo acá alcanza para que la clase suelta entre sola en la agenda
+                // del profe y en el sueldo, sin tocar los services que consumen el record.
+                // Se pregunta por la FK y no por la navegación: traduce a un CASE WHEN
+                // sobre una columna, sin depender de cómo EF resuelva el LEFT JOIN.
+                t.HorarioId != null ? t.Horario!.ProfesorUserId : t.ProfesorUserId,
                 t.Horario.ValorHoraProfe,
                 t.Horario.Dia,
                 t.Horario.HoraInicio,

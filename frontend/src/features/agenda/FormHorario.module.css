@@ -24,3 +24,27 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* El switch de cobro de la clase suelta. La etiqueta explica QUÉ pasa con la plata en
+   cada posición, porque "genera cargo" sí/no no le dice nada al profe parado en la
+   cancha: lo que quiere leer es "clase de prueba, no se le cobra". */
+.switchCargo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  font-size: 13px;
+  color: var(--color-text-soft);
+  cursor: pointer;
+}
+
+.switchCargo input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-primary);
+  flex: none;
+  cursor: pointer;
+}

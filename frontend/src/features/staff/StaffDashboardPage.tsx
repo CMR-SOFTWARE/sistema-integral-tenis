@@ -137,9 +137,11 @@ export default function StaffDashboardPage() {
             {miSueldo.sueldo && miSueldo.sueldo.detalle.length > 0 && (
               <div className={s.lista}>
                 {miSueldo.sueldo.detalle.map((d) => (
-                  <div key={d.horarioId} className={s.fila}>
+                  // El título alcanza como key: las clases sueltas van todas en una
+                  // línea sola y no tienen horarioId.
+                  <div key={d.titulo} className={s.fila}>
                     <div className={s.filaDia}>
-                      <div className={s.filaFecha}>{DIA_LABEL[d.dia] ?? d.dia}</div>
+                      <div className={s.filaFecha}>{d.dia === '' ? '—' : DIA_LABEL[d.dia] ?? d.dia}</div>
                       <div className={s.filaHora}>{horaCorta(d.horaInicio)}</div>
                     </div>
                     <div className={s.filaInfo}>

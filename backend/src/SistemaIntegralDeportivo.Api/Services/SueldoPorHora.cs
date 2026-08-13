@@ -36,8 +36,9 @@ public class SueldoPorHora : IPoliticaDeSueldo
         var ultimoDia = primerDia.AddMonths(1).AddDays(-1);
         var turnos = await _turnos.ListarEntreAsync(primerDia, ultimoDia, ct);
 
-        // Solo clases DADAS que cuelgan de un horario CON profe (las sueltas no
-        // tienen horario → no son de nadie a la hora de liquidar).
+        // Solo clases DADAS y con profe. Las SUELTAS entran si se les asignó uno: el
+        // profe que da una clase de prueba trabajó igual, y hasta que el turno suelto
+        // pudo llevar profe esas horas no se le pagaban a nadie.
         var porProfe = turnos
             .Where(t => t.Estado == EstadoTurno.Programado && t.ProfesorUserId is not null)
             .ToLookup(t => t.ProfesorUserId!.Value);
@@ -52,21 +53,27 @@ public class SueldoPorHora : IPoliticaDeSueldo
             // Ex-empleado sin clases este mes: no ensucia la lista.
             if (!m.Activo && susTurnos.Count == 0) continue;
 
-            // Desglose por horario: valor hora efectivo × horas de sus clases del mes.
+            // Desglose por horario: valor hora efectivo × horas de sus clases del mes. Las
+            // SUELTAS no cuelgan de ninguno, así que caen todas juntas en el grupo null y
+            // se muestran como una línea sola. (Agrupar por `HorarioId!.Value` reventaba
+            // en cuanto un turno sin horario llegara acá con profe.)
             var detalle = susTurnos
-                .GroupBy(t => t.HorarioId!.Value)
+                .GroupBy(t => t.HorarioId)
                 .Select(g =>
                 {
                     var clase = g.First(); // todos los turnos del grupo son del mismo horario
-                    var valor = clase.ValorHoraProfe ?? m.ValorHora; // override o base
+                    var sueltas = g.Key is null;
+                    // La clase suelta no tiene dónde guardar un override: va el valor base.
+                    var valor = sueltas ? m.ValorHora : clase.ValorHoraProfe ?? m.ValorHora;
                     var horas = g.Sum(t => t.DuracionMinutos) / 60m;  // /60m → decimal, no entero
                     return new SueldoHorarioDto
                     {
                         HorarioId = g.Key,
-                        Titulo = TurnoService.TituloDe(clase),
+                        Titulo = sueltas ? "Clases sueltas" : TurnoService.TituloDe(clase),
                         // Día y hora DE LA PLANTILLA (no del turno): si el profe la movió,
-                        // el detalle muestra dónde está la clase hoy.
-                        Dia = clase.HorarioDia?.ToString() ?? string.Empty,
+                        // el detalle muestra dónde está la clase hoy. Las sueltas no tienen
+                        // plantilla: cada una cae en su fecha, así que no se muestra día.
+                        Dia = sueltas ? string.Empty : clase.HorarioDia?.ToString() ?? string.Empty,
                         HoraInicio = clase.HorarioHoraInicio ?? clase.HoraInicio,
                         ValorHora = valor,
                         Clases = g.Count(),
