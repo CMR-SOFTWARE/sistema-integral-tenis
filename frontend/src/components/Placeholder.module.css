@@ -27,3 +27,16 @@
   margin: 0 auto;
   line-height: 1.5;
 }
+
+.chip {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  background: #178a4c1a;
+  color: var(--color-primary);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+}

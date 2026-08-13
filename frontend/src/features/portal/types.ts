@@ -59,11 +59,13 @@ export interface Publicidad {
   enlace: string | null;
 }
 
-/** Espejo de AvisoDto: un aviso general del club. */
-export interface Aviso {
+/** Espejo de NoticiaDto: una noticia del club. */
+export interface Noticia {
   id: string;
   titulo: string;
   mensaje: string;
+  /** Destacada: sube al Inicio. Las demás solo se ven en la sección Noticias. */
+  importante: boolean;
   venceEl: string | null; // "2026-07-25"
   activo: boolean;
   creadoEl: string;

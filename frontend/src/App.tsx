@@ -18,7 +18,8 @@ import MiPerfilProfesorPage from './features/perfilprofesor/MiPerfilProfesorPage
 import PlataformaPage from './features/admin/PlataformaPage';
 import AgendaSeccionPage from './features/agenda/AgendaSeccionPage';
 import FinanzasSeccionPage from './features/finanzas/FinanzasSeccionPage';
-import AvisosPage from './features/avisos/AvisosPage';
+import NoticiasPage from './features/noticias/NoticiasPage';
+import Placeholder from './components/Placeholder';
 import BloqueosPage from './features/bloqueos/BloqueosPage';
 import CancelacionesPage from './features/cancelaciones/CancelacionesPage';
 import PortalLayout from './features/portal/PortalLayout';
@@ -27,6 +28,7 @@ import MisTurnosPage from './features/portal/MisTurnosPage';
 import ReservarPage from './features/portal/ReservarPage';
 import MiCuotaPage from './features/portal/MiCuotaPage';
 import ServiciosPage from './features/portal/ServiciosPage';
+import PortalNoticiasPage from './features/portal/NoticiasPage';
 import PerfilPage from './features/portal/PerfilPage';
 import BuscarClubPage from './features/portal/BuscarClubPage';
 
@@ -108,7 +110,9 @@ export default function App() {
             {/* Compat: los links viejos entran a Finanzas en el tab correcto */}
             <Route path="/cuotas" element={<Navigate to="/finanzas?tab=cuotas" replace />} />
             <Route path="/reportes" element={<Navigate to="/finanzas?tab=reportes" replace />} />
-            <Route path="/avisos" element={<AvisosPage />} />
+            <Route path="/noticias" element={<NoticiasPage />} />
+            {/* Compat: "Avisos" se llamó así hasta el 13/08/2026 */}
+            <Route path="/avisos" element={<Navigate to="/noticias" replace />} />
             <Route path="/bloqueos" element={<BloqueosPage />} />
             <Route path="/cancelaciones" element={<CancelacionesPage />} />
             <Route path="/plataforma" element={<PlataformaPage />} />
@@ -122,6 +126,23 @@ export default function App() {
             <Route path="reservar" element={<ReservarPage />} />
             <Route path="cuota" element={<MiCuotaPage />} />
             <Route path="servicios" element={<ServiciosPage />} />
+            <Route path="noticias" element={<PortalNoticiasPage />} />
+            <Route
+              path="torneos"
+              element={<Placeholder
+                titulo="Mis torneos"
+                icono="🏆"
+                mensaje="Acá vas a ver los torneos en los que estés anotado, tus partidos y los resultados."
+              />}
+            />
+            <Route
+              path="ranking"
+              element={<Placeholder
+                titulo="Ranking"
+                icono="📊"
+                mensaje="Acá vas a ver tu posición y la de los demás jugadores, según los partidos que se vayan cargando."
+              />}
+            />
             <Route path="perfil" element={<PerfilPage />} />
             <Route path="club" element={<BuscarClubPage />} />
           </Route>

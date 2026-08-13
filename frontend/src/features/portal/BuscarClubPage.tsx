@@ -66,31 +66,49 @@ export default function BuscarClubPage() {
     }
   };
 
-  // Ya estás vinculado a un club (en lista de espera o alumno pleno)
+  // Ya pertenecés a un club: se dibuja como LISTA de cards aunque hoy siempre haya una
+  // sola (`SolicitudService` deja un club por persona). Pertenecer a varios está por
+  // llegar, y así la pantalla no hay que rehacerla: se van a sumar filas, nada más.
   if (sesion?.alumno) {
-    const ficha = sesion.alumno;
+    // Una card por club, no por ficha: una familia puede tener varios miembros en el
+    // mismo club y no tiene sentido repetirlo.
+    const clubes = [...new Map(sesion.alumnos.map((f) => [f.tenantId, f])).values()];
     return (
       <div className={s.perfilCol}>
-        <div className={s.tarjeta}>
-          <h3 className={s.tarjetaTitulo}>Tu club</h3>
-          {ficha.enEspera ? (
-            <p className={s.sinClubTexto}>
-              Estás en la <b>lista de espera</b> de <b>{ficha.club}</b>. Cuando tu
-              profe te sume a una clase, tu portal se habilita completo.
-            </p>
-          ) : (
-            <p className={s.sinClubTexto}>
-              Estás en <b>{ficha.club}</b> como {ficha.nombre} {ficha.apellido}.
-            </p>
-          )}
+        <div className={s.clubesLista}>
+          {clubes.map((ficha) => (
+            <div key={ficha.tenantId} className={s.clubCard}>
+              <div className={s.clubCardCabecera}>
+                <div className={s.clubEscudo}>🎾</div>
+                <div className={s.clubDatos}>
+                  <div className={s.clubNombre}>{ficha.club}</div>
+                  <div className={s.clubMiembro}>{ficha.nombre} {ficha.apellido}</div>
+                </div>
+                <span className={ficha.enEspera ? s.clubChipEspera : s.clubChipAlumno}>
+                  {ficha.enEspera ? 'En lista de espera' : 'Alumno'}
+                </span>
+              </div>
+              {ficha.enEspera && (
+                <div className={s.clubNota}>
+                  Tu profe te va a sumar a una clase. Mientras tanto podés{' '}
+                  <Link to="/portal/reservar" className={s.clubLink}>pedir lugar</Link> en
+                  la que te sirva.
+                </div>
+              )}
+            </div>
+          ))}
         </div>
 
         {/* Las cartas de presentación de los profes del club. La ficha vieja
             (guardada antes de esta versión) no trae tenantId: se completa sola
             al refrescar la sesión, arriba. */}
-        {ficha.tenantId && (
-          <ProfesoresClub tenantId={ficha.tenantId} titulo={`Los profes de ${ficha.club}`} />
-        )}
+        {clubes.map((ficha) => ficha.tenantId && (
+          <ProfesoresClub
+            key={`profes-${ficha.tenantId}`}
+            tenantId={ficha.tenantId}
+            titulo={`Los profes de ${ficha.club}`}
+          />
+        ))}
       </div>
     );
   }

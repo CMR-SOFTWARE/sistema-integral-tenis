@@ -39,7 +39,265 @@
   font-size: 14px;
 }
 
-/* ── Avisos del profe (Inicio del portal) ── */
+.tarjetaHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.tarjetaHeader .tarjetaTitulo {
+  margin: 0;
+}
+
+.tarjetaLink {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* ── En lista de espera: una banda arriba del Inicio ──
+   No reemplaza la pantalla (antes sí, y el que esperaba no veía nada): informa y le
+   da la única salida que tiene, que es ir a pedir lugar en una clase. */
+.bandaEspera {
+  /* Cruza las dos columnas de la grilla del Inicio: es una banda de estado, no una
+     tarjeta más. Metida en una sola columna dejaba un hueco enorme al lado. */
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  background: #fef6e7;
+  border: 1px solid #f5d9a8;
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+}
+
+.bandaTitulo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  color: #8a5a10;
+}
+
+.bandaTexto {
+  font-size: 13px;
+  color: #8a5a10;
+  margin-top: 3px;
+}
+
+.bandaBoton {
+  background: #b7791f;
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 10px 16px;
+  border-radius: var(--radius-md);
+  text-decoration: none;
+  white-space: nowrap;
+  flex: none;
+}
+
+/* ── Noticias importantes: lo primero que ve el alumno al entrar ──
+   Van en ROJO y no en el verde de la marca. Acá el verde es el color de "todo bien"
+   (cuota al día, clase confirmada, botón principal): una noticia urgente pintada de
+   verde se lee como una tarjeta más y se pierde entre las otras seis. */
+.destacadas {
+  grid-column: 1 / -1; /* cruza la grilla entera, como la banda de espera */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.destacada {
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger-border);
+  border-left: 5px solid var(--color-danger);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+}
+
+.destacadaEtiqueta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-danger);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  margin-bottom: 8px;
+}
+
+.destacadaTitulo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17px;
+  color: #7f1d1d;
+  line-height: 1.25;
+}
+
+.destacadaMensaje {
+  font-size: 14px;
+  color: #991b1b;
+  margin-top: 4px;
+  white-space: pre-wrap;
+  line-height: 1.45;
+}
+
+/* ── Sección Noticias (portal del alumno) ── */
+.noticiasLista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.noticia,
+.noticiaDestacada {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+}
+
+/* Mismo rojo que en el Inicio: si acá fuera de otro color, el alumno no reconocería
+   que es la misma noticia que le apareció al entrar. */
+.noticiaDestacada {
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger-border);
+  border-left: 5px solid var(--color-danger);
+}
+
+.noticiaCabecera {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.noticiaTitulo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.noticiaChip {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 10px;
+  letter-spacing: 0.05em;
+  padding: 3px 9px;
+  border-radius: 999px;
+  background: var(--color-danger);
+  color: #fff;
+}
+
+.noticiaMensaje {
+  font-size: 14px;
+  color: var(--color-text-soft);
+  margin-top: 6px;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+.noticiaFecha {
+  font-size: 12px;
+  color: var(--color-text-faint);
+  margin-top: 10px;
+}
+
+/* ── Mis clubes ── */
+.clubesLista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.clubCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
+}
+
+.clubCardCabecera {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.clubEscudo {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: #178a4c1a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 21px;
+  flex: none;
+}
+
+.clubDatos {
+  flex: 1;
+  min-width: 0;
+}
+
+.clubNombre {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+}
+
+.clubMiembro {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.clubChipAlumno,
+.clubChipEspera {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.clubChipAlumno {
+  background: #e7f6ec;
+  color: var(--color-primary-dark);
+}
+
+.clubChipEspera {
+  background: #fef6e7;
+  color: #b7791f;
+}
+
+.clubNota {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+.clubLink {
+  color: var(--color-primary);
+  font-weight: 700;
+}
+
+/* ── Noticias del club en el Inicio ── */
 .avisosLista {
   display: flex;
   flex-direction: column;

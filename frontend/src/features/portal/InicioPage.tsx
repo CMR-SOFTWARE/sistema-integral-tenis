@@ -5,7 +5,7 @@ import SinClub from './SinClub';
 import { formatoPlata } from '../alumnos/types';
 import { ESTADO_LIQ_UI, MESES } from '../cuotas/types';
 import { fechaCorta, horaCorta, DIAS } from '../agenda/types';
-import { useMisTurnos, useMiCuota, usePublicidad, useAvisos, useNotas } from './hooks';
+import { useMisTurnos, useMiCuota, usePublicidad, useNoticias, useNotas } from './hooks';
 import type { MiTurno } from './types';
 import s from './PortalPages.module.css';
 
@@ -27,8 +27,12 @@ export default function InicioPage() {
   const turnosQuery = useMisTurnos();
   const cuotaQuery = useMiCuota(hoy.getFullYear(), hoy.getMonth() + 1);
   const { data: banners = [] } = usePublicidad();
-  const { data: avisos = [] } = useAvisos();
+  const { data: noticias = [] } = useNoticias();
   const { data: notas = [] } = useNotas();
+  // Las importantes suben arriba de todo; las demás quedan en la tarjeta de abajo (y
+  // completas en la sección Noticias).
+  const destacadas = noticias.filter((n) => n.importante);
+  const comunes = noticias.filter((n) => !n.importante);
   const [bannerIdx, setBannerIdx] = useState(0);
 
   // Rotación de banners (si hay más de uno) cada 6s
@@ -39,19 +43,6 @@ export default function InicioPage() {
   }, [banners.length]);
 
   if (!conClub) return <SinClub />;
-  // Miembro en lista de espera: todavía no tiene clases ni cuota. Le mostramos su
-  // estado en vez del dashboard vacío; se habilita cuando el profe le da una clase.
-  if (ficha?.enEspera) {
-    return (
-      <div className={s.tarjeta}>
-        <h3 className={s.tarjetaTitulo}>Estás en la lista de espera 🎾</h3>
-        <p className={s.sinClubTexto}>
-          Ya sos parte de <b>{ficha.club}</b>. Tu profe te va a sumar a una clase;
-          cuando lo haga, acá vas a ver tus horarios y tu cuota.
-        </p>
-      </div>
-    );
-  }
   if (turnosQuery.error) {
     return <div className={s.error}>{turnosQuery.error.message || 'Error cargando tus clases'}</div>;
   }
@@ -66,6 +57,41 @@ export default function InicioPage() {
 
   return (
     <div className={s.inicioGrilla}>
+      {/* ── En lista de espera: una banda, no una pantalla ──
+          Antes esto reemplazaba el Inicio entero y el que esperaba no veía nada ni
+          tenía nada para hacer. Ahora ve el portal completo (con sus estados vacíos) y
+          el botón lo lleva a pedir lugar en una clase, que es su única salida real. */}
+      {ficha?.enEspera && (
+        <div className={s.bandaEspera}>
+          <div>
+            <div className={s.bandaTitulo}>Estás en la lista de espera 🎾</div>
+            <div className={s.bandaTexto}>
+              Ya sos parte de <b>{ficha.club}</b>. Tu profe te va a sumar a una clase, o
+              podés pedir lugar en la que te sirva.
+            </div>
+          </div>
+          <Link to="/portal/reservar" className={s.bandaBoton}>Ver clases</Link>
+        </div>
+      )}
+
+      {/* ── Noticias importantes: lo primero que ve al entrar, y en rojo ── */}
+      {destacadas.length > 0 && (
+        <div className={s.destacadas}>
+          {destacadas.map((n) => (
+            <div key={n.id} className={s.destacada}>
+              <span className={s.destacadaEtiqueta}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                  <path d="M12 8v5" /><path d="M12 17h.01" />
+                </svg>
+                IMPORTANTE
+              </span>
+              <div className={s.destacadaTitulo}>{n.titulo}</div>
+              <div className={s.destacadaMensaje}>{n.mensaje}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* ── Hero: tu próxima clase ── */}
       <div className={s.hero}>
         <div className={s.heroPelota} />
@@ -128,17 +154,21 @@ export default function InicioPage() {
         </div>
       </div>
 
-      {/* ── Avisos del profe ── */}
+      {/* ── Noticias del club: las últimas, con el link a la sección ──
+          Las importantes ya subieron arriba de todo, así que acá no se repiten. */}
       <div className={s.tarjeta}>
-        <h3 className={s.tarjetaTitulo}>Avisos del profe</h3>
-        {avisos.length === 0 ? (
-          <div className={s.vacio}>No hay avisos por ahora.</div>
+        <div className={s.tarjetaHeader}>
+          <h3 className={s.tarjetaTitulo}>Noticias del club</h3>
+          <Link to="/portal/noticias" className={s.tarjetaLink}>Ver todas →</Link>
+        </div>
+        {comunes.length === 0 ? (
+          <div className={s.vacio}>No hay noticias por ahora.</div>
         ) : (
           <div className={s.avisosLista}>
-            {avisos.map((a) => (
-              <div key={a.id} className={s.avisoItem}>
-                <div className={s.avisoTitulo}>{a.titulo}</div>
-                <div className={s.avisoMensaje}>{a.mensaje}</div>
+            {comunes.slice(0, 3).map((n) => (
+              <div key={n.id} className={s.avisoItem}>
+                <div className={s.avisoTitulo}>{n.titulo}</div>
+                <div className={s.avisoMensaje}>{n.mensaje}</div>
               </div>
             ))}
           </div>

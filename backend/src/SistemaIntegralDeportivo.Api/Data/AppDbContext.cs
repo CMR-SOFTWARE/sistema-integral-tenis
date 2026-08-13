@@ -40,7 +40,7 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
     public DbSet<SolicitudHorario> SolicitudesHorario => Set<SolicitudHorario>();
     public DbSet<ClaseSuelta> ClasesSueltas => Set<ClaseSuelta>();
     public DbSet<Publicidad> Publicidades => Set<Publicidad>();
-    public DbSet<Aviso> Avisos => Set<Aviso>();
+    public DbSet<Noticia> Noticias => Set<Noticia>();
     public DbSet<NotaAlumno> NotasAlumno => Set<NotaAlumno>();
     public DbSet<MembresiaTenant> MembresiasTenant => Set<MembresiaTenant>();
     public DbSet<PagoEmpleado> PagosEmpleado => Set<PagoEmpleado>();
@@ -299,10 +299,10 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
         modelBuilder.Entity<Publicidad>()
             .HasIndex(p => p.TenantId); // "los banners de este club"
 
-        // ── Avisos: tablón general del profe por tenant ──
+        // ── Noticias: el tablón del club, por tenant ──
 
-        modelBuilder.Entity<Aviso>()
-            .HasIndex(a => a.TenantId); // "los avisos de este club"
+        modelBuilder.Entity<Noticia>()
+            .HasIndex(n => n.TenantId); // "las noticias de este club"
 
         // ── Membresías Staff: el profe empleado dentro del tenant del head pro ──
 

@@ -18,7 +18,7 @@ public class PortalService : IPortalService
     private readonly ISolicitudHorarioService _solicitudesHorario;
     private readonly IClaseSueltaService _clasesSueltas;
     private readonly IPublicidadService _publicidad;
-    private readonly IAvisoService _avisos;
+    private readonly INoticiaService _noticias;
     private readonly INotaAlumnoService _notas;
     private readonly ISedeRepository _sedes;
     private readonly ITenantActual _tenantActual;
@@ -30,7 +30,7 @@ public class PortalService : IPortalService
         IServicioService servicios, IPedidoService pedidos,
         IRaquetaService raquetas, ISolicitudCupoService solicitudesCupo,
         ISolicitudHorarioService solicitudesHorario, IClaseSueltaService clasesSueltas,
-        IPublicidadService publicidad, IAvisoService avisos, INotaAlumnoService notas,
+        IPublicidadService publicidad, INoticiaService noticias, INotaAlumnoService notas,
         ISedeRepository sedes, ITenantActual tenantActual, IFichaActual fichaActual)
     {
         _alumnos = alumnos;
@@ -44,7 +44,7 @@ public class PortalService : IPortalService
         _solicitudesHorario = solicitudesHorario;
         _clasesSueltas = clasesSueltas;
         _publicidad = publicidad;
-        _avisos = avisos;
+        _noticias = noticias;
         _notas = notas;
         _sedes = sedes;
         _tenantActual = tenantActual;
@@ -317,10 +317,10 @@ public class PortalService : IPortalService
         return await _publicidad.ListarAsync(soloActivas: true, ct);
     }
 
-    public async Task<IReadOnlyList<AvisoDto>> AvisosAsync(Guid userId, CancellationToken ct = default)
+    public async Task<IReadOnlyList<NoticiaDto>> NoticiasAsync(Guid userId, CancellationToken ct = default)
     {
-        await FichaDeAsync(userId, ct); // establece el tenant del club → sus avisos
-        return await _avisos.ListarAsync(soloVigentes: true, ct); // solo activos y no vencidos
+        await FichaDeAsync(userId, ct); // establece el tenant del club → sus noticias
+        return await _noticias.ListarAsync(soloVigentes: true, ct); // solo activas y no vencidas
     }
 
     public async Task<IReadOnlyList<NotaAlumnoDto>> NotasAsync(Guid userId, CancellationToken ct = default)
