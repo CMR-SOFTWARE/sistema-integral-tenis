@@ -4,7 +4,7 @@ import { obtenerSesion } from '../auth/sesion';
 import { useFichaActiva } from './FichaActivaContext';
 import type { Servicio, Pedido } from '../cuotas/types';
 import type {
-  Aviso,
+  Noticia,
   ClaseSuelta,
   CuotaFamilia,
   MiLiquidacion,
@@ -62,10 +62,11 @@ export function usePublicidad() {
   });
 }
 
-export function useAvisos() {
+/** Las noticias vigentes del club. Vienen con las importantes primero (lo ordena el back). */
+export function useNoticias() {
   return useQuery({
-    queryKey: ['portal-avisos'],
-    queryFn: () => api.get<Aviso[]>('/portal/avisos'),
+    queryKey: ['portal-noticias'],
+    queryFn: () => api.get<Noticia[]>('/portal/noticias'),
     enabled: tieneFicha(),
   });
 }

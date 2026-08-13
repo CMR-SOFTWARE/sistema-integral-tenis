@@ -399,14 +399,14 @@ public class PortalController : ControllerBase
         }
     }
 
-    /// <summary>GET api/portal/avisos — avisos generales vigentes del club (se ven en Inicio).</summary>
-    [HttpGet("avisos")]
-    public async Task<ActionResult<IReadOnlyList<AvisoDto>>> Avisos(CancellationToken ct)
+    /// <summary>GET api/portal/noticias — las noticias vigentes de mi club.</summary>
+    [HttpGet("noticias")]
+    public async Task<ActionResult<IReadOnlyList<NoticiaDto>>> Noticias(CancellationToken ct)
     {
         if (UserId() is not { } userId) return Unauthorized();
         try
         {
-            return Ok(await _portal.AvisosAsync(userId, ct));
+            return Ok(await _portal.NoticiasAsync(userId, ct));
         }
         catch (ReglaDeNegocioException ex)
         {

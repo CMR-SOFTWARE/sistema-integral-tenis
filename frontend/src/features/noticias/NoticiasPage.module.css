@@ -1,4 +1,4 @@
-/* Avisos generales del profe — alta inline + lista */
+/* Noticias del club — alta/edición inline + lista */
 
 .toolbar {
   display: flex;
@@ -54,6 +54,25 @@
 .textarea {
   resize: vertical;
   min-height: 64px;
+}
+
+/* El switch de destacada: va con su explicación al lado, porque "importante" solo no
+   dice DÓNDE aparece, que es lo que el profe está decidiendo. */
+.importante {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--color-text-soft);
+  cursor: pointer;
+}
+
+.importante input {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--color-primary);
+  flex: none;
+  cursor: pointer;
 }
 
 .altaPie {
@@ -145,12 +164,21 @@
 }
 
 .badgeApagado,
-.badgeVencido {
+.badgeVencido,
+.badgeImportante {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 10px;
   padding: 2px 8px;
   border-radius: 999px;
+}
+
+/* Rojo, el mismo con el que le va a aparecer al alumno: así el profe ve en su lista
+   cuál de sus noticias está gritando en el Inicio de todo el club. */
+.badgeImportante {
+  background: var(--color-danger);
+  color: #fff;
+  letter-spacing: 0.05em;
 }
 
 .badgeApagado {
