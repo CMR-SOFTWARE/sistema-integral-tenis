@@ -180,8 +180,12 @@ export default function SueldosPage() {
                         <div className={s.sinDetalle}>Sin clases dadas este mes.</div>
                       )}
                       {e.detalle.map((d) => (
-                        <div key={d.horarioId} className={s.linea}>
-                          <span className={s.lineaDia}>{DIA_LABEL[d.dia] ?? d.dia} {horaCorta(d.horaInicio)}</span>
+                        // El título alcanza como key: las sueltas van todas en una línea
+                        // sola ("Clases sueltas") y no tienen horarioId.
+                        <div key={d.titulo} className={s.linea}>
+                          <span className={s.lineaDia}>
+                            {d.dia === '' ? horaCorta(d.horaInicio) : `${DIA_LABEL[d.dia] ?? d.dia} ${horaCorta(d.horaInicio)}`}
+                          </span>
                           <span className={s.lineaTitulo}>{d.titulo}</span>
                           <span className={s.lineaHoras}>
                             {d.clases} {d.clases === 1 ? 'clase' : 'clases'} · {d.horas} h

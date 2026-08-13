@@ -16,6 +16,15 @@ public interface IClaseSueltaService
     Task<ClaseSueltaDto> SolicitarAsync(
         Guid alumnoId, Guid sedeId, DateOnly fecha, TimeOnly hora, int duracionMinutos, CancellationToken ct = default);
 
+    /// <summary>
+    /// El PROFE asigna una clase suelta, sin que el alumno la haya pedido: nace ya
+    /// CONFIRMADA con su turno. Con <paramref name="generaCargo"/> en false es una
+    /// **clase de prueba** y no se le cobra nada.
+    /// </summary>
+    Task<ClaseSueltaDto> AsignarAsync(
+        Guid alumnoId, Guid canchaId, DateOnly fecha, TimeOnly hora, int duracionMinutos,
+        Guid? profesorUserId, bool generaCargo, CancellationToken ct = default);
+
     /// <summary>Canchas libres en una sede para una FECHA/hora puntual (recurrentes + sueltos de esa fecha).</summary>
     Task<IReadOnlyList<CanchaLibreDto>> CanchasLibresAsync(
         Guid sedeId, DateOnly fecha, TimeOnly hora, int duracionMinutos, CancellationToken ct = default);
@@ -46,10 +55,12 @@ public class ClaseSueltaService : IClaseSueltaService
     private readonly ITurnoRepository _turnos;
     private readonly ICargoRepository _cargos;
     private readonly ITenantRepository _tenant;
+    private readonly IStaffService _staff;
 
     public ClaseSueltaService(
         IClaseSueltaRepository clases, IAlumnoRepository alumnos, ISedeRepository sedes,
-        IHorarioRepository horarios, ITurnoRepository turnos, ICargoRepository cargos, ITenantRepository tenant)
+        IHorarioRepository horarios, ITurnoRepository turnos, ICargoRepository cargos,
+        ITenantRepository tenant, IStaffService staff)
     {
         _clases = clases;
         _alumnos = alumnos;
@@ -58,6 +69,7 @@ public class ClaseSueltaService : IClaseSueltaService
         _turnos = turnos;
         _cargos = cargos;
         _tenant = tenant;
+        _staff = staff;
     }
 
     public async Task<ClaseSueltaDto> SolicitarAsync(
@@ -113,6 +125,95 @@ public class ClaseSueltaService : IClaseSueltaService
         await _clases.GuardarCambiosAsync(ct);
 
         clase.Alumno = alumno; clase.Sede = sede; clase.Cargo = cargo; // para el Mapear
+        return Mapear(clase);
+    }
+
+    public async Task<ClaseSueltaDto> AsignarAsync(
+        Guid alumnoId, Guid canchaId, DateOnly fecha, TimeOnly hora, int duracionMinutos,
+        Guid? profesorUserId, bool generaCargo, CancellationToken ct = default)
+    {
+        var alumno = await _alumnos.ObtenerAsync(alumnoId, ct)
+            ?? throw new ReglaDeNegocioException("El alumno no existe.");
+        if (alumno.Estado != EstadoAlumno.Activo)
+            throw new ReglaDeNegocioException(
+                $"{alumno.Nombre} no está activo: reactivalo antes de darle una clase.");
+
+        if (fecha < DateOnly.FromDateTime(DateTime.UtcNow))
+            throw new ReglaDeNegocioException("La fecha ya pasó: elegí un día de hoy en adelante.");
+
+        // NO se valida la deuda vencida: ese guard frena al alumno que se anota solo desde
+        // el portal, no al profe armando su agenda (mismo criterio que SelectorAlumnos).
+
+        var sedeId = await _sedes.SedeDeCanchaAsync(canchaId, ct)
+            ?? throw new ReglaDeNegocioException("Esa cancha no existe en tu academia.");
+
+        if (profesorUserId is { } profeId)
+        {
+            if (!await _staff.EsAsignableAsync(profeId, ct))
+                throw new ReglaDeNegocioException("Ese profe no está disponible en tu academia.");
+            if (!await _staff.TrabajaEnSedeAsync(profeId, sedeId, ct))
+                throw new ReglaDeNegocioException("Ese profe no da clases en ese club.");
+        }
+
+        var libres = await CanchasLibresAsync(sedeId, fecha, hora, duracionMinutos, ct);
+        if (libres.All(c => c.CanchaId != canchaId))
+            throw new ReglaDeNegocioException("Esa cancha está ocupada a esa hora. Elegí otra.");
+
+        // Clase de PRUEBA = sin cargo. Si cobra, el cargo nace IMPAGO y se suma a su
+        // cuenta corriente junto con la cuota: distinto del camino del alumno, donde se
+        // marca pagado al confirmar porque el alumno ya informó la transferencia.
+        Cargo? cargo = null;
+        if (generaCargo)
+        {
+            var tenant = await _tenant.ObtenerActualAsync(ct);
+            if (tenant.ValorClaseIndividual is not { } valorHora)
+                throw new ReglaDeNegocioException("El profe todavía no configuró el precio de la clase individual.");
+
+            cargo = new Cargo
+            {
+                AlumnoId = alumnoId,
+                Tipo = TipoCargo.Clase,
+                Concepto = $"Clase suelta {fecha:dd/MM}",
+                Monto = Math.Round(valorHora * duracionMinutos / 60m, 2),
+                Fecha = fecha,
+            };
+            await _cargos.AgregarAsync(cargo, ct);
+        }
+
+        var turno = new Turno
+        {
+            HorarioId = null, // suelto: no cuelga de ninguna plantilla
+            ProfesorUserId = profesorUserId,
+            CanchaId = canchaId,
+            Fecha = fecha,
+            HoraInicio = hora,
+            DuracionMinutos = duracionMinutos,
+            Estado = EstadoTurno.Programado,
+        };
+        turno.Participantes.Add(new TurnoParticipante { Turno = turno, AlumnoId = alumnoId });
+        await _turnos.AgregarAsync(turno, ct);
+
+        if (cargo is not null) cargo.TurnoId = turno.Id;
+
+        // Nace CONFIRMADA: la pidió el profe, no hay nada que resolver después.
+        var clase = new ClaseSuelta
+        {
+            AlumnoId = alumnoId,
+            SedeId = sedeId,
+            Fecha = fecha,
+            HoraInicio = hora,
+            DuracionMinutos = duracionMinutos,
+            Estado = EstadoClaseSuelta.Confirmada,
+            CargoId = cargo?.Id,
+            CanchaId = canchaId,
+            TurnoId = turno.Id,
+            ResueltoEl = DateTime.UtcNow,
+        };
+        await _clases.AgregarAsync(clase, ct);
+        await _clases.GuardarCambiosAsync(ct);
+
+        clase.Alumno = alumno; clase.Cargo = cargo; // para el Mapear
+        if (await _sedes.ObtenerAsync(sedeId, ct) is { } sede) clase.Sede = sede;
         return Mapear(clase);
     }
 

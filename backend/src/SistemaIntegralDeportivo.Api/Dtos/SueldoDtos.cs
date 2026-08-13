@@ -6,7 +6,8 @@ namespace SistemaIntegralDeportivo.Api.Dtos;
 /// <summary>Un horario que suma al sueldo del profe: sus clases del mes × valor hora.</summary>
 public class SueldoHorarioDto
 {
-    public Guid HorarioId { get; set; }
+    /// <summary>Null en la línea de las clases SUELTAS, que no cuelgan de ningún horario.</summary>
+    public Guid? HorarioId { get; set; }
     public string Titulo { get; set; } = string.Empty;
     public string Dia { get; set; } = string.Empty;
     public TimeOnly HoraInicio { get; set; }

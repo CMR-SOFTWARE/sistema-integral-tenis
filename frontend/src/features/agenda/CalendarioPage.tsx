@@ -11,6 +11,7 @@ import PanelClasesSueltas from './PanelClasesSueltas';
 import PanelSolicitudesHorario from './PanelSolicitudesHorario';
 import PanelSolicitudesCupo from './PanelSolicitudesCupo';
 import NuevoHorarioModal from './NuevoHorarioModal';
+import NuevaClaseSueltaModal from './NuevaClaseSueltaModal';
 import EditarHorarioModal from './EditarHorarioModal';
 import FichaDesdeAgenda from './FichaDesdeAgenda';
 import { aISO, fechaLarga, lunesDe, rangoSemana, sumarDias } from './types';
@@ -59,6 +60,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
   const [abierto, setAbierto] = useState<string | null>(null); // turnoId
   const [fichaAlumnoId, setFichaAlumnoId] = useState<string | null>(null); // ficha abierta desde una clase
   const [modalHorario, setModalHorario] = useState(false);
+  const [modalClaseSuelta, setModalClaseSuelta] = useState(false);
   // Se guarda el ID y no el objeto: tocar el roster desde el modal recarga la lista,
   // y el modal tiene que ver el roster nuevo (un snapshot quedaría viejo).
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -203,16 +205,34 @@ export default function CalendarioPage({ sede, profe }: Props) {
           </div>
         )}
 
-        {/* Dueño Y staff pueden armar horarios (el staff, solo en canchas de su club). */}
+        {/* Los dos "crear" van juntos en su propio contenedor: sueltos en la barra, al
+            envolverse cada uno se iba por su lado y quedaban desparramados. */}
         {(esOwner || esStaff) && (
-          <button
-            className={s.btnNuevo}
-            onClick={() => setModalHorario(true)}
-            disabled={sinCanchas}
-            title={sinCanchas ? 'Primero cargá una sede con canchas en Mi academia → Configuración' : undefined}
-          >
-            + Nuevo horario
-          </button>
+          <div className={s.crear}>
+            {/* Dueño Y staff pueden armar horarios (el staff, solo en canchas de su club). */}
+            <button
+              className={s.btnNuevo}
+              onClick={() => setModalHorario(true)}
+              disabled={sinCanchas}
+              title={sinCanchas ? 'Primero cargá una sede con canchas en Mi academia → Configuración' : undefined}
+            >
+              + Nuevo horario
+            </button>
+            {/* La clase suelta es del dueño: el endpoint es Owner (el permiso del
+                empleado llega con el bloque de permisos). */}
+            {esOwner && (
+              <button
+                className={s.btnSecundario}
+                onClick={() => setModalClaseSuelta(true)}
+                disabled={sinCanchas}
+                title={sinCanchas
+                  ? 'Primero cargá una sede con canchas en Mi academia → Configuración'
+                  : 'Una clase en una fecha puntual (o una clase de prueba, sin cargo)'}
+              >
+                + Clase suelta
+              </button>
+            )}
+          </div>
         )}
       </div>
 
@@ -324,6 +344,14 @@ export default function CalendarioPage({ sede, profe }: Props) {
           base={duplicandoHorario ?? undefined}
           onClose={() => { setModalHorario(false); setDuplicandoHorario(null); }}
           onCrear={crearH}
+        />
+      )}
+
+      {modalClaseSuelta && (
+        <NuevaClaseSueltaModal
+          sedes={disponibles}
+          onClose={() => setModalClaseSuelta(false)}
+          onCreada={() => void activo.recargar()}
         />
       )}
 

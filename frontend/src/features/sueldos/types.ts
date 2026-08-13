@@ -5,8 +5,10 @@ export type EstadoSueldo = 'Pagado' | 'Pendiente';
 
 /** Un horario que suma al sueldo del profe: sus clases del mes × valor hora. */
 export interface SueldoHorario {
-  horarioId: string;
+  /** Null en la línea de las clases SUELTAS, que no cuelgan de ningún horario. */
+  horarioId: string | null;
   titulo: string;
+  /** Vacío en las sueltas: cada una cae en su fecha, no hay día fijo. */
   dia: string; // "Monday" (DayOfWeek)
   horaInicio: string; // "18:00:00"
   valorHora: number | null;
