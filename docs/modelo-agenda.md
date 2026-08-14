@@ -151,6 +151,24 @@ real (el pago hoy es informar→confirmar) — futuro.
 
 ## 6. Cambios
 
+- **13/08/2026 — la clase suelta la puede asignar EL PROFE, y ahora tiene profe a cargo.**
+  Hasta acá la clase suelta solo la pedía el alumno desde el portal
+  (`SolicitarAsync` → informa el pago → el profe `ConfirmarAsync`), y **siempre** generaba
+  cargo. Se suma `AsignarAsync`: la crea el profe desde la Agenda ("+ Clase suelta"), nace
+  ya **`Confirmada`** con su turno, y un switch decide si le genera el cargo (precio
+  individual de Configuración, **impago**, va a su cuenta corriente con la cuota) o si es
+  una **clase de prueba** sin cargo. El camino del alumno no cambió.
+
+  Lo importante del modelo: **`Turno.ProfesorUserId` (nuevo, nullable) existe SOLO para los
+  turnos sueltos.** El turno que cuelga de un horario sigue sacando el profe de ahí —una
+  sola fuente de verdad, y así reasignar la clase reasigna todos sus turnos de una—; la
+  proyección del repositorio resuelve cuál de los dos usar. Antes el turno suelto no era de
+  nadie: no aparecía en la agenda del profe empleado ni le contaba para el sueldo, lo que
+  iba a ser un agujero de plata en cuanto un empleado diera una clase de prueba. En
+  `SueldoPorHora` las sueltas caen en una línea propia ("Clases sueltas") al valor hora base
+  del empleado: no tienen dónde guardar un override.
+
+
 - **05/08/2026 — el horario pasa a tener cupo y su propia lista de alumnos.** Se
   eliminó el concepto `Grupo` (y la pestaña Grupos): el cupo, la categoría y el
   roster viven en el `Horario`. La gestión del roster vive en el calendario: se

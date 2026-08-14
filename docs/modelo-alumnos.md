@@ -282,10 +282,60 @@ El alumno administra parte de su propia ficha desde el portal:
   **Pendiente**: al cambiar de categoría, validar contra sus clases (una clase
   tiene categoría sugerida; ver la regla de categoría↔clase).
 
+## 8. Las tres listas del profe (12/08/2026)
+
+La sección Alumnos tiene tres pestañas, que son **tres recortes de la misma gente**:
+
+| Pestaña | Quiénes |
+|---|---|
+| **Alumnos** | Los que tienen una clase asignada |
+| **Lista de espera** | Los que quieren clase y no la tienen: sin ninguna, con un pedido de cupo sin resolver, o anotados a mano por el profe |
+| **Usuarios** | Todas las fichas de la academia, tengan horario o no |
+
+**No hay ninguna columna que diga en qué lista está alguien, y es a propósito.** Se derivan
+del roster (`AlumnoHorario`) y de los pedidos pendientes. `EstadoAlumno.EnEspera` existió y
+se borró el 10/08/2026 justo porque se desincronizaba de la realidad: al que estaba en la
+espera lo sacaba de Alumnos y no había vuelta atrás. Por eso alguien puede estar **en
+Alumnos y en la espera a la vez** (ya viene los martes y pidió los jueves).
+
+Consecuencia práctica: **no existe forma de "mover" a alguien de lista**, y no hay que
+construirla. Si aparece ese pedido, la pregunta correcta es qué situación de la cancha se
+está tratando de resolver — la respuesta siempre termina siendo darle o sacarle una clase.
+
+Reglas a respetar si tocás esto:
+
+- **Prioridad de motivos: `PidioCupo` > `SinClase` > `LoAnotoElProfe`**, y **una fila por
+  persona**: gana el motivo más concreto, que es el que ofrece la acción fuerte.
+- **"Sacar de la espera" significa dos cosas distintas.** Al anotado a mano le apaga la
+  marca y sigue siendo alumno; al que espera sin clase le **borra la ficha**. Es el mismo
+  endpoint (`POST /solicitudes/{id}/quitar`) y decide por motivo.
+- **`Alumno.EnEsperaDesde` guarda fecha, no bool**, para ordenar por antigüedad en la cola.
+  Marcar dos veces no pisa la fecha (si la pisara, volver a tocar el botón lo mandaría al
+  final).
+
+### "Usuarios" es un padrón de FICHAS, no de personas
+
+Esa pestaña lee la tabla `Alumnos`. **El director y los profes empleados no aparecen ahí**
+salvo que alguien los haya cargado como alumnos: viven en `Tenant.OwnerUserId` y en
+`MembresiaTenant`, y se ven en **Mi academia → Profesores**. Ni el registro de profesor ni
+el alta de empleado crean una ficha.
+
+Se reporta como bug cada tanto, y no lo es. Meter personas sin ficha en una tabla de fichas
+da filas donde la mitad de las acciones no aplican (no hay a quién pausar, dar de baja ni
+cobrarle cuota). El padrón de PERSONAS es otro concepto y va en el panel de Plataforma —
+ver [`pedidos-del-profe.md`](pedidos-del-profe.md), bloque 6.
+
+Desde el 12/08/2026, además, **el director y los profes empleados no ensucian la lista de
+espera** cuando no toman clases: están trabajando, no esperando horario.
+
 ## Changelog
 
 - **12/06/2026**: versión inicial. Multi-tenant, sin login de alumnos, grupos fijos, soporte menores, categorías 7ma-1ra.
 - **17/07/2026 (M3)**: perfil editable por el alumno (contacto + categoría + foto base64 + raquetas). Entidad `Raqueta`.
+- **12/08/2026**: las tres listas (§8). `EstadoAlumno.EnEspera` se elimina: la pertenencia
+  a una lista se **deriva** de tener o no clase. La lista de espera pasa a mostrar la misma
+  tabla que Alumnos (`EsperaResponseDto` hereda de `AlumnoResponseDto`), con filtro por club
+  y `Club · Profe` en cada fila. El director y los profes salen de la espera.
 - **05/08/2026**: se elimina el concepto `Grupo`. El cupo, la categoría y el
   roster pasan al `Horario` (`AlumnoHorario` reemplaza a `AlumnoGrupo`, con la
   misma forma). Lo de `Grupo`/`AlumnoGrupo` de §3 queda como historia: ver
