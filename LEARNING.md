@@ -6,6 +6,39 @@
 
 ---
 
+## 2026-08-13 — Migraciones peligrosas, bugs latentes y datos derivados
+
+**La migración que te borra la tabla**
+- Al renombrar `Aviso` → `Noticia`, `dotnet ef migrations add` generó `DropTable` +
+  `CreateTable` y avisó *"may result in the loss of data"*. Eso en producción **borraba
+  todas las noticias del profe**. EF no puede saber que es un rename y no una tabla nueva:
+  eso lo sabe quien hizo el cambio. Se reescribió a mano con `ALTER TABLE … RENAME`.
+- Moraleja general: **el aviso de EF no es ruido**. Y "revisá el archivo generado" no es
+  una formalidad — es el único momento en que alguien mira ese SQL antes de que corra
+  contra la base del cliente.
+- `dotnet ef migrations script <desde> <hasta>` muestra el SQL exacto **sin tocar nada**.
+  Es la forma barata de auditar una migración antes de aplicarla.
+
+**Los tests verdes que no prueban lo que importa**
+- `SueldoPorHora` agrupaba con `GroupBy(t => t.HorarioId!.Value)`. Nunca falló, pero solo
+  porque ningún turno sin horario llegaba con profe. En cuanto se le pudo asignar un profe
+  a una clase suelta, ese `.Value` sobre un null tiraba la pantalla de Sueldos entera.
+- **Un bug latente es el que está esperando un dato que todavía no existe.** El `!` (el
+  null-forgiving de C#) es una promesa que le hacés al compilador: cuando escribís uno,
+  estás apostando a que una condición se va a mantener para siempre.
+- Los tests mockean los repositorios, así que **las consultas EF no están cubiertas**: 455
+  tests en verde y la proyección podía no traducir a SQL. Lo único que lo prueba es
+  levantar la API y pegarle.
+
+**Datos derivados vs. datos guardados**
+- Las tres listas (Alumnos / Espera / Usuarios) **no tienen ninguna columna** que diga en
+  cuál está cada uno: se calculan de tener o no clase. Antes había un `EstadoAlumno.EnEspera`
+  y se borró porque se desincronizaba de la realidad.
+- Es la misma lección que `esMenor` (que se calcula de la fecha) y que el estado de la
+  cuota: **un dato guardado que se puede derivar se vence solo**. La contra es que "no se
+  puede editar a mano", y esa limitación se lee como bug desde la pantalla — hay que
+  saber defenderla.
+
 ## 2026-07-05 — Diseño: identidad global y membresías
 
 - **Persona ≠ relación**: el error clásico es que un usuario "SEA alumno O
