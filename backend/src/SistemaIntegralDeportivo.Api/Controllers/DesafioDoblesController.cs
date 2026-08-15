@@ -8,7 +8,7 @@ namespace SistemaIntegralDeportivo.Api.Controllers;
 
 /// <summary>Desafíos de dobles: cross-tenant, espejo de DesafioController.</summary>
 [ApiController]
-[Authorize]
+[Authorize(Policy = "Admin")] // EN PAUSA: ver RankingController
 [Route("api/desafios/dobles")]
 public class DesafioDoblesController : ControllerBase
 {

@@ -136,7 +136,12 @@ export default function App() {
                 mensaje="Acá vas a ver los torneos en los que estés anotado, tus partidos y los resultados."
               />}
             />
-            <Route path="ranking" element={<RankingPage />} />
+            {/* EN PAUSA: el ranking todavía no se abrió a los usuarios (ver
+                RankingController). Sin este guard se entra tipeando la URL. */}
+            <Route
+              path="ranking"
+              element={obtenerSesion()?.esAdmin ? <RankingPage /> : <Navigate to="/portal" replace />}
+            />
             <Route path="perfil" element={<PerfilPage />} />
             <Route path="club" element={<BuscarClubPage />} />
           </Route>

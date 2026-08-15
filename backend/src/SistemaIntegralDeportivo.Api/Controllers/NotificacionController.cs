@@ -7,7 +7,7 @@ namespace SistemaIntegralDeportivo.Api.Controllers;
 
 /// <summary>Avisos in-app, cross-tenant (por Usuario, no por tenant).</summary>
 [ApiController]
-[Authorize]
+[Authorize(Policy = "Admin")] // EN PAUSA: ver RankingController
 [Route("api/notificaciones")]
 public class NotificacionController : ControllerBase
 {

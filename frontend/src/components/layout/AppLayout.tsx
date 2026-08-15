@@ -147,7 +147,10 @@ export default function AppLayout() {
               Mi portal
             </button>
           )}
-          <CampanaNotificaciones />
+          {/* Hoy la única fuente de notificaciones es el ranking, que está en pausa:
+              a quien no lo ve, la campana le quedaría siempre vacía (y su endpoint
+              responde 403). Se muestra cuando el ranking se abra. */}
+          {sesion?.esAdmin && <CampanaNotificaciones />}
         </header>
 
         <main className={s.content}>

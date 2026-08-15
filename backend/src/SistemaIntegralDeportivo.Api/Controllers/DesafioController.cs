@@ -8,7 +8,7 @@ namespace SistemaIntegralDeportivo.Api.Controllers;
 
 /// <summary>Desafíos de ranking: cross-tenant, cualquier jugador inscripto participa.</summary>
 [ApiController]
-[Authorize]
+[Authorize(Policy = "Admin")] // EN PAUSA: ver RankingController
 [Route("api/desafios")]
 public class DesafioController : ControllerBase
 {

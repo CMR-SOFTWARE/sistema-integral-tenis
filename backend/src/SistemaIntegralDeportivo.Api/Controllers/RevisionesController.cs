@@ -8,7 +8,7 @@ namespace SistemaIntegralDeportivo.Api.Controllers;
 
 /// <summary>Pedidos de revisión sobre un partido de ranking ya finalizado (singles o dobles).</summary>
 [ApiController]
-[Authorize]
+[Authorize(Policy = "Admin")] // EN PAUSA: ver RankingController
 [Route("api/revisiones")]
 public class RevisionesController : ControllerBase
 {

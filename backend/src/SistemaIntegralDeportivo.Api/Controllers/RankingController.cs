@@ -8,12 +8,18 @@ using SistemaIntegralDeportivo.Api.Services;
 namespace SistemaIntegralDeportivo.Api.Controllers;
 
 /// <summary>
-/// Ranking R.U.T.A.: cross-tenant, cualquier usuario autenticado (alumno o
-/// profe) puede ver el leaderboard e inscribirse — por eso [Authorize] sin
-/// policy, igual que PortalController, y no policy "Owner"/"Admin".
+/// Ranking R.U.T.A.: cross-tenant, pensado para que CUALQUIER usuario autenticado
+/// (alumno o profe) vea el leaderboard y se inscriba.
+///
+/// EN PAUSA (15/08/2026): el módulo entra a producción todavía sin probar, así que
+/// queda con policy "Admin" — solo el dueño de la app puede usarlo, para verlo andar
+/// con datos reales antes de abrirlo. Cuando se habilite, esto vuelve a
+/// <c>[Authorize]</c> a secas (igual que PortalController) y se le saca el
+/// <c>soloAdmin</c> a la entrada del menú en <c>nav.ts</c>. Mismo criterio en los
+/// controllers de desafíos, revisiones y notificaciones.
 /// </summary>
 [ApiController]
-[Authorize]
+[Authorize(Policy = "Admin")] // EN PAUSA: ver RankingController
 [Route("api/ranking")]
 public class RankingController : ControllerBase
 {

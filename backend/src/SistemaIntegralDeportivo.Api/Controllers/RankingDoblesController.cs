@@ -9,7 +9,7 @@ namespace SistemaIntegralDeportivo.Api.Controllers;
 
 /// <summary>Ranking de DOBLES: cross-tenant, requiere estar inscripto en singles primero.</summary>
 [ApiController]
-[Authorize]
+[Authorize(Policy = "Admin")] // EN PAUSA: ver RankingController
 [Route("api/ranking/dobles")]
 public class RankingDoblesController : ControllerBase
 {

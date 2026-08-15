@@ -86,7 +86,10 @@ export const alumnoNav: NavItem[] = [
   { to: '/portal/servicios', label: 'Servicios', icon: 'M20 7h-9M14 17H5M17 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM7 13a4 4 0 1 0 0 8 4 4 0 0 0 0-8z' },
   { to: '/portal/noticias', label: 'Noticias', icon: 'M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-4 0V9h4M16 6h-6M16 10h-6M12 14h-2' },
   { to: '/portal/torneos', label: 'Mis torneos', icon: 'M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0z' },
-  { to: '/portal/ranking', label: 'Ranking', icon: 'M18 20V10M12 20V4M6 20v-6' },
+  // EN PAUSA (15/08/2026): el ranking entró a producción sin probar, así que por ahora
+  // lo ve solo el admin. Al habilitarlo se saca este soloAdmin y se abre la policy de
+  // RankingController (que hoy exige "Admin").
+  { to: '/portal/ranking', label: 'Ranking', icon: 'M18 20V10M12 20V4M6 20v-6', soloAdmin: true },
   { to: '/portal/perfil', label: 'Mi perfil', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0' },
   { to: '/portal/club', label: 'Mis clubes', icon: 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6' },
 ];
