@@ -220,6 +220,27 @@ public class AsignarClaseSueltaDto
     public bool GeneraCargo { get; set; } = true;
 }
 
+/// <summary>
+/// Reprograma una clase suelta ya asignada: solo lo agendable (fecha, hora, cancha,
+/// duración, profe). No incluye alumno ni cobro: eso no se toca al editar.
+/// </summary>
+public class EditarClaseSueltaDto
+{
+    [Required]
+    public Guid CanchaId { get; set; }
+
+    [Required]
+    public DateOnly Fecha { get; set; }
+
+    [Required]
+    public TimeOnly HoraInicio { get; set; }
+
+    [Range(15, 240)]
+    public int DuracionMinutos { get; set; } = 60;
+
+    public Guid? ProfesorUserId { get; set; }
+}
+
 /// <summary>Una clase suelta (vista por el profe o el alumno).</summary>
 public class ClaseSueltaDto
 {

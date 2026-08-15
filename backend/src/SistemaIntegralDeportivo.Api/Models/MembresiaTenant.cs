@@ -37,5 +37,12 @@ public class MembresiaTenant
     /// <summary>Baja lógica: se desactiva cuando el profe deja de trabajar acá.</summary>
     public bool Activo { get; set; } = true;
 
+    /// <summary>
+    /// El dueño lo habilita a cobrar clases y cuotas (Bloque 6, pedido 2). Sin esto,
+    /// el empleado no entra a Finanzas en absoluto. El Director siempre puede cobrar
+    /// (no tiene membresía, se resuelve fijo en el service).
+    /// </summary>
+    public bool PuedeCobrar { get; set; }
+
     public DateTime CreadoEl { get; set; } = DateTime.UtcNow;
 }

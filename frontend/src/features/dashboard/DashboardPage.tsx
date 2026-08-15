@@ -4,6 +4,7 @@ import { api } from '../../lib/api';
 import { formatoPlata } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import { fechaCorta, horaCorta } from '../agenda/types';
+import { useProfesores } from '../profesores/useProfesores';
 import AccesosRapidos from './AccesosRapidos';
 import type { Acceso } from './AccesosRapidos';
 import CrearAlumnoRapido from './CrearAlumnoRapido';
@@ -28,7 +29,10 @@ interface ClaseHoy {
   duracionMinutos: number;
   titulo: string;
   cancha: string;
+  sede: string;
+  profesorUserId: string | null;
   participantes: number;
+  alumnos: string[];
   estado: 'Programado' | 'Cancelado';
 }
 
@@ -70,6 +74,7 @@ export default function DashboardPage() {
     queryKey: ['pedidos-pendientes-cuenta'],
     queryFn: () => api.get<number>('/pedidos/pendientes/cuenta'),
   });
+  const { nombreDe } = useProfesores();
 
   if (resumenQuery.error) {
     const msg = resumenQuery.error.message || 'Error cargando el dashboard';
@@ -105,18 +110,32 @@ export default function DashboardPage() {
           <div className={s.vacio}>Hoy no hay clases programadas.</div>
         ) : (
           <div className={s.lista}>
-            {resumen.clasesHoy.map((c) => (
-              <div key={c.turnoId} className={c.estado === 'Cancelado' ? s.filaCancelada : s.fila}>
-                <span className={s.filaHora}>{horaCorta(c.horaInicio)}</span>
-                <div className={s.filaCuerpo}>
-                  <div className={s.filaTitulo}>{c.titulo}</div>
-                  <div className={s.filaMeta}>
-                    {c.cancha} · {c.participantes} 👤 · {c.duracionMinutos}'
-                    {c.estado === 'Cancelado' && ' · Cancelada'}
+            {resumen.clasesHoy.map((c) => {
+              const profe = nombreDe(c.profesorUserId);
+              return (
+                <Link
+                  key={c.turnoId}
+                  to={`/agenda?tab=calendario&turno=${c.turnoId}`}
+                  className={`${c.estado === 'Cancelado' ? s.filaCancelada : s.fila} ${s.filaClases}`}
+                >
+                  <span className={s.filaHora}>{horaCorta(c.horaInicio)}</span>
+                  <div className={s.filaCuerpo}>
+                    <div className={s.filaTitulo}>{c.titulo}</div>
+                    <div className={s.filaMeta}>
+                      {c.sede} · {c.cancha} · {c.participantes} 👤 · {c.duracionMinutos}'
+                      {c.estado === 'Cancelado' && ' · Cancelada'}
+                    </div>
+                    {(profe || c.alumnos.length > 0) && (
+                      <div className={s.filaMeta}>
+                        {profe && `Profe: ${profe}`}
+                        {profe && c.alumnos.length > 0 && ' · '}
+                        {c.alumnos.join(', ')}
+                      </div>
+                    )}
                   </div>
-                </div>
-              </div>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>

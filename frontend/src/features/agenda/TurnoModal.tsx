@@ -18,6 +18,8 @@ interface Props {
   onDesactivarHorario?: (h: Horario) => void;
   /** Abre la ficha del alumno (con su cuenta corriente) desde la clase. */
   onAbrirFicha?: (alumnoId: string) => void;
+  /** Reprogramar una clase suelta (fecha/hora/cancha/profe). Solo se pasa si puede editar. */
+  onEditarSuelta?: (turno: Turno) => void;
 }
 
 /**
@@ -26,7 +28,7 @@ interface Props {
  */
 export default function TurnoModal({
   turno, horario, onClose, onAsistencia, onCancelar,
-  onEditarHorario, onDuplicarHorario, onDesactivarHorario, onAbrirFicha,
+  onEditarHorario, onDuplicarHorario, onDesactivarHorario, onAbrirFicha, onEditarSuelta,
 }: Props) {
   const [cancelando, setCancelando] = useState(false);
   const [motivo, setMotivo] = useState('');
@@ -146,6 +148,16 @@ export default function TurnoModal({
             )}
           </div>
           <p className={s.notaMini}>Afecta la clase recurrente (todas las semanas), no solo este día.</p>
+        </div>
+      )}
+
+      {!cancelado && turno.horarioId === null && onEditarSuelta && (
+        <div className={s.horarioBox}>
+          <div className={s.seccion}>Esta clase suelta</div>
+          <div className={s.horarioAcciones}>
+            <button className={s.btnHorario} onClick={() => onEditarSuelta(turno)}>Editar</button>
+          </div>
+          <p className={s.notaMini}>Cambia fecha, hora, cancha o profe. El alumno y el cobro no se tocan.</p>
         </div>
       )}
 

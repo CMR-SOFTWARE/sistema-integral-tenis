@@ -1,194 +1,171 @@
 namespace SistemaIntegralDeportivo.Api.Models;
 
-// Enums del dominio. En la base se guardan como texto (lo configuramos
-// en el DbContext con HasConversion<string>()) para que sean legibles
-// al inspeccionar el .db, en vez de números 0,1,2...
-
-/// <summary>Tipo de cliente dueño de los datos (multi-tenant).</summary>
-public enum TipoTenant
-{
-    Profesor,
-    Club // Fase 2, pero el enum ya lo soporta
-}
-
-/// <summary>
-/// Rol de una persona DENTRO de un tenant (modelo-identidad-roles §5). El Dueño
-/// (head pro) tiene todo; el Staff es un profe empleado con vista reducida
-/// (su agenda, sus alumnos, asistencia y notas; sin cuotas ni config).
-/// </summary>
-public enum RolTenant
-{
-    Dueño,
-    Staff
-}
-
-/// <summary>
-/// Ciclo de vida del negocio: nace PendientePago al registrarse el profesor
-/// y pasa a Activo cuando paga la suscripción (hoy simulado; Mercado Pago al
-/// desplegar). Suspendido: dejó de pagar (fase futura).
-/// </summary>
 public enum EstadoTenant
 {
     PendientePago,
     Activo,
-    Suspendido
+    Suspendido,
 }
 
-/// <summary>
-/// Categoría deportiva del alumno. Dos escalas por género (el género queda
-/// implícito en el valor): VARONES 1ra…6ta (1ra = la mejor) y DAMAS A…D (A = la
-/// mejor). La compatibilidad ±1 corre DENTRO de cada escala (ver Categorias).
-/// </summary>
+public enum TipoTenant
+{
+    Profesor,
+    Club,
+}
+
+public enum RolTenant
+{
+    Dueño,
+    Staff,
+}
+
+public enum EstadoAlumno
+{
+    Activo,
+    Suspendido,
+    Inactivo,
+}
+
 public enum CategoriaAlumno
 {
-    // Varones (1ra = mejor … 6ta)
     Primera,
     Segunda,
     Tercera,
     Cuarta,
     Quinta,
     Sexta,
-    // Damas (A = mejor … D)
     A,
     B1,
     B2,
     C1,
     C2,
     D,
-    SinCategoria // alumno nuevo, todavía no evaluado
+    SinCategoria,
 }
 
-/// <summary>
-/// Ciclo de vida del alumno. Nunca se borra: se suspende o inactiva.
-/// Acá va SOLO el ciclo de vida: estar en la lista de espera NO es un estado, se
-/// deriva de "no tiene clase vigente" (ver <see cref="ListaAlumnos"/>). Cuando era
-/// un valor más del enum, ser de la espera te sacaba de Alumnos y no había vuelta.
-/// </summary>
-public enum EstadoAlumno
-{
-    Activo,     // al día, puede reservar
-    Suspendido, // no pagó → se bloquea reserva, NO se borra
-    Inactivo,   // dejó de venir, se conserva el historial
-}
-
-/// <summary>
-/// En qué lista cae la ficha, según tenga o no una clase asignada. Es un filtro de
-/// consulta, no un dato guardado: la misma ficha cambia de lista sola al entrar o
-/// salir de una clase.
-/// </summary>
-public enum ListaAlumnos
-{
-    /// <summary>Todas las fichas de la academia (la pestaña "Usuarios").</summary>
-    Todos,
-    /// <summary>Los que tienen clase asignada (la pestaña "Alumnos").</summary>
-    ConClase,
-    /// <summary>Los que todavía no tienen ninguna (la lista de espera).</summary>
-    SinClase,
-}
-
-/// <summary>Vínculo del tutor con el alumno menor.</summary>
 public enum RelacionTutor
 {
     Padre,
     Madre,
     TutorLegal,
-    Otro
+    Otro,
 }
 
-/// <summary>Estado del turno concreto. Cancelado conserva motivo y fecha; nunca se borra.</summary>
+public enum ListaAlumnos
+{
+    Todos,
+    ConClase,
+    SinClase,
+}
+
 public enum EstadoTurno
 {
     Programado,
-    Cancelado
+    Cancelado,
 }
 
-/// <summary>Quién canceló el turno ENTERO (el aviso individual del alumno vive en TurnoParticipante).</summary>
 public enum CanceladoPor
 {
     Profesor,
-    Alumno
+    Alumno,
 }
 
-/// <summary>Forma del bloqueo de agenda: recurrente semanal o fecha puntual.</summary>
 public enum TipoBloqueo
 {
-    Fijo, // se repite todas las semanas (día + franja horaria)
-    Rango // una fecha concreta, con motivo
+    Fijo,
+    Rango,
 }
 
-/// <summary>Por qué se bloquea una fecha (solo bloqueos por rango).</summary>
 public enum MotivoBloqueo
 {
     MalClima,
     MotivosPersonales,
     Torneo,
-    MantenimientoCancha
+    MantenimientoCancha,
 }
 
-/// <summary>Ciclo de una solicitud de alumno a un club.</summary>
 public enum EstadoSolicitud
 {
     Pendiente,
     Aprobada,
-    Rechazada
+    Rechazada,
 }
 
-/// <summary>Tipo de línea en la cuenta corriente del alumno (ADR-0009).</summary>
-public enum TipoCargo
-{
-    Clase,    // (legado) auto, desde un turno; hoy el cobro es mensual (ver Cuota)
-    Producto, // manual: encordado, tubo de pelotas, etc.
-    Ajuste,   // manual, monto + o - con motivo (hermanos, beca, redondeo)
-    Cuota     // la cuota MENSUAL del alumno (una por mes); la genera IPoliticaDeCuota
-}
-
-/// <summary>Cómo se registró un pago.</summary>
-public enum MedioPago
-{
-    Efectivo,
-    Transferencia,
-    Otro
-}
-
-/// <summary>
-/// Ciclo de un pedido de servicio (M4): el alumno lo pide (Pendiente), el
-/// profe lo acepta (nace el cargo) o lo rechaza. La deuda recién existe si
-/// el profe acepta — la cuenta corriente solo tiene deudas reales.
-/// </summary>
-public enum EstadoPedido
-{
-    Pendiente,
-    Aceptado,
-    Rechazado
-}
-
-/// <summary>Ciclo de una solicitud de sumarse a un grupo (M5a).</summary>
-public enum EstadoSolicitudGrupo
-{
-    Pendiente,
-    Aceptada,
-    Rechazada
-}
-
-/// <summary>Ciclo de una solicitud de clase individual fija (M5b).</summary>
 public enum EstadoSolicitudHorario
 {
     Pendiente,
     Aceptada,
-    Rechazada
+    Rechazada,
 }
 
-/// <summary>Ciclo de una clase suelta (M5c): pedida → confirmada (pagada) o rechazada.</summary>
+public enum EstadoSolicitudGrupo
+{
+    Pendiente,
+    Aceptada,
+    Rechazada,
+}
+
 public enum EstadoClaseSuelta
 {
     Pendiente,
     Confirmada,
-    Rechazada
+    Rechazada,
 }
 
-/// <summary>Cómo liquida el alumno: el mes entero (vence el 10) o cargo por cargo.</summary>
 public enum ModalidadPago
 {
     Mensual,
-    PorClase
+    PorClase,
+}
+
+public enum TipoCargo
+{
+    Clase,
+    Producto,
+    Ajuste,
+    Cuota,
+}
+
+public enum MedioPago
+{
+    Efectivo,
+    Transferencia,
+    Otro,
+}
+
+public enum EstadoPedido
+{
+    Pendiente,
+    Aceptado,
+    Rechazado,
+}
+
+public enum EstadoJuegoPendiente
+{
+    Propuesto,
+    Aceptado,
+    Finalizado,
+}
+
+public enum ModalidadRanking
+{
+    Singles,
+    Dobles,
+}
+
+/// <summary>Alcance geográfico de un snapshot oficial. Global = toda la plataforma;
+/// los demás reordenan SOLO dentro de ese grupo (un #1 de ciudad puede ser rango
+/// O global). TorneoAmigos queda fuera de este build (sin lógica activa).</summary>
+public enum ScopeRanking
+{
+    Global,
+    Ciudad,
+    Provincia,
+    Pais,
+}
+
+public enum EstadoJuegoRevision
+{
+    Pendiente,
+    Resuelta,
 }

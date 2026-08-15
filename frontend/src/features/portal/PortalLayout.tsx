@@ -7,6 +7,7 @@ import BotonMenu from '../../components/layout/BotonMenu';
 import Avatar from '../../components/Avatar';
 import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { alumnoNav, portalTitles } from '../../components/layout/nav';
+import CampanaNotificaciones from '../notificaciones/CampanaNotificaciones';
 import { CAT_LABEL } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import type { MiPerfil } from './types';
@@ -120,7 +121,9 @@ export default function PortalLayout() {
         </div>
 
         <nav className={s.nav}>
-          {alumnoNav.map((item) => (
+          {/* Mismo filtro que el panel del profe (AppLayout): hay secciones que todavía
+              no están abiertas a todos — hoy, el Ranking. */}
+          {alumnoNav.filter((item) => !item.soloAdmin || sesion?.esAdmin).map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -171,6 +174,8 @@ export default function PortalLayout() {
             </button>
           )}
           <SelectorMiembro />
+          {/* Ver AppLayout: la campana se alimenta solo del ranking, que está en pausa. */}
+          {sesion?.esAdmin && <CampanaNotificaciones />}
         </header>
 
         <main className={s.content}>

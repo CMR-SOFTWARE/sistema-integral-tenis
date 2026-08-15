@@ -5,6 +5,7 @@ import { cerrarSesion, obtenerSesion } from '../../features/auth/sesion';
 import BotonMenu from './BotonMenu';
 import { useConfirmar } from '../confirmar/ConfirmarProvider';
 import { profNav, pageTitles } from './nav';
+import CampanaNotificaciones from '../../features/notificaciones/CampanaNotificaciones';
 import s from './AppLayout.module.css';
 
 /** Fecha de hoy estilo "Jueves 18 de junio, 2026" (como en el mockup). */
@@ -92,7 +93,10 @@ export default function AppLayout() {
 
         <nav className={s.nav}>
           {profNav
-            .filter((item) => (!item.soloOwner || sesion?.rol === 'owner') && (!item.soloAdmin || sesion?.esAdmin))
+            .filter((item) =>
+              (!item.soloOwner || sesion?.rol === 'owner')
+              && (!item.soloConCobro || sesion?.rol === 'owner' || sesion?.puedeCobrar)
+              && (!item.soloAdmin || sesion?.esAdmin))
             .map((item) => (
             <NavLink
               key={item.to}
@@ -143,6 +147,10 @@ export default function AppLayout() {
               Mi portal
             </button>
           )}
+          {/* Hoy la única fuente de notificaciones es el ranking, que está en pausa:
+              a quien no lo ve, la campana le quedaría siempre vacía (y su endpoint
+              responde 403). Se muestra cuando el ranking se abra. */}
+          {sesion?.esAdmin && <CampanaNotificaciones />}
         </header>
 
         <main className={s.content}>

@@ -219,8 +219,20 @@ Se calcula desde `fechaNacimiento`. Un boolean guardado se vence solo (el alumno
 ### 3.3 Consentimientos con timestamp
 `Boolean` solo no sirve legalmente. La Ley 25.326 exige poder demostrar que el consentimiento existió y cuándo. Por eso cada consentimiento tiene su `...El DateTime?`. Más adelante (cuando haya login) se puede agregar quién lo otorgó.
 
-### 3.4 `userId` nullable desde hoy
-Hoy es `null` siempre. Cuando en una fase futura los alumnos tengan login, el flujo será: alumno se registra → se busca su `Alumno` por DNI/teléfono dentro del tenant → se vincula. **Cero migración de schema.** Esto es diseñar para el futuro sin construir el futuro.
+### 3.4 `userId` nullable
+
+> **DESACTUALIZADO (corregido 14/08/2026):** este punto describía un estado que ya no es
+> el actual. Hoy **no** es `null` siempre — `AlumnoService.CrearAsync` le crea acceso al
+> portal en el momento (celular = usuario, contraseña temporal), y si ese celular ya es de
+> una cuenta existente (`BuscarTitularPorTelefonoAsync`), la ficha se vincula a ESE login
+> en vez de crear uno nuevo. El campo sigue siendo nullable porque el mecanismo de
+> "reclamar ficha" descrito abajo también existe (alta desde el portal,
+> `CrearVinculadoAsync`), pero el camino "el profe carga la ficha primero" ya no deja el
+> `UserId` colgado — nace resuelto.
+
+Cuando el alumno se registra por su cuenta (sin que el profe lo haya cargado antes): se
+busca su `Alumno` por DNI/teléfono dentro del tenant → se vincula. **Cero migración de
+schema.** Esto es diseñar para el futuro sin construir el futuro.
 
 > **Generalizado (05/07/2026)**: este patrón de "reclamar ficha" quedó elevado a principio del producto para TODAS las membresías (alumnos, socios de clubes, staff) en `modelo-identidad-roles.md` (ADR-0007).
 

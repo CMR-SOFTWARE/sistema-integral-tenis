@@ -402,4 +402,33 @@ public class StaffServiceTests
         await Assert.ThrowsAsync<ReglaDeNegocioException>(
             () => _service.EditarAsync(m.Id, new UpdateStaffDto { Nombre = "A", Apellido = "B", ValorHora = -1m }));
     }
+
+    // ── Permiso de cobro (Bloque 6, pedido 2) ──
+
+    [Fact]
+    public async Task Editar_ActualizaPuedeCobrar()
+    {
+        var m = new MembresiaTenant { UserId = Guid.NewGuid(), PuedeCobrar = false };
+        var u = Usuario(m.UserId);
+        _repo.Setup(r => r.ObtenerAsync(m.Id, It.IsAny<CancellationToken>())).ReturnsAsync(m);
+        _repo.Setup(r => r.ObtenerUsuarioAsync(m.UserId, It.IsAny<CancellationToken>())).ReturnsAsync(u);
+        var dto = new UpdateStaffDto { Nombre = "Ana", Apellido = "Gómez", PuedeCobrar = true };
+
+        await _service.EditarAsync(m.Id, dto);
+
+        Assert.True(m.PuedeCobrar);
+    }
+
+    [Fact]
+    public async Task Listar_ElDirectorSiemprePuedeCobrar()
+    {
+        _repo.Setup(r => r.ObtenerUsuarioAsync(OwnerId, It.IsAny<CancellationToken>()))
+             .ReturnsAsync(new Usuario { Id = OwnerId, Nombre = "Juan", Apellido = "Head" });
+        _repo.Setup(r => r.ListarConUsuarioAsync(It.IsAny<CancellationToken>()))
+             .ReturnsAsync(Array.Empty<(MembresiaTenant, Usuario)>());
+
+        var res = await _service.ListarAsync();
+
+        Assert.Contains(res, p => p.EsDueño && p.PuedeCobrar);
+    }
 }

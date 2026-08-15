@@ -67,12 +67,20 @@ export interface Servicio {
   activo: boolean;
 }
 
+export interface PedidoLinea {
+  servicioId: string;
+  nombreServicio: string;
+  precioUnitario: number;
+  cantidad: number;
+  subtotal: number;
+}
+
 export interface Pedido {
   id: string;
   alumnoId: string;
   alumnoNombre: string;
-  nombreServicio: string;
-  precio: number;
+  lineas: PedidoLinea[];
+  total: number;
   estado: EstadoPedido;
   pedidoEl: string;
   resueltoEl: string | null;

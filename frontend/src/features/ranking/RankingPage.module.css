@@ -1,0 +1,674 @@
+/* Ranking: pantalla lista + pantallas "← Ranking" (nuevo desafío, mis juegos,
+   mi perfil). Compartido por singles y dobles — mismas clases, misma pinta. */
+
+.subtitulo {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: -6px 0 16px;
+}
+
+/* ── Tabs pill: Singles/Dobles y En vivo/Oficial ── */
+.tabsModalidad {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.tab,
+.tabActiva {
+  flex: 1;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  padding: 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: var(--font-display);
+}
+
+.tabActiva {
+  background: var(--color-primary-dark);
+  border-color: var(--color-primary-dark);
+  color: #fff;
+}
+
+/* ── Tarjeta "Mi ranking" (compacta en la lista, grande en Mi perfil) ── */
+.tarjetaPerfil {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.tarjetaPerfilGrande {
+  gap: 22px;
+}
+
+.tarjetaPerfilCabecera {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tarjetaPerfilNombre {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17px;
+}
+
+.tarjetaPerfilGrande .tarjetaPerfilNombre {
+  font-size: 21px;
+}
+
+.tarjetaPerfilSub {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  text-align: center;
+}
+
+.statValor {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 22px;
+  color: var(--color-text);
+  line-height: 1.1;
+}
+
+.tarjetaPerfilGrande .statValor {
+  font-size: 26px;
+}
+
+.statLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+  margin-top: 4px;
+}
+
+/* ── CTA principal y fila de accesos ── */
+.btnNuevoDesafio {
+  display: block;
+  width: 100%;
+  border: none;
+  background: var(--color-primary-dark);
+  color: #fff;
+  padding: 15px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+  margin: 16px 0 10px;
+}
+
+.btnNuevoDesafio:hover {
+  background: var(--color-primary-darker);
+}
+
+.btnNuevoDesafio:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.accionesFila {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.btnAccion {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  padding: 11px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btnAccion:hover {
+  border-color: var(--color-primary);
+}
+
+.badgeAccion {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--color-danger);
+  color: #fff;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Header "← Ranking" de las pantallas internas ── */
+.volverHeader {
+  margin-bottom: 6px;
+}
+
+.volverLink {
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pantallaTitulo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 19px;
+  margin: 8px 0 4px;
+}
+
+.pantallaSubtitulo {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-bottom: 18px;
+}
+
+/* ── Subtabs En vivo/Oficial + indicador de vivo ── */
+.subtabsFila {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.subtabsFila .tabsModalidad {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.envivoEstado {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  font-size: 11px;
+  color: var(--color-text-faint);
+  white-space: nowrap;
+}
+
+.envivoPunto {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+
+.envivoPuntoActualizando {
+  background: var(--color-warning);
+}
+
+/* ── Buscador + filtro de ámbito (oficial) ── */
+.buscadorFila {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.buscadorInput {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  background: var(--color-surface-subtle);
+}
+
+.filtroBtn,
+.filtroBtnActivo {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  color: var(--color-text-muted);
+}
+
+.filtroBtnActivo {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: #e7f6ec;
+}
+
+.filtrosOficial {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.filtrosOficial select,
+.filtrosOficial input {
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  flex: 1;
+  min-width: 140px;
+}
+
+/* ── Inscripción ── */
+.explicacion {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 4px 0 14px;
+}
+
+.formInscripcion {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.campo input {
+  padding: 9px 11px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+}
+
+/* ── Lista de posiciones ── */
+.categoriaHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 2px 12px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  margin-bottom: 8px;
+}
+
+.categoriaHeaderTitulo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.categoriaHeaderTag {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--color-text-faint);
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fila {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 4px;
+  border-radius: var(--radius-md);
+}
+
+.filaPropia {
+  background: #e6f4ec;
+}
+
+.filaClickeable {
+  width: 100%;
+  border: none;
+  background: none;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.filaClickeable:hover {
+  background: var(--color-surface-hover);
+}
+
+.filaClickeable.filaPropia:hover {
+  background: #dcefe4;
+}
+
+.posicion {
+  min-width: 20px;
+  text-align: right;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--color-text-faint);
+}
+
+.filaInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.filaNombre {
+  font-weight: 700;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.filaSub {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.puntosGrandes {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17px;
+  color: var(--color-primary-dark);
+  white-space: nowrap;
+}
+
+/* ── Selección de jugador (pills de "Nuevo desafío") ── */
+.grupoLabel {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin: 16px 0 8px;
+}
+
+.grupoLabel:first-child {
+  margin-top: 0;
+}
+
+.pillVacia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 14px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-primary-dark);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.pillOcupada {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.pillNombre {
+  flex: 1;
+  min-width: 0;
+  font-weight: 700;
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pillSub {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.cambiarLink {
+  border: none;
+  background: none;
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+  flex: none;
+}
+
+.resumenDesafio {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin: 18px 0;
+}
+
+.btnEnviarDesafio {
+  display: block;
+  width: 100%;
+  border: none;
+  background: var(--color-primary-dark);
+  color: #fff;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.btnEnviarDesafio:disabled {
+  background: var(--color-border);
+  color: var(--color-text-faint);
+  cursor: default;
+}
+
+/* ── Cargar resultado: elegir ganador (radio como fila seleccionable) ── */
+.opcionesGanador {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.opcionGanador {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.opcionGanador:has(input:checked) {
+  border-color: var(--color-primary);
+  background: #e7f6ec;
+}
+
+.opcionGanador input[type='radio'] {
+  width: 16px;
+  height: 16px;
+  flex: none;
+  accent-color: var(--color-primary);
+}
+
+/* ── Mis juegos: tarjetas de desafíos ── */
+.tarjetaJuego {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  margin-bottom: 10px;
+}
+
+.tarjetaJuego:last-child {
+  margin-bottom: 0;
+}
+
+.tarjetaJuegoEyebrow {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-faint);
+  margin-bottom: 6px;
+}
+
+.tarjetaJuegoEquipo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+}
+
+.tarjetaJuegoEquipoLabel {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-text-faint);
+  min-width: 82px;
+  flex: none;
+}
+
+.tarjetaJuegoNombres {
+  font-weight: 700;
+  font-size: 14px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tarjetaJuegoEstado {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  text-align: center;
+  margin: 10px 0 2px;
+}
+
+.tarjetaJuegoAcciones {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.btnAceptar {
+  min-width: 140px;
+  border: none;
+  background: var(--color-primary-dark);
+  color: #fff;
+  padding: 9px 14px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: var(--font-display);
+}
+
+.btnAceptar:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.btnRechazar {
+  min-width: 140px;
+  border: 1px solid var(--color-danger-border);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  padding: 9px 14px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: var(--font-display);
+}
+
+.btnRechazar:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ── Mi historial (Mi perfil) ── */
+.historialFila {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 2px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.historialFila:last-child {
+  border-bottom: none;
+}
+
+.historialTexto {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.historialPuntos {
+  flex: none;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--color-primary-dark);
+  white-space: nowrap;
+}
+
+.btnRevision {
+  flex: none;
+  border: none;
+  background: var(--color-surface-hover);
+  color: var(--color-text-soft);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: var(--font-display);
+  white-space: nowrap;
+}

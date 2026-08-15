@@ -101,6 +101,7 @@ public class StaffService : IStaffService
                 Dni = dueño.Dni,
                 FechaNacimiento = dueño.FechaNacimiento,
                 Activo = true, // el dueño no se da de baja de su propio club
+                PuedeCobrar = true, // el dueño siempre puede cobrar, no se le puede sacar
                 EsDueño = true,
                 DaClases = tenant.DirectorDaClases,
                 CreadoEl = tenant.CreadoEl,
@@ -358,6 +359,7 @@ public class StaffService : IStaffService
 
         membresia.ValorHora = dto.ValorHora; // el valor hora es del tenant (membresía)
         membresia.SedeId = dto.SedeId;       // el club donde trabaja
+        membresia.PuedeCobrar = dto.PuedeCobrar; // Bloque 6, pedido 2
 
         await _membresias.GuardarCambiosAsync(ct);
     }
@@ -375,6 +377,7 @@ public class StaffService : IStaffService
         Dni = u.Dni,
         FechaNacimiento = u.FechaNacimiento,
         Activo = m.Activo,
+        PuedeCobrar = m.PuedeCobrar,
         ValorHora = m.ValorHora,
         CreadoEl = m.CreadoEl,
     };

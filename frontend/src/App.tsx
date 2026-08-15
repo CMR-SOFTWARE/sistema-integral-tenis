@@ -31,6 +31,7 @@ import ServiciosPage from './features/portal/ServiciosPage';
 import PortalNoticiasPage from './features/portal/NoticiasPage';
 import PerfilPage from './features/portal/PerfilPage';
 import BuscarClubPage from './features/portal/BuscarClubPage';
+import RankingPage from './features/ranking/RankingPage';
 
 /** Gestión: hace falta token Y membresía de profesor (JWT real). */
 function RequiereProfesor() {
@@ -135,13 +136,11 @@ export default function App() {
                 mensaje="Acá vas a ver los torneos en los que estés anotado, tus partidos y los resultados."
               />}
             />
+            {/* EN PAUSA: el ranking todavía no se abrió a los usuarios (ver
+                RankingController). Sin este guard se entra tipeando la URL. */}
             <Route
               path="ranking"
-              element={<Placeholder
-                titulo="Ranking"
-                icono="📊"
-                mensaje="Acá vas a ver tu posición y la de los demás jugadores, según los partidos que se vayan cargando."
-              />}
+              element={obtenerSesion()?.esAdmin ? <RankingPage /> : <Navigate to="/portal" replace />}
             />
             <Route path="perfil" element={<PerfilPage />} />
             <Route path="club" element={<BuscarClubPage />} />

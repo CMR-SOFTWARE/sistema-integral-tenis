@@ -7,7 +7,7 @@ using SistemaIntegralDeportivo.Api.Services;
 namespace SistemaIntegralDeportivo.Api.Controllers;
 
 [ApiController]
-[Authorize(Policy = "Owner")]
+[Authorize(Policy = "PuedeCobrar")]
 [Route("api/cuotas")]
 public class CuotasController : ControllerBase
 {

@@ -85,6 +85,26 @@ builder.Services.AddScoped<IAdminService, AdminService>();
 builder.Services.AddScoped<IPerfilProfesorRepository, PerfilProfesorRepository>();
 builder.Services.AddScoped<IPerfilProfesorService, PerfilProfesorService>();
 
+// ── Ranking R.U.T.A. (cross-tenant) y notificaciones (infra genérica, primer consumidor: ranking) ──
+builder.Services.AddScoped<INotificacionRepository, NotificacionRepository>();
+builder.Services.AddScoped<INotificacionService, NotificacionService>();
+builder.Services.AddScoped<IJugadorRankingRepository, JugadorRankingRepository>();
+builder.Services.AddScoped<IRankingService, RankingService>();
+builder.Services.AddScoped<IJuegoPendienteRepository, JuegoPendienteRepository>();
+builder.Services.AddScoped<IPuntosMovimientoRepository, PuntosMovimientoRepository>();
+builder.Services.AddScoped<IPoliticaDePuntosRanking, PuntosCfConsolacionV1>();
+builder.Services.AddScoped<IDesafioService, DesafioService>();
+builder.Services.AddScoped<IJugadorRankingDoblesRepository, JugadorRankingDoblesRepository>();
+builder.Services.AddScoped<IRankingDoblesService, RankingDoblesService>();
+builder.Services.AddScoped<IJuegoDoblesPendienteRepository, JuegoDoblesPendienteRepository>();
+builder.Services.AddScoped<IPuntosMovimientoDoblesRepository, PuntosMovimientoDoblesRepository>();
+builder.Services.AddScoped<IDesafioDoblesService, DesafioDoblesService>();
+builder.Services.AddScoped<IRankingSnapshotRepository, RankingSnapshotRepository>();
+builder.Services.AddScoped<IRankingCierreOficialService, RankingCierreOficialService>();
+builder.Services.AddHostedService<RankingCierreOficialJob>();
+builder.Services.AddScoped<IJuegoRevisionRepository, JuegoRevisionRepository>();
+builder.Services.AddScoped<IJuegoRevisionService, JuegoRevisionService>();
+
 // ── Dónde se guardan las fotos que suben los profes (costura intercambiable) ──
 // En producción, Supabase Storage; en desarrollo, el disco local, así se trabaja
 // sin credenciales y sin apuntar dev a producción.
@@ -170,8 +190,12 @@ builder.Services.AddAuthorization(options =>
 {
     // Profesor: dueño O staff (ambos entran al panel de gestión)
     options.AddPolicy("Profesor", p => p.RequireClaim("profesor", "true"));
-    // Owner: solo el dueño del club (cuotas, config, gestión de profes, etc.)
+    // Owner: solo el dueño del club (config, gestión de profes, etc.)
     options.AddPolicy("Owner", p => p.RequireClaim("rol", "owner"));
+    // PuedeCobrar: el dueño (siempre) o el staff que el dueño habilitó a cobrar
+    // (Bloque 6, pedido 2). Gatea Finanzas entero (CuotasController).
+    options.AddPolicy("PuedeCobrar", p => p.RequireAssertion(ctx =>
+        ctx.User.HasClaim("rol", "owner") || ctx.User.HasClaim("puedeCobrar", "true")));
     // Admin: el dueño de la app (panel de plataforma, cross-tenant)
     options.AddPolicy("Admin", p => p.RequireClaim("admin", "true"));
 });

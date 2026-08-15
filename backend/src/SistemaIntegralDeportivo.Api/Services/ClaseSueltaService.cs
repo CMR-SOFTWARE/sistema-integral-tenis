@@ -25,9 +25,14 @@ public interface IClaseSueltaService
         Guid alumnoId, Guid canchaId, DateOnly fecha, TimeOnly hora, int duracionMinutos,
         Guid? profesorUserId, bool generaCargo, CancellationToken ct = default);
 
-    /// <summary>Canchas libres en una sede para una FECHA/hora puntual (recurrentes + sueltos de esa fecha).</summary>
+    /// <summary>
+    /// Canchas libres en una sede para una FECHA/hora puntual (recurrentes + sueltos de esa
+    /// fecha). Con <paramref name="excluirTurnoId"/> el turno que se está editando no
+    /// cuenta como ocupante de su propia cancha/horario.
+    /// </summary>
     Task<IReadOnlyList<CanchaLibreDto>> CanchasLibresAsync(
-        Guid sedeId, DateOnly fecha, TimeOnly hora, int duracionMinutos, CancellationToken ct = default);
+        Guid sedeId, DateOnly fecha, TimeOnly hora, int duracionMinutos,
+        CancellationToken ct = default, Guid? excluirTurnoId = null);
 
     /// <summary>Canchas libres para resolver una clase suelta (usa su sede/fecha/hora). Para el profe.</summary>
     Task<IReadOnlyList<CanchaLibreDto>> CanchasLibresParaClaseAsync(Guid claseId, CancellationToken ct = default);
@@ -44,6 +49,15 @@ public interface IClaseSueltaService
 
     /// <summary>El profe rechaza: se borra el cargo y la clase queda como historia.</summary>
     Task RechazarAsync(Guid claseId, CancellationToken ct = default);
+
+    /// <summary>
+    /// Reprograma una clase suelta ya asignada: solo lo agendable (fecha, hora, cancha,
+    /// duración, profe). NO toca al alumno ni el cobro — si ya generó cargo, ese cargo
+    /// no se recalcula ni se mueve.
+    /// </summary>
+    Task EditarAsync(
+        Guid turnoId, Guid canchaId, DateOnly fecha, TimeOnly hora, int duracionMinutos,
+        Guid? profesorUserId, CancellationToken ct = default);
 }
 
 public class ClaseSueltaService : IClaseSueltaService
@@ -218,7 +232,8 @@ public class ClaseSueltaService : IClaseSueltaService
     }
 
     public async Task<IReadOnlyList<CanchaLibreDto>> CanchasLibresAsync(
-        Guid sedeId, DateOnly fecha, TimeOnly hora, int duracionMinutos, CancellationToken ct = default)
+        Guid sedeId, DateOnly fecha, TimeOnly hora, int duracionMinutos,
+        CancellationToken ct = default, Guid? excluirTurnoId = null)
     {
         var sede = await _sedes.ObtenerAsync(sedeId, ct);
         if (sede is null || !sede.Activo) return [];
@@ -233,8 +248,10 @@ public class ClaseSueltaService : IClaseSueltaService
             var recurrentes = await _horarios.ListarPorCanchaYDiaAsync(cancha.Id, dia, ct);
             if (recurrentes.Any(h => Solapan(hora, duracionMinutos, h.HoraInicio, h.DuracionMinutos)))
                 continue;
-            // Ocupación puntual de esa fecha (otras clases sueltas o turnos ya generados, no cancelados)
-            if (turnosFecha.Any(t => t.CanchaId == cancha.Id && t.Estado == EstadoTurno.Programado
+            // Ocupación puntual de esa fecha (otras clases sueltas o turnos ya generados, no cancelados).
+            // Al editar, el propio turno no cuenta como ocupante de sí mismo.
+            if (turnosFecha.Any(t => t.Id != excluirTurnoId && t.CanchaId == cancha.Id
+                    && t.Estado == EstadoTurno.Programado
                     && Solapan(hora, duracionMinutos, t.HoraInicio, t.DuracionMinutos)))
                 continue;
 
@@ -337,6 +354,55 @@ public class ClaseSueltaService : IClaseSueltaService
         clase.Estado = EstadoClaseSuelta.Rechazada;
         clase.ResueltoEl = DateTime.UtcNow;
         await _clases.GuardarCambiosAsync(ct);
+    }
+
+    public async Task EditarAsync(
+        Guid turnoId, Guid canchaId, DateOnly fecha, TimeOnly hora, int duracionMinutos,
+        Guid? profesorUserId, CancellationToken ct = default)
+    {
+        var turno = await _turnos.ObtenerAsync(turnoId, ct)
+            ?? throw new ReglaDeNegocioException("El turno no existe.");
+        if (turno.HorarioId is not null)
+            throw new ReglaDeNegocioException("Esta clase no es suelta.");
+        if (turno.Estado == EstadoTurno.Cancelado)
+            throw new ReglaDeNegocioException("El turno ya está cancelado.");
+        if (fecha < DateOnly.FromDateTime(DateTime.UtcNow))
+            throw new ReglaDeNegocioException("La fecha ya pasó: elegí un día de hoy en adelante.");
+
+        var sedeId = await _sedes.SedeDeCanchaAsync(canchaId, ct)
+            ?? throw new ReglaDeNegocioException("Esa cancha no existe en tu academia.");
+
+        if (profesorUserId is { } profeId)
+        {
+            if (!await _staff.EsAsignableAsync(profeId, ct))
+                throw new ReglaDeNegocioException("Ese profe no está disponible en tu academia.");
+            if (!await _staff.TrabajaEnSedeAsync(profeId, sedeId, ct))
+                throw new ReglaDeNegocioException("Ese profe no da clases en ese club.");
+        }
+
+        // El propio turno no cuenta como ocupante de su horario actual.
+        var libres = await CanchasLibresAsync(sedeId, fecha, hora, duracionMinutos, ct, excluirTurnoId: turnoId);
+        if (libres.All(c => c.CanchaId != canchaId))
+            throw new ReglaDeNegocioException("Esa cancha está ocupada a esa hora. Elegí otra.");
+
+        turno.CanchaId = canchaId;
+        turno.Fecha = fecha;
+        turno.HoraInicio = hora;
+        turno.DuracionMinutos = duracionMinutos;
+        turno.ProfesorUserId = profesorUserId;
+
+        // La ClaseSuelta guarda una copia de fecha/hora/cancha para el historial del
+        // portal del alumno ("Mis clases"); si no se sincroniza acá queda desactualizada.
+        if (await _clases.ObtenerPorTurnoAsync(turnoId, ct) is { } clase)
+        {
+            clase.SedeId = sedeId;
+            clase.CanchaId = canchaId;
+            clase.Fecha = fecha;
+            clase.HoraInicio = hora;
+            clase.DuracionMinutos = duracionMinutos;
+        }
+
+        await _turnos.GuardarCambiosAsync(ct); // mismo DbContext: persiste turno y clase juntos
     }
 
     /// <summary>Dos franjas (inicio+duración) se pisan.</summary>
