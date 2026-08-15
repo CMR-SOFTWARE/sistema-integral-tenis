@@ -12,6 +12,7 @@ import PanelSolicitudesHorario from './PanelSolicitudesHorario';
 import PanelSolicitudesCupo from './PanelSolicitudesCupo';
 import NuevoHorarioModal from './NuevoHorarioModal';
 import NuevaClaseSueltaModal from './NuevaClaseSueltaModal';
+import EditarClaseSueltaModal from './EditarClaseSueltaModal';
 import EditarHorarioModal from './EditarHorarioModal';
 import FichaDesdeAgenda from './FichaDesdeAgenda';
 import { aISO, fechaLarga, lunesDe, rangoSemana, sumarDias } from './types';
@@ -61,6 +62,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
   const [fichaAlumnoId, setFichaAlumnoId] = useState<string | null>(null); // ficha abierta desde una clase
   const [modalHorario, setModalHorario] = useState(false);
   const [modalClaseSuelta, setModalClaseSuelta] = useState(false);
+  const [sueltaAEditar, setSueltaAEditar] = useState<Turno | null>(null);
   // Se guarda el ID y no el objeto: tocar el roster desde el modal recarga la lista,
   // y el modal tiene que ver el roster nuevo (un snapshot quedaría viejo).
   const [editandoId, setEditandoId] = useState<string | null>(null);
@@ -133,6 +135,17 @@ export default function CalendarioPage({ sede, profe }: Props) {
     next.delete('nuevo');
     setParams(next, { replace: true });
   }, [params, setParams, esOwner, esStaff, sinCanchas, sedesCargando]);
+
+  // Deep-link desde el inicio (tarjeta "Próximas clases de hoy"):
+  // /agenda?tab=calendario&turno=<id> abre el detalle de ESE turno puntual.
+  useEffect(() => {
+    const turnoId = params.get('turno');
+    if (!turnoId) return;
+    setAbierto(turnoId);
+    const next = new URLSearchParams(params);
+    next.delete('turno');
+    setParams(next, { replace: true });
+  }, [params, setParams]);
 
   const cambiarMes = (delta: number) =>
     setMesCursor(({ anio, mes: m }) => {
@@ -331,6 +344,7 @@ export default function CalendarioPage({ sede, profe }: Props) {
           onDesactivarHorario={esOwner ? desactivarHorario : undefined}
           // Se cierra el turno en vez de apilar dos modales
           onAbrirFicha={(alumnoId) => { setAbierto(null); setFichaAlumnoId(alumnoId); }}
+          onEditarSuelta={esOwner ? (t) => { setAbierto(null); setSueltaAEditar(t); } : undefined}
         />
       )}
 
@@ -352,6 +366,15 @@ export default function CalendarioPage({ sede, profe }: Props) {
           sedes={disponibles}
           onClose={() => setModalClaseSuelta(false)}
           onCreada={() => void activo.recargar()}
+        />
+      )}
+
+      {sueltaAEditar && (
+        <EditarClaseSueltaModal
+          turno={sueltaAEditar}
+          sedes={disponibles}
+          onClose={() => setSueltaAEditar(null)}
+          onEditada={() => void activo.recargar()}
         />
       )}
 

@@ -5,19 +5,20 @@ import AlumnosPage from './AlumnosPage';
 import SolicitudesPage from '../solicitudes/SolicitudesPage';
 import s from './AlumnosSeccionPage.module.css';
 
-type Tab = 'alumnos' | 'espera' | 'usuarios';
+type Tab = 'alumnos' | 'espera';
 
 /**
- * Sección Alumnos con tres pestañas, que son tres recortes de la misma gente:
+ * Sección Alumnos con dos pestañas, que son dos recortes de la misma gente:
  *
  *  - **Alumnos**: los que tienen una clase asignada.
  *  - **Lista de espera**: los que quieren clase y no la tienen —sin ninguna, o con
  *    un pedido que el profe no resolvió—. Un alumno con un pedido pendiente está
  *    acá Y en Alumnos: por eso la espera dejó de ser un estado excluyente.
- *  - **Usuarios**: todos los que se unieron a la academia, tengan horario o no.
  *
- * Alumnos y Usuarios son la MISMA tabla con distinto filtro (`lista`). Solo se monta
- * la pestaña activa. El profe empleado (staff) ve las tres, acotadas a SUS alumnos.
+ * El padrón de PERSONAS (antes acá como "Usuarios") vive en Plataforma desde el
+ * Bloque 6 — esta tabla es de FICHAS, no de personas (docs/pedidos-del-profe.md).
+ * Solo se monta la pestaña activa. El profe empleado (staff) ve las dos, acotadas a
+ * SUS alumnos.
  */
 export default function AlumnosSeccionPage() {
   const [tab, setTab] = useState<Tab>('alumnos');
@@ -41,14 +42,10 @@ export default function AlumnosSeccionPage() {
           Lista de espera
           {enEspera > 0 && <span className={s.badge}>{enEspera}</span>}
         </button>
-        <button className={tab === 'usuarios' ? s.tabActivo : s.tab} onClick={() => setTab('usuarios')}>
-          Usuarios
-        </button>
       </div>
 
       {tab === 'alumnos' && <AlumnosPage lista="ConClase" />}
       {tab === 'espera' && <SolicitudesPage />}
-      {tab === 'usuarios' && <AlumnosPage lista="Todos" />}
     </div>
   );
 }

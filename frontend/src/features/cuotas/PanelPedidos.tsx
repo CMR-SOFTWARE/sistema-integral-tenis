@@ -59,7 +59,8 @@ export default function PanelPedidos({ onCambio }: { onCambio?: () => void }) {
               <div className={s.info}>
                 <div className={s.nombre}>{p.alumnoNombre}</div>
                 <div className={s.detalle}>
-                  {p.nombreServicio} · {formatoPlata(p.precio)}
+                  {p.lineas.map((l) => `${l.nombreServicio}${l.cantidad > 1 ? ` x${l.cantidad}` : ''}`).join(', ')}
+                  {' · '}{formatoPlata(p.total)}
                 </div>
               </div>
               <button

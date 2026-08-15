@@ -7,6 +7,8 @@ export interface NavItem {
   icon: string;
   /** Solo lo ve el dueño (head pro), no el profe empleado (staff). */
   soloOwner?: boolean;
+  /** Lo ve el dueño, o el staff que el dueño habilitó a cobrar (Bloque 6, pedido 2). */
+  soloConCobro?: boolean;
   /** Solo lo ve el admin de plataforma (dueño de la app). */
   soloAdmin?: boolean;
 }
@@ -42,10 +44,11 @@ export const profNav: NavItem[] = [
   },
   {
     // Finanzas agrupa Cuotas (operación del mes) + Reportes (analítica) en sub-tabs.
+    // El dueño siempre entra; el staff solo si lo habilitaron a cobrar (Bloque 6).
     to: '/finanzas',
     label: 'Finanzas',
     icon: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
-    soloOwner: true,
+    soloConCobro: true,
   },
   {
     to: '/noticias',

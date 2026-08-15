@@ -12,6 +12,8 @@ export interface Staff {
   dni: string | null;
   fechaNacimiento: string | null;
   activo: boolean;
+  /** Lo habilitó el dueño a cobrar clases y cuotas; siempre true para el Director. */
+  puedeCobrar: boolean;
   /**
    * Es el DUEÑO del club (el Director): aparece en el listado como uno más, pero no
    * tiene membresía (id vacío) ni valor hora ni club, y no se lo puede dar de baja.
@@ -44,4 +46,6 @@ export interface UpdateEmpleado {
   valorHora?: number;
   /** Club (sede) donde trabaja; omitir = sin club. */
   sedeId?: string;
+  /** Habilita al empleado a cobrar clases y cuotas. */
+  puedeCobrar: boolean;
 }

@@ -9,6 +9,8 @@ public interface IClaseSueltaRepository
 {
     Task AgregarAsync(ClaseSuelta clase, CancellationToken ct = default);
     Task<ClaseSuelta?> ObtenerAsync(Guid id, CancellationToken ct = default);
+    /// <summary>La clase suelta vinculada a un turno (para mantener sincronizados fecha/hora/cancha al editar).</summary>
+    Task<ClaseSuelta?> ObtenerPorTurnoAsync(Guid turnoId, CancellationToken ct = default);
     /// <summary>Pendientes del profe (con alumno, sede y cargo para ver el pago).</summary>
     Task<IReadOnlyList<ClaseSuelta>> ListarPorEstadoAsync(EstadoClaseSuelta estado, CancellationToken ct = default);
     /// <summary>Mis clases sueltas (portal), la más reciente primero.</summary>
@@ -40,6 +42,9 @@ public class ClaseSueltaRepository : IClaseSueltaRepository
         _db.ClasesSueltas
             .Include(c => c.Cargo)
             .FirstOrDefaultAsync(c => c.TenantId == TenantId && c.Id == id, ct);
+
+    public Task<ClaseSuelta?> ObtenerPorTurnoAsync(Guid turnoId, CancellationToken ct = default) =>
+        _db.ClasesSueltas.FirstOrDefaultAsync(c => c.TenantId == TenantId && c.TurnoId == turnoId, ct);
 
     public async Task<IReadOnlyList<ClaseSuelta>> ListarPorEstadoAsync(
         EstadoClaseSuelta estado, CancellationToken ct = default) =>

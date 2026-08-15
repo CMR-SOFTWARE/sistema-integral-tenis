@@ -108,7 +108,10 @@ public class DashboardService : IDashboardService
                     DuracionMinutos = t.DuracionMinutos,
                     Titulo = Titulo(t),
                     Cancha = t.Cancha,
+                    Sede = t.Sede,
+                    ProfesorUserId = t.ProfesorUserId,
                     Participantes = t.Participantes.Count,
+                    Alumnos = t.Participantes.Select(p => $"{p.Nombre} {p.Apellido}").ToList(),
                     Estado = t.Estado.ToString(),
                 })
                 .ToList(),

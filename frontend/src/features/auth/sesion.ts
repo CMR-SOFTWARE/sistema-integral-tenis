@@ -20,6 +20,8 @@ export interface Sesion {
   esProfesor: boolean;
   /** "owner" (dueño/head pro) o "staff" (profe empleado); null si no es profe. */
   rol: 'owner' | 'staff' | null;
+  /** Habilita Finanzas: siempre true para el dueño; para el staff, solo si lo habilitaron. */
+  puedeCobrar: boolean;
   /** Admin de plataforma (dueño de la app): habilita la sección "Plataforma". */
   esAdmin: boolean;
   /** Estado del club propio; "PendientePago" manda al checkout. */

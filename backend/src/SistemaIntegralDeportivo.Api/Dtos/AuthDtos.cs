@@ -153,6 +153,12 @@ public class SesionDto
     /// <summary>"owner" (head pro) o "staff" (profe empleado); null si no es profe. El front arma el menú con esto.</summary>
     public string? Rol { get; set; }
 
+    /// <summary>
+    /// Habilita Finanzas (Bloque 6, pedido 2): siempre true para el dueño; para el
+    /// staff, solo si el dueño lo marcó. False si no es profe.
+    /// </summary>
+    public bool PuedeCobrar { get; set; }
+
     /// <summary>Admin de plataforma (dueño de la app): habilita la sección "Plataforma".</summary>
     public bool EsAdmin { get; set; }
 

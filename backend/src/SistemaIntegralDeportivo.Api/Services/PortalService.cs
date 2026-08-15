@@ -172,16 +172,22 @@ public class PortalService : IPortalService
     }
 
     public async Task<PedidoDto> PedirServicioAsync(
-        Guid userId, Guid servicioId, CancellationToken ct = default)
+        Guid userId, IReadOnlyList<(Guid ServicioId, int Cantidad)> lineas, CancellationToken ct = default)
     {
         var ficha = await FichaDeAsync(userId, ct);
-        return await _pedidos.PedirAsync(ficha.Id, servicioId, ct);
+        return await _pedidos.PedirAsync(ficha.Id, lineas, ct);
     }
 
     public async Task<IReadOnlyList<PedidoDto>> MisPedidosAsync(Guid userId, CancellationToken ct = default)
     {
         var ficha = await FichaDeAsync(userId, ct);
         return await _pedidos.MisPedidosAsync(ficha.Id, ct);
+    }
+
+    public async Task CancelarPedidoAsync(Guid userId, Guid pedidoId, CancellationToken ct = default)
+    {
+        var ficha = await FichaDeAsync(userId, ct);
+        await _pedidos.CancelarAsync(ficha.Id, pedidoId, ct);
     }
 
     public async Task<MiPerfilDto> MiPerfilAsync(Guid userId, CancellationToken ct = default)

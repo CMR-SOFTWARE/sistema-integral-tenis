@@ -7,6 +7,7 @@ import BotonMenu from '../../components/layout/BotonMenu';
 import Avatar from '../../components/Avatar';
 import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { alumnoNav, portalTitles } from '../../components/layout/nav';
+import CampanaNotificaciones from '../notificaciones/CampanaNotificaciones';
 import { CAT_LABEL } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import type { MiPerfil } from './types';
@@ -171,6 +172,7 @@ export default function PortalLayout() {
             </button>
           )}
           <SelectorMiembro />
+          <CampanaNotificaciones />
         </header>
 
         <main className={s.content}>

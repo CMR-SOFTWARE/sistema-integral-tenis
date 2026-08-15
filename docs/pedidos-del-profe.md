@@ -5,7 +5,7 @@
 > que falta. Lo último es lo que más duele perder: sin eso se vuelve a discutir algo que
 > ya está acordado, o se decide distinto y hay que rehacerlo.
 >
-> Última actualización: 13/08/2026.
+> Última actualización: 14/08/2026.
 
 El cliente es el **profesor** que usa la app todos los días (y que además la revende a
 otros profes). En agosto de 2026 mandó una lista de 13 pedidos. Esta es esa lista, con lo
@@ -28,9 +28,9 @@ que fuimos resolviendo.
 | 13 | Noticias con importancia, editables | ✅ Bloque 2 |
 | 9 | "Mis torneos" y "Ranking" (próximamente) | ✅ Bloque 2 |
 | 1 | Clase suelta que asigna el profe + clase de prueba | ✅ Bloque 3 — 13/08/2026 |
-| **3** | **"Próximas clases" con más info y clickeable** | ⬜ **Bloque 4 — lo próximo** |
-| **8** | **Shop con carrito** | ⬜ Bloque 5 |
-| **2** | **El director habilita al empleado a cobrar** | ⬜ Bloque 6 |
+| 3 | "Próximas clases" con más info y clickeable | ✅ Bloque 4 — 14/08/2026 |
+| 8 | Shop con carrito | ✅ Bloque 5 — 14/08/2026 |
+| **2** | **El director habilita al empleado a cobrar** | ⬜ **Bloque 6 — lo próximo** |
 | **10** | **Roles y alta de academias desde Plataforma** | ⬜ Bloque 6 |
 | **11** | **Usuarios en Plataforma; Alumnos y Espera en Mi academia** | ⬜ Bloque 6 |
 | **12** | **El director como usuario común; alumno → profesor** | ⬜ Bloque 6 |
@@ -86,26 +86,28 @@ los sueltos. Ver `docs/modelo-agenda.md`.
 
 ---
 
-## Lo que falta
-
-### Bloque 4 — "Próximas clases" del inicio (pedido 3)
+### Bloque 4 — "Próximas clases" del inicio, clickeable (14/08/2026)
 
 > *"Acceso directo: donde dice próximas clases tiene que tener más información, o sea que
 > pueda ver quien tiene esa clase, de que club y que profe a cargo. Es más o menos como la
 > funcionalidad del calendario. Puede ser clickeable y verse todo ahí para que sea más
 > fácil y también que se pueda editar."*
 
-**Qué hay hoy:** la tarjeta "Próximas clases de hoy" del inicio del profe
-(`features/dashboard/DashboardPage.tsx`) muestra hora, título, cancha, cantidad de
-participantes y duración. **No es clickeable.**
+La tarjeta "Próximas clases de hoy" del inicio (`features/dashboard/DashboardPage.tsx`)
+ahora suma club, profe a cargo y alumnos, y la fila es un link a
+`/agenda?tab=calendario&turno=<id>` que abre el `TurnoModal` que **ya existía** en la
+Agenda — mismo patrón de deep-link que `?nuevo=1`, en `CalendarioPage.tsx`. No se duplicó
+el modal.
 
-**Qué falta:** sumar el club, el profe a cargo y los nombres de los alumnos al DTO de
-`DashboardService`, y que la fila abra el modal de turno que **ya existe** en la agenda
-(`features/agenda/TurnoModal.tsx`), que es donde están todas las acciones.
+**Lo que agrandó el bloque:** al probarlo, el `TurnoModal` no ofrecía "Editar" para una
+clase suelta (a diferencia de una clase de horario recurrente). Se sumó
+`ClaseSueltaService.EditarAsync` — reprograma fecha/hora/cancha/duración/profe de una
+suelta ya asignada, sin tocar alumno ni cobro — con su propio modal
+(`EditarClaseSueltaModal.tsx`), solo para el dueño (mismo criterio que asignarlas).
 
-Es el más chico de los tres que faltan.
+---
 
-### Bloque 5 — Shop con carrito (pedido 8)
+### Bloque 5 — Shop con carrito (14/08/2026)
 
 > *"Armar los servicios del profesor: que sea un shop donde el profe carga su catálogo de
 > servicios como raquetas, tubo de pelotitas, encordados y al usuario asociado a esa
@@ -113,16 +115,28 @@ Es el más chico de los tres que faltan.
 > ofrece la academia y el usuario pueda agregarlos a un carrito y realizar el pedido, ese
 > pedido se le será añadido a la cuenta del usuario con su cuota mensual."*
 
-**Qué hay hoy:** `Servicio` (catálogo del profe) y `Pedido` (uno por servicio, sin
-carrito), con la pantalla del alumno en `features/portal/ServiciosPage.tsx` y la bandeja
-del profe arriba de Cuotas.
+`Pedido` pasó de "un servicio" a **una o varias líneas** (`PedidoLinea`, nueva tabla). El
+alumno arma el carrito en `features/portal/ServiciosPage.tsx` (stepper de cantidad por
+servicio, un total, un solo "Enviar pedido") y lo manda como **un** pedido. La bandeja del
+profe (`PanelPedidos.tsx`, arriba de Cuotas) sigue siendo una fila por pedido, pero ahora
+lista todas sus líneas. Al **ACEPTAR** nace **un solo cargo** con el total — la decisión de
+`docs/modelo-precios.md` §M4 no se tocó: la deuda sigue sin existir hasta que el profe
+confirma.
 
-**DECISIÓN TOMADA — no volver a discutirla:** el cargo **sigue naciendo cuando el profe
-ACEPTA** el pedido. Es la decisión de `docs/modelo-precios.md` §M4 ("la cuenta corriente
-solo tiene deudas reales"): si el cargo entrara solo, el profe se enteraría de una deuda
-que quizás no puede cumplir (no tiene el encordado, se le acabaron las pelotas). Lo nuevo
-es el **carrito** y que un pedido tenga **varias líneas**; al aceptar nace **un** cargo con
-el total.
+`Pedido` está en producción desde el 17/07/2026 (M4), así que la migración
+(`CarritoDePedidos`) se escribió a mano para copiar cada pedido viejo a una línea nueva
+antes de borrar las columnas que dejaron de existir — mismo cuidado que
+`RenombrarAvisosANoticias`. Se probó contra la base local con pedidos reales antes de
+mergear.
+
+**Lo que agrandó el bloque:** el alumno puede **cancelar** su propio pedido mientras siga
+Pendiente (`DELETE /portal/pedidos/{id}`) — todavía no generó cargo, así que se borra
+directo, sin estado intermedio. Botón "Cancelar" en "Mis pedidos", solo visible en
+Pendiente.
+
+---
+
+## Lo que falta
 
 ### Bloque 6 — Plataforma, roles y permisos (pedidos 2, 10, 11 y 12)
 
@@ -145,16 +159,33 @@ el total.
 
 Es el bloque más grande y el único que toca auth. **Merece su propio plan.**
 
-**Qué hay hoy:**
+**Qué hay hoy** (releído y verificado contra el código el 14/08/2026, no solo contra este doc):
 
 - El modelo de roles es **binario**: dueño (`Tenant.OwnerUserId`) y staff
-  (`MembresiaTenant` con `RolTenant.Staff`). **No existen permisos finos**, y todo lo de
-  plata es policy `Owner` (`CuotasController` entero).
+  (`MembresiaTenant` con `RolTenant.Staff`). `MembresiaTenant` **no tiene ningún campo de
+  permisos** (solo `Rol`, `SedeId`, `ValorHora`, `Activo`), y todo lo de plata es policy
+  `Owner` sobre el `CuotasController` **entero** — la política corta antes de llegar al
+  código, no hay forma de entrar parcialmente.
 - El panel `Plataforma` (`AdminController`, policy `Admin`) tiene métricas globales, el
-  listado de clubes y activar/suspender. Es el único controller cross-tenant.
-- El camino **alumno → profesor ya funciona a medias**: `StaffService.AgregarAsync` reusa
-  el login si esa persona ya es alumno del tenant, sin crear otra cuenta.
-- La parte del pedido 12 sobre las listas **ya salió en el bloque 1**.
+  listado de clubes y activar/suspender. Es el único controller cross-tenant. No da de alta
+  academias (eso hoy solo nace por el registro público + checkout de Mercado Pago) ni
+  lista usuarios.
+- **Identidad ya tiene el concepto correcto, solo falta exponerlo** (`docs/modelo-identidad-roles.md`,
+  ADR-0007): `AspNetUsers` es la persona global; `Alumno`/`MembresiaTenant` son sus
+  membresías POR tenant, unidas por `UserId`. El "padrón de personas" que pide el profe
+  para Plataforma **no necesita una tabla nueva** — es una proyección de `AspNetUsers` con
+  sus membresías, mostrada ahí en vez de mezclada en Alumnos.
+- **El pedido 12 sobre "director → alumno sin duplicar cuenta" YA FUNCIONA — probado en
+  el navegador el 14/08/2026, no solo leído en el código.** `StaffService.AgregarAsync`
+  reusa el login si el celular ya es de una cuenta existente (alumno → profesor);
+  `AlumnoService.BuscarTitularPorTelefonoAsync` hace lo mismo en la otra dirección. Se
+  probó: se cargó una ficha de alumno con el celular del director (`Profe Demo`,
+  `1122334455`) → la respuesta trae `sumadoAFamilia: true` y `familiaTitular: "Profe Demo"`
+  (se linkeó a su cuenta, **sin credenciales nuevas**), y esa ficha aparece con
+  `enEspera: false` — el filtro del Bloque 1 la excluye de la lista de espera igual que a
+  cualquier profe, aunque no tenga clase. Las dos mitades del pedido 12 (las listas y el
+  alta sin duplicar) están resueltas con lo que ya existe; no hace falta código nuevo para
+  esta parte del Bloque 6.
 
 **DECISIONES TOMADAS:**
 
@@ -165,7 +196,14 @@ Es el bloque más grande y el único que toca auth. **Merece su propio plan.**
   tienen ficha salvo que alguien los haya cargado como alumnos. Mezclar personas sin ficha
   en esa tabla da filas donde la mitad de las acciones no aplican (no hay a quién pausar,
   dar de baja ni cobrarle cuota). El padrón de PERSONAS es un concepto distinto y por eso
-  el profe lo pidió en Plataforma. Ver `docs/modelo-alumnos.md`.
+  el profe lo pidió en Plataforma. Ver `docs/modelo-identidad-roles.md`.
+
+**DECISIONES QUE FALTAN (consultar antes de planificar en serio):**
+
+- Pedido 2: ¿"puede cobrar" es **un** permiso o **dos** (clases y cuotas por separado,
+  como pide el texto literal)?
+- Pedido 10: dar de alta una academia desde Plataforma, ¿**salta** el checkout de Mercado
+  Pago (nace ya `Activa`) o sigue el mismo camino pago que el registro público?
 
 ---
 

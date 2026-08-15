@@ -15,7 +15,7 @@ public class TokenService : ITokenService
         _config = config;
     }
 
-    public string Generar(Usuario usuario, Tenant? tenant, RolTenant? rol)
+    public string Generar(Usuario usuario, Tenant? tenant, RolTenant? rol, bool puedeCobrar = false)
     {
         var claims = new List<Claim>
         {
@@ -30,6 +30,9 @@ public class TokenService : ITokenService
             claims.Add(new Claim("tenant", tenant.Id.ToString()));
             // Dueño (head pro) vs Staff (profe empleado): el front y las policies lo usan
             claims.Add(new Claim("rol", rol == RolTenant.Dueño ? "owner" : "staff"));
+            // Solo hace falta para el staff: el dueño ya pasa la policy "PuedeCobrar" por rol=owner
+            if (rol == RolTenant.Staff && puedeCobrar)
+                claims.Add(new Claim("puedeCobrar", "true"));
         }
 
         // Admin de plataforma (cross-tenant): habilita el panel "Plataforma"

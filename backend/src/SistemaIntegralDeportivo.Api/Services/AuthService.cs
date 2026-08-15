@@ -37,6 +37,7 @@ public class AuthService : IAuthService
         Tenant? tenantDeTrabajo = null;
         RolTenant? rol = null;
         Guid? sedeStaff = null; // el club del empleado (el dueño no tiene sede fija)
+        var puedeCobrar = false; // el dueño la resuelve la policy por rol=owner; esto es solo para el staff
         var estadoTenant = tenantPropio?.Estado.ToString();
 
         if (tenantPropio?.Estado == EstadoTenant.Activo)
@@ -58,6 +59,7 @@ public class AuthService : IAuthService
                     rol = RolTenant.Staff;
                     estadoTenant = academia.Estado.ToString();
                     sedeStaff = membresia.SedeId; // su club, para acotarle las canchas
+                    puedeCobrar = membresia.PuedeCobrar;
                 }
             }
         }
@@ -74,7 +76,7 @@ public class AuthService : IAuthService
 
         return new SesionDto
         {
-            Token = incluirToken ? _tokens.Generar(usuario, tenantDeTrabajo, rol) : null,
+            Token = incluirToken ? _tokens.Generar(usuario, tenantDeTrabajo, rol, puedeCobrar) : null,
             Nombre = usuario.Nombre,
             Apellido = usuario.Apellido,
             Email = usuario.Email ?? string.Empty,
@@ -88,6 +90,8 @@ public class AuthService : IAuthService
             EsAdmin = usuario.EsAdminPlataforma,
             EstadoTenant = estadoTenant,
             SedeId = sedeStaff,
+            // El dueño siempre puede cobrar (no necesita el flag); el staff, solo si se lo habilitaron.
+            PuedeCobrar = rol == RolTenant.Dueño || puedeCobrar,
             DebeCambiarPassword = usuario.DebeCambiarPassword,
             Dni = usuario.Dni,
             Telefono = usuario.PhoneNumber,

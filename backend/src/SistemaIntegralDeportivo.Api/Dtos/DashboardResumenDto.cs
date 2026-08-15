@@ -15,7 +15,11 @@ public class ClaseHoyDto
     public int DuracionMinutos { get; set; }
     public string Titulo { get; set; } = string.Empty;
     public string Cancha { get; set; } = string.Empty;
+    public string Sede { get; set; } = string.Empty;
+    public Guid? ProfesorUserId { get; set; }
     public int Participantes { get; set; }
+    /// <summary>Nombres de los alumnos anotados, para verlos sin abrir el detalle.</summary>
+    public List<string> Alumnos { get; set; } = [];
     public string Estado { get; set; } = string.Empty;
 }
 
