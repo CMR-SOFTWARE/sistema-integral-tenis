@@ -1,11 +1,9 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { obtenerSesion } from '../auth/sesion';
-import SinClub from './SinClub';
 import { formatoPlata } from '../alumnos/types';
 import { ESTADO_LIQ_UI, MESES } from '../cuotas/types';
 import { fechaCorta, horaCorta, DIAS } from '../agenda/types';
-import { useMisTurnos, useMiCuota, usePublicidad, useNoticias, useNotas } from './hooks';
+import { useMisTurnos, useMiCuota, useNoticias, useNotas } from './hooks';
 import type { MiTurno } from './types';
 import s from './PortalPages.module.css';
 
@@ -26,42 +24,47 @@ export default function InicioPage() {
   const conClub = ficha != null;
   const turnosQuery = useMisTurnos();
   const cuotaQuery = useMiCuota(hoy.getFullYear(), hoy.getMonth() + 1);
-  const { data: banners = [] } = usePublicidad();
   const { data: noticias = [] } = useNoticias();
   const { data: notas = [] } = useNotas();
   // Las importantes suben arriba de todo; las demás quedan en la tarjeta de abajo (y
   // completas en la sección Noticias).
   const destacadas = noticias.filter((n) => n.importante);
   const comunes = noticias.filter((n) => !n.importante);
-  const [bannerIdx, setBannerIdx] = useState(0);
 
-  // Rotación de banners (si hay más de uno) cada 6s
-  useEffect(() => {
-    if (banners.length < 2) return;
-    const t = setInterval(() => setBannerIdx((i) => (i + 1) % banners.length), 6000);
-    return () => clearInterval(t);
-  }, [banners.length]);
-
-  if (!conClub) return <SinClub />;
   if (turnosQuery.error) {
     return <div className={s.error}>{turnosQuery.error.message || 'Error cargando tus clases'}</div>;
   }
-  const turnos = turnosQuery.data;
-  if (!turnos) return <div className={s.vacio}>Cargando…</div>;
+  // Sin club las consultas ni se disparan (`enabled: tieneFicha()`), así que nunca hay
+  // data: se espera solo cuando de verdad hay algo cargando.
+  if (conClub && !turnosQuery.data) return <div className={s.vacio}>Cargando…</div>;
 
+  const proximos = turnosQuery.data?.proximos ?? [];
   // La cuota es secundaria en el inicio: si aún no llegó (o falló), mostramos
   // "sin movimientos" en vez de bloquear la pantalla.
   const cuota = cuotaQuery.data ?? null;
-  const proxima: MiTurno | undefined = turnos.proximos.find((t) => t.estado !== 'Cancelado');
+  const proxima: MiTurno | undefined = proximos.find((t) => t.estado !== 'Cancelado');
   const estadoCuota = cuota ? ESTADO_LIQ_UI[cuota.estado] : null;
 
   return (
     <div className={s.inicioGrilla}>
-      {/* ── En lista de espera: una banda, no una pantalla ──
-          Antes esto reemplazaba el Inicio entero y el que esperaba no veía nada ni
-          tenía nada para hacer. Ahora ve el portal completo (con sus estados vacíos) y
-          el botón lo lleva a pedir lugar en una clase, que es su única salida real. */}
-      {ficha?.enEspera && (
+      {/* ── Estado de la cuenta: una BANDA, nunca una pantalla que tape el Inicio ──
+          Ni el que no tiene club ni el que está en la espera son un caso aparte: son
+          usuarios como cualquier otro y ven el portal completo, con sus estados vacíos.
+          Cada banda dice en qué situación está y ofrece la única salida que tiene. */}
+      {!conClub && (
+        <div className={s.bandaEspera}>
+          <div>
+            <div className={s.bandaTitulo}>Todavía no estás en ningún club 🎾</div>
+            <div className={s.bandaTexto}>
+              Cuando te unas a una academia vas a ver acá tus clases y tu cuota. Mientras
+              tanto podés usar el resto del portal.
+            </div>
+          </div>
+          <Link to="/portal/club" className={s.bandaBoton}>Buscar mi club</Link>
+        </div>
+      )}
+
+      {conClub && ficha?.enEspera && (
         <div className={s.bandaEspera}>
           <div>
             <div className={s.bandaTitulo}>Estás en la lista de espera 🎾</div>
@@ -131,9 +134,9 @@ export default function InicioPage() {
       {/* ── Tus horarios asignados ── */}
       <div className={s.tarjeta}>
         <h3 className={s.tarjetaTitulo}>Tus horarios asignados</h3>
-        {turnos.proximos.length === 0 && <div className={s.vacio}>Sin clases próximas.</div>}
+        {proximos.length === 0 && <div className={s.vacio}>Sin clases próximas.</div>}
         <div className={s.horariosLista}>
-          {turnos.proximos.slice(0, 4).map((t) => (
+          {proximos.slice(0, 4).map((t) => (
             <div key={t.id} className={s.horarioFila}>
               <div className={s.horarioDia}>
                 <div className={s.horarioDiaNombre}>{diaCorto(t.fecha)}</div>
@@ -192,29 +195,7 @@ export default function InicioPage() {
         </div>
       )}
 
-      {/* ── Publicidad (M6): carrusel de banners del club (desliza al costado) ── */}
-      {banners.length > 0 && (
-        <div className={s.bannerCard}>
-          <span className={s.bannerLabel}>Publicidad</span>
-          <div
-            className={s.bannerTrack}
-            style={{ transform: `translateX(-${(bannerIdx % banners.length) * 100}%)` }}
-          >
-            {banners.map((b) => {
-              const img = <img src={b.imagenUrl} alt={b.nombre} className={s.bannerImg} />;
-              return (
-                <div key={b.id} className={s.bannerSlide}>
-                  {/* fondo: la misma imagen borrosa rellena los costados */}
-                  <div className={s.bannerBg} style={{ backgroundImage: `url("${b.imagenUrl}")` }} />
-                  {b.enlace
-                    ? <a href={b.enlace} target="_blank" rel="noreferrer noopener" className={s.bannerLink}>{img}</a>
-                    : img}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
+      {/* La publicidad se fue al layout del portal: ahora se ve en TODAS las secciones. */}
     </div>
   );
 }

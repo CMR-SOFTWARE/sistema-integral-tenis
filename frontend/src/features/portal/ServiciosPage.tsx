@@ -24,6 +24,7 @@ export default function ServiciosPage() {
   const cargando = query.isLoading;
   const [error, setError] = useState<string | null>(null);
   const [carrito, setCarrito] = useState<Record<string, number>>({}); // servicioId → cantidad
+  const [notas, setNotas] = useState<Record<string, string>>({}); // servicioId → aclaración
   const [enviando, setEnviando] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
   const [cancelando, setCancelando] = useState<string | null>(null); // pedidoId en curso
@@ -60,11 +61,17 @@ export default function ServiciosPage() {
     try {
       const lineas = Object.entries(carrito)
         .filter(([, cantidad]) => cantidad > 0)
-        .map(([servicioId, cantidad]) => ({ servicioId, cantidad }));
+        .map(([servicioId, cantidad]) => ({
+          servicioId,
+          cantidad,
+          // El back guarda null si viene vacía; se manda undefined para no ensuciar el JSON.
+          nota: notas[servicioId]?.trim() || undefined,
+        }));
       await api.post('/portal/pedidos', { lineas });
       setAviso('Pediste tu carrito. Tu profe lo va a confirmar.');
       setTimeout(() => setAviso(null), 3500);
       setCarrito({});
+      setNotas({});
       await qc.invalidateQueries({ queryKey: ['portal-servicios'] });
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo enviar el pedido.');
@@ -102,22 +109,36 @@ export default function ServiciosPage() {
             {servicios.map((sv) => {
               const cantidad = carrito[sv.id] ?? 0;
               return (
-                <div key={sv.id} className={s.cargo}>
-                  <span className={s.cargoConcepto}>{sv.nombre}</span>
-                  <span className={s.cargoMonto}>{formatoPlata(sv.precio)}</span>
-                  <div className={s.stepper}>
-                    <button
-                      className={s.stepperBtn}
-                      disabled={cantidad === 0}
-                      onClick={() => decrementar(sv.id)}
-                    >
-                      −
-                    </button>
-                    <span className={s.stepperCantidad}>{cantidad}</span>
-                    <button className={s.stepperBtn} onClick={() => incrementar(sv.id)}>
-                      +
-                    </button>
+                <div key={sv.id}>
+                  <div className={s.cargo}>
+                    <span className={s.cargoConcepto}>{sv.nombre}</span>
+                    <span className={s.cargoMonto}>{formatoPlata(sv.precio)}</span>
+                    <div className={s.stepper}>
+                      <button
+                        className={s.stepperBtn}
+                        disabled={cantidad === 0}
+                        onClick={() => decrementar(sv.id)}
+                      >
+                        −
+                      </button>
+                      <span className={s.stepperCantidad}>{cantidad}</span>
+                      <button className={s.stepperBtn} onClick={() => incrementar(sv.id)}>
+                        +
+                      </button>
+                    </div>
                   </div>
+                  {/* La aclaración aparece recién cuando el producto está en el carrito:
+                      mostrarla siempre llenaría la lista de campos vacíos. */}
+                  {cantidad > 0 && (
+                    <input
+                      className={s.notaLinea}
+                      type="text"
+                      maxLength={200}
+                      value={notas[sv.id] ?? ''}
+                      onChange={(e) => setNotas((prev) => ({ ...prev, [sv.id]: e.target.value }))}
+                      placeholder="Aclaración (opcional): marca, tensión, color…"
+                    />
+                  )}
                 </div>
               );
             })}
@@ -162,11 +183,15 @@ export default function ServiciosPage() {
                     </div>
                   </div>
                   {p.lineas.map((l) => (
-                    <div key={l.servicioId} className={s.cargo}>
-                      <span className={s.cargoConcepto}>
-                        {l.nombreServicio}{l.cantidad > 1 && ` x${l.cantidad}`}
-                      </span>
-                      <span className={s.cargoMonto}>{formatoPlata(l.subtotal)}</span>
+                    <div key={l.servicioId}>
+                      <div className={s.cargo}>
+                        <span className={s.cargoConcepto}>
+                          {l.nombreServicio}{l.cantidad > 1 && ` x${l.cantidad}`}
+                        </span>
+                        <span className={s.cargoMonto}>{formatoPlata(l.subtotal)}</span>
+                      </div>
+                      {/* Su propia aclaración, para que sepa qué pidió exactamente. */}
+                      {l.nota && <div className={s.notaPedida}>{l.nota}</div>}
                     </div>
                   ))}
                   <div className={s.pedidoTotal}>Total: {formatoPlata(p.total)}</div>

@@ -62,6 +62,14 @@ export default function PanelPedidos({ onCambio }: { onCambio?: () => void }) {
                   {p.lineas.map((l) => `${l.nombreServicio}${l.cantidad > 1 ? ` x${l.cantidad}` : ''}`).join(', ')}
                   {' · '}{formatoPlata(p.total)}
                 </div>
+                {/* Las aclaraciones del alumno, cada una con su producto: son la mitad
+                    que importa del pedido (qué cuerda, qué tensión). Sin esto, el alumno
+                    escribe algo que nadie lee. */}
+                {p.lineas.filter((l) => l.nota).map((l) => (
+                  <div key={l.servicioId} className={s.notaLinea}>
+                    <b>{l.nombreServicio}:</b> {l.nota}
+                  </div>
+                ))}
               </div>
               <button
                 className={s.btnWhatsapp}

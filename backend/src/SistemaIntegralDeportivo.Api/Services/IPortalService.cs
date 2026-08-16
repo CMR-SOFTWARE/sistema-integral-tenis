@@ -44,7 +44,7 @@ public interface IPortalService
     /// <summary>Pido un servicio del catálogo (queda Pendiente hasta que el profe lo acepte).</summary>
     /// <exception cref="Common.ReglaDeNegocioException">Sin ficha, o servicio inexistente/inactivo.</exception>
     Task<PedidoDto> PedirServicioAsync(
-        Guid userId, IReadOnlyList<(Guid ServicioId, int Cantidad)> lineas, CancellationToken ct = default);
+        Guid userId, IReadOnlyList<(Guid ServicioId, int Cantidad, string? Nota)> lineas, CancellationToken ct = default);
 
     /// <summary>Mis pedidos con su estado (Pendiente/Aceptado/Rechazado).</summary>
     /// <exception cref="Common.ReglaDeNegocioException">Si el usuario no tiene ficha vinculada.</exception>

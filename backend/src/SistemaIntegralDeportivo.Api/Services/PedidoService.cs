@@ -17,7 +17,7 @@ public interface IPedidoService
     /// no está activo, no se crea nada.
     /// </summary>
     Task<PedidoDto> PedirAsync(
-        Guid alumnoId, IReadOnlyList<(Guid ServicioId, int Cantidad)> lineas, CancellationToken ct = default);
+        Guid alumnoId, IReadOnlyList<(Guid ServicioId, int Cantidad, string? Nota)> lineas, CancellationToken ct = default);
 
     /// <summary>Los pedidos pendientes que el profe tiene para resolver.</summary>
     Task<IReadOnlyList<PedidoDto>> ListarPendientesAsync(CancellationToken ct = default);
@@ -56,25 +56,26 @@ public class PedidoService : IPedidoService
     }
 
     public async Task<PedidoDto> PedirAsync(
-        Guid alumnoId, IReadOnlyList<(Guid ServicioId, int Cantidad)> lineas, CancellationToken ct = default)
+        Guid alumnoId, IReadOnlyList<(Guid ServicioId, int Cantidad, string? Nota)> lineas,
+        CancellationToken ct = default)
     {
         if (lineas.Count == 0)
             throw new ReglaDeNegocioException("El carrito está vacío.");
 
         // Todo o nada: se resuelven y validan todas las líneas ANTES de tocar el
         // repositorio (mismo criterio que ClaseSueltaService.AsignarAsync).
-        var servicios = new List<(Servicio Servicio, int Cantidad)>();
-        foreach (var (servicioId, cantidad) in lineas)
+        var servicios = new List<(Servicio Servicio, int Cantidad, string? Nota)>();
+        foreach (var (servicioId, cantidad, nota) in lineas)
         {
             var servicio = await _servicios.ObtenerAsync(servicioId, ct)
                 ?? throw new ReglaDeNegocioException("Uno de los servicios pedidos no existe.");
             if (!servicio.Activo)
                 throw new ReglaDeNegocioException($"\"{servicio.Nombre}\" ya no está disponible.");
-            servicios.Add((servicio, cantidad));
+            servicios.Add((servicio, cantidad, nota));
         }
 
         var pedido = new Pedido { AlumnoId = alumnoId, Estado = EstadoPedido.Pendiente };
-        foreach (var (servicio, cantidad) in servicios)
+        foreach (var (servicio, cantidad, nota) in servicios)
         {
             pedido.Lineas.Add(new PedidoLinea
             {
@@ -84,6 +85,9 @@ public class PedidoService : IPedidoService
                 NombreServicio = servicio.Nombre, // snapshot: el precio del pedido no cambia
                 PrecioUnitario = servicio.Precio,  // aunque el profe lo edite después
                 Cantidad = cantidad,
+                // Vacío o solo espacios se guarda como null: "" y null significan lo mismo
+                // (sin aclaración) y tener las dos formas obliga a chequear las dos siempre.
+                Nota = string.IsNullOrWhiteSpace(nota) ? null : nota.Trim(),
             });
         }
         await _pedidos.AgregarAsync(pedido, ct);
@@ -176,6 +180,7 @@ public class PedidoService : IPedidoService
             PrecioUnitario = l.PrecioUnitario,
             Cantidad = l.Cantidad,
             Subtotal = l.PrecioUnitario * l.Cantidad,
+            Nota = l.Nota,
         }).ToList(),
         Total = p.Lineas.Sum(l => l.PrecioUnitario * l.Cantidad),
         Estado = p.Estado.ToString(),

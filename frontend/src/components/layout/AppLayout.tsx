@@ -141,12 +141,13 @@ export default function AppLayout() {
             <h1 className={s.pageTitle}>{title}</h1>
             <div className={s.pageDate}>{fechaDeHoy()}</div>
           </div>
-          {/* Es profe y ADEMÁS alumno: puede pasarse a su portal de alumno. */}
-          {sesion?.alumno && (
-            <button className={s.switcher} onClick={() => navigate('/portal')}>
-              Mi portal
-            </button>
-          )}
+          {/* Todo profe tiene su portal, tenga ficha o no: el director es una persona
+              más y desde ahí se asocia a un club, ve el ranking y juega. Antes el botón
+              solo aparecía si YA era alumno, así que el que no tenía ficha no tenía
+              cómo llegar a la pantalla que sirve justamente para unirse. */}
+          <button className={s.switcher} onClick={() => navigate('/portal')}>
+            Mi portal
+          </button>
           {/* Hoy la única fuente de notificaciones es el ranking, que está en pausa:
               a quien no lo ve, la campana le quedaría siempre vacía (y su endpoint
               responde 403). Se muestra cuando el ranking se abra. */}

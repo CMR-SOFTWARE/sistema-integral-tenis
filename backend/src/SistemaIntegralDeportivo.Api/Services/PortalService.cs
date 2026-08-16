@@ -172,7 +172,7 @@ public class PortalService : IPortalService
     }
 
     public async Task<PedidoDto> PedirServicioAsync(
-        Guid userId, IReadOnlyList<(Guid ServicioId, int Cantidad)> lineas, CancellationToken ct = default)
+        Guid userId, IReadOnlyList<(Guid ServicioId, int Cantidad, string? Nota)> lineas, CancellationToken ct = default)
     {
         var ficha = await FichaDeAsync(userId, ct);
         return await _pedidos.PedirAsync(ficha.Id, lineas, ct);

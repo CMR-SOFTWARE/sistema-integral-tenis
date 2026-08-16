@@ -40,14 +40,16 @@ function RequiereProfesor() {
   return sesion.esProfesor ? <Outlet /> : <Navigate to="/login" replace />;
 }
 
-/** Portal: alcanza con ser jugador logueado (con o SIN ficha vinculada —
- *  el portal muestra el estado "sin club" y deja solicitar un profe).
- *  Un profe (dueño/staff) que ADEMÁS es alumno (tiene ficha) puede entrar a
- *  su portal con el switcher; el profe SIN ficha no tiene lado de alumno. */
+/** Portal: alcanza con estar logueado, con o SIN ficha vinculada — el portal muestra el
+ *  estado "sin club" y deja buscar un profe.
+ *
+ *  El PROFE también entra, tenga ficha o no: el director es una persona más y quiere
+ *  poder asociarse a un club, ver el ranking y jugar, igual que su empleado. Hasta el
+ *  15/08/2026 al profe sin ficha lo rebotábamos al dashboard, y así no tenía forma de
+ *  llegar a la pantalla que justamente sirve para unirse a una academia. */
 function RequiereJugador() {
   const sesion = obtenerSesion();
   if (!obtenerToken() || !sesion) return <Navigate to="/login" replace />;
-  if (sesion.esProfesor && !sesion.alumno) return <Navigate to="/dashboard" replace />;
   if (sesion.estadoTenant === 'PendientePago') return <Navigate to="/checkout" replace />;
   return <Outlet />;
 }
@@ -126,7 +128,9 @@ export default function App() {
             <Route path="turnos" element={<MisTurnosPage />} />
             <Route path="reservar" element={<ReservarPage />} />
             <Route path="cuota" element={<MiCuotaPage />} />
-            <Route path="servicios" element={<ServiciosPage />} />
+            <Route path="shop" element={<ServiciosPage />} />
+            {/* Compat: la sección se llamó "Servicios" hasta el 15/08/2026 */}
+            <Route path="servicios" element={<Navigate to="/portal/shop" replace />} />
             <Route path="noticias" element={<PortalNoticiasPage />} />
             <Route
               path="torneos"

@@ -18,6 +18,13 @@ public class Raqueta
     public Guid AlumnoId { get; set; }
     public Alumno Alumno { get; set; } = null!;
 
+    /// <summary>
+    /// Cómo la llama su dueño: "Raqueta 1", "la de entrenar". Opcional — sirve cuando
+    /// alguien tiene dos iguales y la marca no alcanza para distinguirlas. Sin nombre,
+    /// la pantalla la muestra por marca y modelo, como hasta ahora.
+    /// </summary>
+    public string? Nombre { get; set; }
+
     /// <summary>Marca, ej "Wilson".</summary>
     public required string Marca { get; set; }
 

@@ -8,6 +8,7 @@ import Avatar from '../../components/Avatar';
 import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { alumnoNav, portalTitles } from '../../components/layout/nav';
 import CampanaNotificaciones from '../notificaciones/CampanaNotificaciones';
+import Publicidad from './Publicidad';
 import { CAT_LABEL } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import type { MiPerfil } from './types';
@@ -180,6 +181,9 @@ export default function PortalLayout() {
 
         <main className={s.content}>
           <Outlet />
+          {/* Al final del contenido de CUALQUIER sección: el profe la carga para que se
+              vea, no solo en el Inicio. Se dibuja sola si el club no tiene banners. */}
+          <Publicidad />
         </main>
       </div>
     </div>

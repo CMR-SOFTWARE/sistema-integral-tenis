@@ -35,6 +35,10 @@ public class LineaCarritoDto
 
     [Range(1, 99)]
     public int Cantidad { get; set; } = 1;
+
+    /// <summary>Aclaración del alumno para ESTE producto (marca de cuerda, tensión…). Opcional.</summary>
+    [StringLength(200)]
+    public string? Nota { get; set; }
 }
 
 /// <summary>El alumno pide su carrito: una o varias líneas, en un solo pedido.</summary>
@@ -52,6 +56,8 @@ public class PedidoLineaDto
     public decimal PrecioUnitario { get; set; }
     public int Cantidad { get; set; }
     public decimal Subtotal { get; set; }
+    /// <summary>Lo que aclaró el alumno de este producto; null = nada.</summary>
+    public string? Nota { get; set; }
 }
 
 /// <summary>Un pedido (visto por el profe o por el alumno), con todas sus líneas.</summary>
