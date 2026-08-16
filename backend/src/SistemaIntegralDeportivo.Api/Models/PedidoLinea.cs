@@ -22,4 +22,12 @@ public class PedidoLinea
     public decimal PrecioUnitario { get; set; }
 
     public int Cantidad { get; set; } = 1;
+
+    /// <summary>
+    /// Lo que el alumno aclara de ESTE producto: la marca de la cuerda y la tensión de un
+    /// encordado, el color de un grip. Va por línea y no por pedido porque cada producto
+    /// tiene sus propias especificaciones — mezcladas en una nota común, el profe tiene que
+    /// adivinar cuál corresponde a qué. Null = sin aclaración, que es el caso normal.
+    /// </summary>
+    public string? Nota { get; set; }
 }

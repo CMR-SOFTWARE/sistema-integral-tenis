@@ -690,6 +690,35 @@
   flex: none;
 }
 
+/* Aclaración del producto en el carrito: aparece debajo de su fila, solo cuando el
+   alumno lo sumó. Ocupa el ancho para que entre una tensión y una marca sin recortar. */
+.notaLinea {
+  width: 100%;
+  margin: 0 0 10px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.notaLinea::placeholder {
+  color: var(--color-text-faint);
+}
+
+/* La misma aclaración, ya enviada, en "Mis pedidos". */
+.notaPedida {
+  font-size: 12px;
+  color: #8a5a10;
+  background: #fef6e7;
+  border-left: 3px solid #b7791f;
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin: 0 0 8px;
+}
+
 .stepperBtn {
   width: 26px;
   height: 26px;

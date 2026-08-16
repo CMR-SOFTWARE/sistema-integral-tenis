@@ -86,6 +86,19 @@
   margin-top: 1px;
 }
 
+/* La aclaración que dejó el alumno en un producto del pedido (marca de cuerda,
+   tensión). Va en ámbar y con borde: es lo que el profe TIENE que leer antes de
+   aceptar, y en gris se perdía entre los nombres de los productos. */
+.notaLinea {
+  font-size: 12px;
+  color: #8a5a10;
+  background: #fef6e7;
+  border-left: 3px solid #b7791f;
+  border-radius: 4px;
+  padding: 4px 8px;
+  margin-top: 5px;
+}
+
 .btnWhatsapp {
   border: none;
   background: #25d3661a;

@@ -186,7 +186,7 @@ public class PortalController : ControllerBase
         if (UserId() is not { } userId) return Unauthorized();
         try
         {
-            var lineas = dto.Lineas.Select(l => (l.ServicioId, l.Cantidad)).ToList();
+            var lineas = dto.Lineas.Select(l => (l.ServicioId, l.Cantidad, l.Nota)).ToList();
             return Ok(await _portal.PedirServicioAsync(userId, lineas, ct));
         }
         catch (ReglaDeNegocioException ex)

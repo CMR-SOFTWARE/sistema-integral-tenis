@@ -164,12 +164,29 @@ export interface Encordado {
 /** Espejo de RaquetaDto: una raqueta del alumno con su historial. */
 export interface Raqueta {
   id: string;
+  /** Cómo la llama su dueño ("Raqueta 1"); null = se muestra por marca y modelo. */
+  nombre: string | null;
   marca: string;
   modelo: string | null;
   /** Del más nuevo al más viejo (lo ordena el back). */
   encordados: Encordado[];
   /** Ya resuelto por el back; null si nunca se encordó. */
   ultimoEncordado: Encordado | null;
+}
+
+/**
+ * Cómo se titula una raqueta en pantalla. Si su dueño le puso nombre ("Raqueta 1"),
+ * manda ese y la marca queda como subtítulo; si no, se sigue mostrando por marca y
+ * modelo, que es como venía. Está acá para que las dos pantallas que las listan —la del
+ * alumno y la del profe— no se contradigan.
+ */
+export function tituloRaqueta(r: Pick<Raqueta, 'nombre' | 'marca' | 'modelo'>): string {
+  return r.nombre?.trim() || `${r.marca}${r.modelo ? ` ${r.modelo}` : ''}`;
+}
+
+/** El detalle que acompaña al título: null cuando el título YA es la marca. */
+export function detalleRaqueta(r: Pick<Raqueta, 'nombre' | 'marca' | 'modelo'>): string | null {
+  return r.nombre?.trim() ? `${r.marca}${r.modelo ? ` ${r.modelo}` : ''}` : null;
 }
 
 /** "Luxilon ALU Power · 24 kg", y con barra si el encordado es híbrido. */

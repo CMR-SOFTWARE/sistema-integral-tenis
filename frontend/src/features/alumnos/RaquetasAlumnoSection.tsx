@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '../../lib/api';
 import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import FormEncordado from './FormEncordado';
-import { fechaLegible, resumenEncordado } from './types';
+import { fechaLegible, resumenEncordado, tituloRaqueta, detalleRaqueta } from './types';
 import type { Raqueta } from './types';
 import s from './RaquetasAlumnoSection.module.css';
 
@@ -29,6 +29,7 @@ export default function RaquetasAlumnoSection({ alumnoId, nombre }: Props) {
   const [encordandoId, setEncordandoId] = useState<string | null>(null);
   const [abiertoId, setAbiertoId] = useState<string | null>(null);
   const [agregando, setAgregando] = useState(false);
+  const [nombreRaqueta, setNombreRaqueta] = useState('');
   const [marca, setMarca] = useState('');
   const [modelo, setModelo] = useState('');
 
@@ -44,10 +45,11 @@ export default function RaquetasAlumnoSection({ alumnoId, nombre }: Props) {
     setError(null);
     try {
       await api.post(`/alumnos/${alumnoId}/raquetas`, {
+        nombre: nombreRaqueta.trim() || undefined,
         marca: marca.trim(),
         modelo: modelo.trim() || null,
       });
-      setMarca(''); setModelo(''); setAgregando(false);
+      setNombreRaqueta(''); setMarca(''); setModelo(''); setAgregando(false);
       await recargar();
     } catch (e) {
       setError(e instanceof ApiError ? e.message : 'No se pudo agregar la raqueta.');
@@ -57,7 +59,7 @@ export default function RaquetasAlumnoSection({ alumnoId, nombre }: Props) {
   const borrar = async (r: Raqueta) => {
     if (!(await confirmar({
       titulo: 'Borrar raqueta',
-      mensaje: `¿Borrar la "${r.marca}" de ${nombre}? Se va con todo su historial de encordado.`,
+      mensaje: `¿Borrar la "${tituloRaqueta(r)}" de ${nombre}? Se va con todo su historial de encordado.`,
       confirmar: 'Borrar',
       peligro: true,
     }))) return;
@@ -87,6 +89,7 @@ export default function RaquetasAlumnoSection({ alumnoId, nombre }: Props) {
 
       {agregando && (
         <div className={s.altaForm}>
+          <input placeholder="Nombre (opcional, ej: Raqueta 1)" value={nombreRaqueta} onChange={(e) => setNombreRaqueta(e.target.value)} maxLength={60} />
           <input placeholder="Marca (ej: Wilson)" value={marca} onChange={(e) => setMarca(e.target.value)} maxLength={80} />
           <input placeholder="Modelo (ej: Blade 98)" value={modelo} onChange={(e) => setModelo(e.target.value)} maxLength={80} />
           <button className={s.btnMini} onClick={() => setAgregando(false)}>Cancelar</button>
@@ -105,7 +108,9 @@ export default function RaquetasAlumnoSection({ alumnoId, nombre }: Props) {
         <div key={r.id} className={s.raqueta}>
           <div className={s.fila}>
             <div className={s.datos}>
-              <div className={s.nombre}>{r.marca}{r.modelo ? ` ${r.modelo}` : ''}</div>
+              <div className={s.nombre}>{tituloRaqueta(r)}</div>
+              {/* Con nombre propio, la marca pasa a ser el subtítulo. */}
+              {detalleRaqueta(r) && <div className={s.detalle}>{detalleRaqueta(r)}</div>}
               {r.ultimoEncordado ? (
                 <div className={s.detalle}>
                   {resumenEncordado(r.ultimoEncordado)}

@@ -6,6 +6,8 @@ namespace SistemaIntegralDeportivo.Api.Dtos;
 public class RaquetaDto
 {
     public Guid Id { get; set; }
+    /// <summary>Cómo la llama su dueño ("Raqueta 1"); null = se muestra por marca/modelo.</summary>
+    public string? Nombre { get; set; }
     public string Marca { get; set; } = string.Empty;
     public string? Modelo { get; set; }
 
@@ -32,6 +34,10 @@ public class EncordadoDto
 /// <summary>Alta/edición de una raqueta (el encordado va por su cuenta).</summary>
 public class GuardarRaquetaDto
 {
+    /// <summary>Opcional: cómo la llama su dueño ("Raqueta 1").</summary>
+    [StringLength(60)]
+    public string? Nombre { get; set; }
+
     [Required, StringLength(80)]
     public string Marca { get; set; } = string.Empty;
 

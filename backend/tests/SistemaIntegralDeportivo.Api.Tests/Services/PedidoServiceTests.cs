@@ -69,7 +69,7 @@ public class PedidoServiceTests
         var encordado = ServicioEnCatalogo("Encordado", precio: 12_000m);
         var tubo = ServicioEnCatalogo("Tubo de pelotas", precio: 8_000m);
 
-        var dto = await _service.PedirAsync(AlumnoId, [(encordado.Id, 1), (tubo.Id, 2)]);
+        var dto = await _service.PedirAsync(AlumnoId, [(encordado.Id, 1, null), (tubo.Id, 2, null)]);
 
         Assert.Equal("Pendiente", dto.Estado);
         Assert.NotNull(_pedidoCreado);
@@ -104,7 +104,7 @@ public class PedidoServiceTests
         var tubo = ServicioEnCatalogo("Tubo de pelotas", activo: false);
 
         await Assert.ThrowsAsync<ReglaDeNegocioException>(
-            () => _service.PedirAsync(AlumnoId, [(encordado.Id, 1), (tubo.Id, 1)]));
+            () => _service.PedirAsync(AlumnoId, [(encordado.Id, 1, null), (tubo.Id, 1, null)]));
 
         _pedidos.Verify(p => p.AgregarAsync(It.IsAny<Pedido>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -115,7 +115,7 @@ public class PedidoServiceTests
         var encordado = ServicioEnCatalogo("Encordado");
 
         await Assert.ThrowsAsync<ReglaDeNegocioException>(
-            () => _service.PedirAsync(AlumnoId, [(encordado.Id, 1), (Guid.NewGuid(), 1)]));
+            () => _service.PedirAsync(AlumnoId, [(encordado.Id, 1, null), (Guid.NewGuid(), 1, null)]));
 
         _pedidos.Verify(p => p.AgregarAsync(It.IsAny<Pedido>(), It.IsAny<CancellationToken>()), Times.Never);
     }
@@ -234,5 +234,64 @@ public class PedidoServiceTests
     {
         await Assert.ThrowsAsync<ReglaDeNegocioException>(
             () => _service.CancelarAsync(AlumnoId, Guid.NewGuid()));
+    }
+
+    // ── La nota del alumno: va POR PRODUCTO ──
+
+    [Fact]
+    public async Task Pedir_ConNotas_CadaUnaQuedaEnSuLinea()
+    {
+        // El caso del profe: "encordado con Luxilon 1.25" no tiene nada que ver con el
+        // tubo de pelotas que pidió en el mismo carrito.
+        var encordado = ServicioEnCatalogo("Encordado");
+        var tubo = ServicioEnCatalogo("Tubo de pelotas");
+
+        await _service.PedirAsync(AlumnoId, [
+            (encordado.Id, 1, "Luxilon ALU 1.25, tensión 24"),
+            (tubo.Id, 2, null),
+        ]);
+
+        var lEncordado = _pedidoCreado!.Lineas.Single(l => l.ServicioId == encordado.Id);
+        var lTubo = _pedidoCreado.Lineas.Single(l => l.ServicioId == tubo.Id);
+        Assert.Equal("Luxilon ALU 1.25, tensión 24", lEncordado.Nota);
+        Assert.Null(lTubo.Nota); // la nota del otro producto NO se le pega
+    }
+
+    [Fact]
+    public async Task Pedir_NotaEnBlanco_SeGuardaNull()
+    {
+        // "" y null significan lo mismo (sin aclaración); tener las dos formas obliga a
+        // chequear las dos en cada lugar que la muestre.
+        var encordado = ServicioEnCatalogo();
+
+        await _service.PedirAsync(AlumnoId, [(encordado.Id, 1, "   ")]);
+
+        Assert.Null(Assert.Single(_pedidoCreado!.Lineas).Nota);
+    }
+
+    [Fact]
+    public async Task Pedir_NotaConEspacios_SeGuardaRecortada()
+    {
+        var encordado = ServicioEnCatalogo();
+
+        await _service.PedirAsync(AlumnoId, [(encordado.Id, 1, "  Wilson NXT  ")]);
+
+        Assert.Equal("Wilson NXT", Assert.Single(_pedidoCreado!.Lineas).Nota);
+    }
+
+    [Fact]
+    public async Task Aceptar_ElConceptoDelCargo_NoArrastraLasNotas()
+    {
+        // El concepto es la línea que el alumno ve en su cuenta corriente: si le
+        // metiéramos el texto libre de la nota, quedaría un renglón larguísimo y
+        // fuera de control. La nota la lee el profe en su bandeja.
+        var pedido = PedidoPendiente(("Encordado", 12_000m, 1));
+        pedido.Lineas.Single().Nota = "Luxilon ALU 1.25";
+
+        await _service.AceptarAsync(pedido.Id);
+
+        var cargo = Assert.Single(_cargosCreados);
+        Assert.Equal("Encordado", cargo.Concepto);
+        Assert.DoesNotContain("Luxilon", cargo.Concepto);
     }
 }

@@ -73,6 +73,8 @@ export interface PedidoLinea {
   precioUnitario: number;
   cantidad: number;
   subtotal: number;
+  /** Lo que aclaró el alumno de ESTE producto (marca, tensión…); null = nada. */
+  nota: string | null;
 }
 
 export interface Pedido {
