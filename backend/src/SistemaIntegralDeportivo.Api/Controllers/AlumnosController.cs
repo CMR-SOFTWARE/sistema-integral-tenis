@@ -201,6 +201,25 @@ public class AlumnosController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// PUT api/alumnos/{id}/encordados/{encordadoId} — corrijo un encordado del historial.
+    /// El profe suele ser el que encorda, así que también es el que se equivoca al anotar
+    /// la cuerda o la tensión. El service valida que la raqueta sea de ESE alumno.
+    /// </summary>
+    [HttpPut("{id:guid}/encordados/{encordadoId:guid}")]
+    public async Task<ActionResult<RaquetaDto>> EditarEncordado(
+        Guid id, Guid encordadoId, GuardarEncordadoDto dto, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await _raquetas.EditarEncordadoAsync(id, encordadoId, dto, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     /// <summary>DELETE api/alumnos/{id}/raquetas/{raquetaId} — le borro una raqueta.</summary>
     [HttpDelete("{id:guid}/raquetas/{raquetaId:guid}")]
     public async Task<IActionResult> BorrarRaqueta(Guid id, Guid raquetaId, CancellationToken ct)

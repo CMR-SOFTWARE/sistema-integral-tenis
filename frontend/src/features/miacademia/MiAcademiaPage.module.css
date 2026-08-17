@@ -19,6 +19,8 @@
   border-bottom: 2px solid transparent;
   margin-bottom: -1px; /* pisa el borde inferior del contenedor */
   transition: color 0.15s;
+  display: inline-flex;
+  align-items: center;
 }
 
 .tab:hover {
@@ -30,18 +32,57 @@
   border-bottom-color: var(--color-primary);
 }
 
-/* Celular: las pestañas se reparten el ancho en vez de deslizarse de costado
-   (una pestaña que queda fuera de la pantalla es una sección que no existe).
-   Mismo criterio que en la sección Alumnos. */
+/* Pedidos sin resolver. En ÁMBAR y no en el verde de marca: el verde ya significa
+   "todo bien" en toda la app y un pendiente no lo es. */
+.badge {
+  margin-left: 8px;
+  min-width: 18px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #b7791f;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ── Celular: las pestañas envuelven a dos renglones ──
+   Con CINCO repartiéndose el ancho, cada una queda en ~70 px: "Configuración" es una
+   palabra sola, no puede cortarse, y se sale de su caja. Dos filas que se leen es
+   mejor que una fila donde no se entiende qué dice cada pestaña. Al envolver, la
+   línea de abajo del contenedor deja de tener sentido (cruzaría por el medio), así
+   que en el celular cada pestaña es una cápsula con su propio borde. */
 @media (max-width: 760px) {
+  .tabs {
+    flex-wrap: wrap;
+    gap: 6px;
+    border-bottom: none;
+    margin-bottom: 16px;
+  }
+
   .tab,
   .tabActivo {
-    flex: 1 1 0;
+    flex: 1 1 calc(33.333% - 6px);
     min-width: 0;
-    padding: 10px 4px;
+    padding: 10px 6px;
     font-size: 13px;
     white-space: normal;
     line-height: 1.2;
+    justify-content: center;
     text-align: center;
+    margin-bottom: 0;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+  }
+
+  .tabActivo {
+    border-color: var(--color-primary);
+    background: #eef6f0;
+  }
+
+  .badge {
+    margin-left: 5px;
+    padding: 1px 5px;
+    font-size: 10px;
   }
 }

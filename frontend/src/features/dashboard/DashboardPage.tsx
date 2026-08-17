@@ -90,9 +90,9 @@ export default function DashboardPage() {
   return (
     <div>
       {pedidosPend > 0 && (
-        <Link to="/finanzas?tab=cuotas" className={s.avisoPedidos}>
+        <Link to="/mi-academia?tab=pedidos" className={s.avisoPedidos}>
           <span className={s.avisoPedidosBadge}>{pedidosPend}</span>
-          {pedidosPend === 1 ? 'pedido de servicio sin resolver' : 'pedidos de servicios sin resolver'} — resolvé en Cuotas
+          {pedidosPend === 1 ? 'pedido del Shop sin resolver' : 'pedidos del Shop sin resolver'} — resolvelos en Mi academia
         </Link>
       )}
 

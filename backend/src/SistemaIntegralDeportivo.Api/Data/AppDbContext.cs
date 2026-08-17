@@ -34,6 +34,7 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
     public DbSet<Bloqueo> Bloqueos => Set<Bloqueo>();
     public DbSet<Solicitud> Solicitudes => Set<Solicitud>();
     public DbSet<Servicio> Servicios => Set<Servicio>();
+    public DbSet<FotoServicio> FotosServicio => Set<FotoServicio>();
     public DbSet<Pedido> Pedidos => Set<Pedido>();
     public DbSet<PedidoLinea> PedidoLineas => Set<PedidoLinea>();
     public DbSet<Raqueta> Raquetas => Set<Raqueta>();
@@ -219,6 +220,15 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
         modelBuilder.Entity<Servicio>().Property(s => s.Precio).HasPrecision(12, 2);
         modelBuilder.Entity<Servicio>()
             .HasIndex(s => s.TenantId); // "el catálogo del profe"
+
+        // Las fotos se van con el producto: no existen sin él. (El ARCHIVO del storage lo
+        // borra el service; la base no sabe de archivos.)
+        modelBuilder.Entity<FotoServicio>()
+            .HasOne(f => f.Servicio).WithMany(s => s.Fotos).HasForeignKey(f => f.ServicioId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<FotoServicio>()
+            .HasIndex(f => f.ServicioId); // "las fotos de este producto"
 
         modelBuilder.Entity<Pedido>().Property(p => p.Estado).HasConversion<string>();
         modelBuilder.Entity<Pedido>()

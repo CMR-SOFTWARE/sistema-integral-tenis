@@ -40,9 +40,14 @@
   letter-spacing: 0.02em;
 }
 
+/* `minmax(0, 1fr)` y no `1fr` a secas: `1fr` es `minmax(auto, 1fr)`, y ese `auto` usa
+   como piso el ancho MÍNIMO del contenido. Con una sola fila que no se angosta (la del
+   cargo, que es nowrap) la columna se estiraba a 502 px y arrastraba la ficha entera
+   más allá de la pantalla del celular. Con el 0 la columna se queda en el ancho que
+   hay, y adentro cada fila se arregla con su propio min-width. */
 .columnas {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 22px;
 }
 
@@ -149,6 +154,12 @@
 
 .cargoConcepto {
   flex: 1;
+  /* Sin esto el concepto estira la fila entera y con ella la ficha: al ser `nowrap`,
+     lo que aporta al ancho mínimo de la fila es el texto COMPLETO. El `overflow:
+     hidden` no alcanza — solo lo deja recortarse una vez que ya se angostó, y para
+     angostarse necesita este min-width. Medido: la fila pedía 502 px en una pantalla
+     de 390 y el modal terminaba más ancho que el celular. */
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -287,6 +298,6 @@
 /* ── Móvil: las dos columnas de la ficha se apilan ── */
 @media (max-width: 760px) {
   .columnas {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }

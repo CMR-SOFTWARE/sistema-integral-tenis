@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, ApiError } from '../../lib/api';
 import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
-import FormEncordado from './FormEncordado';
+import FormEncordado, { aCuerpo } from './FormEncordado';
 import { fechaLegible, resumenEncordado, tituloRaqueta, detalleRaqueta } from './types';
 import type { Raqueta } from './types';
 import s from './RaquetasAlumnoSection.module.css';
@@ -28,6 +28,7 @@ export default function RaquetasAlumnoSection({ alumnoId, nombre }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [encordandoId, setEncordandoId] = useState<string | null>(null);
   const [abiertoId, setAbiertoId] = useState<string | null>(null);
+  const [editandoEncordadoId, setEditandoEncordadoId] = useState<string | null>(null);
   const [agregando, setAgregando] = useState(false);
   const [nombreRaqueta, setNombreRaqueta] = useState('');
   const [marca, setMarca] = useState('');
@@ -156,9 +157,27 @@ export default function RaquetasAlumnoSection({ alumnoId, nombre }: Props) {
           {abiertoId === r.id && (
             <div className={s.historial}>
               {r.encordados.map((e) => (
-                <div key={e.id} className={s.encordado}>
-                  <b>{fechaLegible(e.fecha)}</b> — {resumenEncordado(e)}
-                </div>
+                editandoEncordadoId === e.id ? (
+                  <FormEncordado
+                    key={e.id}
+                    inicial={aCuerpo(e)}
+                    onCancelar={() => setEditandoEncordadoId(null)}
+                    onGuardar={async (cuerpo) => {
+                      await api.put(`/alumnos/${alumnoId}/encordados/${e.id}`, cuerpo);
+                      setEditandoEncordadoId(null);
+                      await recargar();
+                    }}
+                    onError={setError}
+                  />
+                ) : (
+                  <div key={e.id} className={s.encordado}>
+                    <span><b>{fechaLegible(e.fecha)}</b> — {resumenEncordado(e)}</span>
+                    {/* El profe es el que encorda, así que es el que se equivoca al anotar. */}
+                    <button className={s.btnMini} onClick={() => { setEditandoEncordadoId(e.id); setError(null); }}>
+                      Editar
+                    </button>
+                  </div>
+                )
               ))}
             </div>
           )}
