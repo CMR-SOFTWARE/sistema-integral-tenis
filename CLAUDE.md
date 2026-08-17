@@ -78,6 +78,21 @@ Reglas que se respetan siempre:
     `nth-child`: dos tablas que comparten CSS y tienen distinta cantidad de columnas quedan
     ordenadas distinto.
   - `white-space: nowrap` en una celda le impide angostarse y **estira la fila entera**.
+  - **Y esa fila estira la columna: `1fr` es `minmax(auto, 1fr)`,** y ese `auto` toma como
+    piso el **ancho mínimo del contenido**. Una sola celda que no se angosta hace crecer
+    toda la grilla más allá de la pantalla. En las grillas va **`minmax(0, 1fr)`**.
+    - Los dos arreglos se necesitan y hacen cosas distintas: el `minmax(0, …)` evita que
+      la **columna** crezca, y el `min-width: 0` deja que **la celda** se angoste una vez
+      que la columna dejó de crecer. Con uno solo no alcanza — y `overflow: hidden` **no**
+      reemplaza al `min-width`: solo deja que el texto se recorte *después*, no baja el
+      mínimo que la celda le pide a la grilla.
+    - Ejemplo vivo: `DetalleAlumnoModal.module.css`. La fila del cargo pedía 502 px en una
+      pantalla de 390 y se llevaba el modal entero fuera de la vista.
+  - **Un modal que desborda no se puede alcanzar.** Centrado con flex, el sobrante se
+    reparte a los dos lados y la mitad izquierda queda fuera de la pantalla, adonde no se
+    llega ni scrolleando. `components/Modal.module.css` ya está blindado (`min-width: 0`
+    en la tarjeta y `justify-content: safe center`), pero eso **tapa el síntoma**: si una
+    ficha se ve cortada, el culpable siempre es un hijo que no se angosta.
   - **El verde de marca no sirve para destacar nada**: ya significa "todo bien" (cuota al
     día, clase confirmada, botón principal, pestaña activa). Lo que tiene que llamar la
     atención va en **rojo** (`--color-danger`) o ámbar (`#b7791f`). Ejemplo: la noticia

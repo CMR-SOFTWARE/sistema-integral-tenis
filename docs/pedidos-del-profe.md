@@ -173,6 +173,16 @@ archivo. `ServicioServiceTests` fija las cuatro cosas.
 > El nombre en el código sigue siendo **`Servicio`**: renombrarlo a `Producto` es un rename
 > de tabla con datos en producción y no aporta lo suficiente. En pantalla dice *Productos*.
 
+**Decisión abierta, a propósito:** la imagen se sube al storage **antes** de guardar la fila.
+Si el guardado en la base falla, el archivo ya está escrito y queda **huérfano** — pasó de
+verdad mientras se probaba esto (quedó un `.jpg` suelto en `archivos-locales/productos/` de
+un intento que reventó). Se dejó así porque es el mismo comportamiento que las fotos del
+perfil del profe y solo ocurre si falla la escritura en la base, que es raro. Si alguna vez
+molesta, el arreglo es envolver el `SaveChanges` y borrar el archivo cuando lanza. El caso
+inverso —falla el borrado del archivo— **sí** está resuelto: se loguea y no corta la
+operación (`ServicioService.BorrarArchivoAsync`), porque un huérfano no lo ve nadie y una
+foto rota en la pantalla sí.
+
 ---
 
 ## Lo que falta
