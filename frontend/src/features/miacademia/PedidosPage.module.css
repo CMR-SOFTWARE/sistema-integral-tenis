@@ -1,0 +1,185 @@
+/* La bandeja de pedidos del Shop. Mobile first: el profe los resuelve del celular. */
+
+.contenedor {
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tarjeta {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+}
+
+.titulo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  margin: 0 0 6px;
+}
+
+.bajada {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* El pedido en ámbar: es una bandeja de cosas pendientes, no una lista más.
+   El verde de marca acá no diría nada (ya significa "todo bien"). */
+.pedido {
+  background: #fffbf4;
+  border: 1px solid #f0dcc0;
+  border-radius: var(--radius-lg);
+  padding: 14px;
+}
+
+.cabecera {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.alumno {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.fecha {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.linea {
+  padding: 8px 0;
+  border-top: 1px solid #f0dcc0;
+}
+
+.lineaFila {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.lineaNombre {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.lineaMonto {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.nota {
+  margin-top: 5px;
+  padding: 5px 9px;
+  border-left: 3px solid #b7791f;
+  border-radius: 4px;
+  background: #fef6e7;
+  font-size: 12px;
+  color: #8a5a10;
+}
+
+.total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #f0dcc0;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.totalMonto {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+}
+
+/* En el celular los dos botones ocupan la fila entera: se tocan con el pulgar. */
+.acciones {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.btnAceptar,
+.btnRechazar {
+  flex: 1;
+  border-radius: var(--radius-md);
+  padding: 10px 14px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.btnAceptar {
+  border: none;
+  background: var(--color-primary-dark);
+  color: #fff;
+}
+
+.btnRechazar {
+  border: 1px solid var(--color-danger-border);
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+}
+
+.btnAceptar:disabled,
+.btnRechazar:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.vacio {
+  padding: 20px 4px 4px;
+  color: var(--color-text-faint);
+  font-size: 14px;
+}
+
+.error {
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: 11px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-top: 14px;
+}
+
+@media (min-width: 620px) {
+  .tarjeta,
+  .pedido {
+    padding: 20px;
+  }
+
+  /* Con lugar de sobra, los botones no necesitan estirarse a lo ancho. */
+  .acciones {
+    justify-content: flex-end;
+  }
+
+  .btnAceptar,
+  .btnRechazar {
+    flex: 0 0 auto;
+  }
+}

@@ -5,7 +5,7 @@
 > que falta. Lo último es lo que más duele perder: sin eso se vuelve a discutir algo que
 > ya está acordado, o se decide distinto y hay que rehacerlo.
 >
-> Última actualización: 14/08/2026.
+> Última actualización: 16/08/2026.
 
 El cliente es el **profesor** que usa la app todos los días (y que además la revende a
 otros profes). En agosto de 2026 mandó una lista de 13 pedidos. Esta es esa lista, con lo
@@ -118,8 +118,8 @@ suelta ya asignada, sin tocar alumno ni cobro — con su propio modal
 `Pedido` pasó de "un servicio" a **una o varias líneas** (`PedidoLinea`, nueva tabla). El
 alumno arma el carrito en `features/portal/ServiciosPage.tsx` (stepper de cantidad por
 servicio, un total, un solo "Enviar pedido") y lo manda como **un** pedido. La bandeja del
-profe (`PanelPedidos.tsx`, arriba de Cuotas) sigue siendo una fila por pedido, pero ahora
-lista todas sus líneas. Al **ACEPTAR** nace **un solo cargo** con el total — la decisión de
+profe nació como un panel plegable arriba de Cuotas (hoy es su propia pestaña, ver más
+abajo) y lista todas las líneas de cada pedido. Al **ACEPTAR** nace **un solo cargo** con el total — la decisión de
 `docs/modelo-precios.md` §M4 no se tocó: la deuda sigue sin existir hasta que el profe
 confirma.
 
@@ -133,6 +133,45 @@ mergear.
 Pendiente (`DELETE /portal/pedidos/{id}`) — todavía no generó cargo, así que se borra
 directo, sin estado intermedio. Botón "Cancelar" en "Mis pedidos", solo visible en
 Pendiente.
+
+---
+
+### El Shop de verdad, y corregir un encordado (16/08/2026)
+
+No salió de la lista de 13: son tres cosas que trajo Lucas de **usar** la app.
+
+> *"Ver cómo hacer para que cuando cambia de encordado se pueda actualizar la raqueta."*
+
+El backend ya lo soportaba (`RaquetaService.EditarEncordadoAsync`); faltaba el botón, y del
+lado del profe faltaba también el endpoint (`PUT /alumnos/{id}/encordados/{encordadoId}` —
+el portal sí lo tenía). `FormEncordado.tsx` sirve para cargar **y** para corregir: no se
+duplicó porque la regla del híbrido (las cuerdas horizontales solo si corresponde) se iba a
+desincronizar entre las dos copias.
+
+> *"Ver dónde colocar los pedidos para que no se mezcle en una sola pantalla."*
+
+**El Shop entero vive en Mi academia**, que pasó de tres pestañas a cinco: Profesores ·
+Sueldos · **Productos** · **Pedidos** · Configuración. El catálogo salió de la tarjeta
+`ServiciosCard` de Configuración y la bandeja salió de arriba de Cuotas. La pestaña Pedidos
+tiene **badge** con los pendientes (comparte la query key con el aviso del Inicio, así se
+piden una vez y bajan juntos) y el aviso del Inicio apunta a `/mi-academia?tab=pedidos`.
+En el celular las cinco pestañas **envuelven a dos renglones**: repartidas en una sola fila
+quedaban en ~70 px y "Configuración" es una palabra que no se puede cortar.
+
+> *"El profesor debería tener una sección donde pueda cargar sus productos y si quiere fotos.
+> La forma en la que hicimos servicios no tiene mucha flexibilidad."*
+
+`Servicio` sumó `Descripcion` y una tabla `FotosServicio` (hasta **5** por producto).
+
+**Las fotos van al storage y en la base queda su URL** — `IAlmacenamientoArchivos`, el mismo
+camino que las del perfil del profe, no el base64 en la fila de `Alumno.FotoUrl`. Es la
+decisión que hace que esto escale: ~100 caracteres por foto en vez de cientos de KB en cada
+carga del catálogo. Se comprime en el navegador antes de subir, se valida que sea imagen
+**por sus bytes** (no por lo que declara el cliente) y al borrar la foto se borra el
+archivo. `ServicioServiceTests` fija las cuatro cosas.
+
+> El nombre en el código sigue siendo **`Servicio`**: renombrarlo a `Producto` es un rename
+> de tabla con datos en producción y no aporta lo suficiente. En pantalla dice *Productos*.
 
 ---
 

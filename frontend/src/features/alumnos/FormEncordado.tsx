@@ -12,28 +12,51 @@ export interface CuerpoEncordado {
   fecha: string; // "2026-08-01"
 }
 
+/**
+ * Un encordado ya guardado, listo para precargar el formulario al corregirlo. Vive acá
+ * y no en cada pantalla porque el que sabe qué campos necesita el form es el form.
+ */
+export function aCuerpo(e: CuerpoEncordado): CuerpoEncordado {
+  return {
+    cuerdaVertical: e.cuerdaVertical,
+    tensionVertical: e.tensionVertical,
+    cuerdaHorizontal: e.cuerdaHorizontal,
+    tensionHorizontal: e.tensionHorizontal,
+    fecha: e.fecha,
+  };
+}
+
 interface Props {
   onGuardar: (cuerpo: CuerpoEncordado) => Promise<void>;
   onCancelar: () => void;
   onError: (mensaje: string | null) => void;
+  /** Al CORREGIR uno ya cargado: los valores con los que arranca el formulario. */
+  inicial?: CuerpoEncordado;
 }
 
 /**
- * Registrar un encordado. Lo usan el alumno desde su perfil y el profe desde la
- * ficha, así que no depende de los estilos de ninguno de los dos.
+ * Cargar un encordado, o corregir uno ya cargado. Lo usan el alumno desde su perfil y
+ * el profe desde la ficha, así que no depende de los estilos de ninguno de los dos.
+ *
+ * Es el MISMO formulario para el alta y la edición a propósito: la regla del híbrido
+ * (las horizontales solo viajan si el check está puesto) tiene que valer para los dos,
+ * y duplicada se desincroniza.
  *
  * El híbrido (dos cuerdas distintas) va escondido detrás de un check: es el caso
  * raro, y mostrar cuatro campos de entrada asusta al que solo quiere anotar que
  * la encordó.
  */
-export default function FormEncordado({ onGuardar, onCancelar, onError }: Props) {
-  const [cuerda, setCuerda] = useState('');
-  const [tension, setTension] = useState('');
-  const [hibrido, setHibrido] = useState(false);
-  const [cuerdaH, setCuerdaH] = useState('');
-  const [tensionH, setTensionH] = useState('');
-  const [fecha, setFecha] = useState(hoyIso());
+export default function FormEncordado({ onGuardar, onCancelar, onError, inicial }: Props) {
+  const [cuerda, setCuerda] = useState(inicial?.cuerdaVertical ?? '');
+  const [tension, setTension] = useState(inicial?.tensionVertical ?? '');
+  // Que ya tenga cuerda horizontal cargada ES la definición de híbrido: el check
+  // arranca tildado solo, sin guardar un booleano aparte que se pueda contradecir.
+  const [hibrido, setHibrido] = useState(inicial?.cuerdaHorizontal != null);
+  const [cuerdaH, setCuerdaH] = useState(inicial?.cuerdaHorizontal ?? '');
+  const [tensionH, setTensionH] = useState(inicial?.tensionHorizontal ?? '');
+  const [fecha, setFecha] = useState(inicial?.fecha ?? hoyIso());
   const [guardando, setGuardando] = useState(false);
+  const editando = inicial != null;
 
   const valido = cuerda.trim() !== '' && fecha !== '';
 
@@ -110,7 +133,7 @@ export default function FormEncordado({ onGuardar, onCancelar, onError }: Props)
       <div className={s.acciones}>
         <button className={s.btnCancelar} onClick={onCancelar}>Cancelar</button>
         <button className={s.btnGuardar} disabled={!valido || guardando} onClick={() => void guardar()}>
-          {guardando ? 'Guardando…' : 'Guardar encordado'}
+          {guardando ? 'Guardando…' : editando ? 'Guardar cambios' : 'Guardar encordado'}
         </button>
       </div>
     </div>

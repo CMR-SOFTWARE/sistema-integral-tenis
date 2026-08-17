@@ -60,11 +60,22 @@ export interface Precios {
 
 export type EstadoPedido = 'Pendiente' | 'Aceptado' | 'Rechazado';
 
+/** Una foto del producto. La imagen vive en el storage; acá viaja su URL. */
+export interface FotoServicio {
+  id: string;
+  url: string;
+  orden: number;
+}
+
 export interface Servicio {
   id: string;
   nombre: string;
+  /** De qué se trata; null cuando el nombre se explica solo. */
+  descripcion: string | null;
   precio: number;
   activo: boolean;
+  /** En orden. La PRIMERA es la que se ve en el listado del Shop. */
+  fotos: FotoServicio[];
 }
 
 export interface PedidoLinea {

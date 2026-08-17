@@ -14,8 +14,18 @@ public class Servicio
     public Tenant Tenant { get; set; } = null!;
 
     public required string Nombre { get; set; } // "Encordado", "Tubo de pelotas"
+
+    /// <summary>
+    /// De qué se trata: medidas, colores, qué incluye. Opcional — un encordado se explica
+    /// solo, una raqueta o una remera no.
+    /// </summary>
+    public string? Descripcion { get; set; }
+
     public decimal Precio { get; set; }
     public bool Activo { get; set; } = true;
+
+    /// <summary>Las fotos del producto; la primera es la que se ve en el listado del Shop.</summary>
+    public ICollection<FotoServicio> Fotos { get; set; } = [];
 
     public DateTime CreadoEl { get; set; } = DateTime.UtcNow;
 }

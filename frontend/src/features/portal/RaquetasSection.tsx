@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { api, ApiError } from '../../lib/api';
 import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { haceCuanto, resumenEncordado, tituloRaqueta, detalleRaqueta } from '../alumnos/types';
-import FormEncordado from '../alumnos/FormEncordado';
+import FormEncordado, { aCuerpo } from '../alumnos/FormEncordado';
 import type { Encordado, Raqueta } from './types';
 import s from './PortalPages.module.css';
 
@@ -21,6 +21,7 @@ export default function RaquetasSection({ raquetas, onCambio }: Props) {
   const [editForm, setEditForm] = useState(VACIA);
   const [encordandoId, setEncordandoId] = useState<string | null>(null);
   const [abiertoId, setAbiertoId] = useState<string | null>(null); // historial desplegado
+  const [editandoEncordadoId, setEditandoEncordadoId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const confirmar = useConfirmar();
 
@@ -177,13 +178,28 @@ export default function RaquetasSection({ raquetas, onCambio }: Props) {
             {abiertoId === r.id && (
               <div className={s.raquetaHistorial}>
                 {r.encordados.map((e) => (
-                  <div key={e.id} className={s.encordadoFila}>
-                    <span>
-                      <b>{e.fecha}</b> — {resumenEncordado(e)}
-                      {e.esHibrido && <span className={s.chipHibrido}>híbrido</span>}
-                    </span>
-                    <button className={s.btnMiniPortal} onClick={() => void borrarEncordado(e)}>Borrar</button>
-                  </div>
+                  editandoEncordadoId === e.id ? (
+                    <FormEncordado
+                      key={e.id}
+                      inicial={aCuerpo(e)}
+                      onCancelar={() => setEditandoEncordadoId(null)}
+                      onGuardar={async (cuerpo) => {
+                        await api.put(`/portal/encordados/${e.id}`, cuerpo);
+                        setEditandoEncordadoId(null);
+                        onCambio();
+                      }}
+                      onError={setError}
+                    />
+                  ) : (
+                    <div key={e.id} className={s.encordadoFila}>
+                      <span>
+                        <b>{e.fecha}</b> — {resumenEncordado(e)}
+                        {e.esHibrido && <span className={s.chipHibrido}>híbrido</span>}
+                      </span>
+                      <button className={s.btnMiniPortal} onClick={() => { setEditandoEncordadoId(e.id); setError(null); }}>Editar</button>
+                      <button className={s.btnMiniPortal} onClick={() => void borrarEncordado(e)}>Borrar</button>
+                    </div>
+                  )
                 ))}
               </div>
             )}

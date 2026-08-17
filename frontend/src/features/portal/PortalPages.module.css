@@ -681,6 +681,129 @@
   white-space: nowrap;
 }
 
+/* ── El Shop: el catálogo del club ── */
+
+/* La separación va en el ITEM y no en la fila: abajo de la fila puede haber una
+   aclaración, y la línea tiene que quedar debajo de las dos, no en el medio. */
+.productoItem {
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.productoItem:last-child {
+  border-bottom: none;
+}
+
+.producto {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 0;
+  font-size: 13px;
+}
+
+/* Foto + nombre: todo el bloque abre el detalle, que en el celular es un blanco
+   mucho más fácil de acertar que un "ver más" chiquito. */
+.productoBoton {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.productoThumb {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  object-fit: cover;
+  border-radius: 10px;
+  background: var(--color-surface-subtle);
+}
+
+.productoNombre {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-weight: 600;
+}
+
+.productoVer {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+/* ── Detalle del producto (modal) ── */
+
+.detalleFoto {
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  display: block;
+}
+
+.detalleMinis {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.detalleMini,
+.detalleMiniOn {
+  width: 54px;
+  height: 54px;
+  padding: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: none;
+  cursor: pointer;
+  border: 1px solid var(--color-border);
+}
+
+.detalleMiniOn {
+  border: 2px solid var(--color-primary);
+}
+
+.detalleMini img,
+.detalleMiniOn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.detalleDescripcion {
+  margin: 14px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-text-muted);
+  white-space: pre-line; /* respeta los renglones que escribió el profe */
+}
+
+.detalleCantidad {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border-subtle);
+  font-size: 13px;
+  font-weight: 700;
+}
+
 /* ── Carrito de servicios ── */
 
 .stepper {

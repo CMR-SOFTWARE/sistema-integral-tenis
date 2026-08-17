@@ -11,6 +11,9 @@ namespace SistemaIntegralDeportivo.Api.Controllers;
 [Route("api/configuracion")]
 public class ConfiguracionController : ControllerBase
 {
+    /// <summary>Tope del request de subida; el service valida los bytes de nuevo (6 MB).</summary>
+    private const int TamañoMaximoSubida = 6 * 1024 * 1024;
+
     private readonly IConfigService _service;
     private readonly IServicioService _servicios;
     private readonly IPublicidadService _publicidad;
@@ -95,6 +98,54 @@ public class ConfiguracionController : ControllerBase
         {
             return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
         }
+    }
+
+    /// <summary>
+    /// POST api/configuracion/servicios/{id}/fotos — sube una foto del producto.
+    /// La imagen va al STORAGE y en la base queda su URL (mismo camino que las fotos del
+    /// perfil), no en base64 dentro de la fila: con veinte productos eso serían megas
+    /// viajando en cada carga del catálogo.
+    /// </summary>
+    [HttpPost("servicios/{id:guid}/fotos")]
+    [RequestSizeLimit(TamañoMaximoSubida)]
+    public async Task<ActionResult<FotoServicioDto>> SubirFoto(Guid id, IFormFile archivo, CancellationToken ct)
+    {
+        try
+        {
+            return Ok(await _servicios.AgregarFotoAsync(id, await LeerImagenAsync(archivo, ct), ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>DELETE api/configuracion/servicios/{id}/fotos/{fotoId} — borra la foto y su archivo.</summary>
+    [HttpDelete("servicios/{id:guid}/fotos/{fotoId:guid}")]
+    public async Task<IActionResult> BorrarFoto(Guid id, Guid fotoId, CancellationToken ct)
+    {
+        try
+        {
+            await _servicios.BorrarFotoAsync(id, fotoId, ct);
+            return NoContent();
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>Pasa el archivo a bytes para el Service (que no conoce HTTP).</summary>
+    private static async Task<ImagenSubida> LeerImagenAsync(IFormFile? archivo, CancellationToken ct)
+    {
+        if (archivo is null || archivo.Length == 0)
+            throw new ReglaDeNegocioException("No llegó ninguna imagen.");
+
+        using var memoria = new MemoryStream();
+        await using (var origen = archivo.OpenReadStream())
+            await origen.CopyToAsync(memoria, ct);
+
+        return new ImagenSubida(memoria.ToArray());
     }
 
     // ── Publicidad: los banners del club (M6) ──
