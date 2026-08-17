@@ -50,10 +50,11 @@
 }
 
 .brandTenant {
+  font-family: var(--font-ui);
   font-size: 11px;
   color: var(--color-nav-muted);
   font-weight: 500;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   margin-top: 3px;
 }
@@ -75,10 +76,10 @@
   gap: 10px;
   padding: 10px 44px 10px 12px;
   border-radius: 10px;
-  font-family: var(--font-display);
-  font-size: 15px;
+  font-family: var(--font-ui);
+  font-size: 14px;
   font-weight: 500;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.01em;
   color: var(--color-nav-muted);
   text-decoration: none;
   border-left: 2px solid transparent;
@@ -93,8 +94,8 @@
 .navItemActive,
 .navItemActive:hover {
   background: var(--color-nav-active);
-  color: var(--color-nav-text);
-  border-left-color: var(--color-lime-bright);
+  color: var(--color-lime);
+  border-left-color: var(--color-lime);
 }
 
 .sidebarFooter {
@@ -183,14 +184,15 @@
   position: sticky;
   top: 0;
   z-index: 20;
-  background: color-mix(in srgb, var(--color-bg) 88%, transparent);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--color-border);
+  /* Misma estructura CMR que el panel izquierdo */
+  background: var(--color-nav);
+  border-bottom: 1px solid rgba(242, 232, 207, 0.12);
   padding: 14px 28px;
   display: flex;
   align-items: center;
   gap: 16px;
   overflow: hidden;
+  color: var(--color-nav-text);
 }
 
 .pelotaRuta {
@@ -199,12 +201,12 @@
   right: 16px;
   top: 50%;
   height: 1px;
-  background: var(--court-line);
+  background: var(--color-lime);
   transform-origin: left center;
   transform: scaleX(0);
   pointer-events: none;
   animation: cruzaHeader 0.9s cubic-bezier(0.4, 0, 0.2, 1) both;
-  opacity: 0.45;
+  opacity: 0.55;
 }
 
 .headerVivo {
@@ -214,8 +216,8 @@
   bottom: 0;
   height: 1px;
   pointer-events: none;
-  background: var(--court-line);
-  opacity: 0.22;
+  background: var(--color-lime);
+  opacity: 0.28;
 }
 
 .headerVivo::after {
@@ -225,7 +227,7 @@
   bottom: -4px;
   width: 8px;
   height: 8px;
-  border: 1.3px solid var(--color-primary);
+  border: 1.3px solid var(--color-lime);
   border-radius: 50%;
   background: none;
   animation: recorreHeader 18s linear infinite;
@@ -250,14 +252,15 @@
   letter-spacing: 0.02em;
   margin: 0;
   line-height: 1.1;
-  color: var(--color-text);
+  color: var(--color-nav-text);
 }
 
 .pageDate {
+  font-family: var(--font-ui);
   font-size: 12px;
-  color: var(--color-text-faint);
+  color: var(--color-nav-muted);
   font-weight: 500;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   margin-top: 3px;
 }
@@ -267,18 +270,19 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  font-family: var(--font-ui);
   font-size: 13px;
-  color: var(--color-text-muted);
-  font-weight: 600;
+  color: var(--color-nav-muted);
+  font-weight: 500;
 }
 
 .selectorMiembro select {
   padding: 6px 10px;
   border-radius: 8px;
-  border: 1px solid var(--color-border);
-  font-weight: 600;
-  background: transparent;
-  color: var(--color-text);
+  border: 1px solid rgba(242, 232, 207, 0.28);
+  font-weight: 500;
+  background: rgba(11, 87, 48, 0.35);
+  color: var(--color-nav-text);
 }
 
 .switcher {
@@ -289,8 +293,9 @@
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
-  color: var(--color-text-muted);
-  font-weight: 600;
+  color: var(--color-nav-muted);
+  font-family: var(--font-ui);
+  font-weight: 500;
   font-size: 13px;
   cursor: pointer;
   white-space: nowrap;
@@ -298,7 +303,7 @@
 }
 
 .switcher:hover {
-  color: var(--color-text);
+  color: var(--color-lime);
   background: var(--color-nav-hover);
 }
 
@@ -307,6 +312,18 @@
   padding: 28px 32px 64px;
   max-width: 1180px;
   width: 100%;
+}
+
+/* Controles del header (tema, etc.) sobre verde CMR */
+.header :global(button) {
+  border-color: rgba(242, 232, 207, 0.32);
+  color: var(--color-nav-text);
+}
+
+.header :global(button:hover) {
+  color: var(--color-lime);
+  border-color: var(--color-lime);
+  background: var(--color-nav-hover);
 }
 
 .badge {
@@ -333,7 +350,7 @@
   border: none;
   border-radius: var(--radius-md);
   background: transparent;
-  color: var(--color-text);
+  color: var(--color-nav-text);
   cursor: pointer;
   align-items: center;
   justify-content: center;
@@ -362,16 +379,16 @@
   text-decoration: none;
   font-size: 10px;
   font-weight: 500;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  font-family: var(--font-display);
+  font-family: var(--font-ui);
   cursor: pointer;
   min-width: 0;
   transition: color 0.15s;
 }
 
 .barraItemActivo {
-  color: var(--color-cream);
+  color: var(--color-lime);
 }
 
 @media (max-width: 900px) {

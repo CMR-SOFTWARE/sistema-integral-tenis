@@ -16,10 +16,10 @@ import s from './DashboardPage.module.css';
 
 /** Accesos directos del dueño: llevan a la acción con un toque (algunos abren el modal). */
 const ACCESOS: Acceso[] = [
-  { to: '/agenda?tab=calendario&nuevo=1', label: 'Nuevo horario', color: '#386641', icon: 'M12 5v14M5 12h14' },
-  { to: '/finanzas?tab=cuotas', label: 'Cobrar cuotas', color: '#556b2f', icon: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' },
-  { to: '/agenda?tab=calendario', label: 'Ver agenda', color: '#3e5f4d', icon: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4' },
-  { to: '/alumnos', label: 'Ver alumnos', color: '#6a994e', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
+  { to: '/agenda?tab=calendario&nuevo=1', label: 'Nuevo horario', color: '#178a4c', icon: 'M12 5v14M5 12h14' },
+  { to: '/finanzas?tab=cuotas', label: 'Cobrar cuotas', color: '#0e6b3c', icon: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' },
+  { to: '/agenda?tab=calendario', label: 'Ver agenda', color: '#6f8f7b', icon: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4' },
+  { to: '/alumnos', label: 'Ver alumnos', color: '#386641', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
 ];
 
 interface CategoriaConteo {

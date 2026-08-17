@@ -1,0 +1,21 @@
+---
+description: Identidad visual frontend CMR (colores, tipografías, nav). Continuar refinamiento UI desde este handoff.
+globs: frontend/src/**/*.{css,tsx,html}
+alwaysApply: false
+---
+
+# Identidad visual frontend — CMR Tennis
+
+Al tocar estilos del front, leer y respetar `docs/identidad-visual-frontend.md`.
+
+## Resumen operativo
+
+- **Tokens:** `frontend/src/styles/tokens.css` es la fuente de verdad.
+- **CMR protagonista:** `#178a4c` / `#0e6b3c` / `#0b5730` / `#137a43`.
+- **Lima `#d8fb5b`:** solo acento (no texto largo sobre crema).
+- **Fondos:** crema/beige/sage; nunca blanco puro dominante.
+- **Nav:** sidebar + header comparten `--color-nav` (`#178a4c` en light).
+- **Tipos:** Outfit (títulos), Poppins (UI), Nunito (mensajes/vacíos), Inter (cuerpo), Rajdhani (scores).
+- **Pesos:** evitar 700/800/900 masivos; jerarquía por tamaño/color/familia.
+- **Solo visual:** no cambiar lógica, rutas ni backend.
+- **Git:** Lucas ejecuta los comandos; no commit sin pedido explícito.

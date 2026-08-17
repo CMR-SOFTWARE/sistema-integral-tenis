@@ -26,7 +26,7 @@
   width: 18px;
   height: 18px;
   margin-top: -9px;
-  color: var(--color-primary);
+  color: var(--color-lime);
   animation: tejo 8s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite alternate;
 }
 

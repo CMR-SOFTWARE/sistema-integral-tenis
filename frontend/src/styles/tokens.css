@@ -1,52 +1,65 @@
 /* ─────────────────────────────────────────────
-   CMR Tennis — claro cálido (crema/arena/sage),
-   oscuro con varios verdes. Nunca blanco puro.
+   CMR Tennis — identidad institucional.
+   Base: verdes CMR (#178a4c…) + crema/beige/sage.
+   Acentos: lima #d8fb5b + gama intensa (animaciones).
+   Tipografía: Outfit / Poppins / Nunito (+ Inter, Rajdhani).
    ───────────────────────────────────────────── */
 :root,
 [data-theme='light'] {
-  --font-display: 'Rajdhani', sans-serif;
-  --font-body: 'Inter', sans-serif;
-  --font-score: 'Rajdhani', sans-serif;
+  --font-display: 'Outfit', 'Rajdhani', sans-serif;
+  --font-ui: 'Poppins', 'Inter', sans-serif;
+  --font-friendly: 'Nunito', 'Inter', sans-serif;
+  --font-body: 'Inter', 'Poppins', sans-serif;
+  --font-score: 'Rajdhani', 'Outfit', sans-serif;
 
-  --color-bg: #f2e8cf;
+  /* Superficies cálidas — nunca blanco puro */
+  --color-bg: #f7f1e3;
   --color-bg-sage: #afc8b4;
   --color-bg-sand: #f4ebdd;
   --color-bg-arena: #d8c7a6;
-  --color-bg-deep: #3e5f4d;
+  --color-bg-deep: #0e6b3c;
+  --color-bg-mint: #e7f6ec;
 
   --color-surface: #f4ebdd;
   --color-surface-card: #f4ebdd;
-  --color-surface-subtle: #efe4cf;
+  --color-surface-subtle: #f2e8cf;
   --color-surface-hover: #e6d7b8;
   --color-surface-sand: #d8c7a6;
 
-  --color-border: rgba(62, 95, 77, 0.22);
-  --color-border-subtle: rgba(62, 95, 77, 0.14);
+  --color-border: rgba(23, 138, 76, 0.22);
+  --color-border-subtle: rgba(23, 138, 76, 0.13);
 
   --color-text: #132a13;
-  --color-text-soft: #3e5f4d;
-  --color-text-muted: #3e5a3f;
-  --color-text-faint: #4a6348;
+  --color-text-soft: #1f4d1f;
+  --color-text-muted: #3e5f4d;
+  --color-text-faint: #6f8f7b;
 
-  --color-primary: #386641;
-  --color-primary-dark: #386641;
-  --color-primary-darker: #2d5334;
-  --color-primary-deep: #132a13;
-  --color-accent: #6a994e;
-  --color-lime: #556b2f;
+  /* CMR institucional */
+  --color-primary: #178a4c;
+  --color-primary-dark: #0e6b3c;
+  --color-primary-darker: #0b5730;
+  --color-primary-deep: #137a43;
+  --color-on-primary: #f2e8cf;
+  --color-accent: #38b000;
+  --color-lime: #d8fb5b;
   --color-lime-soft: #8a9b63;
-  --color-lime-bright: #a7c957;
+  --color-lime-bright: #d8fb5b;
+  --color-on-lime: #132a13;
+  --color-spark: #ccff33;
+  --color-mint: #e7f6ec;
+
   --color-cream: #f2e8cf;
   --color-sand: #d8c7a6;
   --color-sage: #afc8b4;
-  --color-olive: #8a9b63;
+  --color-olive: #6f8f7b;
   --color-ink: #132a13;
 
-  --color-nav: #3e5f4d;
+  /* Nav + header: mismo verde CMR */
+  --color-nav: #178a4c;
   --color-nav-text: #f2e8cf;
-  --color-nav-muted: #afc8b4;
-  --color-nav-hover: rgba(242, 232, 207, 0.1);
-  --color-nav-active: rgba(138, 155, 99, 0.28);
+  --color-nav-muted: rgba(242, 232, 207, 0.72);
+  --color-nav-hover: rgba(216, 251, 91, 0.12);
+  --color-nav-active: rgba(216, 251, 91, 0.2);
 
   --color-danger: #bc4749;
   --color-danger-soft: #f0e2d8;
@@ -80,64 +93,73 @@
   --shadow-modal: 0 20px 48px rgba(19, 42, 19, 0.16);
   --shadow-card: none;
   --shadow-card-hover: none;
-  --focus-ring: 0 0 0 3px rgba(56, 102, 65, 0.28);
+  --focus-ring: 0 0 0 3px rgba(23, 138, 76, 0.28);
 
-  --court-line: #6f8f7b;
+  --court-line: #178a4c;
+  --court-motion: #d8fb5b;
 }
 
 [data-theme='dark'] {
   --color-bg: #132a13;
-  --color-bg-sage: #3e5f4d;
-  --color-bg-sand: #1e3324;
-  --color-bg-arena: #386641;
-  --color-bg-deep: #0f1f10;
+  --color-bg-sage: #0b5730;
+  --color-bg-sand: #1a331a;
+  --color-bg-arena: #0e6b3c;
+  --color-bg-deep: #0b5730;
+  --color-bg-mint: rgba(23, 138, 76, 0.18);
 
-  --color-surface: #1a2e1e;
-  --color-surface-card: #243d2c;
-  --color-surface-subtle: #1a2e1e;
-  --color-surface-hover: #2f4a36;
-  --color-surface-sand: #3e5f4d;
+  --color-surface: #1a331a;
+  --color-surface-card: #1f3d28;
+  --color-surface-subtle: #17301c;
+  --color-surface-hover: #244a30;
+  --color-surface-sand: #0e6b3c;
 
-  --color-border: rgba(175, 200, 180, 0.18);
-  --color-border-subtle: rgba(175, 200, 180, 0.1);
+  --color-border: rgba(216, 251, 91, 0.16);
+  --color-border-subtle: rgba(23, 138, 76, 0.22);
 
   --color-text: #f2e8cf;
   --color-text-soft: #f4ebdd;
-  --color-text-muted: #c5d6c0;
-  --color-text-faint: #a8bfa0;
+  --color-text-muted: #afc8b4;
+  --color-text-faint: #8a9b63;
 
-  --color-primary: #6a994e;
-  --color-primary-dark: #6a994e;
-  --color-primary-darker: #556b2f;
-  --color-primary-deep: #132a13;
-  --color-accent: #8a9b63;
-  --color-lime: #afc8b4;
-  --color-lime-soft: #c9b28a;
-  --color-lime-bright: #a7c957;
+  /* Misma familia CMR; acentos más vivos sin fluorescencia total */
+  --color-primary: #38b000;
+  --color-primary-dark: #70e000;
+  --color-primary-darker: #178a4c;
+  --color-primary-deep: #0e6b3c;
+  --color-on-primary: #132a13;
+  --color-accent: #9ef01a;
+  --color-lime: #d8fb5b;
+  --color-lime-soft: #afc8b4;
+  --color-lime-bright: #d8fb5b;
+  --color-on-lime: #132a13;
+  --color-spark: #ccff33;
+  --color-mint: rgba(23, 138, 76, 0.22);
+
   --color-cream: #f2e8cf;
   --color-sand: #c9b28a;
-  --color-sage: #6f8f7b;
-  --color-olive: #8a9b63;
+  --color-sage: #178a4c;
+  --color-olive: #6f8f7b;
   --color-ink: #f2e8cf;
 
-  --color-nav: #0f1f10;
+  --color-nav: #0e6b3c;
   --color-nav-text: #f2e8cf;
-  --color-nav-muted: #afc8b4;
-  --color-nav-hover: rgba(175, 200, 180, 0.1);
-  --color-nav-active: rgba(62, 95, 77, 0.8);
+  --color-nav-muted: rgba(242, 232, 207, 0.68);
+  --color-nav-hover: rgba(216, 251, 91, 0.1);
+  --color-nav-active: rgba(216, 251, 91, 0.18);
 
   --color-danger: #bc4749;
   --color-danger-soft: rgba(188, 71, 73, 0.18);
   --color-danger-border: rgba(188, 71, 73, 0.4);
   --color-warning: #c9b28a;
 
-  --color-chip-bg: #3e5f4d;
+  --color-chip-bg: #0b5730;
   --color-chip-fg: #f2e8cf;
 
-  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.4);
+  --shadow-modal: 0 24px 64px rgba(0, 0, 0, 0.45);
   --shadow-card: none;
   --shadow-card-hover: none;
-  --focus-ring: 0 0 0 3px rgba(175, 200, 180, 0.28);
+  --focus-ring: 0 0 0 3px rgba(216, 251, 91, 0.28);
 
-  --court-line: #8a9b63;
+  --court-line: #38b000;
+  --court-motion: #d8fb5b;
 }

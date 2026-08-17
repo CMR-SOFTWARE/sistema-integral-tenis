@@ -52,7 +52,7 @@
   border-radius: 10px;
   padding: 10px 18px;
   background: var(--color-primary);
-  color: var(--color-cream);
+  color: var(--color-on-primary);
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 14px;
@@ -61,7 +61,7 @@
   transition: background 0.18s, transform 0.18s;
 }
 .btn:hover:not(:disabled) {
-  background: var(--color-accent);
+  background: var(--color-primary-dark);
   transform: translateY(-1px);
 }
 
@@ -79,8 +79,8 @@
 
 .toast {
   margin-top: 10px;
-  background: rgba(167, 201, 87, 0.18);
-  color: var(--color-lime);
+  background: color-mix(in srgb, var(--color-lime) 18%, var(--color-surface));
+  color: var(--color-primary-darker);
   border-radius: 10px;
   padding: 9px 12px;
   font-size: 13px;

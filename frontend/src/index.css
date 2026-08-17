@@ -34,12 +34,19 @@ h1, h2, h3, h4 {
   letter-spacing: 0.01em;
 }
 
+/* Mensajes cercanos / vacíos / cards amigables */
+.msgAmable,
+.vacio,
+.vacioCard {
+  font-family: var(--font-friendly);
+}
+
 input,
 select,
 textarea,
 button {
-  font-family: inherit;
-  font-weight: 400;
+  font-family: var(--font-ui);
+  font-weight: 500;
   color: inherit;
 }
 

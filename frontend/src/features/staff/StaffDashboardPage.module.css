@@ -127,7 +127,7 @@
   z-index: 1;
   display: inline-block;
   background: var(--color-primary);
-  color: var(--color-cream);
+  color: var(--color-on-primary);
   font-weight: 700;
   font-size: 13px;
   padding: 9px 16px;
@@ -136,7 +136,7 @@
   transition: background 0.18s, transform 0.18s;
 }
 .btnPrimario:hover {
-  background: var(--color-accent);
+  background: var(--color-primary-dark);
   transform: translateY(-1px);
 }
 

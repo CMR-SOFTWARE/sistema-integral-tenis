@@ -21,9 +21,9 @@ const DIA_LABEL: Record<string, string> = Object.fromEntries(DIAS.map((d) => [d.
 
 /** Accesos del profe empleado: crear/ver lo suyo (el alta rápida queda a su nombre). */
 const ACCESOS: Acceso[] = [
-  { to: '/agenda?tab=calendario&nuevo=1', label: 'Nuevo horario', color: '#386641', icon: 'M12 5v14M5 12h14' },
-  { to: '/agenda?tab=calendario', label: 'Mi agenda', color: '#556b2f', icon: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4' },
-  { to: '/alumnos', label: 'Mis alumnos', color: '#3e5f4d', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
+  { to: '/agenda?tab=calendario&nuevo=1', label: 'Nuevo horario', color: '#178a4c', icon: 'M12 5v14M5 12h14' },
+  { to: '/agenda?tab=calendario', label: 'Mi agenda', color: '#0e6b3c', icon: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4' },
+  { to: '/alumnos', label: 'Mis alumnos', color: '#386641', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
 ];
 
 /**
@@ -134,7 +134,7 @@ export default function StaffDashboardPage() {
             </div>
             <div style={{ marginTop: 4, marginBottom: (miSueldo.sueldo?.detalle.length ?? 0) > 0 ? 12 : 0 }}>
               {miSueldo.sueldo?.estado === 'Pagado' ? (
-                <span style={{ background: '#e7f6ec', color: '#0e6b3c', fontWeight: 700, fontSize: 13, padding: '5px 12px', borderRadius: 8 }}>
+                <span style={{ background: '#e7f6ec', color: '#0e6b3c', fontWeight: 600, fontSize: 13, padding: '5px 12px', borderRadius: 8 }}>
                   ✓ Pagado{miSueldo.sueldo.medioPago ? ` · ${miSueldo.sueldo.medioPago}` : ''}
                 </span>
               ) : (

@@ -2,7 +2,7 @@
   display: block;
   width: 36px;
   height: 64px;
-  color: var(--color-primary);
+  color: var(--court-motion);
   stroke: currentColor;
   stroke-width: 1.35;
   stroke-linecap: square;

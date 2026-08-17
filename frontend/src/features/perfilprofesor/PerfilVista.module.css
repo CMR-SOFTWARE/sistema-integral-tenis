@@ -115,9 +115,9 @@
 
 .chip {
   background: var(--color-lime);
-  color: var(--color-text);
+  color: var(--color-on-lime);
   font-size: 12.5px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 5px 12px;
   border-radius: 999px;
   white-space: nowrap;

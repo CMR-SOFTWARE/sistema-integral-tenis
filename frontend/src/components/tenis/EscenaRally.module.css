@@ -28,7 +28,7 @@
 
 .raquetaIzq,
 .raquetaDer {
-  stroke: var(--color-primary);
+  stroke: var(--court-motion);
   stroke-width: 1.35;
   stroke-linecap: square;
   stroke-linejoin: miter;
@@ -52,7 +52,7 @@
   left: 18%;
   width: 18px;
   height: 18px;
-  color: var(--color-primary);
+  color: var(--color-lime);
   animation: rally 10s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
 }
 

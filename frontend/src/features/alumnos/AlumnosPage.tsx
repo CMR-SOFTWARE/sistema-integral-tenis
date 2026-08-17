@@ -280,7 +280,7 @@ export default function AlumnosPage({ lista = 'Todos' }: Props) {
                         {CAT_LABEL[a.categoria]}
                       </span>
                       {sub && (
-                        <span className={s.chip} style={{ background: '#efe6c8', color: '#386641', marginLeft: 6 }}>
+                        <span className={s.chip} style={{ background: '#efe6c8', color: '#0e6b3c', marginLeft: 6 }}>
                           {sub}
                         </span>
                       )}
@@ -291,7 +291,7 @@ export default function AlumnosPage({ lista = 'Todos' }: Props) {
                           Vencida
                         </span>
                       ) : (
-                        <span className={s.chip} style={{ background: '#eaf3d8', color: '#386641' }}>
+                        <span className={s.chip} style={{ background: '#e7f6ec', color: '#0e6b3c' }}>
                           Al día
                         </span>
                       )}

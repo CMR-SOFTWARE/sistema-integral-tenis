@@ -85,8 +85,8 @@ export const MESES = [
 
 /** Chips de estado calcados del mockup (pagado/pendiente/vencido). */
 export const ESTADO_LIQ_UI: Record<EstadoLiquidacion, { bg: string; fg: string }> = {
-  Pagada: { bg: '#eaf3d8', fg: '#386641' },
-  Informado: { bg: '#efe6c8', fg: '#6a994e' }, // avisó, esperando confirmación
+  Pagada: { bg: '#e7f6ec', fg: '#0e6b3c' },
+  Informado: { bg: '#efe6c8', fg: '#178a4c' },
   Pendiente: { bg: '#fef6e7', fg: '#a67c2a' },
   Vencida: { bg: '#fdeaea', fg: '#bc4749' },
 };
