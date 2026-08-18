@@ -1,63 +1,50 @@
-import { useLayoutEffect, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import { useLocation } from 'react-router-dom';
 import PelotaOutline from './PelotaOutline';
+import { useBallTravel } from '../motion/useBallTravel';
 import s from './PelotaNav.module.css';
 
 /**
- * Pelota de orientación: viaja hasta el ítem activo (con un arco suave)
- * y después pica en loop. El contenedor tiene que ser position: relative.
+ * Marca el ítem activo con la pelota (pica en sitio). Al cambiar de sección
+ * viaja con física; no desaparece: sin ella no se ve dónde estás parado.
  */
 export default function PelotaNav({
   contenedorRef,
   eje = 'y',
 }: {
   contenedorRef: RefObject<HTMLElement | null>;
-  eje?: 'y' | 'x';
+  eje?: 'x' | 'y';
 }) {
   const { pathname } = useLocation();
-  const [pos, setPos] = useState(0);
+  const ballRef = useRef<HTMLSpanElement>(null);
+  const pathRef = useRef<SVGPathElement>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const [visible, setVisible] = useState(false);
-  const [viajando, setViajando] = useState(false);
+  const onVisible = useCallback((v: boolean) => setVisible(v), []);
 
-  useLayoutEffect(() => {
-    const caja = contenedorRef.current;
-    if (!caja) return;
-
-    const medir = () => {
-      const activo = caja.querySelector<HTMLElement>('[data-nav-activo="1"]');
-      if (!activo) {
-        setVisible(false);
-        return;
-      }
-      const next = eje === 'x'
-        ? activo.offsetLeft + activo.offsetWidth / 2 - 7
-        : activo.offsetTop + activo.offsetHeight / 2 - 8;
-      setViajando(true);
-      setPos(next);
-      setVisible(true);
-    };
-
-    medir();
-    const t = window.setTimeout(() => setViajando(false), 560);
-    caja.addEventListener('scroll', medir, { passive: true });
-    window.addEventListener('resize', medir);
-    return () => {
-      window.clearTimeout(t);
-      caja.removeEventListener('scroll', medir);
-      window.removeEventListener('resize', medir);
-    };
-  }, [pathname, contenedorRef, eje]);
-
-  if (!visible) return null;
+  useBallTravel({
+    contenedorRef,
+    eje,
+    ballRef,
+    pathRef,
+    svgRef,
+    watch: pathname,
+    onVisible,
+  });
 
   return (
-    <span
-      className={`${s.pelota} ${eje === 'x' ? s.ejeX : s.ejeY} ${viajando ? s.viajando : s.enSitio}`}
-      style={eje === 'x' ? { transform: `translateX(${pos}px)` } : { transform: `translateY(${pos}px)` }}
+    <div
+      className={`${s.capa} ${eje === 'x' ? s.ejeX : s.ejeY}`}
+      data-visible={visible ? '1' : undefined}
       aria-hidden
     >
-      <PelotaOutline />
-    </span>
+      <svg ref={svgRef} className={s.linea} preserveAspectRatio="none">
+        <path ref={pathRef} />
+      </svg>
+      <span ref={ballRef} className={s.pelota}>
+        <PelotaOutline />
+      </span>
+    </div>
   );
 }

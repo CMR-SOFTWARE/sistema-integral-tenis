@@ -30,7 +30,7 @@ export default function TarjetaTurno({ turno, nombreProfe, onAbrir }: Props) {
 
   return (
     <button
-      className={`${s.tarjeta} ${cancelado ? s.cancelada : ''}`}
+      className={`${s.tarjeta} motion-card ${cancelado ? s.cancelada : ''}`}
       onClick={() => onAbrir(turno)}
     >
       <div className={s.hora}>

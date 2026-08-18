@@ -42,7 +42,7 @@ export default function BarraInferior({
       <button
         type="button"
         data-nav-activo={!enPrincipal ? '1' : undefined}
-        className={enPrincipal ? s.barraItem : `${s.barraItem} ${s.barraItemActivo}`}
+        className={`${enPrincipal ? s.barraItem : `${s.barraItem} ${s.barraItemActivo}`} motion-static`}
         onClick={onMas}
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">

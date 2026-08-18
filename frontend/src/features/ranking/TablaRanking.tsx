@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import Avatar from '../../components/Avatar';
+import ScoreBox from '../../components/motion/ScoreBox';
+import { TennisIcon } from '../../components/iconos';
 import s from './RankingPage.module.css';
 import p from '../portal/PortalPages.module.css';
 
@@ -53,7 +55,7 @@ export default function TablaRanking<T extends FilaRankingBase>({
         {vista === 'oficial' && (
           <button
             type="button"
-            className={filtroAbierto || scope !== 'Global' ? s.filtroBtnActivo : s.filtroBtn}
+            className={filtroAbierto || scope !== 'Global' ? `${s.filtroBtnActivo} motion-static` : `${s.filtroBtn} motion-static`}
             aria-label="Filtros"
             aria-expanded={filtroAbierto}
             onClick={() => setFiltroAbierto((v) => !v)}
@@ -90,7 +92,9 @@ export default function TablaRanking<T extends FilaRankingBase>({
 
       <div className={p.tarjeta}>
         <div className={s.categoriaHeader}>
-          <span aria-hidden>🎾</span>
+          <span className={s.categoriaHeaderIcon} aria-hidden>
+            <TennisIcon size={16} />
+          </span>
           <span className={s.categoriaHeaderTitulo}>Tenis</span>
           <span className={s.categoriaHeaderTag}>{vista === 'envivo' ? 'Provisional' : 'Oficial'}</span>
         </div>
@@ -98,7 +102,7 @@ export default function TablaRanking<T extends FilaRankingBase>({
         {(filas ?? []).length > 0 && visibles.length === 0 && (
           <div className={p.vacio}>Ningún jugador coincide con la búsqueda.</div>
         )}
-        <div className={s.lista}>
+        <div className={`${s.lista} motion-stagger`}>
           {visibles.map((f) => {
             const claseFila = f.jugadorId === miJugadorId ? `${s.fila} ${s.filaPropia}` : s.fila;
             const contenido = (
@@ -109,11 +113,11 @@ export default function TablaRanking<T extends FilaRankingBase>({
                   <div className={s.filaNombre}>{f.nombre} {f.apellido}</div>
                   <div className={s.filaSub}>Rango {f.rango}</div>
                 </div>
-                <span className={s.puntosGrandes}>{f.puntos}</span>
+                <span className={s.puntosGrandes}><ScoreBox valor={f.puntos} nivel="game" /></span>
               </>
             );
             return onVerPerfil ? (
-              <button key={f.jugadorId} type="button" className={`${claseFila} ${s.filaClickeable}`} onClick={() => onVerPerfil(f.jugadorId)}>
+              <button key={f.jugadorId} type="button" className={`${claseFila} ${s.filaClickeable} motion-card`} onClick={() => onVerPerfil(f.jugadorId)}>
                 {contenido}
               </button>
             ) : (

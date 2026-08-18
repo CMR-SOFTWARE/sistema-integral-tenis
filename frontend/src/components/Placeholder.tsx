@@ -1,12 +1,13 @@
 import RaquetaLineArt from './tenis/RaquetaLineArt';
+import { TrophyIcon } from './iconos';
 import s from './Placeholder.module.css';
 
 interface Props {
   titulo: string;
   /** Qué va a poder hacer acá cuando esté. Sin esto, un "próximamente" seco. */
   mensaje?: string;
-  /** Emoji de la sección; el default es la pelotita. */
-  icono?: string;
+  /** Icono de la sección; el default es la raqueta. */
+  icono?: 'raqueta' | 'trofeo';
 }
 
 /**
@@ -14,11 +15,11 @@ interface Props {
  * club), no para nosotros: antes decía "esta sección llega en una próxima vertical,
  * estamos construyendo el prototipo módulo por módulo", que es jerga de desarrollo.
  */
-export default function Placeholder({ titulo, mensaje, icono }: Props) {
+export default function Placeholder({ titulo, mensaje, icono = 'raqueta' }: Props) {
   return (
     <div className={s.card}>
-      {icono
-        ? <div className={s.icon}>{icono}</div>
+      {icono === 'trofeo'
+        ? <TrophyIcon size={40} className={s.iconSvg} />
         : <RaquetaLineArt oscilar className={s.icon} />}
       <h2 className={s.title}>{titulo}</h2>
       <p className={s.text}>

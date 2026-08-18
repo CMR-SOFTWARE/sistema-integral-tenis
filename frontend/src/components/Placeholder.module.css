@@ -10,6 +10,14 @@
   animation: pop 0.25s ease;
 }
 
+.iconSvg {
+  position: relative;
+  z-index: 1;
+  display: block;
+  margin: 0 auto 12px;
+  color: var(--color-primary);
+}
+
 .icon {
   position: relative;
   z-index: 1;

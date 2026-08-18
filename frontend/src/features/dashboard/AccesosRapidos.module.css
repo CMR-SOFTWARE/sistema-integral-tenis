@@ -35,8 +35,6 @@
 .item:hover::after { width: 100%; }
 .item:hover { color: var(--color-primary); }
 
-.item:active { transform: none; }
-
 .icono {
   width: 38px;
   height: 38px;
@@ -47,7 +45,10 @@
 }
 
 .label { font-weight: 500; font-size: 14px; flex: 1; }
-.chev { color: var(--color-text-faint); font-weight: 600; }
+.chev {
+  color: var(--color-text-faint);
+  display: inline-flex;
+}
 
 @media (max-width: 760px) {
   .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }

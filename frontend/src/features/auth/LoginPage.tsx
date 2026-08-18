@@ -51,7 +51,7 @@ export default function LoginPage() {
           <span>Contraseña</span>
           <InputPassword value={password} onChange={setPassword} />
         </label>
-        {error && <div className={s.error}>{error}</div>}
+        {error && <div key={error} className={`${s.error} motion-net`}>{error}</div>}
         <button type="submit" className={s.btnEntrar} disabled={enviando || !identificador || !password}>
           {enviando ? 'Entrando…' : 'Entrar'}
         </button>

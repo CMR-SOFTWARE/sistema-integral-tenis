@@ -1,0 +1,123 @@
+.wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font: inherit;
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: inherit;
+  cursor: pointer;
+}
+
+.trigger:hover {
+  background: var(--color-surface-hover);
+}
+
+.trigger:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.chev,
+.chevAbierto {
+  color: var(--color-text-muted);
+  flex: none;
+  transition: transform var(--motion-fast) var(--ease-out);
+}
+
+.chevAbierto {
+  transform: rotate(180deg);
+}
+
+.popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  min-width: 232px;
+  max-width: calc(100vw - 32px);
+}
+
+.popoverInner {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-cmr);
+  padding: 12px;
+  animation: motionPopoverIn var(--motion-normal) var(--ease-out) both;
+}
+
+.anioNav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.anio {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.anioBtn {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  border-radius: 8px;
+  color: var(--color-text-soft);
+  cursor: pointer;
+}
+
+.anioBtn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
+.meses {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.mes,
+.mesActivo {
+  border: none;
+  background: none;
+  padding: 8px 4px;
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.mes:hover {
+  background: var(--color-surface-hover);
+}
+
+.mesActivo {
+  background: rgba(23, 138, 76, 0.12);
+  color: var(--color-primary);
+  box-shadow: inset 0 -2px 0 var(--color-lime);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popoverInner {
+    animation: fade var(--motion-fast) var(--ease-out) both;
+  }
+  .chevAbierto {
+    transform: none;
+  }
+}

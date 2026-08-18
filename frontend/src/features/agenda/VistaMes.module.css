@@ -34,8 +34,13 @@
   transition: background 0.18s, border-color 0.18s;
 }
 
+.celda:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 .celda:hover {
-  background: rgba(167, 201, 87, 0.08);
+  background: rgba(23, 138, 76, 0.06);
   border-top-color: var(--color-lime);
 }
 
@@ -44,14 +49,19 @@
   opacity: 0.55;
 }
 
-.celdaHoy .celdaNum {
+.celdaHoy:not(.celdaSel) .celdaNum {
   color: var(--color-primary);
+  box-shadow: inset 0 -2px 0 var(--color-lime);
 }
 
 .celdaSel {
-  border-top-color: var(--color-lime);
-  background: rgba(167, 201, 87, 0.12);
+  border-top-color: var(--color-primary);
+  background: rgba(23, 138, 76, 0.1);
   box-shadow: none;
+}
+
+.celdaSel .celdaNum {
+  color: var(--color-primary);
 }
 
 .celdaNum {
@@ -69,6 +79,15 @@
   border-radius: 50%;
   background: #b7791f;
   flex: none;
+}
+
+.puntoEvento {
+  display: none;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  margin: 2px auto 0;
 }
 
 .chips {
@@ -219,5 +238,18 @@
 
   .chipHora {
     display: none;
+  }
+
+  .chips {
+    display: none;
+  }
+
+  .puntoEvento {
+    display: block;
+  }
+
+  .celda {
+    min-height: 52px;
+    align-items: center;
   }
 }

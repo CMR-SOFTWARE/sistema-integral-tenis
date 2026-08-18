@@ -6,6 +6,7 @@ import type { EmpleadoSueldo, Medio } from './types';
 import { MESES } from '../cuotas/types';
 import { DIAS, horaCorta } from '../agenda/types';
 import { avatarColor, formatoPlata, iniciales } from '../alumnos/types';
+import { BotonNavFecha, ChevronRightIcon } from '../../components/iconos';
 import s from './SueldosPage.module.css';
 
 type FiltroSueldo = 'todos' | 'Pendiente' | 'Pagado';
@@ -54,9 +55,9 @@ export default function SueldosPage() {
   return (
     <div>
       <div className={s.toolbar}>
-        <button className={s.nav} onClick={mesAnterior}>‹</button>
+        <BotonNavFecha direccion="anterior" className={s.nav} label="Mes anterior" onClick={mesAnterior} />
         <div className={s.rango}>{MESES[mes - 1]} {anio}</div>
-        <button className={s.nav} onClick={mesSiguiente}>›</button>
+        <BotonNavFecha direccion="siguiente" className={s.nav} label="Mes siguiente" onClick={mesSiguiente} />
 
         <div className={s.spacer} />
 
@@ -171,7 +172,9 @@ export default function SueldosPage() {
                     ) : (
                       <span className={s.chip} style={{ background: '#fef6e7', color: '#b7791f' }}>Pendiente</span>
                     )}
-                    <span className={`${s.flecha} ${abierto ? s.flechaAbierta : ''}`}>›</span>
+                    <span className={`${s.flecha} ${abierto ? s.flechaAbierta : ''}`} aria-hidden>
+                      <ChevronRightIcon size={16} />
+                    </span>
                   </button>
 
                   {abierto && (

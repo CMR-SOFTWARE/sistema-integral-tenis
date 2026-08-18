@@ -195,7 +195,7 @@ export default function SolicitudesPage() {
         />
       )}
 
-      {toast && <div className={s.toast}>{toast}</div>}
+      {toast && <div className={`${s.toast} motion-toast`}>{toast}</div>}
     </div>
   );
 }

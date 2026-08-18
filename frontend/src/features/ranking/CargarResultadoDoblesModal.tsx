@@ -51,7 +51,7 @@ export default function CargarResultadoDoblesModal({ desafio, onClose }: Props) 
     >
       <p>¿Qué pareja ganó?</p>
       <div className={r.opcionesGanador}>
-        <label className={r.opcionGanador}>
+        <label className={`${r.opcionGanador}${ganadorId === desafio.jugador1Id ? ' motion-match-win' : ''}`}>
           <input
             type="radio"
             name="ganador"
@@ -60,7 +60,7 @@ export default function CargarResultadoDoblesModal({ desafio, onClose }: Props) 
           />
           <span>{desafio.jugador1Nombre} y {desafio.jugador2Nombre}</span>
         </label>
-        <label className={r.opcionGanador}>
+        <label className={`${r.opcionGanador}${ganadorId === desafio.rival1Id ? ' motion-match-win' : ''}`}>
           <input
             type="radio"
             name="ganador"
@@ -70,7 +70,7 @@ export default function CargarResultadoDoblesModal({ desafio, onClose }: Props) 
           <span>{desafio.rival1Nombre} y {desafio.rival2Nombre}</span>
         </label>
       </div>
-      {error && <div className={s.error}>{error}</div>}
+      {error && <div className={`${s.error} motion-net`}>{error}</div>}
     </Modal>
   );
 }

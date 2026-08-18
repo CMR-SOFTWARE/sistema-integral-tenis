@@ -60,7 +60,7 @@ export function BotonTema() {
   return (
     <button
       type="button"
-      className={s.boton}
+      className={`${s.boton} motion-static`}
       onClick={toggle}
       aria-label={aOscuro ? 'Pasar a modo oscuro' : 'Pasar a modo claro'}
       title={aOscuro ? 'Modo oscuro' : 'Modo claro'}

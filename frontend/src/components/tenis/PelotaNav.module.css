@@ -1,31 +1,59 @@
+.capa {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+  overflow: visible;
+}
+
+.linea {
+  position: absolute;
+  overflow: visible;
+  color: var(--color-lime);
+}
+
+.ejeY .linea {
+  top: 0;
+  right: 18px;
+  width: 10px;
+  height: 100%;
+}
+
+.ejeX .linea {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 10px;
+}
+
+.linea path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.35;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.45;
+}
+
 .pelota {
   position: absolute;
   width: 16px;
   height: 16px;
-  pointer-events: none;
-  z-index: 2;
   color: var(--color-lime);
-  transition: transform 0.52s cubic-bezier(0.22, 0.9, 0.32, 1);
+  visibility: hidden;
+  transform: translate3d(0, 0, 0);
 }
 
-.ejeY {
+.ejeY .pelota {
   top: 0;
   right: 20px;
 }
 
-.ejeX {
+.ejeX .pelota {
   top: 3px;
   left: 0;
   width: 14px;
   height: 14px;
-}
-
-.viajando {
-  animation: arco 0.52s ease-in-out;
-}
-
-.enSitio svg {
-  animation: pique 2.6s ease-in-out infinite;
 }
 
 .pelota svg {
@@ -34,18 +62,9 @@
   height: 100%;
 }
 
-@keyframes arco {
-  0%, 100% { margin-left: 0; margin-top: 0; }
-  50% { margin-left: -10px; margin-top: -3px; }
-}
-
-.ejeX.viajando {
-  animation-name: arcoX;
-}
-
-@keyframes arcoX {
-  0%, 100% { margin-top: 0; }
-  50% { margin-top: -7px; }
+/* En el ítem activo la pelota pica: es la marca de “acá estás parado”. */
+.pelota[data-en-sitio='1'] svg {
+  animation: pique 2.6s ease-in-out infinite;
 }
 
 @keyframes pique {
@@ -56,6 +75,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pelota { transition: none; animation: none; }
-  .enSitio svg { animation: none; }
+  .pelota[data-en-sitio='1'] svg {
+    animation: none;
+  }
+  .linea path {
+    opacity: 0.3;
+  }
 }

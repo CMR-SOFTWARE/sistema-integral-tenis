@@ -9,6 +9,7 @@ import MiPerfilRankingScreen from './MiPerfilRankingScreen';
 import PerfilJugadorScreen from './PerfilJugadorScreen';
 import CargarResultadoModal from './CargarResultadoModal';
 import RankingDoblesPanel from './RankingDoblesPanel';
+import CargaTenis from '../../components/motion/CargaTenis';
 import {
   useInvalidarRanking, useLeaderboard, useMiPerfilRanking, useMisDesafios, useRankingOficial,
 } from './useRanking';
@@ -58,7 +59,7 @@ export default function RankingPage() {
   };
 
   if (miPerfil.isLoading || leaderboard.isLoading) {
-    return <div className={p.vacio}>Cargando…</div>;
+    return <CargaTenis />;
   }
 
   const miJugadorId = miPerfil.data?.jugadorId ?? null;
@@ -110,7 +111,7 @@ export default function RankingPage() {
 
   return (
     <div>
-      {error && <div className={p.error}>{error}</div>}
+      {error && <div className={`${p.error} motion-net`}>{error}</div>}
       <p className={s.subtitulo}>El oficial se actualiza los días 1 y 16. El de abajo es en vivo.</p>
 
       <TabsModalidad tab={tab} onCambiar={cambiarTab} />

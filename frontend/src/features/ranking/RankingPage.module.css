@@ -312,6 +312,11 @@
 }
 
 /* ── Lista de posiciones ── */
+.categoriaHeaderIcon {
+  display: inline-flex;
+  color: var(--color-primary);
+}
+
 .categoriaHeader {
   display: flex;
   align-items: center;

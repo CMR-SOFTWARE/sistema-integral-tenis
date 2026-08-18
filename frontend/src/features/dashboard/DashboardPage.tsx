@@ -13,6 +13,8 @@ import CanchaTejo from '../../components/tenis/CanchaTejo';
 import EscenaRally from '../../components/tenis/EscenaRally';
 import FranjaTenis from '../../components/tenis/FranjaTenis';
 import Seccion from '../../components/tenis/Seccion';
+import LiveIndicator from '../../components/motion/LiveIndicator';
+import CargaTenis from '../../components/motion/CargaTenis';
 import s from './DashboardPage.module.css';
 
 /** Accesos directos del dueño: llevan a la acción con un toque (algunos abren el modal). */
@@ -87,7 +89,7 @@ export default function DashboardPage() {
   }
   const resumen = resumenQuery.data;
   if (!resumen) {
-    return <div className={s.cargando}>Cargando…</div>;
+    return <CargaTenis />;
   }
 
   const { cuotasPendientes: cuotas } = resumen;
@@ -166,7 +168,7 @@ export default function DashboardPage() {
                 <Link
                   key={c.turnoId}
                   to={`/agenda?tab=calendario&turno=${c.turnoId}`}
-                  className={`${c.estado === 'Cancelado' ? `${s.match} ${s.matchOff}` : s.match} ${s.filaClases}`}
+                  className={`${c.estado === 'Cancelado' ? `${s.match} ${s.matchOff}` : s.match} ${s.filaClases} motion-card`}
                 >
                   <span className={s.matchHora}>{horaCorta(c.horaInicio)}</span>
                   <div className={s.filaCuerpo}>
@@ -184,7 +186,7 @@ export default function DashboardPage() {
                   </div>
                   <div className={s.matchScore}>
                     {c.estado === 'Programado' && (
-                      <span className={s.live}><i className={s.liveDot} />LIVE</span>
+                      <span className={s.live}><LiveIndicator />LIVE</span>
                     )}
                     <span>{c.duracionMinutos}'</span>
                     {c.estado === 'Cancelado' && <span className={s.matchBadgeOff}>OFF</span>}

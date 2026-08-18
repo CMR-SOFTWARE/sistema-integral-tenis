@@ -335,7 +335,7 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  animation: pop 0.3s ease;
+  animation: none;
 }
 
 /* ── Móvil: la tabla deja de ser tabla y cada alumno es una TARJETA ──

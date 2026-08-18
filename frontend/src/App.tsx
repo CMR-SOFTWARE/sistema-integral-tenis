@@ -138,7 +138,7 @@ export default function App() {
               path="torneos"
               element={<Placeholder
                 titulo="Mis torneos"
-                icono="🏆"
+                icono="trofeo"
                 mensaje="Acá vas a ver los torneos en los que estés anotado, tus partidos y los resultados."
               />}
             />

@@ -8,6 +8,7 @@ import MisJuegosDoblesScreen from './MisJuegosDoblesScreen';
 import MiPerfilRankingDoblesScreen from './MiPerfilRankingDoblesScreen';
 import PerfilJugadorDoblesScreen from './PerfilJugadorDoblesScreen';
 import CargarResultadoDoblesModal from './CargarResultadoDoblesModal';
+import CargaTenis from '../../components/motion/CargaTenis';
 import {
   useInvalidarRankingDobles, useLeaderboardDobles, useMiPerfilDobles, useMisDesafiosDobles, useRankingOficialDobles,
 } from './useRankingDobles';
@@ -58,7 +59,7 @@ export default function RankingDoblesPanel({ tab, onCambiarTab }: Props) {
   };
 
   if (miPerfilSingles.isLoading || miPerfil.isLoading || leaderboard.isLoading) {
-    return <div className={p.vacio}>Cargando…</div>;
+    return <CargaTenis />;
   }
 
   if (!miPerfilSingles.data?.inscripto) {
@@ -116,7 +117,7 @@ export default function RankingDoblesPanel({ tab, onCambiarTab }: Props) {
 
   return (
     <div>
-      {error && <div className={p.error}>{error}</div>}
+      {error && <div className={`${p.error} motion-net`}>{error}</div>}
 
       <TabsModalidad tab={tab} onCambiar={onCambiarTab} />
 

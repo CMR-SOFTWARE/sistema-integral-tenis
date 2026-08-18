@@ -4,6 +4,7 @@ import { api, ApiError } from '../../lib/api';
 import ProfesoresClub from '../perfilprofesor/ProfesoresClub';
 import { datosCompletos, guardarSesion, obtenerSesion } from '../auth/sesion';
 import type { Sesion } from '../auth/sesion';
+import { TennisIcon } from '../../components/iconos';
 import s from './PortalPages.module.css';
 
 interface ProfesorPublico {
@@ -79,7 +80,9 @@ export default function BuscarClubPage() {
           {clubes.map((ficha) => (
             <div key={ficha.tenantId} className={s.clubCard}>
               <div className={s.clubCardCabecera}>
-                <div className={s.clubEscudo}>🎾</div>
+                <div className={s.clubEscudo} aria-hidden>
+                  <TennisIcon size={22} />
+                </div>
                 <div className={s.clubDatos}>
                   <div className={s.clubNombre}>{ficha.club}</div>
                   <div className={s.clubMiembro}>{ficha.nombre} {ficha.apellido}</div>
@@ -148,7 +151,7 @@ export default function BuscarClubPage() {
               </label>
             </div>
 
-            {error && <div className={s.error}>{error}</div>}
+            {error && <div className={`${s.error} motion-net`}>{error}</div>}
 
             {profes.length === 0 ? (
               <p className={s.sinClubTexto}>

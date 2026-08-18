@@ -49,7 +49,7 @@ export default function CargarResultadoModal({ desafio, onClose }: Props) {
     >
       <p>¿Quién ganó?</p>
       <div className={r.opcionesGanador}>
-        <label className={r.opcionGanador}>
+        <label className={`${r.opcionGanador}${ganadorId === desafio.jugador1Id ? ' motion-match-win' : ''}`}>
           <input
             type="radio"
             name="ganador"
@@ -58,7 +58,7 @@ export default function CargarResultadoModal({ desafio, onClose }: Props) {
           />
           <span>{desafio.jugador1Nombre}</span>
         </label>
-        <label className={r.opcionGanador}>
+        <label className={`${r.opcionGanador}${ganadorId === desafio.jugador2Id ? ' motion-match-win' : ''}`}>
           <input
             type="radio"
             name="ganador"
@@ -68,7 +68,7 @@ export default function CargarResultadoModal({ desafio, onClose }: Props) {
           <span>{desafio.jugador2Nombre}</span>
         </label>
       </div>
-      {error && <div className={s.error}>{error}</div>}
+      {error && <div className={`${s.error} motion-net`}>{error}</div>}
     </Modal>
   );
 }

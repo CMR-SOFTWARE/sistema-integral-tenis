@@ -86,7 +86,7 @@ export default function CrearAlumnoRapido() {
           {enviando ? 'Agregando…' : '+ Agregar'}
         </button>
       </div>
-      {toast && <div className={s.toast}>{toast}</div>}
+      {toast && <div className={`${s.toast} motion-toast`}>{toast}</div>}
 
       {cred && (
         <AccesoCreadoModal

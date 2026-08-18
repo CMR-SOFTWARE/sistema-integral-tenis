@@ -1,0 +1,36 @@
+.box {
+  position: relative;
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+}
+
+.box[data-bump='1'] {
+  animation: motionScore var(--motion-medium) var(--ease-impact) both;
+}
+
+.box[data-bump='1'][data-nivel='game'] {
+  animation-duration: var(--motion-medium);
+}
+
+.box[data-bump='1'][data-nivel='set'],
+.box[data-bump='1'][data-nivel='match'] {
+  animation-duration: var(--motion-slow);
+  animation-timing-function: var(--ease-spring);
+}
+
+.box[data-bump='1']::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 1.5px solid var(--color-lime);
+  border-radius: 50%;
+  pointer-events: none;
+  animation: motionRing var(--motion-medium) var(--ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .box[data-bump='1'],
+  .box[data-bump='1']::after {
+    animation: none;
+  }
+}

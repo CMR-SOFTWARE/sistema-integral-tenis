@@ -1,4 +1,5 @@
 import Avatar from '../../components/Avatar';
+import CargaTenis from '../../components/motion/CargaTenis';
 import MiTarjetaRanking from './MiTarjetaRanking';
 import { useHistorialJugador, usePerfilPublico } from './useRanking';
 import s from './RankingPage.module.css';
@@ -17,12 +18,12 @@ export default function PerfilJugadorScreen({ jugadorId, onVolver }: Props) {
   const historial = useHistorialJugador(jugadorId);
 
   return (
-    <div>
+    <div className="motion-perfil">
       <div className={s.volverHeader}>
         <button className={s.volverLink} onClick={onVolver}>← Ranking</button>
       </div>
 
-      {perfil.isLoading && <div className={p.vacio}>Cargando…</div>}
+      {perfil.isLoading && <CargaTenis />}
 
       {perfil.data && (
         <MiTarjetaRanking
@@ -43,7 +44,7 @@ export default function PerfilJugadorScreen({ jugadorId, onVolver }: Props) {
       )}
       {historial.data && historial.data.length > 0 && (
         <div className={p.tarjeta}>
-          <div className={s.lista}>
+          <div className={`${s.lista} motion-stagger`}>
             {historial.data.map((d) => {
               const esJugador1 = d.jugador1Id === jugadorId;
               const rivalNombre = esJugador1 ? d.jugador2Nombre : d.jugador1Nombre;

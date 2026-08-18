@@ -287,7 +287,7 @@ export default function ProfesoresPage() {
       )}
 
       {toast && (
-        <div className={s.toast}>
+        <div className={`${s.toast} motion-toast`}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7bed9f" strokeWidth="2.5" strokeLinecap="round">
             <path d="M20 6L9 17l-5-5" />
           </svg>

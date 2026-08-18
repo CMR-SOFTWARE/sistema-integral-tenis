@@ -24,13 +24,11 @@
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   border-radius: 10px;
-  font-size: 20px;
-  line-height: 1;
   cursor: pointer;
   color: var(--color-text);
 }
 
-.nav:hover { border-color: var(--color-primary); }
+.nav:hover { border-color: var(--color-primary); color: var(--color-primary); }
 
 .rango {
   font-family: var(--font-display);
@@ -92,15 +90,41 @@
 }
 
 .columnaTitulo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.columnaDia {
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 12px;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-text-faint);
-  text-align: center;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--color-border);
+}
+
+.columnaNum {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--color-text);
+  line-height: 1.1;
+}
+
+.columnaHoy .columnaNum {
+  color: var(--color-primary);
+}
+
+.columnaPunto {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  margin-top: 3px;
 }
 
 .libre {

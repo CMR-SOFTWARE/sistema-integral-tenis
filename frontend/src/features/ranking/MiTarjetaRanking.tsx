@@ -1,4 +1,5 @@
 import Avatar from '../../components/Avatar';
+import ScoreBox from '../../components/motion/ScoreBox';
 import s from './RankingPage.module.css';
 import p from '../portal/PortalPages.module.css';
 
@@ -18,9 +19,10 @@ interface Props {
  *  mejor puesto histórico. La misma para singles y dobles — recibe los datos
  *  por props en vez de acoplarse a un tipo de perfil en particular. */
 export default function MiTarjetaRanking({ nombre, apellido, rango, cf, posicion, puntos, mejorPuesto, grande }: Props) {
+  const perfilClase = grande ? `${s.tarjetaPerfil} ${s.tarjetaPerfilGrande} motion-perfil` : s.tarjetaPerfil;
   return (
     <div className={p.tarjeta}>
-      <div className={grande ? `${s.tarjetaPerfil} ${s.tarjetaPerfilGrande}` : s.tarjetaPerfil}>
+      <div className={perfilClase}>
         <div className={s.tarjetaPerfilCabecera}>
           <Avatar nombre={nombre} apellido={apellido} size={grande ? 56 : 44} />
           <div>
@@ -34,7 +36,7 @@ export default function MiTarjetaRanking({ nombre, apellido, rango, cf, posicion
             <div className={s.statLabel}>Posición</div>
           </div>
           <div>
-            <div className={s.statValor}>{puntos}</div>
+            <div className={s.statValor}><ScoreBox valor={puntos} nivel="game" /></div>
             <div className={s.statLabel}>Puntos</div>
           </div>
           <div>

@@ -16,6 +16,7 @@ import type { Categoria } from '../alumnos/types';
 import type { MiPerfil } from './types';
 import { FichaActivaProvider, useFichaActiva } from './FichaActivaContext';
 import { BotonTema } from '../../theme/Tema';
+import PageTransition from '../../components/motion/PageTransition';
 import s from '../../components/layout/AppLayout.module.css';
 
 /** Selector de miembro de la familia (Capa 2): solo aparece si hay más de uno. */
@@ -157,7 +158,7 @@ export default function PortalLayout() {
               <div className={s.userName}>{nombre}</div>
               <div className={s.userRole}>{cat ? `Cat. ${cat}` : sesion?.alumno?.club ?? 'Sin club'}</div>
             </div>
-            <button className={s.logout} title="Salir" onClick={salir}>
+            <button className={`${s.logout} motion-static`} title="Salir" onClick={salir}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <path d="M9 21H5V3h4M16 17l5-5-5-5M21 12H9" />
               </svg>
@@ -188,7 +189,9 @@ export default function PortalLayout() {
         </header>
 
         <main className={s.content}>
-          <Outlet />
+          <PageTransition key={pathname}>
+            <Outlet />
+          </PageTransition>
           {/* Al final del contenido de CUALQUIER sección: el profe la carga para que se
               vea, no solo en el Inicio. Se dibuja sola si el club no tiene banners. */}
           <Publicidad />

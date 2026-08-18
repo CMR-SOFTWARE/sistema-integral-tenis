@@ -73,6 +73,13 @@ Barra inferior mobile: mismo verde nav + activo lima.
 - Afinar saturación si algún bloque se siente agresivo (volver a sage/crema).
 - No commitear hasta que Lucas lo pida (él corre git).
 
+## Motion
+
+Tokens en `frontend/src/styles/tokens.css` (`--motion-fast` … `--motion-slow`, easings).
+Keyframes y utilidades (`.motion-page`, `.motion-card`, `.motion-press` via `button`, `.motion-toast`, `.motion-net`, LIVE, skeleton) en `frontend/src/styles/motion.css`.
+Primitivos: `components/motion/` (`PageTransition`, `LiveIndicator`, `ScoreBox`, `CargaTenis`).
+La pelota no se agrega como mascota: `PelotaNav` / `pelotaRuta` siguen siendo cues de navegación.
+
 ## Verificación
 
 Último check: `npm run build` (frontend) en verde tras el refinamiento CMR + tipografías + header unificado.

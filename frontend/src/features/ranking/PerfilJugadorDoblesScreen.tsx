@@ -1,4 +1,5 @@
 import Avatar from '../../components/Avatar';
+import CargaTenis from '../../components/motion/CargaTenis';
 import MiTarjetaRanking from './MiTarjetaRanking';
 import { useHistorialJugadorDobles, usePerfilPublicoDobles } from './useRankingDobles';
 import s from './RankingPage.module.css';
@@ -16,12 +17,12 @@ export default function PerfilJugadorDoblesScreen({ jugadorId, onVolver }: Props
   const historial = useHistorialJugadorDobles(jugadorId);
 
   return (
-    <div>
+    <div className="motion-perfil">
       <div className={s.volverHeader}>
         <button className={s.volverLink} onClick={onVolver}>← Ranking dobles</button>
       </div>
 
-      {perfil.isLoading && <div className={p.vacio}>Cargando…</div>}
+      {perfil.isLoading && <CargaTenis />}
 
       {perfil.data && (
         <MiTarjetaRanking
@@ -42,7 +43,7 @@ export default function PerfilJugadorDoblesScreen({ jugadorId, onVolver }: Props
       )}
       {historial.data && historial.data.length > 0 && (
         <div className={p.tarjeta}>
-          <div className={s.lista}>
+          <div className={`${s.lista} motion-stagger`}>
             {historial.data.map((d) => {
               const soyPropiaPareja = d.jugador1Id === jugadorId || d.jugador2Id === jugadorId;
               const rivalTexto = soyPropiaPareja

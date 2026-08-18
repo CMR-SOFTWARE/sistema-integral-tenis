@@ -1,4 +1,4 @@
-import { DIAS, aISO, diaDe, diaDelMes, fechaCorta, horaCorta, horaFin } from './types';
+import { DIAS, aISO, diaDe, diaDelMes, horaCorta, horaFin } from './types';
 import type { Horario, Turno } from './types';
 import { cubreFecha, franjaLegible } from '../bloqueos/types';
 import type { Bloqueo } from '../bloqueos/types';
@@ -18,6 +18,8 @@ interface Props {
   onAbrirTurno: (turnoId: string) => void;
   onAbrirClaseVacia: (horario: Horario) => void;
   nombreDe: (userId: string | null | undefined) => string | null;
+  /** Dirección del último cambio de fecha: el contenido entra desde ese lado. */
+  dirFecha: 'fwd' | 'back';
 }
 
 /**
@@ -32,7 +34,7 @@ interface Props {
  */
 export default function GrillaSemana({
   dias, turnos, clasesVacias, bloqueos, diaAbierto, onAbrirDia,
-  onAbrirTurno, onAbrirClaseVacia, nombreDe,
+  onAbrirTurno, onAbrirClaseVacia, nombreDe, dirFecha,
 }: Props) {
   const hoy = aISO(new Date());
   const vaciasDe = (fecha: string) => clasesVacias.filter((h) => h.dia === diaDe(fecha));
@@ -46,23 +48,41 @@ export default function GrillaSemana({
         <div className={s.mapa}>
           {dias.map((fecha) => {
             const cuantas = cuantasClases(fecha);
+            const nombre = DIAS.find((d) => d.valor === diaDe(fecha))?.corto ?? '';
             const clases = [
               s.mapaDia,
+              'motion-card',
               fecha === diaAbierto ? s.mapaDiaAbierto : '',
               fecha === hoy ? s.mapaDiaHoy : '',
             ].filter(Boolean).join(' ');
+            const partes = [
+              `${nombre} ${diaDelMes(fecha)}`,
+              fecha === hoy ? 'hoy' : null,
+              cuantas > 0 ? `${cuantas} ${cuantas === 1 ? 'clase' : 'clases'}` : 'sin clases',
+              fecha === diaAbierto ? 'seleccionado' : null,
+            ].filter(Boolean);
             return (
-              <button key={fecha} className={clases} onClick={() => onAbrirDia(fecha)}>
-                <span className={s.mapaNombre}>{DIAS.find((d) => d.valor === diaDe(fecha))?.corto}</span>
+              <button
+                key={fecha}
+                type="button"
+                className={clases}
+                onClick={() => onAbrirDia(fecha)}
+                aria-label={partes.join(', ')}
+                aria-pressed={fecha === diaAbierto}
+              >
+                <span className={s.mapaNombre}>{nombre}</span>
                 <span className={s.mapaNumero}>{diaDelMes(fecha)}</span>
-                <span className={s.mapaCuenta}>{cuantas > 0 ? cuantas : '—'}</span>
+                <i className={cuantas > 0 ? s.mapaPunto : s.mapaPuntoVacio} aria-hidden />
               </button>
             );
           })}
         </div>
       )}
 
-      <div className={`${s.grilla} ${dias.length === 1 ? s.grillaUnDia : ''}`}>
+      <div
+        key={`${dias[0] ?? ''}-${diaAbierto}`}
+        className={`${s.grilla} ${dias.length === 1 ? s.grillaUnDia : ''} ${dirFecha === 'fwd' ? 'motion-fecha-fwd' : 'motion-fecha-back'}`}
+      >
         {dias.map((fecha) => {
           const delDia = turnos.filter((t) => t.fecha === fecha);
           const bloqueosDia = bloqueos.filter((b) => cubreFecha(b, fecha));
@@ -71,6 +91,8 @@ export default function GrillaSemana({
           const vaciasDia = vaciasDe(fecha);
           const hoyCol = fecha === hoy;
           const vacio = delDia.length === 0 && bloqueosDia.length === 0 && vaciasDia.length === 0;
+          const cuantas = delDia.length + vaciasDia.length;
+          const nombreDia = DIAS.find((d) => d.valor === diaDe(fecha))?.corto ?? '';
           const clases = [
             s.columna,
             hoyCol ? s.columnaHoy : '',
@@ -78,7 +100,11 @@ export default function GrillaSemana({
           ].filter(Boolean).join(' ');
           return (
             <div key={fecha} className={clases}>
-              <div className={s.columnaTitulo}>{fechaCorta(fecha)}</div>
+              <div className={s.columnaTitulo}>
+                <span className={s.columnaDia}>{nombreDia}</span>
+                <span className={s.columnaNum}>{diaDelMes(fecha)}</span>
+                {cuantas > 0 && <i className={s.columnaPunto} aria-hidden />}
+              </div>
               {bloqueosDia.map((b) => (
                 <div key={b.id} className={s.franjaBloqueada}>
                   <div className={s.turnoHora}>{franjaLegible(b.horaInicio, b.horaFin)}</div>

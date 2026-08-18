@@ -1,0 +1,16 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.icono {
+  color: var(--color-primary);
+  opacity: 0.55;
+}
+
+.texto {
+  max-width: 420px;
+  line-height: 1.55;
+}

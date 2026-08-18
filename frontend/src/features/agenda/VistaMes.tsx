@@ -4,6 +4,7 @@ import type { Turno } from './types';
 import { cubreFecha, franjaLegible } from '../bloqueos/types';
 import type { Bloqueo } from '../bloqueos/types';
 import TarjetaTurno from './TarjetaTurno';
+import EstadoVacio from '../../components/EstadoVacio';
 import s from './VistaMes.module.css';
 
 interface Props {
@@ -26,6 +27,7 @@ export default function VistaMes({ anio, mes, turnos, bloqueos, onAbrirTurno, no
   // Arranca en hoy si el mes mostrado es el actual; si no, en el día 1.
   const primero = `${anio}-${String(mes).padStart(2, '0')}-01`;
   const [sel, setSel] = useState<string>(hoyIso.slice(0, 7) === primero.slice(0, 7) ? hoyIso : primero);
+  const [dirDetalle, setDirDetalle] = useState<'fwd' | 'back'>('fwd');
 
   const delDia = (iso: string) =>
     turnos.filter((t) => t.fecha === iso).sort((a, b) => a.horaInicio.localeCompare(b.horaInicio));
@@ -43,21 +45,37 @@ export default function VistaMes({ anio, mes, turnos, bloqueos, onAbrirTurno, no
         {dias.map(({ iso, enMes }) => {
           const items = delDia(iso);
           const bloqueado = bloqueosDe(iso).length > 0;
+          const partes = [
+            fechaCorta(iso),
+            iso === hoyIso ? 'hoy' : null,
+            iso === sel ? 'seleccionado' : null,
+            !enMes ? 'fuera del mes' : null,
+            items.length > 0 ? `${items.length} ${items.length === 1 ? 'clase' : 'clases'}` : null,
+            bloqueado ? 'con bloqueo' : null,
+          ].filter(Boolean);
           return (
             <button
               key={iso}
+              type="button"
               className={[
                 s.celda,
+                'motion-card',
                 !enMes ? s.celdaFuera : '',
                 iso === hoyIso ? s.celdaHoy : '',
                 iso === sel ? s.celdaSel : '',
               ].join(' ')}
-              onClick={() => setSel(iso)}
+              onClick={() => {
+                setDirDetalle(iso > sel ? 'fwd' : 'back');
+                setSel(iso);
+              }}
+              aria-label={partes.join(', ')}
+              aria-pressed={iso === sel}
             >
               <div className={s.celdaNum}>
                 {diaDelMes(iso)}
                 {bloqueado && <span className={s.bloqueoDot} title="Hay un bloqueo" />}
               </div>
+              {items.length > 0 && <i className={s.puntoEvento} aria-hidden />}
               <div className={s.chips}>
                 {items.slice(0, MAX_CHIPS).map((t) => (
                   <div
@@ -78,10 +96,15 @@ export default function VistaMes({ anio, mes, turnos, bloqueos, onAbrirTurno, no
       </div>
 
       {/* Detalle del día seleccionado */}
-      <div className={s.detalle}>
+      <div
+        key={sel}
+        className={`${s.detalle} ${dirDetalle === 'fwd' ? 'motion-fecha-fwd' : 'motion-fecha-back'}`}
+      >
         <div className={s.detalleTitulo}>{fechaCorta(sel)}</div>
         {turnosSel.length === 0 && bloqueosSel.length === 0 && (
-          <div className={s.detalleVacio}>Sin clases este día.</div>
+          <div className={s.detalleVacio}>
+            <EstadoVacio variante="calendario">Sin clases este día.</EstadoVacio>
+          </div>
         )}
         {bloqueosSel.map((b) => (
           <div key={b.id} className={s.detalleBloqueo}>

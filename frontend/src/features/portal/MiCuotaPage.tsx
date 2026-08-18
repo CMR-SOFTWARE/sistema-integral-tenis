@@ -7,6 +7,7 @@ import InformarPagoModal from './InformarPagoModal';
 import { formatoPlata } from '../alumnos/types';
 import { ESTADO_LIQ_UI, MESES } from '../cuotas/types';
 import { useMiCuota, useMiCuotaFamilia } from './hooks';
+import { BotonNavFecha } from '../../components/iconos';
 import s from './PortalPages.module.css';
 
 /** El objeto de pago a informar: el mes entero o un cargo puntual. */
@@ -62,9 +63,9 @@ function CuotaFamiliarView() {
   return (
     <div>
       <div className={s.toolbar}>
-        <button className={s.nav} onClick={mesAnterior}>‹</button>
+        <BotonNavFecha direccion="anterior" className={s.nav} label="Mes anterior" onClick={mesAnterior} />
         <div className={s.rango}>{MESES[mes - 1]} {anio}</div>
-        <button className={s.nav} onClick={mesSiguiente}>›</button>
+        <BotonNavFecha direccion="siguiente" className={s.nav} label="Mes siguiente" onClick={mesSiguiente} />
       </div>
 
       {error && <div className={s.error}>{error}</div>}
@@ -162,9 +163,9 @@ function CuotaIndividualView() {
   return (
     <div>
       <div className={s.toolbar}>
-        <button className={s.nav} onClick={mesAnterior}>‹</button>
+        <BotonNavFecha direccion="anterior" className={s.nav} label="Mes anterior" onClick={mesAnterior} />
         <div className={s.rango}>{MESES[mes - 1]} {anio}</div>
-        <button className={s.nav} onClick={mesSiguiente}>›</button>
+        <BotonNavFecha direccion="siguiente" className={s.nav} label="Mes siguiente" onClick={mesSiguiente} />
       </div>
 
       {error && <div className={s.error}>{error}</div>}

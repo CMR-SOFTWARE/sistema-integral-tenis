@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { ChevronRightIcon } from '../../components/iconos';
 import s from './AccesosRapidos.module.css';
 
 export interface Acceso {
@@ -14,14 +15,16 @@ export default function AccesosRapidos({ accesos }: { accesos: Acceso[] }) {
   return (
     <div className={s.grid}>
       {accesos.map((a) => (
-        <Link key={a.to + a.label} to={a.to} className={s.item}>
+        <Link key={a.to + a.label} to={a.to} className={`${s.item} motion-card`}>
           <span className={s.icono} style={{ background: `${a.color}1a`, color: a.color }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d={a.icon} />
             </svg>
           </span>
           <span className={s.label}>{a.label}</span>
-          <span className={s.chev}>→</span>
+          <span className={s.chev} aria-hidden>
+            <ChevronRightIcon size={16} />
+          </span>
         </Link>
       ))}
     </div>

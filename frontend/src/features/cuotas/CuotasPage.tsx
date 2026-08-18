@@ -10,6 +10,7 @@ import type { EstadoLiquidacion } from './types';
 import type { Liquidacion, Medio } from './types';
 import { avatarColor, formatoPlata, iniciales } from '../alumnos/types';
 import FranjaTenis from '../../components/tenis/FranjaTenis';
+import { BotonNavFecha, ChevronRightIcon } from '../../components/iconos';
 import s from './CuotasPage.module.css';
 
 /** Cuotas del mes: la cuenta corriente por alumno, generada desde los turnos. */
@@ -60,9 +61,9 @@ export default function CuotasPage() {
     <div>
       <FranjaTenis modo="globo" />
       <div className={s.toolbar}>
-        <button className={s.nav} onClick={mesAnterior}>‹</button>
+        <BotonNavFecha direccion="anterior" className={s.nav} label="Mes anterior" onClick={mesAnterior} />
         <div className={s.rango}>{MESES[mes - 1]} {anio}</div>
-        <button className={s.nav} onClick={mesSiguiente}>›</button>
+        <BotonNavFecha direccion="siguiente" className={s.nav} label="Mes siguiente" onClick={mesSiguiente} />
 
         <div className={s.spacer} />
 
@@ -188,7 +189,9 @@ export default function CuotasPage() {
                         Sin cuota
                       </span>
                     )}
-                    <span className={`${s.flecha} ${abierto ? s.flechaAbierta : ''}`}>›</span>
+                    <span className={`${s.flecha} ${abierto ? s.flechaAbierta : ''}`} aria-hidden>
+                      <ChevronRightIcon size={16} />
+                    </span>
                   </button>
 
                   {abierto && (

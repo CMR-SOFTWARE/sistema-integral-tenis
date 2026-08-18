@@ -7,10 +7,11 @@ import { obtenerSesion } from '../auth/sesion';
 import SinClub from './SinClub';
 import { formatoPlata, CAT_LABEL } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
-import { aISO, fechaCorta, horaCorta, lunesDe, rangoSemana, sumarDias } from '../agenda/types';
+import { aISO, DIAS, diaDelMes, fechaCorta, horaCorta, lunesDe, rangoSemana, sumarDias } from '../agenda/types';
 import { useReservarData, usePortalSedes } from './hooks';
 import type { ClaseSuelta, DatosPago, Disponibilidad, SlotReserva } from './types';
 import FranjaTenis from '../../components/tenis/FranjaTenis';
+import { BotonNavFecha } from '../../components/iconos';
 import s from './ReservarPage.module.css';
 
 const DIA_IDX: Record<string, number> = {
@@ -50,6 +51,7 @@ export default function ReservarPage() {
   const miCategoria = obtenerSesion()?.categoria ?? null; // para marcar "tu categoría" en el calendario
   const qc = useQueryClient();
   const [lunes, setLunes] = useState(() => lunesDe(new Date()));
+  const [dirFecha, setDirFecha] = useState<'fwd' | 'back'>('fwd');
 
   // Lista principal (la grilla + solicitudes + clases sueltas) cacheada por React Query.
   const reservarQuery = useReservarData();
@@ -202,12 +204,33 @@ export default function ReservarPage() {
         {/* Las flechas y el período van en un contenedor propio: sueltos en la
             toolbar, al envolverse la › se caía sola al renglón de abajo. */}
         <div className={s.navegador}>
-          <button className={s.nav} onClick={() => setLunes(sumarDias(lunes, -7))} aria-label="Semana anterior">‹</button>
+          <BotonNavFecha
+            direccion="anterior"
+            className={s.nav}
+            label="Semana anterior"
+            onClick={() => { setDirFecha('back'); setLunes(sumarDias(lunes, -7)); }}
+          />
           <div className={s.rango}>
             Semana del {rangoSemana(lunes)}
-            {!esHoy && <button className={s.hoy} onClick={() => setLunes(lunesDe(new Date()))}>volver a hoy</button>}
+            {!esHoy && (
+              <button
+                className={s.hoy}
+                onClick={() => {
+                  const hoyLunes = lunesDe(new Date());
+                  setDirFecha(lunes < hoyLunes ? 'fwd' : 'back');
+                  setLunes(hoyLunes);
+                }}
+              >
+                volver a hoy
+              </button>
+            )}
           </div>
-          <button className={s.nav} onClick={() => setLunes(sumarDias(lunes, 7))} aria-label="Semana siguiente">›</button>
+          <BotonNavFecha
+            direccion="siguiente"
+            className={s.nav}
+            label="Semana siguiente"
+            onClick={() => { setDirFecha('fwd'); setLunes(sumarDias(lunes, 7)); }}
+          />
         </div>
         <button className={s.btnIndividual} onClick={() => { setError(null); setPidiendoIndividual(true); }}>
           + Pedir clase individual
@@ -215,11 +238,14 @@ export default function ReservarPage() {
       </div>
 
       {errorMostrado && <div className={s.error}>{errorMostrado}</div>}
-      {toast && <div className={s.toast}>{toast}</div>}
+      {toast && <div className={`${s.toast} motion-toast`}>{toast}</div>}
       {cargando && <div className={s.vacio}>Cargando la agenda…</div>}
 
       {!cargando && (
-        <div className={s.grilla}>
+        <div
+          key={lunes}
+          className={`${s.grilla} ${dirFecha === 'fwd' ? 'motion-fecha-fwd' : 'motion-fecha-back'}`}
+        >
           {dias.map((fecha, i) => {
             const delDia = slots
               .filter((sl) => sl.diaIdx === i)
@@ -227,7 +253,11 @@ export default function ReservarPage() {
             const hoyCol = fecha === aISO(new Date());
             return (
               <div key={fecha} className={`${s.columna} ${hoyCol ? s.columnaHoy : ''}`}>
-                <div className={s.columnaTitulo}>{fechaCorta(fecha)}</div>
+                <div className={s.columnaTitulo}>
+                  <span className={s.columnaDia}>{DIAS[i].corto}</span>
+                  <span className={s.columnaNum}>{diaDelMes(fecha)}</span>
+                  {delDia.length > 0 && <i className={s.columnaPunto} aria-hidden />}
+                </div>
                 {delDia.length === 0 && <div className={s.libre}>—</div>}
                 {delDia.map((sl, idx) => {
                   const libre = sl.estado === 'Disponible';

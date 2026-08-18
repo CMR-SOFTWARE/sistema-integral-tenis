@@ -112,8 +112,6 @@
   border: 1px solid var(--color-border);
   background: var(--color-surface);
   border-radius: 10px;
-  font-size: 18px;
-  font-weight: 700;
   color: var(--color-text-soft);
   cursor: pointer;
 }
@@ -193,6 +191,12 @@
   display: flex;
   gap: 4px;
   margin-bottom: 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.mapa::-webkit-scrollbar {
+  display: none;
 }
 
 .mapaDia {
@@ -203,14 +207,23 @@
   align-items: center;
   gap: 1px;
   min-height: 52px; /* objetivo de toque cómodo con el dedo */
-  padding: 6px 2px;
+  padding: 6px 2px 8px;
   border: none;
   border-bottom: 2px solid transparent;
   border-radius: 0;
   background: transparent;
   cursor: pointer;
   font-family: inherit;
-  transition: border-color 0.18s, color 0.18s;
+  transition:
+    border-color var(--motion-fast) var(--ease-out),
+    color var(--motion-fast) var(--ease-out),
+    background var(--motion-fast) var(--ease-out);
+}
+
+.mapaDia:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: 8px;
 }
 
 .mapaDiaHoy {
@@ -218,8 +231,9 @@
 }
 
 .mapaDiaAbierto {
-  background: transparent;
+  background: rgba(23, 138, 76, 0.08);
   border-bottom-color: var(--color-primary);
+  border-radius: 8px 8px 0 0;
 }
 
 .mapaNombre {
@@ -228,26 +242,40 @@
   font-size: 10px;
   color: var(--color-text-muted);
   text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .mapaNumero {
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--color-text);
+  line-height: 1.1;
 }
 
-/* Cuántas clases tiene ese día: es lo que se lee de un vistazo. */
-.mapaCuenta {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--color-text-faint);
+.mapaPunto,
+.mapaPuntoVacio {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  margin-top: 3px;
+}
+
+.mapaPunto {
+  background: var(--color-primary);
+}
+
+.mapaPuntoVacio {
+  background: transparent;
 }
 
 .mapaDiaAbierto .mapaNombre,
-.mapaDiaAbierto .mapaNumero,
-.mapaDiaAbierto .mapaCuenta {
+.mapaDiaAbierto .mapaNumero {
   color: var(--color-primary);
+}
+
+.mapaDiaHoy:not(.mapaDiaAbierto) .mapaNumero {
+  box-shadow: inset 0 -2px 0 var(--color-lime);
 }
 
 .grilla {
@@ -287,15 +315,41 @@
 }
 
 .columnaTitulo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.columnaDia {
   font-family: var(--font-display);
-  font-weight: 800;
-  font-size: 12px;
-  letter-spacing: 0.04em;
+  font-weight: 700;
+  font-size: 10px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-text-faint);
-  text-align: center;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+.columnaNum {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--color-text);
+  line-height: 1.1;
+}
+
+.columnaHoy .columnaNum {
+  color: var(--color-primary);
+}
+
+.columnaPunto {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  margin-top: 3px;
 }
 
 .libre {

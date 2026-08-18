@@ -83,7 +83,7 @@
   color: var(--color-nav-muted);
   text-decoration: none;
   border-left: 2px solid transparent;
-  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out);
 }
 
 .navItem:hover {
@@ -205,7 +205,7 @@
   transform-origin: left center;
   transform: scaleX(0);
   pointer-events: none;
-  animation: cruzaHeader 0.9s cubic-bezier(0.4, 0, 0.2, 1) both;
+  animation: cruzaHeader var(--motion-slow) var(--ease-in-out) both;
   opacity: 0.55;
 }
 
@@ -363,7 +363,7 @@
 .barraInferior {
   display: none;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .barraItem {
@@ -471,5 +471,15 @@
 
   .content {
     padding: 18px 16px calc(88px + env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pelotaRuta {
+    animation: none;
+    opacity: 0;
+  }
+  .headerVivo::after {
+    animation: none;
   }
 }

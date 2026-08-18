@@ -97,6 +97,23 @@
 
   --court-line: #178a4c;
   --court-motion: #d8fb5b;
+
+  /* Motion — ritmo único. No poner ms sueltos en componentes nuevos. */
+  --motion-fast: 130ms;
+  --motion-normal: 240ms;
+  --motion-medium: 380ms;
+  --motion-slow: 560ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.55, 0, 1, 0.45);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+  --ease-impact: cubic-bezier(0.2, 0, 0, 1);
+  --ease-spring: cubic-bezier(0.22, 1.15, 0.36, 1);
+  --motion-shift: 12px;
+  --motion-shift-mobile: 8px;
+
+  /* Física de la pelota de nav (el rAF lee physics.ts; estos son el espejo CSS). */
+  --physics-stretch-max: 1.08;
+  --physics-impact-scale: 0.96;
 }
 
 [data-theme='dark'] {

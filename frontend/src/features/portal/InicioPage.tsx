@@ -9,6 +9,7 @@ import EscenaRally from '../../components/tenis/EscenaRally';
 import FranjaTenis from '../../components/tenis/FranjaTenis';
 import PelotaTrayectoria from '../../components/tenis/PelotaTrayectoria';
 import Seccion from '../../components/tenis/Seccion';
+import { TennisIcon } from '../../components/iconos';
 import s from './PortalPages.module.css';
 
 /** "2026-07-14" → "MAR" (para la columna de horarios asignados). */
@@ -58,7 +59,10 @@ export default function InicioPage() {
       {!conClub && (
         <div className={s.bandaEspera}>
           <div>
-            <div className={s.bandaTitulo}>Todavía no estás en ningún club 🎾</div>
+            <div className={s.bandaTitulo}>
+              <TennisIcon size={16} className={s.bandaIcono} />
+              Todavía no estás en ningún club
+            </div>
             <div className={s.bandaTexto}>
               Cuando te unas a una academia vas a ver acá tus clases y tu cuota. Mientras
               tanto podés usar el resto del portal.
@@ -71,7 +75,10 @@ export default function InicioPage() {
       {conClub && ficha?.enEspera && (
         <div className={s.bandaEspera}>
           <div>
-            <div className={s.bandaTitulo}>Estás en la lista de espera 🎾</div>
+            <div className={s.bandaTitulo}>
+              <TennisIcon size={16} className={s.bandaIcono} />
+              Estás en la lista de espera
+            </div>
             <div className={s.bandaTexto}>
               Ya sos parte de <b>{ficha.club}</b>. Tu profe te va a sumar a una clase, o
               podés pedir lugar en la que te sirva.

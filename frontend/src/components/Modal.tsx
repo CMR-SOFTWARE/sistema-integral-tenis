@@ -20,7 +20,7 @@ export default function Modal({ titulo, subtitulo, onClose, children, footer, an
             <h3 className={s.titulo}>{titulo}</h3>
             {subtitulo && <div className={s.subtitulo}>{subtitulo}</div>}
           </div>
-          <button className={s.cerrar} onClick={onClose} aria-label="Cerrar">
+          <button className={`${s.cerrar} motion-static`} onClick={onClose} aria-label="Cerrar">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
               <path d="M18 6L6 18M6 6l12 12" />
             </svg>

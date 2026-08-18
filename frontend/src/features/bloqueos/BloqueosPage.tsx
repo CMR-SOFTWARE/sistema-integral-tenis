@@ -113,7 +113,7 @@ export default function BloqueosPage() {
           onConfirmar={confirmar}
         />
       )}
-      {toast && <div className={s.toast}>{toast}</div>}
+      {toast && <div className={`${s.toast} motion-toast`}>{toast}</div>}
     </div>
   );
 }

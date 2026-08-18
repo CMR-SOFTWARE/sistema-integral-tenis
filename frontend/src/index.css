@@ -1,4 +1,5 @@
 @import './styles/tokens.css';
+@import './styles/motion.css';
 
 * {
   box-sizing: border-box;
@@ -15,9 +16,9 @@ html.theme-transicion *,
 html.theme-transicion *::before,
 html.theme-transicion *::after {
   transition:
-    background-color 0.45s ease,
-    color 0.45s ease,
-    border-color 0.45s ease !important;
+    background-color var(--motion-medium) var(--ease-in-out),
+    color var(--motion-medium) var(--ease-in-out),
+    border-color var(--motion-medium) var(--ease-in-out) !important;
 }
 
 body {
@@ -65,6 +66,15 @@ textarea:focus {
   box-shadow: var(--focus-ring);
 }
 
+/* Date nativo: misma familia y borde que el resto de inputs. No es un date picker custom. */
+input[type='date'] {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-ui);
+}
+
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -75,33 +85,6 @@ textarea:focus {
 }
 ::-webkit-scrollbar-track {
   background: transparent;
-}
-
-@keyframes pop {
-  from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: none; }
-}
-@keyframes fade {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-@keyframes slidein {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: none; }
-}
-@keyframes reveal {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: none; }
-}
-
-.revelar {
-  opacity: 0;
-  transform: translateY(12px);
-  transition: opacity 0.55s ease, transform 0.55s ease;
-}
-.revelar.esVisible {
-  opacity: 1;
-  transform: none;
 }
 
 .bandaSuave {
@@ -117,28 +100,4 @@ textarea:focus {
 
 [data-theme='dark'] .bandaSuave {
   color: var(--color-text);
-}
-
-@keyframes livePulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-}
-
-@keyframes cruzaHeader {
-  0% { transform: scaleX(0); opacity: 0.7; }
-  100% { transform: scaleX(1); opacity: 0; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-  .revelar {
-    opacity: 1;
-    transform: none;
-  }
 }

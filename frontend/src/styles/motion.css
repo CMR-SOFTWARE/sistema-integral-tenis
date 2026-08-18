@@ -1,0 +1,275 @@
+/* Sistema de motion CMR. Tokens en tokens.css. Solo transform/opacity. */
+
+@keyframes pop {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slidein {
+  from { opacity: 0; transform: translateY(var(--motion-shift)); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes livePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+@keyframes cruzaHeader {
+  0% { transform: scaleX(0); opacity: 0.7; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+@keyframes motionSprint {
+  from { opacity: 0; transform: translateY(var(--motion-shift)); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes motionModalIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes motionToastIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes motionToastCenter {
+  from { opacity: 0; transform: translate(-50%, 8px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+@keyframes motionNet {
+  0% { transform: translateX(0); }
+  35% { transform: translateX(6px); }
+  70% { transform: translateX(-2px); }
+  100% { transform: none; }
+}
+@keyframes motionScore {
+  0% { transform: scale(var(--physics-impact-scale, 0.96)) translateY(3px); }
+  45% { transform: scale(1.03) translateY(0); }
+  100% { transform: none; }
+}
+@keyframes motionRing {
+  0% { transform: scale(0.6); opacity: 0.45; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+@keyframes motionBounce {
+  /* Carga: un pique con gravedad, no un flotar genérico. */
+  0% { transform: translateY(0) scaleY(1); }
+  18% { transform: translateY(-7px) scaleY(1.05); }
+  28% { transform: translateY(0) scaleY(0.92); }
+  42% { transform: translateY(-3px) scaleY(1.02); }
+  52% { transform: translateY(0) scaleY(0.97); }
+  64% { transform: translateY(-1px) scaleY(1); }
+  72%, 100% { transform: none; }
+}
+@keyframes motionMatchWin {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.03); }
+  100% { transform: none; }
+}
+@keyframes motionShimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+@keyframes motionFechaFwd {
+  from { opacity: 0; transform: translateX(8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes motionFechaBack {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes motionPopoverIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.revelar {
+  opacity: 0;
+  transform: translateY(var(--motion-shift));
+  transition:
+    opacity var(--motion-slow) var(--ease-out),
+    transform var(--motion-slow) var(--ease-out);
+}
+.revelar.esVisible {
+  opacity: 1;
+  transform: none;
+}
+
+.motion-page {
+  animation: motionSprint var(--motion-normal) var(--ease-out) both;
+}
+
+.motion-toast {
+  animation: motionToastIn var(--motion-normal) var(--ease-out) both;
+}
+.motion-toast-center {
+  animation: motionToastCenter var(--motion-normal) var(--ease-out) both;
+}
+
+.motion-net {
+  animation: motionNet var(--motion-medium) var(--ease-impact) both;
+}
+
+.motion-match-win {
+  animation: motionMatchWin var(--motion-medium) var(--ease-spring) both;
+}
+
+.motion-stagger > *:nth-child(-n+12) {
+  animation: motionSprint var(--motion-normal) var(--ease-out) both;
+}
+.motion-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.motion-stagger > *:nth-child(2) { animation-delay: 40ms; }
+.motion-stagger > *:nth-child(3) { animation-delay: 80ms; }
+.motion-stagger > *:nth-child(4) { animation-delay: 120ms; }
+.motion-stagger > *:nth-child(5) { animation-delay: 160ms; }
+.motion-stagger > *:nth-child(6) { animation-delay: 200ms; }
+.motion-stagger > *:nth-child(7) { animation-delay: 240ms; }
+.motion-stagger > *:nth-child(8) { animation-delay: 280ms; }
+.motion-stagger > *:nth-child(9) { animation-delay: 320ms; }
+.motion-stagger > *:nth-child(10) { animation-delay: 360ms; }
+.motion-stagger > *:nth-child(11) { animation-delay: 400ms; }
+.motion-stagger > *:nth-child(12) { animation-delay: 440ms; }
+
+.motion-perfil > *:nth-child(1) {
+  animation: motionSprint var(--motion-normal) var(--ease-out) both;
+}
+.motion-perfil > *:nth-child(2) {
+  animation: motionSprint var(--motion-normal) var(--ease-out) 80ms both;
+}
+.motion-perfil > *:nth-child(3) {
+  animation: motionSprint var(--motion-normal) var(--ease-out) 140ms both;
+}
+.motion-perfil > *:nth-child(4) {
+  animation: motionSprint var(--motion-normal) var(--ease-out) 200ms both;
+}
+.motion-perfil > *:nth-child(5) {
+  animation: motionSprint var(--motion-normal) var(--ease-out) 260ms both;
+}
+
+.motion-card {
+  transition: transform var(--motion-fast) var(--ease-out);
+}
+.motion-card:active {
+  transform: scale(0.98);
+}
+
+.motion-fecha-fwd {
+  animation: motionFechaFwd var(--motion-normal) var(--ease-out) both;
+}
+.motion-fecha-back {
+  animation: motionFechaBack var(--motion-normal) var(--ease-out) both;
+}
+
+.motion-nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.motion-nav:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+.motion-nav:disabled {
+  opacity: 0.4;
+  cursor: default;
+  transform: none;
+}
+
+.motion-liveWrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.motion-live {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-lime);
+  animation: livePulse 2s ease-in-out infinite;
+}
+
+.motion-carga {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 16px;
+}
+.motion-cargaPelota {
+  width: 22px;
+  height: 22px;
+  color: var(--color-primary);
+  animation: motionBounce 1.2s var(--ease-out) infinite;
+}
+.motion-skeleton {
+  width: min(100%, 280px);
+  height: 10px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-hover) 25%,
+    var(--color-surface-subtle) 50%,
+    var(--color-surface-hover) 75%
+  );
+  background-size: 200% 100%;
+  animation: motionShimmer 1.2s linear infinite;
+}
+
+button:not(:disabled):not(.motion-static):not(.motion-card) {
+  transition: transform var(--motion-fast) var(--ease-out);
+}
+button:not(:disabled):not(.motion-static):not(.motion-card):active {
+  transform: scale(0.97);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  button:not(:disabled):not(.motion-static):not(.motion-card):hover {
+    transform: scale(1.02);
+  }
+  .motion-card:hover {
+    transform: scale(1.015);
+  }
+}
+
+@media (max-width: 760px) {
+  @keyframes motionSprint {
+    from { opacity: 0; transform: translateY(var(--motion-shift-mobile)); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .revelar {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .motion-page,
+  .motion-toast,
+  .motion-toast-center,
+  .motion-fecha-fwd,
+  .motion-fecha-back {
+    animation: fade var(--motion-fast) var(--ease-out) both;
+  }
+  .motion-stagger > *,
+  .motion-perfil > *,
+  .motion-net,
+  .motion-match-win,
+  .motion-cargaPelota,
+  .motion-skeleton,
+  .motion-live {
+    animation: none !important;
+  }
+  .motion-live { opacity: 1; }
+  .motion-skeleton { background: var(--color-surface-hover); }
+  button:not(:disabled):hover,
+  button:not(:disabled):active,
+  .motion-card:hover,
+  .motion-card:active {
+    transform: none;
+  }
+}
