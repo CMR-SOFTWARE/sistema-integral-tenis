@@ -41,6 +41,15 @@ public interface IAlumnoRepository
     Task<Alumno?> ObtenerAsync(Guid id, CancellationToken ct = default);
 
     /// <summary>
+    /// Las fichas del tenant cuyo id se pide. Existe para no traer el padrón entero
+    /// cuando el caller ya sabe a quiénes quiere: la lista de espera arma su conjunto
+    /// por motivo y después necesita esas fichas, no las demás (que hoy cargan la foto
+    /// en base64 en la fila).
+    /// </summary>
+    Task<IReadOnlyList<Alumno>> ListarPorIdsAsync(
+        IReadOnlyCollection<Guid> ids, CancellationToken ct = default);
+
+    /// <summary>
     /// Vincula un tutor a un alumno YA existente (completar la ficha después de
     /// marcarlo menor). Si ya hay un tutor con ese DNI en el tenant, lo REUTILIZA
     /// (índice único TenantId+Dni); si no, crea el nuevo. Persiste con GuardarCambiosAsync.
@@ -65,10 +74,11 @@ public interface IAlumnoRepository
         IReadOnlyCollection<Guid> alumnoIds, CancellationToken ct = default);
 
     /// <summary>
-    /// Cuántos alumnos activos del tenant tienen clase asignada: el número que el
-    /// profe entiende por "mis alumnos". No cuenta a los que están esperando.
+    /// Una fila liviana por alumno del tenant (todos, sin filtrar): con esto el
+    /// dashboard saca sus cuatro números —activos con clase, altas del mes, pausados
+    /// y el desglose por categoría— en UNA sola ida a la base en vez de cuatro.
     /// </summary>
-    Task<int> ContarActivosConClaseAsync(CancellationToken ct = default);
+    Task<IReadOnlyList<AlumnoResumenFila>> ResumenAsync(CancellationToken ct = default);
 
     /// <summary>
     /// Borrado REAL de la ficha (el profe pidió poder borrar a los que no vienen
@@ -101,12 +111,6 @@ public interface IAlumnoRepository
 
     // ── Agregados para el dashboard (queries de solo lectura) ──
 
-    /// <summary>Cantidad de alumnos del tenant en un estado dado.</summary>
-    Task<int> ContarPorEstadoAsync(EstadoAlumno estado, CancellationToken ct = default);
-
-    /// <summary>Alumnos creados desde una fecha (altas del período).</summary>
-    Task<int> ContarNuevosDesdeAsync(DateTime desde, CancellationToken ct = default);
-
     /// <summary>Suma de aranceles de los alumnos activos (ingreso estimado).</summary>
     Task<decimal> SumarArancelActivosAsync(CancellationToken ct = default);
 
@@ -117,3 +121,14 @@ public interface IAlumnoRepository
     /// </summary>
     Task<Dictionary<CategoriaAlumno, int>> ContarPorCategoriaAsync(CancellationToken ct = default);
 }
+
+/// <summary>
+/// Lo mínimo de un alumno para contarlo, sin traer la ficha entera (que arrastra la
+/// foto en base64).
+/// </summary>
+/// <param name="TieneClase">
+/// Tiene lugar vigente en alguna clase activa: es lo que separa a un alumno del que
+/// todavía está esperando.
+/// </param>
+public record AlumnoResumenFila(
+    EstadoAlumno Estado, CategoriaAlumno Categoria, DateTime CreadoEl, bool TieneClase);

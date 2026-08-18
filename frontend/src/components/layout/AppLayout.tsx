@@ -8,6 +8,7 @@ import { useConfirmar } from '../confirmar/ConfirmarProvider';
 import { BotonTema } from '../../theme/Tema';
 import PelotaNav from '../tenis/PelotaNav';
 import { coincideRuta, profNav, pageTitles } from './nav';
+import CampanaNotificaciones from '../../features/notificaciones/CampanaNotificaciones';
 import s from './AppLayout.module.css';
 
 /** Pelota que cruza el header una vez al cambiar de pantalla. */
@@ -40,7 +41,10 @@ export default function AppLayout() {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const navRef = useRef<HTMLElement>(null);
   const navItems = profNav.filter(
-    (item) => (!item.soloOwner || sesion?.rol === 'owner') && (!item.soloAdmin || sesion?.esAdmin),
+    (item) =>
+      (!item.soloOwner || sesion?.rol === 'owner')
+      && (!item.soloConCobro || sesion?.rol === 'owner' || sesion?.puedeCobrar)
+      && (!item.soloAdmin || sesion?.esAdmin),
   );
 
   // Al navegar se cierra el drawer (en escritorio no se ve: CSS)
@@ -151,13 +155,18 @@ export default function AppLayout() {
             <h1 className={s.pageTitle}>{title}</h1>
             <div className={s.pageDate}>{fechaDeHoy()}</div>
           </div>
-          {/* Es profe y ADEMÁS alumno: puede pasarse a su portal de alumno. */}
-          {sesion?.alumno && (
-            <button className={s.switcher} onClick={() => navigate('/portal')}>
-              Mi portal
-            </button>
-          )}
+          {/* Todo profe tiene su portal, tenga ficha o no: el director es una persona
+              más y desde ahí se asocia a un club, ve el ranking y juega. Antes el botón
+              solo aparecía si YA era alumno, así que el que no tenía ficha no tenía
+              cómo llegar a la pantalla que sirve justamente para unirse. */}
+          <button className={s.switcher} onClick={() => navigate('/portal')}>
+            Mi portal
+          </button>
           <BotonTema />
+          {/* Hoy la única fuente de notificaciones es el ranking, que está en pausa:
+              a quien no lo ve, la campana le quedaría siempre vacía (y su endpoint
+              responde 403). Se muestra cuando el ranking se abra. */}
+          {sesion?.esAdmin && <CampanaNotificaciones />}
         </header>
 
         <main className={s.content}>

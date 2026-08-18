@@ -19,15 +19,46 @@ public class TurnoRepository : ITurnoRepository
         _tenantActual = tenantActual;
     }
 
-    public async Task<IReadOnlyList<Turno>> ListarEntreAsync(
+    public async Task<IReadOnlyList<TurnoAgenda>> ListarEntreAsync(
         DateOnly desde, DateOnly hasta, CancellationToken ct = default) =>
+        // Proyección y no Include: con dos colecciones en el mismo árbol (el roster de la
+        // clase y los participantes del turno) EF hace UN join y las multiplica, y cada
+        // fila arrastraba la ficha entera de dos alumnos —foto en base64 incluida—. Del
+        // roster solo sale el título, y para eso alcanzan dos escalares: contarlo y, si
+        // es uno solo, su nombre. Así queda UNA sola colección y se acaba el cartesiano.
         await _db.Turnos
             .AsNoTracking()
-            .Include(t => t.Cancha).ThenInclude(c => c.Sede)
-            // El roster de la clase: de ahí sale su título (ver TurnoService.TituloDe).
-            .Include(t => t.Horario).ThenInclude(h => h!.Alumnos).ThenInclude(ah => ah.Alumno)
-            .Include(t => t.Participantes).ThenInclude(p => p.Alumno)
             .Where(t => t.TenantId == TenantId && t.Fecha >= desde && t.Fecha <= hasta)
+            .Select(t => new TurnoAgenda(
+                t.Id,
+                t.Fecha,
+                t.HoraInicio,
+                t.DuracionMinutos,
+                t.Estado,
+                t.CanceladoMotivo,
+                t.CanchaId,
+                t.Cancha!.Nombre,
+                t.Cancha.Sede!.Nombre,
+                t.HorarioId,
+                t.Horario!.Nombre,
+                // El turno normal saca su profe del horario; el SUELTO lo lleva propio.
+                // Resolverlo acá alcanza para que la clase suelta entre sola en la agenda
+                // del profe y en el sueldo, sin tocar los services que consumen el record.
+                // Se pregunta por la FK y no por la navegación: traduce a un CASE WHEN
+                // sobre una columna, sin depender de cómo EF resuelva el LEFT JOIN.
+                t.HorarioId != null ? t.Horario!.ProfesorUserId : t.ProfesorUserId,
+                t.Horario.ValorHoraProfe,
+                t.Horario.Dia,
+                t.Horario.HoraInicio,
+                t.Horario.Alumnos.Count(x => x.FechaBaja == null),
+                t.Horario.Alumnos
+                    .Where(x => x.FechaBaja == null)
+                    .Select(x => x.Alumno!.Nombre + " " + x.Alumno.Apellido)
+                    .FirstOrDefault(),
+                t.Participantes
+                    .Select(p => new ParticipanteAgenda(
+                        p.AlumnoId, p.Alumno!.Nombre, p.Alumno.Apellido, p.Presente))
+                    .ToList()))
             .ToListAsync(ct);
 
     public async Task<ILookup<Guid, DateOnly>> FechasGeneradasAsync(

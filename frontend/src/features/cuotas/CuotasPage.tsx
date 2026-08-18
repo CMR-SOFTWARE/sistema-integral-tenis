@@ -5,7 +5,6 @@ import MedioModal from './MedioModal';
 import NuevoCargoModal from './NuevoCargoModal';
 import EditarMontoModal from './EditarMontoModal';
 import PanelMorosos from './PanelMorosos';
-import PanelPedidos from './PanelPedidos';
 import { ESTADO_LIQ_UI, MESES } from './types';
 import type { EstadoLiquidacion } from './types';
 import type { Liquidacion, Medio } from './types';
@@ -81,7 +80,8 @@ export default function CuotasPage() {
         </div>
       </div>
 
-      <PanelPedidos onCambio={() => void recargar()} />
+      {/* Los pedidos del Shop se resuelven en Mi academia → Pedidos: acá se mezclaban
+          con la cobranza. Lo que aceptás allá cae en esta liquidación como un cargo. */}
       <PanelMorosos onCambio={() => void recargar()} />
 
       {error && (

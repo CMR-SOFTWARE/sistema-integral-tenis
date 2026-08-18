@@ -6,7 +6,10 @@
   backdrop-filter: blur(6px);
   display: flex;
   align-items: flex-start;
-  justify-content: center;
+  /* "safe": si la tarjeta llegara a ser más ancha que la pantalla, se pega al borde
+     izquierdo en vez de centrarse. Centrado, el desborde se reparte a los dos lados y
+     la mitad izquierda queda FUERA de la pantalla, adonde no se llega ni scrolleando. */
+  justify-content: safe center;
   padding: 40px 20px;
   overflow-y: auto;
   /* El scroll muere acá y no se "pasa" a lo que haya detrás. Sin esto, con dos
@@ -19,6 +22,11 @@
 
 .card {
   width: 100%;
+  /* Sin esto la tarjeta es un flex item con min-width:auto: un hijo ancho (una tabla,
+     un texto que no corta) la estira más allá del `width: 100%` y el modal termina más
+     ancho que el celular. Con min-width:0 el que desborda es el hijo, adentro, y el
+     modal se sigue viendo entero. */
+  min-width: 0;
   background: var(--color-surface-card);
   color: var(--color-text);
   border: 1px solid var(--color-border);

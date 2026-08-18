@@ -19,7 +19,8 @@ import MiPerfilProfesorPage from './features/perfilprofesor/MiPerfilProfesorPage
 import PlataformaPage from './features/admin/PlataformaPage';
 import AgendaSeccionPage from './features/agenda/AgendaSeccionPage';
 import FinanzasSeccionPage from './features/finanzas/FinanzasSeccionPage';
-import AvisosPage from './features/avisos/AvisosPage';
+import NoticiasPage from './features/noticias/NoticiasPage';
+import Placeholder from './components/Placeholder';
 import BloqueosPage from './features/bloqueos/BloqueosPage';
 import CancelacionesPage from './features/cancelaciones/CancelacionesPage';
 import PortalLayout from './features/portal/PortalLayout';
@@ -28,8 +29,10 @@ import MisTurnosPage from './features/portal/MisTurnosPage';
 import ReservarPage from './features/portal/ReservarPage';
 import MiCuotaPage from './features/portal/MiCuotaPage';
 import ServiciosPage from './features/portal/ServiciosPage';
+import PortalNoticiasPage from './features/portal/NoticiasPage';
 import PerfilPage from './features/portal/PerfilPage';
 import BuscarClubPage from './features/portal/BuscarClubPage';
+import RankingPage from './features/ranking/RankingPage';
 
 /** Gestión: hace falta token Y membresía de profesor (JWT real). */
 function RequiereProfesor() {
@@ -38,14 +41,16 @@ function RequiereProfesor() {
   return sesion.esProfesor ? <Outlet /> : <Navigate to="/login" replace />;
 }
 
-/** Portal: alcanza con ser jugador logueado (con o SIN ficha vinculada —
- *  el portal muestra el estado "sin club" y deja solicitar un profe).
- *  Un profe (dueño/staff) que ADEMÁS es alumno (tiene ficha) puede entrar a
- *  su portal con el switcher; el profe SIN ficha no tiene lado de alumno. */
+/** Portal: alcanza con estar logueado, con o SIN ficha vinculada — el portal muestra el
+ *  estado "sin club" y deja buscar un profe.
+ *
+ *  El PROFE también entra, tenga ficha o no: el director es una persona más y quiere
+ *  poder asociarse a un club, ver el ranking y jugar, igual que su empleado. Hasta el
+ *  15/08/2026 al profe sin ficha lo rebotábamos al dashboard, y así no tenía forma de
+ *  llegar a la pantalla que justamente sirve para unirse a una academia. */
 function RequiereJugador() {
   const sesion = obtenerSesion();
   if (!obtenerToken() || !sesion) return <Navigate to="/login" replace />;
-  if (sesion.esProfesor && !sesion.alumno) return <Navigate to="/dashboard" replace />;
   if (sesion.estadoTenant === 'PendientePago') return <Navigate to="/checkout" replace />;
   return <Outlet />;
 }
@@ -110,7 +115,9 @@ export default function App() {
             {/* Compat: los links viejos entran a Finanzas en el tab correcto */}
             <Route path="/cuotas" element={<Navigate to="/finanzas?tab=cuotas" replace />} />
             <Route path="/reportes" element={<Navigate to="/finanzas?tab=reportes" replace />} />
-            <Route path="/avisos" element={<AvisosPage />} />
+            <Route path="/noticias" element={<NoticiasPage />} />
+            {/* Compat: "Avisos" se llamó así hasta el 13/08/2026 */}
+            <Route path="/avisos" element={<Navigate to="/noticias" replace />} />
             <Route path="/bloqueos" element={<BloqueosPage />} />
             <Route path="/cancelaciones" element={<CancelacionesPage />} />
             <Route path="/plataforma" element={<PlataformaPage />} />
@@ -123,7 +130,24 @@ export default function App() {
             <Route path="turnos" element={<MisTurnosPage />} />
             <Route path="reservar" element={<ReservarPage />} />
             <Route path="cuota" element={<MiCuotaPage />} />
-            <Route path="servicios" element={<ServiciosPage />} />
+            <Route path="shop" element={<ServiciosPage />} />
+            {/* Compat: la sección se llamó "Servicios" hasta el 15/08/2026 */}
+            <Route path="servicios" element={<Navigate to="/portal/shop" replace />} />
+            <Route path="noticias" element={<PortalNoticiasPage />} />
+            <Route
+              path="torneos"
+              element={<Placeholder
+                titulo="Mis torneos"
+                icono="🏆"
+                mensaje="Acá vas a ver los torneos en los que estés anotado, tus partidos y los resultados."
+              />}
+            />
+            {/* EN PAUSA: el ranking todavía no se abrió a los usuarios (ver
+                RankingController). Sin este guard se entra tipeando la URL. */}
+            <Route
+              path="ranking"
+              element={obtenerSesion()?.esAdmin ? <RankingPage /> : <Navigate to="/portal" replace />}
+            />
             <Route path="perfil" element={<PerfilPage />} />
             <Route path="club" element={<BuscarClubPage />} />
           </Route>

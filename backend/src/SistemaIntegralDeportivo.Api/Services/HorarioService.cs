@@ -361,13 +361,21 @@ public class HorarioService : IHorarioService
     /// </summary>
     public static string TituloDe(string? nombre, IEnumerable<AlumnoHorario> roster)
     {
-        if (!string.IsNullOrWhiteSpace(nombre)) return nombre;
-
         var activos = roster.Where(x => x.FechaBaja is null).ToList();
-        if (activos.Count == 1 && activos[0].Alumno is { } unico)
-            return $"{unico.Nombre} {unico.Apellido}";
+        var unico = activos.Count == 1 ? activos[0].Alumno : null;
+        return TituloDe(nombre, activos.Count, unico is null ? null : $"{unico.Nombre} {unico.Apellido}");
+    }
 
-        return activos.Count == 0 ? "Clase sin alumnos" : $"Grupo de {activos.Count}";
+    /// <summary>
+    /// La regla, sin depender del roster entero: la agenda lo trae contado (traerlo
+    /// completo multiplicaba las filas de la consulta). Las dos versiones terminan acá
+    /// para que el título no vuelva a tener copias que se desactualicen.
+    /// </summary>
+    public static string TituloDe(string? nombre, int miembrosActivos, string? unicoMiembro)
+    {
+        if (!string.IsNullOrWhiteSpace(nombre)) return nombre;
+        if (miembrosActivos == 1 && !string.IsNullOrWhiteSpace(unicoMiembro)) return unicoMiembro;
+        return miembrosActivos == 0 ? "Clase sin alumnos" : $"Grupo de {miembrosActivos}";
     }
 
     private static HorarioResponseDto Mapear(Horario h)

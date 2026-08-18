@@ -22,6 +22,7 @@ export default function EditarEmpleadoModal({ empleado, onClose, onEditar }: Pro
     fechaNacimiento: empleado.fechaNacimiento?.slice(0, 10) ?? '',
     valorHora: empleado.valorHora?.toString() ?? '',
     sedeId: empleado.sedeId ?? '',
+    puedeCobrar: empleado.puedeCobrar,
   });
   const set = (campo: keyof typeof form, valor: string) => setForm((f) => ({ ...f, [campo]: valor }));
   const [sedes, setSedes] = useState<SedeMin[]>([]);
@@ -44,6 +45,7 @@ export default function EditarEmpleadoModal({ empleado, onClose, onEditar }: Pro
         fechaNacimiento: form.fechaNacimiento || undefined,
         valorHora: form.valorHora.trim() === '' ? undefined : Number(form.valorHora),
         sedeId: form.sedeId || undefined,
+        puedeCobrar: form.puedeCobrar,
       });
       onClose();
     } catch (e) {
@@ -116,6 +118,17 @@ export default function EditarEmpleadoModal({ empleado, onClose, onEditar }: Pro
                 <option value="">Sin asignar</option>
                 {sedes.map((x) => <option key={x.id} value={x.id}>{x.nombre}</option>)}
               </select>
+            </label>
+            <label className={`${s.campo} ${s.span2}`}>
+              <span>Permisos</span>
+              <label className={s.check}>
+                <input
+                  type="checkbox"
+                  checked={form.puedeCobrar}
+                  onChange={(e) => setForm((f) => ({ ...f, puedeCobrar: e.target.checked }))}
+                />
+                Puede cobrar clases y cuotas
+              </label>
             </label>
           </>
         )}

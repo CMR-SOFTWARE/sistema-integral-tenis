@@ -7,6 +7,8 @@ export interface NavItem {
   icon: string;
   /** Solo lo ve el dueño (head pro), no el profe empleado (staff). */
   soloOwner?: boolean;
+  /** Lo ve el dueño, o el staff que el dueño habilitó a cobrar (Bloque 6, pedido 2). */
+  soloConCobro?: boolean;
   /** Solo lo ve el admin de plataforma (dueño de la app). */
   soloAdmin?: boolean;
   /** En mobile va a la barra inferior (máx. 3 + “Más”). */
@@ -46,15 +48,16 @@ export const profNav: NavItem[] = [
   },
   {
     // Finanzas agrupa Cuotas (operación del mes) + Reportes (analítica) en sub-tabs.
+    // El dueño siempre entra; el staff solo si lo habilitaron a cobrar (Bloque 6).
     to: '/finanzas',
     label: 'Finanzas',
     icon: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6',
-    soloOwner: true,
+    soloConCobro: true,
   },
   {
-    to: '/avisos',
-    label: 'Avisos',
-    icon: 'M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0',
+    to: '/noticias',
+    label: 'Noticias',
+    icon: 'M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-4 0V9h4M16 6h-6M16 10h-6M12 14h-2',
     soloOwner: true,
   },
   { to: '/bloqueos', label: 'Bloqueos', icon: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM5.6 5.6l12.8 12.8', soloOwner: true },
@@ -84,9 +87,17 @@ export const alumnoNav: NavItem[] = [
   { to: '/portal/turnos', label: 'Mis turnos', icon: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4', enBarra: true },
   { to: '/portal/reservar', label: 'Reservar', icon: 'M12 8v8M8 12h8M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z', enBarra: true },
   { to: '/portal/cuota', label: 'Mi cuota', icon: 'M1 5h22v14H1zM1 10h22' },
-  { to: '/portal/servicios', label: 'Servicios', icon: 'M20 7h-9M14 17H5M17 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM7 13a4 4 0 1 0 0 8 4 4 0 0 0 0-8z' },
+  // "Shop" es como lo llama el profe del lado del alumno. Su catálogo, en Mi academia →
+  // Configuración, sigue diciendo "Servicios": es la palabra que él usa para cargarlos.
+  { to: '/portal/shop', label: 'Shop', icon: 'M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 0 1-8 0' },
+  { to: '/portal/noticias', label: 'Noticias', icon: 'M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v16a2 2 0 0 1-4 0V9h4M16 6h-6M16 10h-6M12 14h-2' },
+  { to: '/portal/torneos', label: 'Mis torneos', icon: 'M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 22h16M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22M18 2H6v7a6 6 0 0 0 12 0z' },
+  // EN PAUSA (15/08/2026): el ranking entró a producción sin probar, así que por ahora
+  // lo ve solo el admin. Al habilitarlo se saca este soloAdmin y se abre la policy de
+  // RankingController (que hoy exige "Admin").
+  { to: '/portal/ranking', label: 'Ranking', icon: 'M18 20V10M12 20V4M6 20v-6', soloAdmin: true },
   { to: '/portal/perfil', label: 'Mi perfil', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0' },
-  { to: '/portal/club', label: 'Mi club', icon: 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6' },
+  { to: '/portal/club', label: 'Mis clubes', icon: 'M3 21h18M5 21V7l7-4 7 4v14M9 21v-6h6v6' },
 ];
 
 export const portalTitles: Record<string, string> = Object.fromEntries(

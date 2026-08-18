@@ -288,6 +288,20 @@ public class AlumnoService : IAlumnoService
         return alumnos.Select(a => Mapear(a, deudores.Contains(a.Id), conClase.Contains(a.Id))).ToList();
     }
 
+    public async Task<IReadOnlyList<AlumnoResponseDto>> ListarPorIdsAsync(
+        IReadOnlyCollection<Guid> ids, CancellationToken ct = default)
+    {
+        if (ids.Count == 0) return [];
+
+        var alumnos = await _repo.ListarPorIdsAsync(ids, ct);
+
+        // Acotado a los ids pedidos (no el padrón entero): son las mismas dos consultas
+        // en batch que hace ListarAsync, pero sobre un puñado de fichas.
+        var conClase = await _repo.FiltrarConClaseAsync(ids, ct);
+        var deudores = await DeudoresDeAsync(alumnos.Select(a => a.Id).ToList(), ct);
+        return alumnos.Select(a => Mapear(a, deudores.Contains(a.Id), conClase.Contains(a.Id))).ToList();
+    }
+
     public async Task<AlumnoResponseDto?> ObtenerAsync(Guid id, CancellationToken ct = default)
     {
         var alumno = await _repo.ObtenerAsync(id, ct);

@@ -108,6 +108,18 @@ public class AlumnoRepository : IAlumnoRepository
     public Task<Alumno?> ObtenerAsync(Guid id, CancellationToken ct = default) =>
         _db.Alumnos.Include(a => a.Sede).FirstOrDefaultAsync(a => a.TenantId == TenantId && a.Id == id, ct);
 
+    public async Task<IReadOnlyList<Alumno>> ListarPorIdsAsync(
+        IReadOnlyCollection<Guid> ids, CancellationToken ct = default)
+    {
+        if (ids.Count == 0) return [];
+
+        return await _db.Alumnos.AsNoTracking()
+            .Include(a => a.Sede)
+            .Where(a => a.TenantId == TenantId && ids.Contains(a.Id))
+            .OrderBy(a => a.Apellido).ThenBy(a => a.Nombre)
+            .ToListAsync(ct);
+    }
+
     public async Task<HashSet<Guid>> ListarConClaseAsync(CancellationToken ct = default)
     {
         // Los que tienen un lugar vigente en alguna clase activa del tenant. Antes
@@ -138,13 +150,20 @@ public class AlumnoRepository : IAlumnoRepository
         return ids.ToHashSet();
     }
 
-    public Task<int> ContarActivosConClaseAsync(CancellationToken ct = default) =>
-        _db.Alumnos
-            .Where(a => a.TenantId == TenantId
-                && a.Estado == EstadoAlumno.Activo
-                && _db.AlumnoHorarios.Any(ah =>
-                    ah.AlumnoId == a.Id && ah.FechaBaja == null && ah.Horario.Activo))
-            .CountAsync(ct);
+    public async Task<IReadOnlyList<AlumnoResumenFila>> ResumenAsync(CancellationToken ct = default) =>
+        // Cuatro columnas por alumno y nada más: aunque el club tenga cientos de
+        // fichas pesa nada, y el dashboard saca sus cuatro números de acá. Antes eran
+        // cuatro consultas contra esta misma tabla, y cada ida cuesta ~115 ms de red.
+        await _db.Alumnos
+            .AsNoTracking()
+            .Where(a => a.TenantId == TenantId)
+            .Select(a => new AlumnoResumenFila(
+                a.Estado,
+                a.Categoria,
+                a.CreadoEl,
+                _db.AlumnoHorarios.Any(ah =>
+                    ah.AlumnoId == a.Id && ah.FechaBaja == null && ah.Horario.Activo)))
+            .ToListAsync(ct);
 
     public async Task EliminarDefinitivoAsync(Alumno alumno, CancellationToken ct = default)
     {
@@ -180,12 +199,6 @@ public class AlumnoRepository : IAlumnoRepository
             .Where(a => a.UserId == userId)
             .OrderBy(a => a.Nombre)
             .ToListAsync(ct);
-
-    public Task<int> ContarPorEstadoAsync(EstadoAlumno estado, CancellationToken ct = default) =>
-        _db.Alumnos.CountAsync(a => a.TenantId == TenantId && a.Estado == estado, ct);
-
-    public Task<int> ContarNuevosDesdeAsync(DateTime desde, CancellationToken ct = default) =>
-        _db.Alumnos.CountAsync(a => a.TenantId == TenantId && a.CreadoEl >= desde, ct);
 
     public async Task<decimal> SumarArancelActivosAsync(CancellationToken ct = default) =>
         await _db.Alumnos

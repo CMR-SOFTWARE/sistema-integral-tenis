@@ -1,19 +1,30 @@
 import RaquetaLineArt from './tenis/RaquetaLineArt';
 import s from './Placeholder.module.css';
 
+interface Props {
+  titulo: string;
+  /** Qué va a poder hacer acá cuando esté. Sin esto, un "próximamente" seco. */
+  mensaje?: string;
+  /** Emoji de la sección; el default es la pelotita. */
+  icono?: string;
+}
+
 /**
- * Página provisoria para las secciones que todavía no tienen su vertical.
- * Se va reemplazando a medida que cada módulo cobra vida (la primera: Alumnos).
+ * Sección todavía no construida. El texto está escrito para el USUARIO (un alumno del
+ * club), no para nosotros: antes decía "esta sección llega en una próxima vertical,
+ * estamos construyendo el prototipo módulo por módulo", que es jerga de desarrollo.
  */
-export default function Placeholder({ titulo }: { titulo: string }) {
+export default function Placeholder({ titulo, mensaje, icono }: Props) {
   return (
     <div className={s.card}>
-      <RaquetaLineArt oscilar className={s.icon} />
+      {icono
+        ? <div className={s.icon}>{icono}</div>
+        : <RaquetaLineArt oscilar className={s.icon} />}
       <h2 className={s.title}>{titulo}</h2>
       <p className={s.text}>
-        Esta sección llega en una próxima vertical. Estamos construyendo el
-        prototipo módulo por módulo, de punta a punta.
+        {mensaje ?? 'Estamos preparando esta sección. Muy pronto vas a poder usarla.'}
       </p>
+      <span className={s.chip}>Próximamente</span>
     </div>
   );
 }

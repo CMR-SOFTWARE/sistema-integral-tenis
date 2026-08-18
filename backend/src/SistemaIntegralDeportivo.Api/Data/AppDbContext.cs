@@ -34,13 +34,15 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
     public DbSet<Bloqueo> Bloqueos => Set<Bloqueo>();
     public DbSet<Solicitud> Solicitudes => Set<Solicitud>();
     public DbSet<Servicio> Servicios => Set<Servicio>();
+    public DbSet<FotoServicio> FotosServicio => Set<FotoServicio>();
     public DbSet<Pedido> Pedidos => Set<Pedido>();
+    public DbSet<PedidoLinea> PedidoLineas => Set<PedidoLinea>();
     public DbSet<Raqueta> Raquetas => Set<Raqueta>();
     public DbSet<Encordado> Encordados => Set<Encordado>();
     public DbSet<SolicitudHorario> SolicitudesHorario => Set<SolicitudHorario>();
     public DbSet<ClaseSuelta> ClasesSueltas => Set<ClaseSuelta>();
     public DbSet<Publicidad> Publicidades => Set<Publicidad>();
-    public DbSet<Aviso> Avisos => Set<Aviso>();
+    public DbSet<Noticia> Noticias => Set<Noticia>();
     public DbSet<NotaAlumno> NotasAlumno => Set<NotaAlumno>();
     public DbSet<MembresiaTenant> MembresiasTenant => Set<MembresiaTenant>();
     public DbSet<PagoEmpleado> PagosEmpleado => Set<PagoEmpleado>();
@@ -49,6 +51,15 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
     public DbSet<PerfilProfesor> PerfilesProfesor => Set<PerfilProfesor>();
     public DbSet<FotoPerfil> FotosPerfil => Set<FotoPerfil>();
     public DbSet<HitoTrayectoria> HitosTrayectoria => Set<HitoTrayectoria>();
+    public DbSet<Notificacion> Notificaciones => Set<Notificacion>();
+    public DbSet<JugadorRanking> JugadoresRanking => Set<JugadorRanking>();
+    public DbSet<JuegoPendiente> JuegosPendientes => Set<JuegoPendiente>();
+    public DbSet<PuntosMovimiento> PuntosMovimientos => Set<PuntosMovimiento>();
+    public DbSet<JugadorRankingDobles> JugadoresRankingDobles => Set<JugadorRankingDobles>();
+    public DbSet<JuegoDoblesPendiente> JuegosDoblesPendientes => Set<JuegoDoblesPendiente>();
+    public DbSet<PuntosMovimientoDobles> PuntosMovimientosDobles => Set<PuntosMovimientoDobles>();
+    public DbSet<RankingSnapshot> RankingSnapshots => Set<RankingSnapshot>();
+    public DbSet<JuegoRevision> JuegosRevision => Set<JuegoRevision>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -210,18 +221,18 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
         modelBuilder.Entity<Servicio>()
             .HasIndex(s => s.TenantId); // "el catálogo del profe"
 
+        // Las fotos se van con el producto: no existen sin él. (El ARCHIVO del storage lo
+        // borra el service; la base no sabe de archivos.)
+        modelBuilder.Entity<FotoServicio>()
+            .HasOne(f => f.Servicio).WithMany(s => s.Fotos).HasForeignKey(f => f.ServicioId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<FotoServicio>()
+            .HasIndex(f => f.ServicioId); // "las fotos de este producto"
+
         modelBuilder.Entity<Pedido>().Property(p => p.Estado).HasConversion<string>();
-        modelBuilder.Entity<Pedido>().Property(p => p.Precio).HasPrecision(12, 2);
         modelBuilder.Entity<Pedido>()
             .HasIndex(p => new { p.TenantId, p.Estado }); // "pedidos pendientes del profe"
-
-        // El servicio puede desactivarse pero el pedido conserva su snapshot:
-        // si se borrara el servicio, el pedido histórico no se rompe
-        modelBuilder.Entity<Pedido>()
-            .HasOne(p => p.Servicio)
-            .WithMany()
-            .HasForeignKey(p => p.ServicioId)
-            .OnDelete(DeleteBehavior.Restrict);
 
         // El cargo que nació del pedido: si se borrara, el pedido queda sin él
         modelBuilder.Entity<Pedido>()
@@ -229,6 +240,23 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
             .WithMany()
             .HasForeignKey(p => p.CargoId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<PedidoLinea>().Property(l => l.PrecioUnitario).HasPrecision(12, 2);
+
+        // Una línea no existe sin su pedido
+        modelBuilder.Entity<PedidoLinea>()
+            .HasOne(l => l.Pedido)
+            .WithMany(p => p.Lineas)
+            .HasForeignKey(l => l.PedidoId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // El servicio puede desactivarse pero la línea conserva su snapshot:
+        // si se borrara el servicio, el pedido histórico no se rompe
+        modelBuilder.Entity<PedidoLinea>()
+            .HasOne(l => l.Servicio)
+            .WithMany()
+            .HasForeignKey(l => l.ServicioId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         // ── Raquetas del alumno (M3) ──
 
@@ -299,10 +327,10 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
         modelBuilder.Entity<Publicidad>()
             .HasIndex(p => p.TenantId); // "los banners de este club"
 
-        // ── Avisos: tablón general del profe por tenant ──
+        // ── Noticias: el tablón del club, por tenant ──
 
-        modelBuilder.Entity<Aviso>()
-            .HasIndex(a => a.TenantId); // "los avisos de este club"
+        modelBuilder.Entity<Noticia>()
+            .HasIndex(n => n.TenantId); // "las noticias de este club"
 
         // ── Membresías Staff: el profe empleado dentro del tenant del head pro ──
 
@@ -397,6 +425,74 @@ public class AppDbContext : IdentityUserContext<Usuario, Guid>
         // El listado del profe: pendientes de SU club
         modelBuilder.Entity<Solicitud>()
             .HasIndex(s => new { s.TenantId, s.Estado });
+
+        // ── Ranking R.U.T.A. (cross-tenant — ver JugadorRankingRepository) ──
+
+        modelBuilder.Entity<Notificacion>()
+            .HasIndex(n => new { n.DestinatarioUserId, n.Leida }); // "mis notificaciones sin leer"
+
+        modelBuilder.Entity<JugadorRanking>()
+            .HasIndex(j => j.UsuarioId)
+            .IsUnique(); // 1:1 con Usuario
+
+        modelBuilder.Entity<JugadorRanking>()
+            .HasIndex(j => j.PuntosProvisionales); // ordenar el leaderboard
+
+        // OrdenInscripcion es el desempate (nunca alfabético/random) y necesita su
+        // propia secuencia: es un int aparte del Id (Guid), no la PK.
+        modelBuilder.HasSequence<int>("OrdenInscripcionRanking").StartsAt(1);
+        modelBuilder.Entity<JugadorRanking>()
+            .Property(j => j.OrdenInscripcion)
+            .HasDefaultValueSql("nextval('\"OrdenInscripcionRanking\"')");
+
+        modelBuilder.Entity<JuegoPendiente>().Property(j => j.Estado).HasConversion<string>();
+
+        // Un par de jugadores solo puede enfrentarse UNA VEZ en este flujo — el
+        // contrato es explícito: bloquea incluso si el desafío ya está Finalizado
+        // (nunca se borra), por eso el índice es único SIN filtro por estado.
+        modelBuilder.Entity<JuegoPendiente>()
+            .HasIndex(j => new { j.JugadorMenorId, j.JugadorMayorId })
+            .IsUnique();
+
+        modelBuilder.Entity<PuntosMovimiento>()
+            .HasIndex(m => new { m.JugadorRankingId, m.Fecha }); // "puntos vigentes de un jugador"
+
+        // ── Ranking de DOBLES (Fase 3) — espejo de singles, pool de puntos independiente ──
+
+        modelBuilder.Entity<JugadorRankingDobles>()
+            .HasIndex(j => j.JugadorRankingId)
+            .IsUnique(); // 1:1 con JugadorRanking (no con Usuario directo)
+
+        modelBuilder.Entity<JugadorRankingDobles>()
+            .HasIndex(j => j.PuntosProvisionales);
+
+        // Desempate propio de dobles: secuencia aparte de la de singles.
+        modelBuilder.HasSequence<int>("OrdenInscripcionRankingDobles").StartsAt(1);
+        modelBuilder.Entity<JugadorRankingDobles>()
+            .Property(j => j.OrdenInscripcion)
+            .HasDefaultValueSql("nextval('\"OrdenInscripcionRankingDobles\"')");
+
+        modelBuilder.Entity<JuegoDoblesPendiente>().Property(j => j.Estado).HasConversion<string>();
+
+        // Sin índice único acá a propósito: el bloqueo pareja-vs-pareja (revancha
+        // permitida tras Finalizado) se valida en el Service, no en la base.
+
+        modelBuilder.Entity<PuntosMovimientoDobles>()
+            .HasIndex(m => new { m.JugadorRankingDoblesId, m.Fecha });
+
+        // ── Cierre oficial + revisiones (Fase 4) ──
+
+        modelBuilder.Entity<RankingSnapshot>().Property(s => s.Modalidad).HasConversion<string>();
+        modelBuilder.Entity<RankingSnapshot>().Property(s => s.Scope).HasConversion<string>();
+
+        // "el snapshot oficial vigente de tal modalidad+scope+valor" y "¿ya cerró hoy?"
+        modelBuilder.Entity<RankingSnapshot>()
+            .HasIndex(s => new { s.Modalidad, s.Scope, s.ScopeValor, s.FechaCorte });
+
+        modelBuilder.Entity<JuegoRevision>().Property(r => r.Estado).HasConversion<string>();
+
+        modelBuilder.Entity<JuegoRevision>()
+            .HasIndex(r => new { r.JuegoPendienteId, r.JuegoDoblesPendienteId, r.Estado });
 
         // ── Datos semilla: el tenant demo (valores fijos, sin Guid.NewGuid()
         //    ni DateTime.Now, porque HasData exige datos determinísticos) ──

@@ -7,6 +7,15 @@ sugerencias: seguilas salvo que Lucas diga lo contrario.
 lo **revende** a otros profes (es Owner + Admin de la plataforma). Lucas (fundador) viene
 de **C#/.NET** y está aprendiendo Node/git.
 
+**El equipo son varias personas**, no solo quien te esté hablando: hay quien sigue el
+producto y hay un compañero con una rama de **rediseño del front**
+(`feature/correcciones-front`) pendiente de mergear. Antes de encarar un rediseño grande de
+una pantalla, avisá: van a chocar en los `.module.css`.
+
+**Antes de proponer una feature, leé [`docs/pedidos-del-profe.md`](docs/pedidos-del-profe.md):**
+es el backlog vivo con lo que pidió el cliente, lo que ya está en producción y —sobre todo—
+**las decisiones de producto ya tomadas**. No las vuelvas a discutir ni las decidas distinto.
+
 ---
 
 ## 1. Comunicación
@@ -37,6 +46,18 @@ Reglas que se respetan siempre:
 - **Base: PostgreSQL** (Supabase en prod, un Postgres **local** en dev). Las migraciones se
   **auto-aplican al arrancar** la API. Si tocás el modelo → `dotnet ef migrations add <Nombre>`
   → **revisá el archivo generado** antes de correr.
+  - **RENOMBRAR ES EL CASO PELIGROSO.** Al renombrar una tabla o una entidad, EF scaffoldea
+    `DropTable` + `CreateTable` y avisa *"may result in the loss of data"*. Eso **borra los
+    datos en producción**: EF no puede saber que es un rename y no una tabla nueva; eso lo
+    sabe quien hizo el cambio. Hay que **reescribir la migración a mano** con `RenameTable`,
+    `RenameIndex` y `RENAME CONSTRAINT` para la PK y la FK. Ejemplo vivo:
+    `Migrations/20260813113840_RenombrarAvisosANoticias.cs`.
+  - Antes de mergear una migración que toca datos, **probala contra la base local con datos
+    reales adentro**: aplicarla, revertirla y volver a aplicarla. `dotnet ef migrations
+    script <desde> <hasta>` muestra el SQL exacto sin tocar nada.
+  - No renombres las constraints `NOT NULL` que Postgres 18 crea con nombre
+    (`Avisos_Titulo_not_null`): en una versión anterior ni existen y la migración fallaría
+    en producción. Son cosméticas, EF nunca las referencia por nombre.
 - **Frontend:** React + TypeScript + Vite + **React Query** (caché; las query keys incluyen
   el recurso y el alumno activo cuando aplica) + **CSS Modules**. Los tipos del front son
   **espejo de los DTOs** del back.
@@ -44,12 +65,41 @@ Reglas que se respetan siempre:
   esa es la pantalla real, la de escritorio es la excepción. Reglas concretas:
   - Los estilos **base** son los del celular; lo de escritorio se agrega con
     `@media (min-width: ...)`, nunca al revés (`max-width` es parche, no diseño).
-  - **Nada desborda la pantalla.** Lo ancho (tablas, grillas, filas de filtros) va en un
-    contenedor con `overflow-x: auto` — `overflow: hidden` corta el contenido y lo deja
-    inalcanzable.
-  - En una barra de herramientas, los controles que se leen juntos (‹ período ›) van en
-    **un contenedor propio**: sueltos con `flex-wrap` se desparraman al envolverse.
-  - Toda pantalla nueva se revisa a **~390 px** antes de darla por terminada.
+  - **Nada desborda la pantalla.** Lo ancho —**tablas y grillas**— va en un contenedor con
+    `overflow-x: auto`; `overflow: hidden` corta el contenido y lo deja inalcanzable.
+    **Ojo: eso es para tablas, NO para barras de filtros.** Una toolbar **envuelve**, porque
+    una tira que se desliza esconde la mitad de los controles sin avisar que están ahí.
+  - En una barra de herramientas, los controles que se leen juntos (‹ período ›, los dos
+    botones de "crear") van en **un contenedor propio**: sueltos con `flex-wrap` se
+    desparraman al envolverse, cada uno por su lado.
+  - **Al convertir una tabla en tarjetas** con un media query (`display: block`), acordate
+    de resetear su `min-width`: si queda, la "tarjeta" mide 560 px en una pantalla de 390 y
+    las acciones se van fuera de la vista. Y ordená las celdas por **clase**, no por
+    `nth-child`: dos tablas que comparten CSS y tienen distinta cantidad de columnas quedan
+    ordenadas distinto.
+  - `white-space: nowrap` en una celda le impide angostarse y **estira la fila entera**.
+  - **Y esa fila estira la columna: `1fr` es `minmax(auto, 1fr)`,** y ese `auto` toma como
+    piso el **ancho mínimo del contenido**. Una sola celda que no se angosta hace crecer
+    toda la grilla más allá de la pantalla. En las grillas va **`minmax(0, 1fr)`**.
+    - Los dos arreglos se necesitan y hacen cosas distintas: el `minmax(0, …)` evita que
+      la **columna** crezca, y el `min-width: 0` deja que **la celda** se angoste una vez
+      que la columna dejó de crecer. Con uno solo no alcanza — y `overflow: hidden` **no**
+      reemplaza al `min-width`: solo deja que el texto se recorte *después*, no baja el
+      mínimo que la celda le pide a la grilla.
+    - Ejemplo vivo: `DetalleAlumnoModal.module.css`. La fila del cargo pedía 502 px en una
+      pantalla de 390 y se llevaba el modal entero fuera de la vista.
+  - **Un modal que desborda no se puede alcanzar.** Centrado con flex, el sobrante se
+    reparte a los dos lados y la mitad izquierda queda fuera de la pantalla, adonde no se
+    llega ni scrolleando. `components/Modal.module.css` ya está blindado (`min-width: 0`
+    en la tarjeta y `justify-content: safe center`), pero eso **tapa el síntoma**: si una
+    ficha se ve cortada, el culpable siempre es un hijo que no se angosta.
+  - **El verde de marca no sirve para destacar nada**: ya significa "todo bien" (cuota al
+    día, clase confirmada, botón principal, pestaña activa). Lo que tiene que llamar la
+    atención va en **rojo** (`--color-danger`) o ámbar (`#b7791f`). Ejemplo: la noticia
+    importante del portal.
+  - Toda pantalla nueva se revisa a **~390 px** antes de darla por terminada. Y si la
+    pantalla ya existía, **compará con cómo se veía antes**: lo que ya funcionaba en el
+    celular no se rediseña de paso.
 - **Comentarios** que explican el **por qué** (no el qué), en español, con la densidad del
   código de al lado.
 
@@ -58,6 +108,11 @@ Reglas que se respetan siempre:
 - **Test-first solo en la lógica de negocio** (los `Service` con reglas), con **xUnit + Moq**
   (repos mockeados).
 - **No** se testea scaffolding, repositorios ni UI.
+- **Consecuencia que hay que tener presente: como los repos están mockeados, las consultas
+  y proyecciones EF NO están cubiertas.** Un `GroupBy` sobre un campo que pasó a ser
+  nullable, o un `Select` que EF no sabe traducir, revientan recién en runtime y con los
+  455 tests en verde. **Cuando toques una proyección o una query, verificalo levantando la
+  API y pegándole** (el README explica cómo, incluidas las credenciales del seed).
 
 ## 5. Git — lo ejecuta Lucas, guiado
 
@@ -71,6 +126,9 @@ Reglas que se respetan siempre:
   5. **Cierre:** `git switch main` → `git pull` → `git branch -d feat/<algo>`.
 - **Commits SIN co-autor** (nada de `Co-Authored-By`). En PowerShell, para el cuerpo usar
   varios `-m` (un párrafo por `-m`).
+- **Nada de sintaxis de código en el mensaje de commit.** En bash, un `!` dentro de comillas
+  dobles dispara la expansión de historial y **el commit no se hace** (`bash: !.Value: event
+  not found`) — y si venía encadenado con un `push`, se pushea una rama vacía.
 - **Merge = deploy a producción** (Railway el back, Vercel el front, automático). Cuidado
   redoblado con features destructivas y datos reales.
 

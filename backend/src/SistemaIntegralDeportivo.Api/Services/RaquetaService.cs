@@ -46,6 +46,7 @@ public class RaquetaService : IRaquetaService
         var raqueta = new Raqueta
         {
             AlumnoId = alumnoId,
+            Nombre = Limpiar(dto.Nombre),
             Marca = dto.Marca.Trim(),
             Modelo = Limpiar(dto.Modelo),
             // TenantId lo asigna el repositorio
@@ -59,6 +60,7 @@ public class RaquetaService : IRaquetaService
         Guid alumnoId, Guid raquetaId, GuardarRaquetaDto dto, CancellationToken ct = default)
     {
         var raqueta = await MiaAsync(alumnoId, raquetaId, ct);
+        raqueta.Nombre = Limpiar(dto.Nombre);
         raqueta.Marca = dto.Marca.Trim();
         raqueta.Modelo = Limpiar(dto.Modelo);
         await _raquetas.GuardarCambiosAsync(ct);
@@ -151,6 +153,7 @@ public class RaquetaService : IRaquetaService
         return new RaquetaDto
         {
             Id = r.Id,
+            Nombre = r.Nombre,
             Marca = r.Marca,
             Modelo = r.Modelo,
             Encordados = historial,

@@ -14,6 +14,8 @@ public interface IPedidoRepository
     /// <summary>Mis pedidos (portal del alumno), el más reciente primero.</summary>
     Task<IReadOnlyList<Pedido>> ListarPorAlumnoAsync(Guid alumnoId, CancellationToken ct = default);
     Task<int> ContarPorEstadoAsync(EstadoPedido estado, CancellationToken ct = default);
+    /// <summary>Borra el pedido (y sus líneas, en cascada) — para cancelar uno propio.</summary>
+    void Eliminar(Pedido pedido);
     Task GuardarCambiosAsync(CancellationToken ct = default);
 }
 
@@ -37,12 +39,14 @@ public class PedidoRepository : IPedidoRepository
     }
 
     public Task<Pedido?> ObtenerAsync(Guid id, CancellationToken ct = default) =>
-        _db.Pedidos.FirstOrDefaultAsync(p => p.TenantId == TenantId && p.Id == id, ct);
+        _db.Pedidos.Include(p => p.Lineas)
+            .FirstOrDefaultAsync(p => p.TenantId == TenantId && p.Id == id, ct);
 
     public async Task<IReadOnlyList<Pedido>> ListarPorEstadoAsync(
         EstadoPedido estado, CancellationToken ct = default) =>
         await _db.Pedidos
             .Include(p => p.Alumno)
+            .Include(p => p.Lineas)
             .Where(p => p.TenantId == TenantId && p.Estado == estado)
             .OrderBy(p => p.PedidoEl)
             .ToListAsync(ct);
@@ -50,12 +54,16 @@ public class PedidoRepository : IPedidoRepository
     public async Task<IReadOnlyList<Pedido>> ListarPorAlumnoAsync(
         Guid alumnoId, CancellationToken ct = default) =>
         await _db.Pedidos
+            .Include(p => p.Lineas)
             .Where(p => p.TenantId == TenantId && p.AlumnoId == alumnoId)
             .OrderByDescending(p => p.PedidoEl)
             .ToListAsync(ct);
 
     public Task<int> ContarPorEstadoAsync(EstadoPedido estado, CancellationToken ct = default) =>
         _db.Pedidos.CountAsync(p => p.TenantId == TenantId && p.Estado == estado, ct);
+
+    public void Eliminar(Pedido pedido) =>
+        _db.Pedidos.Remove(pedido); // las líneas caen en cascada
 
     public Task GuardarCambiosAsync(CancellationToken ct = default) =>
         _db.SaveChangesAsync(ct);

@@ -445,6 +445,14 @@
   opacity: 0.55;
 }
 
+/* Solo las filas de "clases de hoy" son un <Link>; las de cancelaciones
+   siguen siendo <div> y no las toca. */
+.filaClases {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
 .filaCancelada .filaTitulo {
   text-decoration: line-through;
 }

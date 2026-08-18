@@ -26,6 +26,7 @@ public class ClaseSueltaServiceTests
     private readonly Mock<ITurnoRepository> _turnos;
     private readonly Mock<ICargoRepository> _cargos;
     private readonly Mock<ITenantRepository> _tenant;
+    private readonly Mock<IStaffService> _staff;
     private readonly ClaseSueltaService _service;
 
     public ClaseSueltaServiceTests()
@@ -37,9 +38,15 @@ public class ClaseSueltaServiceTests
         _turnos = new Mock<ITurnoRepository>();
         _cargos = new Mock<ICargoRepository>();
         _tenant = new Mock<ITenantRepository>();
+        _staff = new Mock<IStaffService>();
         _service = new ClaseSueltaService(
             _clases.Object, _alumnos.Object, _sedes.Object, _horarios.Object,
-            _turnos.Object, _cargos.Object, _tenant.Object);
+            _turnos.Object, _cargos.Object, _tenant.Object, _staff.Object);
+
+        // Por defecto el profe elegido es válido (los casos que lo niegan lo sobreescriben).
+        _staff.Setup(s => s.EsAsignableAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _staff.Setup(s => s.TrabajaEnSedeAsync(It.IsAny<Guid>(), It.IsAny<Guid?>(), It.IsAny<CancellationToken>())).ReturnsAsync(true);
+        _sedes.Setup(s => s.SedeDeCanchaAsync(CanchaId, It.IsAny<CancellationToken>())).ReturnsAsync(SedeId);
 
         _alumnos.Setup(a => a.ObtenerAsync(AlumnoId, It.IsAny<CancellationToken>())).ReturnsAsync(AlumnoActivo());
         _cargos.Setup(c => c.ListarImpagosAsync(It.IsAny<IReadOnlyCollection<Guid>>(), It.IsAny<CancellationToken>()))
@@ -149,7 +156,8 @@ public class ClaseSueltaServiceTests
     {
         // Otra clase suelta ya ocupa la Cancha 1 esa fecha 18:00
         _turnos.Setup(t => t.ListarEntreAsync(Manana, Manana, It.IsAny<CancellationToken>()))
-               .ReturnsAsync([new Turno { CanchaId = CanchaId, Fecha = Manana, HoraInicio = new TimeOnly(18, 0), DuracionMinutos = 60, Estado = EstadoTurno.Programado }]);
+               .ReturnsAsync([TurnosDePrueba.Agenda(
+                   canchaId: CanchaId, fecha: Manana, hora: new TimeOnly(18, 0))]);
 
         var libres = await _service.CanchasLibresAsync(SedeId, Manana, new TimeOnly(18, 30), 60);
 
@@ -238,5 +246,294 @@ public class ClaseSueltaServiceTests
 
         await Assert.ThrowsAsync<ReglaDeNegocioException>(
             () => _service.InformarPagoAsync(Guid.NewGuid(), clase.Id));
+    }
+
+    // ── Asignar: el camino del PROFE (no lo pide el alumno) ──
+
+    private static readonly Guid ProfeId = Guid.NewGuid();
+
+    /// <summary>Captura lo que el service crea al asignar, para poder afirmar sobre eso.</summary>
+    private (List<Cargo> Cargos, List<Turno> Turnos, List<ClaseSuelta> Clases) Capturar()
+    {
+        List<Cargo> cargos = []; List<Turno> turnos = []; List<ClaseSuelta> clases = [];
+        _cargos.Setup(c => c.AgregarAsync(It.IsAny<Cargo>(), It.IsAny<CancellationToken>()))
+               .Callback((Cargo c, CancellationToken _) => cargos.Add(c)).Returns(Task.CompletedTask);
+        _turnos.Setup(t => t.AgregarAsync(It.IsAny<Turno>(), It.IsAny<CancellationToken>()))
+               .Callback((Turno t, CancellationToken _) => turnos.Add(t)).Returns(Task.CompletedTask);
+        _clases.Setup(c => c.AgregarAsync(It.IsAny<ClaseSuelta>(), It.IsAny<CancellationToken>()))
+               .Callback((ClaseSuelta c, CancellationToken _) => clases.Add(c)).Returns(Task.CompletedTask);
+        return (cargos, turnos, clases);
+    }
+
+    [Fact]
+    public async Task Asignar_ConCargo_CobraElPrecioIndividualEImpago()
+    {
+        var (cargos, _, clases) = Capturar();
+
+        var dto = await _service.AsignarAsync(
+            AlumnoId, CanchaId, Manana, new TimeOnly(18, 0), 60, ProfeId, generaCargo: true);
+
+        var cargo = Assert.Single(cargos);
+        Assert.Equal(TipoCargo.Clase, cargo.Tipo);
+        Assert.Equal(16_000m, cargo.Monto);
+        // Impago a propósito: se suma a su cuenta corriente junto con la cuota. En el
+        // camino del alumno se marca pagado, porque él ya informó la transferencia.
+        Assert.Null(cargo.PagadoEl);
+        Assert.Equal(cargo.Id, Assert.Single(clases).CargoId);
+        Assert.Equal("Confirmada", dto.Estado);
+    }
+
+    [Fact]
+    public async Task Asignar_DePrueba_NoGeneraNingunCargo()
+    {
+        var (cargos, turnos, clases) = Capturar();
+
+        var dto = await _service.AsignarAsync(
+            AlumnoId, CanchaId, Manana, new TimeOnly(18, 0), 60, ProfeId, generaCargo: false);
+
+        Assert.Empty(cargos);                       // la prueba no se cobra
+        Assert.Null(Assert.Single(clases).CargoId);
+        Assert.Single(turnos);                      // pero la clase existe igual
+        Assert.Equal("Confirmada", dto.Estado);
+    }
+
+    [Fact]
+    public async Task Asignar_CreaElTurnoSueltoConElProfeYElAlumno()
+    {
+        var (_, turnos, _) = Capturar();
+
+        await _service.AsignarAsync(
+            AlumnoId, CanchaId, Manana, new TimeOnly(18, 0), 90, ProfeId, generaCargo: false);
+
+        var turno = Assert.Single(turnos);
+        Assert.Null(turno.HorarioId);               // suelto: no cuelga de una plantilla
+        Assert.Equal(ProfeId, turno.ProfesorUserId); // sin esto no entra en su agenda ni en su sueldo
+        Assert.Equal(CanchaId, turno.CanchaId);
+        Assert.Equal(90, turno.DuracionMinutos);
+        Assert.Equal(AlumnoId, Assert.Single(turno.Participantes).AlumnoId);
+    }
+
+    [Fact]
+    public async Task Asignar_SinProfe_ElTurnoQuedaSinAsignar()
+    {
+        var (_, turnos, _) = Capturar();
+
+        await _service.AsignarAsync(
+            AlumnoId, CanchaId, Manana, new TimeOnly(18, 0), 60, profesorUserId: null, generaCargo: false);
+
+        Assert.Null(Assert.Single(turnos).ProfesorUserId);
+    }
+
+    [Fact]
+    public async Task Asignar_CanchaOcupada_LanzaYNoCreaNada()
+    {
+        // Ya hay una clase fija en esa cancha, ese día y a esa hora.
+        _horarios.Setup(h => h.ListarPorCanchaYDiaAsync(CanchaId, Manana.DayOfWeek, It.IsAny<CancellationToken>()))
+                 .ReturnsAsync([new Horario { CanchaId = CanchaId, Dia = Manana.DayOfWeek, HoraInicio = new TimeOnly(18, 0), DuracionMinutos = 60 }]);
+        var (cargos, turnos, clases) = Capturar();
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.AsignarAsync(
+            AlumnoId, CanchaId, Manana, new TimeOnly(18, 0), 60, ProfeId, generaCargo: true));
+
+        Assert.Empty(cargos); Assert.Empty(turnos); Assert.Empty(clases);
+    }
+
+    [Fact]
+    public async Task Asignar_FechaPasada_Lanza()
+    {
+        var ayer = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.AsignarAsync(
+            AlumnoId, CanchaId, ayer, new TimeOnly(18, 0), 60, ProfeId, generaCargo: false));
+    }
+
+    [Fact]
+    public async Task Asignar_AlumnoPausado_Lanza()
+    {
+        var pausado = AlumnoActivo();
+        pausado.Estado = EstadoAlumno.Suspendido;
+        _alumnos.Setup(a => a.ObtenerAsync(AlumnoId, It.IsAny<CancellationToken>())).ReturnsAsync(pausado);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.AsignarAsync(
+            AlumnoId, CanchaId, Manana, new TimeOnly(18, 0), 60, ProfeId, generaCargo: false));
+    }
+
+    [Fact]
+    public async Task Asignar_ConCargoYSinPrecioConfigurado_Lanza()
+    {
+        _tenant.Setup(t => t.ObtenerActualAsync(It.IsAny<CancellationToken>()))
+               .ReturnsAsync(new Tenant { Subdominio = "d", Nombre = "Demo", ValorClaseIndividual = null });
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.AsignarAsync(
+            AlumnoId, CanchaId, Manana, new TimeOnly(18, 0), 60, ProfeId, generaCargo: true));
+    }
+
+    [Fact]
+    public async Task Asignar_DePruebaSinPrecioConfigurado_FuncionaIgual()
+    {
+        // La clase de prueba no mira el precio: es justo la que se da antes de tener
+        // nada configurado, para enganchar al que viene a probar.
+        _tenant.Setup(t => t.ObtenerActualAsync(It.IsAny<CancellationToken>()))
+               .ReturnsAsync(new Tenant { Subdominio = "d", Nombre = "Demo", ValorClaseIndividual = null });
+        var (_, turnos, _) = Capturar();
+
+        await _service.AsignarAsync(
+            AlumnoId, CanchaId, Manana, new TimeOnly(18, 0), 60, ProfeId, generaCargo: false);
+
+        Assert.Single(turnos);
+    }
+
+    [Fact]
+    public async Task Asignar_ProfeQueNoTrabajaEnEseClub_Lanza()
+    {
+        _staff.Setup(s => s.TrabajaEnSedeAsync(ProfeId, It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+              .ReturnsAsync(false);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.AsignarAsync(
+            AlumnoId, CanchaId, Manana, new TimeOnly(18, 0), 60, ProfeId, generaCargo: false));
+    }
+
+    // ── Editar: reprogramar una clase suelta ya asignada (solo lo agendable) ──
+
+    private static readonly Guid TurnoId = Guid.NewGuid();
+    private static readonly TimeOnly HoraOriginal = new(18, 0);
+
+    /// <summary>El turno suelto tal como quedó al asignarlo, con su propia ocupación en
+    /// la agenda (para que el chequeo de "cancha libre" tenga algo que excluir).</summary>
+    private Turno TurnoSuelto(EstadoTurno estado = EstadoTurno.Programado)
+    {
+        var turno = new Turno
+        {
+            Id = TurnoId,
+            HorarioId = null,
+            ProfesorUserId = ProfeId,
+            CanchaId = CanchaId,
+            Fecha = Manana,
+            HoraInicio = HoraOriginal,
+            DuracionMinutos = 60,
+            Estado = estado,
+        };
+        turno.Participantes.Add(new TurnoParticipante { Turno = turno, AlumnoId = AlumnoId });
+        _turnos.Setup(t => t.ObtenerAsync(TurnoId, It.IsAny<CancellationToken>())).ReturnsAsync(turno);
+        _turnos.Setup(t => t.ListarEntreAsync(Manana, Manana, It.IsAny<CancellationToken>()))
+               .ReturnsAsync([TurnosDePrueba.Agenda(
+                   id: TurnoId, canchaId: CanchaId, fecha: Manana, hora: HoraOriginal, duracion: 60)]);
+        return turno;
+    }
+
+    [Fact]
+    public async Task Editar_ReprogramaHoraDuracionYProfe()
+    {
+        var turno = TurnoSuelto();
+        var otroProfe = Guid.NewGuid();
+
+        await _service.EditarAsync(
+            TurnoId, CanchaId, Manana, new TimeOnly(19, 0), 90, otroProfe);
+
+        Assert.Equal(new TimeOnly(19, 0), turno.HoraInicio);
+        Assert.Equal(90, turno.DuracionMinutos);
+        Assert.Equal(otroProfe, turno.ProfesorUserId);
+    }
+
+    [Fact]
+    public async Task Editar_SincronizaLaClaseSueltaVinculada()
+    {
+        var turno = TurnoSuelto();
+        var clase = new ClaseSuelta { AlumnoId = AlumnoId, SedeId = SedeId, CanchaId = CanchaId, Fecha = Manana, HoraInicio = HoraOriginal, DuracionMinutos = 60, TurnoId = TurnoId };
+        _clases.Setup(c => c.ObtenerPorTurnoAsync(TurnoId, It.IsAny<CancellationToken>())).ReturnsAsync(clase);
+
+        await _service.EditarAsync(TurnoId, CanchaId, Manana, new TimeOnly(20, 0), 30, ProfeId);
+
+        Assert.Equal(new TimeOnly(20, 0), clase.HoraInicio);
+        Assert.Equal(30, clase.DuracionMinutos);
+    }
+
+    [Fact]
+    public async Task Editar_SinClaseSueltaVinculada_NoRevienta()
+    {
+        TurnoSuelto();
+        _clases.Setup(c => c.ObtenerPorTurnoAsync(TurnoId, It.IsAny<CancellationToken>())).ReturnsAsync((ClaseSuelta?)null);
+
+        await _service.EditarAsync(TurnoId, CanchaId, Manana, new TimeOnly(20, 0), 30, ProfeId);
+    }
+
+    [Fact]
+    public async Task Editar_TurnoInexistente_Lanza()
+    {
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.EditarAsync(
+            Guid.NewGuid(), CanchaId, Manana, HoraOriginal, 60, ProfeId));
+    }
+
+    [Fact]
+    public async Task Editar_TurnoDeHorarioRecurrente_Lanza()
+    {
+        var turno = TurnoSuelto();
+        turno.HorarioId = Guid.NewGuid(); // ya no es suelto
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.EditarAsync(
+            TurnoId, CanchaId, Manana, HoraOriginal, 60, ProfeId));
+    }
+
+    [Fact]
+    public async Task Editar_TurnoCancelado_Lanza()
+    {
+        TurnoSuelto(estado: EstadoTurno.Cancelado);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.EditarAsync(
+            TurnoId, CanchaId, Manana, HoraOriginal, 60, ProfeId));
+    }
+
+    [Fact]
+    public async Task Editar_FechaPasada_Lanza()
+    {
+        TurnoSuelto();
+        var ayer = DateOnly.FromDateTime(DateTime.UtcNow).AddDays(-1);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.EditarAsync(
+            TurnoId, CanchaId, ayer, HoraOriginal, 60, ProfeId));
+    }
+
+    [Fact]
+    public async Task Editar_SinCambios_NoSeBloqueaASiMismo()
+    {
+        TurnoSuelto();
+
+        // Mismo cancha/fecha/hora/duración que ya tenía: no debería rechazarla por
+        // "ocupada" (el único ocupante de ese horario es ella misma).
+        await _service.EditarAsync(TurnoId, CanchaId, Manana, HoraOriginal, 60, ProfeId);
+    }
+
+    [Fact]
+    public async Task Editar_CanchaOcupadaPorOtroTurno_Lanza()
+    {
+        var turno = TurnoSuelto();
+        var otraCancha = Guid.NewGuid();
+        _sedes.Setup(s => s.SedeDeCanchaAsync(otraCancha, It.IsAny<CancellationToken>())).ReturnsAsync(SedeId);
+        var sedeConDosCanchas = new Sede { Id = SedeId, Nombre = "Central", Activo = true };
+        sedeConDosCanchas.Canchas.Add(new Cancha { Id = CanchaId, Nombre = "Cancha 1", Activo = true });
+        sedeConDosCanchas.Canchas.Add(new Cancha { Id = otraCancha, Nombre = "Cancha 2", Activo = true });
+        _sedes.Setup(s => s.ObtenerAsync(SedeId, It.IsAny<CancellationToken>())).ReturnsAsync(sedeConDosCanchas);
+        // La cancha nueva ya la ocupa OTRO turno a esa hora
+        _turnos.Setup(t => t.ListarEntreAsync(Manana, Manana, It.IsAny<CancellationToken>()))
+               .ReturnsAsync([
+                   TurnosDePrueba.Agenda(id: TurnoId, canchaId: CanchaId, fecha: Manana, hora: HoraOriginal, duracion: 60),
+                   TurnosDePrueba.Agenda(canchaId: otraCancha, fecha: Manana, hora: new TimeOnly(19, 0), duracion: 60),
+               ]);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.EditarAsync(
+            TurnoId, otraCancha, Manana, new TimeOnly(19, 0), 60, ProfeId));
+
+        Assert.Equal(CanchaId, turno.CanchaId); // no se tocó
+    }
+
+    [Fact]
+    public async Task Editar_ProfeQueNoTrabajaEnEseClub_Lanza()
+    {
+        TurnoSuelto();
+        _staff.Setup(s => s.TrabajaEnSedeAsync(ProfeId, It.IsAny<Guid?>(), It.IsAny<CancellationToken>()))
+              .ReturnsAsync(false);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.EditarAsync(
+            TurnoId, CanchaId, Manana, HoraOriginal, 60, ProfeId));
     }
 }

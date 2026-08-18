@@ -18,6 +18,14 @@ public class Turno
     public Guid? HorarioId { get; set; }
     public Horario? Horario { get; set; }
 
+    /// <summary>
+    /// Profe a cargo, y SOLO para el turno suelto: el que cuelga de un horario lo saca de
+    /// ahí, para que reasignar la clase reasigne todos sus turnos de una. Antes la clase
+    /// suelta no era de nadie, y eso la dejaba fuera de la agenda del profe empleado y de
+    /// su sueldo — un agujero que se abría en cuanto un empleado diera una clase de prueba.
+    /// </summary>
+    public Guid? ProfesorUserId { get; set; }
+
     // Denormalizados del horario al momento de generar (el horario puede
     // cambiar después; el turno ya jugado es historia intocable)
     public Guid CanchaId { get; set; }

@@ -16,6 +16,11 @@ public class StaffDto
     public DateTime? FechaNacimiento { get; set; }
     public bool Activo { get; set; }
     /// <summary>
+    /// Lo habilitó el dueño a cobrar clases y cuotas (Bloque 6, pedido 2). Siempre
+    /// true para el Director (no se le puede sacar).
+    /// </summary>
+    public bool PuedeCobrar { get; set; }
+    /// <summary>
     /// Es el DUEÑO del club (el Director), no un empleado: aparece en el listado como
     /// uno más pero no tiene membresía (Id vacío), ni valor hora, ni club fijo, y no
     /// se lo puede desactivar ni eliminar.
@@ -54,6 +59,9 @@ public class UpdateStaffDto
 
     /// <summary>El club (sede) donde trabaja; null = sin asignar.</summary>
     public Guid? SedeId { get; set; }
+
+    /// <summary>Habilita al empleado a cobrar clases y cuotas (Bloque 6, pedido 2).</summary>
+    public bool PuedeCobrar { get; set; }
 }
 
 /// <summary>

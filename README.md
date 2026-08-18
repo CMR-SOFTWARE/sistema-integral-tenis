@@ -35,6 +35,21 @@ dotnet user-secrets set "ConnectionStrings:Default" \
 dotnet run --project src/SistemaIntegralDeportivo.Api   # las migraciones se aplican solas al arrancar
 ```
 
+> ⚠️ Los user-secrets **solo se leen en el entorno Development**. Si arrancás la API sin el
+> perfil de launch (por ejemplo con `--no-launch-profile`, o desde un script), exportá
+> `ASPNETCORE_ENVIRONMENT=Development` primero — si no, la API muere con *"The
+> ConnectionString property has not been initialized"* y el error no dice por qué.
+
+**Usuario de prueba** (lo crea el seed, `Data/AuthSeeder.cs`): usuario `1122334455`,
+contraseña `profe1234`. Es el dueño del club demo y además **admin de plataforma**, así que
+ve todas las secciones. Para entrar por API el campo se llama `identificador`:
+
+```bash
+curl -X POST http://localhost:5223/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"identificador":"1122334455","password":"profe1234"}'
+```
+
 ### Frontend (Vite en `http://localhost:5173`, proxya `/api` → `:5223`)
 
 ```bash
@@ -86,6 +101,9 @@ El acuerdo de trabajo completo está en [`CLAUDE.md`](CLAUDE.md). En resumen:
 
 ## Documentación
 
+- [`docs/pedidos-del-profe.md`](docs/pedidos-del-profe.md) — **empezá por acá si vas a
+  seguir el producto**: qué pidió el cliente, qué está en producción, qué falta y **qué
+  decisiones ya se tomaron** (para no volver a discutirlas ni decidirlas distinto).
 - [`CLAUDE.md`](CLAUDE.md) — el acuerdo de trabajo (cómo se construye la app).
 - [`docs/adr/`](docs/adr/) — decisiones de arquitectura (por qué .NET, TDD
   selectivo, multi-tenant, cuenta corriente de cargos…).

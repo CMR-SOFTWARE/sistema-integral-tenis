@@ -41,7 +41,7 @@ public class TurnoService : ITurnoService
         // el dueño ve todas. Los turnos sin horario (clases sueltas) no son de nadie.
         if (_usuario.EsStaff)
             turnosSemana = turnosSemana
-                .Where(t => t.Horario?.ProfesorUserId == _usuario.UserId)
+                .Where(t => t.ProfesorUserId == _usuario.UserId)
                 .ToList();
 
         var deudores = await DeudoresDeAsync(turnosSemana, ct);
@@ -64,7 +64,7 @@ public class TurnoService : ITurnoService
 
         // El profe EMPLEADO ve solo SUS clases; el dueño ve todas (igual que la semana).
         if (_usuario.EsStaff)
-            turnosMes = turnosMes.Where(t => t.Horario?.ProfesorUserId == _usuario.UserId).ToList();
+            turnosMes = turnosMes.Where(t => t.ProfesorUserId == _usuario.UserId).ToList();
 
         var deudores = await DeudoresDeAsync(turnosMes, ct);
         return turnosMes
@@ -74,7 +74,7 @@ public class TurnoService : ITurnoService
     }
 
     /// <summary>Alumnos del roster con cuota vencida (señal para el profe, no mueve plata).</summary>
-    private async Task<HashSet<Guid>> DeudoresDeAsync(IReadOnlyList<Turno> turnos, CancellationToken ct)
+    private async Task<HashSet<Guid>> DeudoresDeAsync(IReadOnlyList<TurnoAgenda> turnos, CancellationToken ct)
     {
         var alumnoIds = turnos
             .SelectMany(t => t.Participantes)
@@ -231,7 +231,19 @@ public class TurnoService : ITurnoService
                 ? $"{suelto.Nombre} {suelto.Apellido} (suelta)" // turno suelto (M5c)
                 : "Clase suelta";
 
-    private static TurnoResponseDto Mapear(Turno t, HashSet<Guid> deudores) => new()
+    /// <summary>
+    /// Misma regla, pero para el turno ya proyectado de la agenda: ahí el roster no
+    /// viaja entero (era lo que multiplicaba las filas), sino contado y con el nombre
+    /// del único miembro cuando hay uno solo, que es todo lo que el título mira.
+    /// </summary>
+    public static string TituloDe(TurnoAgenda t) =>
+        t.HorarioId is null
+            ? t.Participantes.Count > 0
+                ? $"{t.Participantes[0].Nombre} {t.Participantes[0].Apellido} (suelta)" // turno suelto (M5c)
+                : "Clase suelta"
+            : HorarioService.TituloDe(t.HorarioNombre, t.MiembrosActivos, t.UnicoMiembro);
+
+    private static TurnoResponseDto Mapear(TurnoAgenda t, HashSet<Guid> deudores) => new()
     {
         Id = t.Id,
         Fecha = t.Fecha,
@@ -240,15 +252,15 @@ public class TurnoService : ITurnoService
         Estado = t.Estado.ToString(),
         CanceladoMotivo = t.CanceladoMotivo,
         Titulo = TituloDe(t),
-        Cancha = t.Cancha?.Nombre ?? string.Empty,
-        Sede = t.Cancha?.Sede?.Nombre ?? string.Empty,
-        ProfesorUserId = t.Horario?.ProfesorUserId,
+        Cancha = t.Cancha,
+        Sede = t.Sede,
+        ProfesorUserId = t.ProfesorUserId,
         HorarioId = t.HorarioId,
         Participantes = t.Participantes.Select(p => new ParticipanteTurnoDto
         {
             AlumnoId = p.AlumnoId,
-            Nombre = p.Alumno?.Nombre ?? string.Empty,
-            Apellido = p.Alumno?.Apellido ?? string.Empty,
+            Nombre = p.Nombre,
+            Apellido = p.Apellido,
             Presente = p.Presente,
             DeudaVencida = deudores.Contains(p.AlumnoId),
         }).ToList(),

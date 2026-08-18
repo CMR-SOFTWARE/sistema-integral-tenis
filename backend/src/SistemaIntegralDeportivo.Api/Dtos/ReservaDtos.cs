@@ -189,6 +189,58 @@ public class ConfirmarClaseSueltaDto
     public Guid CanchaId { get; set; }
 }
 
+/// <summary>
+/// El PROFE asigna una clase suelta (no la pide el alumno): elige a quién, cuándo, con
+/// qué profe, y si le genera el cargo o es una clase de prueba.
+/// </summary>
+public class AsignarClaseSueltaDto
+{
+    [Required]
+    public Guid AlumnoId { get; set; }
+
+    [Required]
+    public Guid CanchaId { get; set; }
+
+    [Required]
+    public DateOnly Fecha { get; set; }
+
+    [Required]
+    public TimeOnly HoraInicio { get; set; }
+
+    [Range(15, 240)]
+    public int DuracionMinutos { get; set; } = 60;
+
+    /// <summary>Profe a cargo; null = sin asignar (no le cuenta a nadie para el sueldo).</summary>
+    public Guid? ProfesorUserId { get; set; }
+
+    /// <summary>
+    /// false = **clase de prueba**: no se le cobra nada. true = se le carga el valor de
+    /// clase individual de Configuración, prorrateado por la duración.
+    /// </summary>
+    public bool GeneraCargo { get; set; } = true;
+}
+
+/// <summary>
+/// Reprograma una clase suelta ya asignada: solo lo agendable (fecha, hora, cancha,
+/// duración, profe). No incluye alumno ni cobro: eso no se toca al editar.
+/// </summary>
+public class EditarClaseSueltaDto
+{
+    [Required]
+    public Guid CanchaId { get; set; }
+
+    [Required]
+    public DateOnly Fecha { get; set; }
+
+    [Required]
+    public TimeOnly HoraInicio { get; set; }
+
+    [Range(15, 240)]
+    public int DuracionMinutos { get; set; } = 60;
+
+    public Guid? ProfesorUserId { get; set; }
+}
+
 /// <summary>Una clase suelta (vista por el profe o el alumno).</summary>
 public class ClaseSueltaDto
 {

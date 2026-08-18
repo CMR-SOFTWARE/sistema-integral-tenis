@@ -4,6 +4,7 @@ import { api } from '../../lib/api';
 import { CAT_LABEL } from '../alumnos/types';
 import type { Categoria } from '../alumnos/types';
 import { fechaCorta, horaCorta } from '../agenda/types';
+import { useProfesores } from '../profesores/useProfesores';
 import AccesosRapidos from './AccesosRapidos';
 import type { Acceso } from './AccesosRapidos';
 import CrearAlumnoRapido from './CrearAlumnoRapido';
@@ -33,7 +34,10 @@ interface ClaseHoy {
   duracionMinutos: number;
   titulo: string;
   cancha: string;
+  sede: string;
+  profesorUserId: string | null;
   participantes: number;
+  alumnos: string[];
   estado: 'Programado' | 'Cancelado';
 }
 
@@ -75,6 +79,7 @@ export default function DashboardPage() {
     queryKey: ['pedidos-pendientes-cuenta'],
     queryFn: () => api.get<number>('/pedidos/pendientes/cuenta'),
   });
+  const { nombreDe } = useProfesores();
 
   if (resumenQuery.error) {
     const msg = resumenQuery.error.message || 'Error cargando el dashboard';
@@ -92,9 +97,9 @@ export default function DashboardPage() {
   return (
     <div>
       {pedidosPend > 0 && (
-        <Link to="/finanzas?tab=cuotas" className={s.avisoPedidos}>
+        <Link to="/mi-academia?tab=pedidos" className={s.avisoPedidos}>
           <span className={s.avisoPedidosBadge}>{pedidosPend}</span>
-          {pedidosPend === 1 ? 'pedido de servicio sin resolver' : 'pedidos de servicios sin resolver'} — resolvé en Cuotas
+          {pedidosPend === 1 ? 'pedido del Shop sin resolver' : 'pedidos del Shop sin resolver'} — resolvelos en Mi academia
         </Link>
       )}
 
@@ -155,24 +160,38 @@ export default function DashboardPage() {
           <div className={s.vacio}>Hoy no hay clases programadas.</div>
         ) : (
           <div className={s.lista}>
-            {resumen.clasesHoy.map((c) => (
-              <div key={c.turnoId} className={c.estado === 'Cancelado' ? `${s.match} ${s.matchOff}` : s.match}>
-                <span className={s.matchHora}>{horaCorta(c.horaInicio)}</span>
-                <div className={s.filaCuerpo}>
-                  <div className={s.filaTitulo}>{c.titulo}</div>
-                  <div className={s.filaMeta}>
-                    {c.cancha} · {c.participantes} jugador{c.participantes === 1 ? '' : 'es'}
+            {resumen.clasesHoy.map((c) => {
+              const profe = nombreDe(c.profesorUserId);
+              return (
+                <Link
+                  key={c.turnoId}
+                  to={`/agenda?tab=calendario&turno=${c.turnoId}`}
+                  className={`${c.estado === 'Cancelado' ? `${s.match} ${s.matchOff}` : s.match} ${s.filaClases}`}
+                >
+                  <span className={s.matchHora}>{horaCorta(c.horaInicio)}</span>
+                  <div className={s.filaCuerpo}>
+                    <div className={s.filaTitulo}>{c.titulo}</div>
+                    <div className={s.filaMeta}>
+                      {c.sede} · {c.cancha} · {c.participantes} jugador{c.participantes === 1 ? '' : 'es'}
+                    </div>
+                    {(profe || c.alumnos.length > 0) && (
+                      <div className={s.filaMeta}>
+                        {profe && `Profe: ${profe}`}
+                        {profe && c.alumnos.length > 0 && ' · '}
+                        {c.alumnos.join(', ')}
+                      </div>
+                    )}
                   </div>
-                </div>
-                <div className={s.matchScore}>
-                  {c.estado === 'Programado' && (
-                    <span className={s.live}><i className={s.liveDot} />LIVE</span>
-                  )}
-                  <span>{c.duracionMinutos}'</span>
-                  {c.estado === 'Cancelado' && <span className={s.matchBadgeOff}>OFF</span>}
-                </div>
-              </div>
-            ))}
+                  <div className={s.matchScore}>
+                    {c.estado === 'Programado' && (
+                      <span className={s.live}><i className={s.liveDot} />LIVE</span>
+                    )}
+                    <span>{c.duracionMinutos}'</span>
+                    {c.estado === 'Cancelado' && <span className={s.matchBadgeOff}>OFF</span>}
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         )}
       </Seccion>

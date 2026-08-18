@@ -1,0 +1,293 @@
+/* El catálogo del profe. Mobile first: la base es el celular (que es donde carga los
+   productos, parado en la cancha) y lo de escritorio se suma con min-width. */
+
+.contenedor {
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tarjeta {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+}
+
+.titulo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 16px;
+  margin: 0 0 6px;
+}
+
+.bajada {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0 0 16px;
+  line-height: 1.5;
+}
+
+/* ── Alta ── */
+
+.alta {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.alta input,
+.altaDescripcion,
+.editInput {
+  width: 100%;
+  padding: 11px 13px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.alta input:focus,
+.altaDescripcion:focus,
+.editInput:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.altaDescripcion {
+  margin-top: 10px;
+  resize: vertical;
+}
+
+.btnPrimario {
+  background: var(--color-primary-dark);
+  color: #fff;
+  border: none;
+  padding: 11px 16px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btnPrimario:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* ── La lista ── */
+
+.lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.producto,
+.productoInactivo {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+}
+
+/* Inactivo: sigue existiendo (los pedidos viejos lo referencian), no se ofrece. */
+.productoInactivo {
+  opacity: 0.62;
+  background: var(--color-surface-subtle);
+}
+
+.cabecera {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.nombre {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 15px;
+}
+
+.precio {
+  font-weight: 700;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.chipInactivo {
+  padding: 2px 8px;
+  border-radius: 7px;
+  background: #f3f4f6;
+  color: #6b7280;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.descripcion {
+  margin: 8px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  white-space: pre-line; /* respeta los renglones que escribió el profe */
+}
+
+/* ── Galería ──
+   Envuelve, no se desliza: son cinco fotos como mucho y una que se esconde de
+   costado es una foto que el profe cree que no subió. */
+.galeria {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.foto {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-subtle);
+}
+
+.foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.fotoPrincipal {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  padding: 2px 4px;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.fotoBorrar {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.fotoAgregar {
+  width: 84px;
+  height: 84px;
+  border: 1px dashed var(--color-border);
+  border-radius: var(--radius-md);
+  background: none;
+  color: var(--color-primary);
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.fotoAgregar:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+/* ── Edición y acciones ── */
+
+.edicion {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.acciones {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
+.btnMini,
+.btnMiniGris {
+  border: none;
+  border-radius: 7px;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btnMini {
+  background: var(--color-primary-dark);
+  color: #fff;
+}
+
+.btnMiniGris {
+  background: var(--color-surface-hover);
+  color: var(--color-text-muted);
+}
+
+.vacio {
+  padding: 24px;
+  text-align: center;
+  color: var(--color-text-faint);
+  font-size: 14px;
+}
+
+.error {
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: 11px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+/* ── Escritorio: el alta entra en una sola línea ── */
+@media (min-width: 620px) {
+  .tarjeta {
+    padding: 20px;
+  }
+
+  .alta {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .alta input {
+    flex: 1;
+  }
+
+  .altaPrecio {
+    flex: 0 0 130px;
+  }
+
+  .edicion .editPrecio {
+    max-width: 160px;
+  }
+}

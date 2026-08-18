@@ -1,11 +1,9 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { obtenerSesion } from '../auth/sesion';
-import SinClub from './SinClub';
 import { formatoPlata } from '../alumnos/types';
 import { ESTADO_LIQ_UI, MESES } from '../cuotas/types';
 import { fechaCorta, horaCorta, DIAS } from '../agenda/types';
-import { useMisTurnos, useMiCuota, usePublicidad, useAvisos, useNotas } from './hooks';
+import { useMisTurnos, useMiCuota, useNoticias, useNotas } from './hooks';
 import type { MiTurno } from './types';
 import EscenaRally from '../../components/tenis/EscenaRally';
 import FranjaTenis from '../../components/tenis/FranjaTenis';
@@ -22,7 +20,7 @@ function diaCorto(iso: string): string {
 
 /**
  * Inicio del portal (mockup): hero con la próxima clase, estado de la cuota,
- * horarios asignados y avisos del profe (placeholder hasta tener backend).
+ * horarios asignados y noticias del club.
  */
 export default function InicioPage() {
   const hoy = new Date();
@@ -30,46 +28,77 @@ export default function InicioPage() {
   const conClub = ficha != null;
   const turnosQuery = useMisTurnos();
   const cuotaQuery = useMiCuota(hoy.getFullYear(), hoy.getMonth() + 1);
-  const { data: banners = [] } = usePublicidad();
-  const { data: avisos = [] } = useAvisos();
+  const { data: noticias = [] } = useNoticias();
   const { data: notas = [] } = useNotas();
-  const [bannerIdx, setBannerIdx] = useState(0);
+  // Las importantes suben arriba de todo; las demás quedan en la tarjeta de abajo (y
+  // completas en la sección Noticias).
+  const destacadas = noticias.filter((n) => n.importante);
+  const comunes = noticias.filter((n) => !n.importante);
 
-  // Rotación de banners (si hay más de uno) cada 6s
-  useEffect(() => {
-    if (banners.length < 2) return;
-    const t = setInterval(() => setBannerIdx((i) => (i + 1) % banners.length), 6000);
-    return () => clearInterval(t);
-  }, [banners.length]);
-
-  if (!conClub) return <SinClub />;
-  // Miembro en lista de espera: todavía no tiene clases ni cuota. Le mostramos su
-  // estado en vez del dashboard vacío; se habilita cuando el profe le da una clase.
-  if (ficha?.enEspera) {
-    return (
-      <div className={s.tarjeta}>
-        <h3 className={s.tarjetaTitulo}>Estás en la lista de espera</h3>
-        <p className={s.sinClubTexto}>
-          Ya sos parte de <b>{ficha.club}</b>. Tu profe te va a sumar a una clase;
-          cuando lo haga, acá vas a ver tus horarios y tu cuota.
-        </p>
-      </div>
-    );
-  }
   if (turnosQuery.error) {
     return <div className={s.error}>{turnosQuery.error.message || 'Error cargando tus clases'}</div>;
   }
-  const turnos = turnosQuery.data;
-  if (!turnos) return <div className={s.vacio}>Cargando…</div>;
+  // Sin club las consultas ni se disparan (`enabled: tieneFicha()`), así que nunca hay
+  // data: se espera solo cuando de verdad hay algo cargando.
+  if (conClub && !turnosQuery.data) return <div className={s.vacio}>Cargando…</div>;
 
+  const proximos = turnosQuery.data?.proximos ?? [];
   // La cuota es secundaria en el inicio: si aún no llegó (o falló), mostramos
   // "sin movimientos" en vez de bloquear la pantalla.
   const cuota = cuotaQuery.data ?? null;
-  const proxima: MiTurno | undefined = turnos.proximos.find((t) => t.estado !== 'Cancelado');
+  const proxima: MiTurno | undefined = proximos.find((t) => t.estado !== 'Cancelado');
   const estadoCuota = cuota ? ESTADO_LIQ_UI[cuota.estado] : null;
 
   return (
     <div className={s.inicioGrilla}>
+      {/* ── Estado de la cuenta: una BANDA, nunca una pantalla que tape el Inicio ──
+          Ni el que no tiene club ni el que está en la espera son un caso aparte: son
+          usuarios como cualquier otro y ven el portal completo, con sus estados vacíos.
+          Cada banda dice en qué situación está y ofrece la única salida que tiene. */}
+      {!conClub && (
+        <div className={s.bandaEspera}>
+          <div>
+            <div className={s.bandaTitulo}>Todavía no estás en ningún club 🎾</div>
+            <div className={s.bandaTexto}>
+              Cuando te unas a una academia vas a ver acá tus clases y tu cuota. Mientras
+              tanto podés usar el resto del portal.
+            </div>
+          </div>
+          <Link to="/portal/club" className={s.bandaBoton}>Buscar mi club</Link>
+        </div>
+      )}
+
+      {conClub && ficha?.enEspera && (
+        <div className={s.bandaEspera}>
+          <div>
+            <div className={s.bandaTitulo}>Estás en la lista de espera 🎾</div>
+            <div className={s.bandaTexto}>
+              Ya sos parte de <b>{ficha.club}</b>. Tu profe te va a sumar a una clase, o
+              podés pedir lugar en la que te sirva.
+            </div>
+          </div>
+          <Link to="/portal/reservar" className={s.bandaBoton}>Ver clases</Link>
+        </div>
+      )}
+
+      {/* ── Noticias importantes: lo primero que ve al entrar, y en rojo ── */}
+      {destacadas.length > 0 && (
+        <div className={s.destacadas}>
+          {destacadas.map((n) => (
+            <div key={n.id} className={s.destacada}>
+              <span className={s.destacadaEtiqueta}>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                  <path d="M12 8v5" /><path d="M12 17h.01" />
+                </svg>
+                IMPORTANTE
+              </span>
+              <div className={s.destacadaTitulo}>{n.titulo}</div>
+              <div className={s.destacadaMensaje}>{n.mensaje}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* ── Hero: tu próxima clase ── */}
       <div className={s.hero}>
         <div className={s.heroEyebrow}>Tu próxima clase</div>
@@ -111,9 +140,9 @@ export default function InicioPage() {
       <Seccion className={s.tarjeta}>
         <FranjaTenis modo="lateral" />
         <h3 className={s.tarjetaTitulo}>Tus horarios asignados</h3>
-        {turnos.proximos.length === 0 && <div className={s.vacio}>Sin clases próximas.</div>}
+        {proximos.length === 0 && <div className={s.vacio}>Sin clases próximas.</div>}
         <div className={s.horariosLista}>
-          {turnos.proximos.slice(0, 4).map((t) => (
+          {proximos.slice(0, 4).map((t) => (
             <div key={t.id} className={s.horarioFila}>
               <div className={s.horarioDia}>
                 <div className={s.horarioDiaNombre}>{diaCorto(t.fecha)}</div>
@@ -134,17 +163,22 @@ export default function InicioPage() {
         </div>
       </Seccion>
 
-      {/* ── Avisos del profe ── */}
+      {/* ── Noticias del club: las últimas, con el link a la sección ──
+          Las importantes ya subieron arriba de todo, así que acá no se repiten. */}
       <Seccion className={s.tarjeta}>
-        <h3 className={s.tarjetaTitulo}>Avisos del profe</h3>
-        {avisos.length === 0 ? (
-          <div className={s.vacio}>No hay avisos por ahora.</div>
+        <FranjaTenis modo="red" />
+        <div className={s.tarjetaHeader}>
+          <h3 className={s.tarjetaTitulo}>Noticias del club</h3>
+          <Link to="/portal/noticias" className={s.tarjetaLink}>Ver todas →</Link>
+        </div>
+        {comunes.length === 0 ? (
+          <div className={s.vacio}>No hay noticias por ahora.</div>
         ) : (
           <div className={s.avisosLista}>
-            {avisos.map((a) => (
-              <div key={a.id} className={s.avisoItem}>
-                <div className={s.avisoTitulo}>{a.titulo}</div>
-                <div className={s.avisoMensaje}>{a.mensaje}</div>
+            {comunes.slice(0, 3).map((n) => (
+              <div key={n.id} className={s.avisoItem}>
+                <div className={s.avisoTitulo}>{n.titulo}</div>
+                <div className={s.avisoMensaje}>{n.mensaje}</div>
               </div>
             ))}
           </div>
@@ -166,30 +200,6 @@ export default function InicioPage() {
             ))}
           </div>
         </Seccion>
-      )}
-
-      {/* ── Publicidad (M6): carrusel de banners del club (desliza al costado) ── */}
-      {banners.length > 0 && (
-        <div className={s.bannerCard}>
-          <span className={s.bannerLabel}>Publicidad</span>
-          <div
-            className={s.bannerTrack}
-            style={{ transform: `translateX(-${(bannerIdx % banners.length) * 100}%)` }}
-          >
-            {banners.map((b) => {
-              const img = <img src={b.imagenUrl} alt={b.nombre} className={s.bannerImg} />;
-              return (
-                <div key={b.id} className={s.bannerSlide}>
-                  {/* fondo: la misma imagen borrosa rellena los costados */}
-                  <div className={s.bannerBg} style={{ backgroundImage: `url("${b.imagenUrl}")` }} />
-                  {b.enlace
-                    ? <a href={b.enlace} target="_blank" rel="noreferrer noopener" className={s.bannerLink}>{img}</a>
-                    : img}
-                </div>
-              );
-            })}
-          </div>
-        </div>
       )}
 
       <EscenaRally />

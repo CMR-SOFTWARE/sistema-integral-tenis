@@ -21,7 +21,7 @@ public class SolicitudesController : ControllerBase
 
     /// <summary>La lista de espera de MI club: los sin clase + los pedidos sin resolver.</summary>
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<SolicitudPendienteDto>>> Pendientes(CancellationToken ct) =>
+    public async Task<ActionResult<IReadOnlyList<EsperaResponseDto>>> Pendientes(CancellationToken ct) =>
         Ok(await _service.PendientesAsync(ct));
 
     /// <summary>Conteo para el badge de la pestaña (cuántos hay esperando).</summary>

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { api, ApiError } from '../../lib/api';
 import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
-import { haceCuanto, resumenEncordado } from '../alumnos/types';
-import FormEncordado from '../alumnos/FormEncordado';
+import { haceCuanto, resumenEncordado, tituloRaqueta, detalleRaqueta } from '../alumnos/types';
+import FormEncordado, { aCuerpo } from '../alumnos/FormEncordado';
 import type { Encordado, Raqueta } from './types';
 import s from './PortalPages.module.css';
 
@@ -11,7 +11,7 @@ interface Props {
   onCambio: () => void; // el padre recarga el perfil
 }
 
-const VACIA = { marca: '', modelo: '' };
+const VACIA = { nombre: '', marca: '', modelo: '' };
 
 /** Mis raquetas: marca y modelo, con el historial de encordados de cada una. */
 export default function RaquetasSection({ raquetas, onCambio }: Props) {
@@ -21,10 +21,12 @@ export default function RaquetasSection({ raquetas, onCambio }: Props) {
   const [editForm, setEditForm] = useState(VACIA);
   const [encordandoId, setEncordandoId] = useState<string | null>(null);
   const [abiertoId, setAbiertoId] = useState<string | null>(null); // historial desplegado
+  const [editandoEncordadoId, setEditandoEncordadoId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const confirmar = useConfirmar();
 
   const cuerpo = (f: typeof VACIA) => ({
+    nombre: f.nombre.trim() || undefined,
     marca: f.marca.trim(),
     modelo: f.modelo.trim() || null,
   });
@@ -54,7 +56,7 @@ export default function RaquetasSection({ raquetas, onCambio }: Props) {
   const borrar = async (r: Raqueta) => {
     if (!(await confirmar({
       titulo: 'Borrar raqueta',
-      mensaje: `¿Borrar la raqueta "${r.marca}"? Se va con todo su historial de encordado.`,
+      mensaje: `¿Borrar la raqueta "${tituloRaqueta(r)}"? Se va con todo su historial de encordado.`,
       confirmar: 'Borrar',
       peligro: true,
     }))) return;
@@ -85,7 +87,7 @@ export default function RaquetasSection({ raquetas, onCambio }: Props) {
 
   const empezarEdicion = (r: Raqueta) => {
     setEditId(r.id);
-    setEditForm({ marca: r.marca, modelo: r.modelo ?? '' });
+    setEditForm({ nombre: r.nombre ?? '', marca: r.marca, modelo: r.modelo ?? '' });
   };
 
   return (
@@ -103,6 +105,7 @@ export default function RaquetasSection({ raquetas, onCambio }: Props) {
 
       {agregando && (
         <div className={s.raquetaForm}>
+          <input placeholder="Nombre (opcional, ej: Raqueta 1)" value={form.nombre} onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))} maxLength={60} />
           <input placeholder="Marca (ej: Wilson)" value={form.marca} onChange={(e) => setForm((f) => ({ ...f, marca: e.target.value }))} maxLength={80} />
           <input placeholder="Modelo (ej: Blade 98 v8)" value={form.modelo} onChange={(e) => setForm((f) => ({ ...f, modelo: e.target.value }))} maxLength={80} />
           <div className={s.raquetaAcciones}>
@@ -119,6 +122,7 @@ export default function RaquetasSection({ raquetas, onCambio }: Props) {
       {raquetas.map((r) => (
         editId === r.id ? (
           <div key={r.id} className={s.raquetaForm}>
+            <input placeholder="Nombre (opcional)" value={editForm.nombre} onChange={(e) => setEditForm((f) => ({ ...f, nombre: e.target.value }))} maxLength={60} />
             <input placeholder="Marca" value={editForm.marca} onChange={(e) => setEditForm((f) => ({ ...f, marca: e.target.value }))} maxLength={80} />
             <input placeholder="Modelo" value={editForm.modelo} onChange={(e) => setEditForm((f) => ({ ...f, modelo: e.target.value }))} maxLength={80} />
             <div className={s.raquetaAcciones}>
@@ -130,10 +134,10 @@ export default function RaquetasSection({ raquetas, onCambio }: Props) {
           <div key={r.id} className={s.raquetaBloque}>
             <div className={s.raquetaFila}>
               <div className={s.raquetaInfo}>
-                <div className={s.raquetaMarca}>
-                  {r.marca}{r.modelo ? ` ${r.modelo}` : ''}
-                </div>
+                <div className={s.raquetaMarca}>{tituloRaqueta(r)}</div>
                 <div className={s.raquetaDetalle}>
+                  {/* Con nombre propio, la marca baja acá; sin nombre ya está en el título. */}
+                  {detalleRaqueta(r) && <>{detalleRaqueta(r)} · </>}
                   {r.ultimoEncordado
                     ? `${resumenEncordado(r.ultimoEncordado)} · ${haceCuanto(r.ultimoEncordado.fecha)}`
                     : 'Sin encordado cargado'}
@@ -174,13 +178,28 @@ export default function RaquetasSection({ raquetas, onCambio }: Props) {
             {abiertoId === r.id && (
               <div className={s.raquetaHistorial}>
                 {r.encordados.map((e) => (
-                  <div key={e.id} className={s.encordadoFila}>
-                    <span>
-                      <b>{e.fecha}</b> — {resumenEncordado(e)}
-                      {e.esHibrido && <span className={s.chipHibrido}>híbrido</span>}
-                    </span>
-                    <button className={s.btnMiniPortal} onClick={() => void borrarEncordado(e)}>Borrar</button>
-                  </div>
+                  editandoEncordadoId === e.id ? (
+                    <FormEncordado
+                      key={e.id}
+                      inicial={aCuerpo(e)}
+                      onCancelar={() => setEditandoEncordadoId(null)}
+                      onGuardar={async (cuerpo) => {
+                        await api.put(`/portal/encordados/${e.id}`, cuerpo);
+                        setEditandoEncordadoId(null);
+                        onCambio();
+                      }}
+                      onError={setError}
+                    />
+                  ) : (
+                    <div key={e.id} className={s.encordadoFila}>
+                      <span>
+                        <b>{e.fecha}</b> — {resumenEncordado(e)}
+                        {e.esHibrido && <span className={s.chipHibrido}>híbrido</span>}
+                      </span>
+                      <button className={s.btnMiniPortal} onClick={() => { setEditandoEncordadoId(e.id); setError(null); }}>Editar</button>
+                      <button className={s.btnMiniPortal} onClick={() => void borrarEncordado(e)}>Borrar</button>
+                    </div>
+                  )
                 ))}
               </div>
             )}

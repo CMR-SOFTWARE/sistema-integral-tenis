@@ -186,7 +186,8 @@ public class PortalController : ControllerBase
         if (UserId() is not { } userId) return Unauthorized();
         try
         {
-            return Ok(await _portal.PedirServicioAsync(userId, dto.ServicioId, ct));
+            var lineas = dto.Lineas.Select(l => (l.ServicioId, l.Cantidad, l.Nota)).ToList();
+            return Ok(await _portal.PedirServicioAsync(userId, lineas, ct));
         }
         catch (ReglaDeNegocioException ex)
         {
@@ -202,6 +203,22 @@ public class PortalController : ControllerBase
         try
         {
             return Ok(await _portal.MisPedidosAsync(userId, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
+    /// <summary>DELETE api/portal/pedidos/{id} — cancelo mi propio pedido, mientras esté Pendiente.</summary>
+    [HttpDelete("pedidos/{id:guid}")]
+    public async Task<IActionResult> CancelarPedido(Guid id, CancellationToken ct)
+    {
+        if (UserId() is not { } userId) return Unauthorized();
+        try
+        {
+            await _portal.CancelarPedidoAsync(userId, id, ct);
+            return NoContent();
         }
         catch (ReglaDeNegocioException ex)
         {
@@ -399,14 +416,14 @@ public class PortalController : ControllerBase
         }
     }
 
-    /// <summary>GET api/portal/avisos — avisos generales vigentes del club (se ven en Inicio).</summary>
-    [HttpGet("avisos")]
-    public async Task<ActionResult<IReadOnlyList<AvisoDto>>> Avisos(CancellationToken ct)
+    /// <summary>GET api/portal/noticias — las noticias vigentes de mi club.</summary>
+    [HttpGet("noticias")]
+    public async Task<ActionResult<IReadOnlyList<NoticiaDto>>> Noticias(CancellationToken ct)
     {
         if (UserId() is not { } userId) return Unauthorized();
         try
         {
-            return Ok(await _portal.AvisosAsync(userId, ct));
+            return Ok(await _portal.NoticiasAsync(userId, ct));
         }
         catch (ReglaDeNegocioException ex)
         {

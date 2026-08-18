@@ -23,6 +23,10 @@ namespace SistemaIntegralDeportivo.Api.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.HasSequence<int>("OrdenInscripcionRanking");
+
+            modelBuilder.HasSequence<int>("OrdenInscripcionRankingDobles");
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<System.Guid>", b =>
                 {
                     b.Property<int>("Id")
@@ -208,39 +212,6 @@ namespace SistemaIntegralDeportivo.Api.Migrations
                     b.HasIndex("HorarioId");
 
                     b.ToTable("AlumnoHorarios");
-                });
-
-            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.Aviso", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<bool>("Activo")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime>("CreadoEl")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Mensaje")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("TenantId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Titulo")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateOnly?>("VenceEl")
-                        .HasColumnType("date");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("TenantId");
-
-                    b.ToTable("Avisos");
                 });
 
             modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.Bloqueo", b =>
@@ -497,6 +468,36 @@ namespace SistemaIntegralDeportivo.Api.Migrations
                     b.ToTable("FotosPerfil");
                 });
 
+            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.FotoServicio", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreadoEl")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Orden")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Ruta")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ServicioId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ServicioId");
+
+                    b.ToTable("FotosServicio");
+                });
+
             modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.HitoTrayectoria", b =>
                 {
                     b.Property<Guid>("Id")
@@ -579,6 +580,273 @@ namespace SistemaIntegralDeportivo.Api.Migrations
                     b.ToTable("Horarios");
                 });
 
+            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.JuegoDoblesPendiente", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("AceptadoEl")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreadoEl")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreadoPorUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("FinalizadoEn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool?>("GanoParejaA")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("Jugador1Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("Jugador2Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("PuntosGanadores")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PuntosPerdedores")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("Rival1Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("Rival2Id")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("JuegosDoblesPendientes");
+                });
+
+            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.JuegoPendiente", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("AceptadoEl")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("CreadoEl")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreadoPorUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("FinalizadoEn")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("GanadorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("Jugador1Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("Jugador2Id")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("JugadorMayorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("JugadorMenorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("PuntosGanador")
+                        .HasColumnType("integer");
+
+                    b.Property<int?>("PuntosPerdedor")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JugadorMenorId", "JugadorMayorId")
+                        .IsUnique();
+
+                    b.ToTable("JuegosPendientes");
+                });
+
+            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.JuegoRevision", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comentario")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreadoEl")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("CreadoPorUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Estado")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("JuegoDoblesPendienteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("JuegoPendienteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RespuestaAdmin")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ResueltoEl")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ResueltoPorUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JuegoPendienteId", "JuegoDoblesPendienteId", "Estado");
+
+                    b.ToTable("JuegosRevision");
+                });
+
+            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.JugadorRanking", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Bio")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("CfProvisional")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("CiudadResidencia")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("FechaMejorPuesto")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("InscriptoEl")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Licencia")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Mano")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("MejorPuestoHistorico")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OrdenInscripcion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValueSql("nextval('\"OrdenInscripcionRanking\"')");
+
+                    b.Property<string>("Pais")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("PerfilPublico")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("PermiteContacto")
+                        .HasColumnType("boolean");
+
+                    b.Property<int?>("PosicionProvisional")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Provincia")
+                        .HasColumnType("text");
+
+                    b.Property<int>("PuntosProvisionales")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RangoProvisional")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Reves")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Sexo")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UsuarioId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PuntosProvisionales");
+
+                    b.HasIndex("UsuarioId")
+                        .IsUnique();
+
+                    b.ToTable("JugadoresRanking");
+                });
+
+            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.JugadorRankingDobles", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("boolean");
+
+                    b.Property<int?>("CfProvisional")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("FechaMejorPuesto")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("InscriptoEl")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("JugadorRankingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int?>("MejorPuestoHistorico")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("OrdenInscripcion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValueSql("nextval('\"OrdenInscripcionRankingDobles\"')");
+
+                    b.Property<int?>("PosicionProvisional")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("PuntosProvisionales")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RangoProvisional")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JugadorRankingId")
+                        .IsUnique();
+
+                    b.HasIndex("PuntosProvisionales");
+
+                    b.ToTable("JugadoresRankingDobles");
+                });
+
             modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.MembresiaTenant", b =>
                 {
                     b.Property<Guid>("Id")
@@ -590,6 +858,9 @@ namespace SistemaIntegralDeportivo.Api.Migrations
 
                     b.Property<DateTime>("CreadoEl")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("PuedeCobrar")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Rol")
                         .IsRequired()
@@ -653,6 +924,75 @@ namespace SistemaIntegralDeportivo.Api.Migrations
                     b.ToTable("NotasAlumno");
                 });
 
+            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.Noticia", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Activo")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("CreadoEl")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("Importante")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Mensaje")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("TenantId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateOnly?>("VenceEl")
+                        .HasColumnType("date");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TenantId");
+
+                    b.ToTable("Noticias");
+                });
+
+            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.Notificacion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreadaEl")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("DestinatarioUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("EntidadId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("Leida")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Mensaje")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Tipo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DestinatarioUserId", "Leida");
+
+                    b.ToTable("Notificaciones");
+                });
+
             modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.PagoEmpleado", b =>
                 {
                     b.Property<Guid>("Id")
@@ -709,22 +1049,11 @@ namespace SistemaIntegralDeportivo.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("NombreServicio")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<DateTime>("PedidoEl")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<decimal>("Precio")
-                        .HasPrecision(12, 2)
-                        .HasColumnType("numeric(12,2)");
-
                     b.Property<DateTime?>("ResueltoEl")
                         .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("ServicioId")
-                        .HasColumnType("uuid");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
@@ -735,11 +1064,44 @@ namespace SistemaIntegralDeportivo.Api.Migrations
 
                     b.HasIndex("CargoId");
 
-                    b.HasIndex("ServicioId");
-
                     b.HasIndex("TenantId", "Estado");
 
                     b.ToTable("Pedidos");
+                });
+
+            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.PedidoLinea", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Cantidad")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("NombreServicio")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Nota")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("PedidoId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("PrecioUnitario")
+                        .HasPrecision(12, 2)
+                        .HasColumnType("numeric(12,2)");
+
+                    b.Property<Guid>("ServicioId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PedidoId");
+
+                    b.HasIndex("ServicioId");
+
+                    b.ToTable("PedidoLineas");
                 });
 
             modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.PerfilProfesor", b =>
@@ -831,6 +1193,93 @@ namespace SistemaIntegralDeportivo.Api.Migrations
                     b.ToTable("Publicidades");
                 });
 
+            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.PuntosMovimiento", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("JugadorRankingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Puntos")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JugadorRankingId", "Fecha");
+
+                    b.ToTable("PuntosMovimientos");
+                });
+
+            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.PuntosMovimientoDobles", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("JugadorRankingDoblesId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Puntos")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("JugadorRankingDoblesId", "Fecha");
+
+                    b.ToTable("PuntosMovimientosDobles");
+                });
+
+            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.RankingSnapshot", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Cf")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("FechaCorte")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("JugadorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Modalidad")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Posicion")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Puntos")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Rango")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Scope")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ScopeValor")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Modalidad", "Scope", "ScopeValor", "FechaCorte");
+
+                    b.ToTable("RankingSnapshots");
+                });
+
             modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.Raqueta", b =>
                 {
                     b.Property<Guid>("Id")
@@ -848,6 +1297,9 @@ namespace SistemaIntegralDeportivo.Api.Migrations
                         .HasColumnType("text");
 
                     b.Property<string>("Modelo")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Nombre")
                         .HasColumnType("text");
 
                     b.Property<Guid>("TenantId")
@@ -900,6 +1352,9 @@ namespace SistemaIntegralDeportivo.Api.Migrations
 
                     b.Property<DateTime>("CreadoEl")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Descripcion")
+                        .HasColumnType("text");
 
                     b.Property<string>("Nombre")
                         .IsRequired()
@@ -1154,6 +1609,9 @@ namespace SistemaIntegralDeportivo.Api.Migrations
                     b.Property<Guid?>("HorarioId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ProfesorUserId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
 
@@ -1398,17 +1856,6 @@ namespace SistemaIntegralDeportivo.Api.Migrations
                     b.Navigation("Horario");
                 });
 
-            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.Aviso", b =>
-                {
-                    b.HasOne("SistemaIntegralDeportivo.Api.Models.Tenant", "Tenant")
-                        .WithMany()
-                        .HasForeignKey("TenantId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Tenant");
-                });
-
             modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.Bloqueo", b =>
                 {
                     b.HasOne("SistemaIntegralDeportivo.Api.Models.Cancha", "Cancha")
@@ -1542,6 +1989,17 @@ namespace SistemaIntegralDeportivo.Api.Migrations
                     b.Navigation("Perfil");
                 });
 
+            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.FotoServicio", b =>
+                {
+                    b.HasOne("SistemaIntegralDeportivo.Api.Models.Servicio", "Servicio")
+                        .WithMany("Fotos")
+                        .HasForeignKey("ServicioId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Servicio");
+                });
+
             modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.HitoTrayectoria", b =>
                 {
                     b.HasOne("SistemaIntegralDeportivo.Api.Models.PerfilProfesor", "Perfil")
@@ -1609,6 +2067,17 @@ namespace SistemaIntegralDeportivo.Api.Migrations
                     b.Navigation("Tenant");
                 });
 
+            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.Noticia", b =>
+                {
+                    b.HasOne("SistemaIntegralDeportivo.Api.Models.Tenant", "Tenant")
+                        .WithMany()
+                        .HasForeignKey("TenantId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Tenant");
+                });
+
             modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.PagoEmpleado", b =>
                 {
                     b.HasOne("SistemaIntegralDeportivo.Api.Models.Tenant", "Tenant")
@@ -1633,12 +2102,6 @@ namespace SistemaIntegralDeportivo.Api.Migrations
                         .HasForeignKey("CargoId")
                         .OnDelete(DeleteBehavior.SetNull);
 
-                    b.HasOne("SistemaIntegralDeportivo.Api.Models.Servicio", "Servicio")
-                        .WithMany()
-                        .HasForeignKey("ServicioId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("SistemaIntegralDeportivo.Api.Models.Tenant", "Tenant")
                         .WithMany()
                         .HasForeignKey("TenantId")
@@ -1649,9 +2112,26 @@ namespace SistemaIntegralDeportivo.Api.Migrations
 
                     b.Navigation("Cargo");
 
-                    b.Navigation("Servicio");
-
                     b.Navigation("Tenant");
+                });
+
+            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.PedidoLinea", b =>
+                {
+                    b.HasOne("SistemaIntegralDeportivo.Api.Models.Pedido", "Pedido")
+                        .WithMany("Lineas")
+                        .HasForeignKey("PedidoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SistemaIntegralDeportivo.Api.Models.Servicio", "Servicio")
+                        .WithMany()
+                        .HasForeignKey("ServicioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Pedido");
+
+                    b.Navigation("Servicio");
                 });
 
             modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.PerfilProfesor", b =>
@@ -1868,6 +2348,11 @@ namespace SistemaIntegralDeportivo.Api.Migrations
                     b.Navigation("Turnos");
                 });
 
+            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.Pedido", b =>
+                {
+                    b.Navigation("Lineas");
+                });
+
             modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.PerfilProfesor", b =>
                 {
                     b.Navigation("Fotos");
@@ -1883,6 +2368,11 @@ namespace SistemaIntegralDeportivo.Api.Migrations
             modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.Sede", b =>
                 {
                     b.Navigation("Canchas");
+                });
+
+            modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.Servicio", b =>
+                {
+                    b.Navigation("Fotos");
                 });
 
             modelBuilder.Entity("SistemaIntegralDeportivo.Api.Models.Tenant", b =>

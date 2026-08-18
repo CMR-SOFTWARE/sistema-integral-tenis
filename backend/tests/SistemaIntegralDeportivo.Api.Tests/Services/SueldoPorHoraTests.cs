@@ -17,7 +17,7 @@ public class SueldoPorHoraTests
     private readonly Mock<IMembresiaTenantRepository> _membresias = new();
     private readonly SueldoPorHora _politica;
 
-    private readonly List<Turno> _delMes = [];
+    private readonly List<TurnoAgenda> _delMes = [];
     private readonly List<(MembresiaTenant, Usuario)> _empleados = [];
 
     public SueldoPorHoraTests()
@@ -52,16 +52,31 @@ public class SueldoPorHoraTests
             DuracionMinutos = dur,
         };
 
+    // El repositorio ya no devuelve la entidad sino el turno proyectado; el Horario
+    // se sigue usando acá como fuente de los datos de la clase.
     private void Turno(Horario h, EstadoTurno estado = EstadoTurno.Programado, int diaMes = 6) =>
-        _delMes.Add(new Turno
-        {
-            HorarioId = h.Id,
-            Horario = h,
-            Estado = estado,
-            DuracionMinutos = h.DuracionMinutos,
-            HoraInicio = h.HoraInicio,
-            Fecha = new DateOnly(2026, 7, diaMes),
-        });
+        _delMes.Add(TurnosDePrueba.Agenda(
+            fecha: new DateOnly(2026, 7, diaMes),
+            hora: h.HoraInicio,
+            duracion: h.DuracionMinutos,
+            estado: estado,
+            horarioId: h.Id,
+            profesorUserId: h.ProfesorUserId,
+            valorHoraProfe: h.ValorHoraProfe,
+            horarioDia: h.Dia,
+            horarioHoraInicio: h.HoraInicio));
+
+    /// <summary>
+    /// Una clase SUELTA: no cuelga de ningún horario, y desde el bloque 3 puede llevar
+    /// profe propio (antes no era de nadie y sus horas no se le pagaban a ninguno).
+    /// </summary>
+    private void TurnoSuelto(Guid? profe, int dur = 60, int diaMes = 8) =>
+        _delMes.Add(TurnosDePrueba.Agenda(
+            fecha: new DateOnly(2026, 7, diaMes),
+            hora: new TimeOnly(10, 0),
+            duracion: dur,
+            horarioId: null,
+            profesorUserId: profe));
 
     // ─────────────────────────────────────────────
 
@@ -181,5 +196,55 @@ public class SueldoPorHoraTests
         var sueldo = Assert.Single(res);          // solo el activo
         Assert.Equal(activo, sueldo.UserId);
         Assert.Equal(0m, sueldo.Monto);
+    }
+
+    // ── Clases sueltas: entran al sueldo desde que llevan profe ──
+
+    [Fact]
+    public async Task ClaseSuelta_ConProfe_LeSumaHorasConSuValorBase()
+    {
+        var profe = Guid.NewGuid();
+        Empleado(profe, valorHora: 8_000m);
+        TurnoSuelto(profe, dur: 90);
+
+        var sueldo = Assert.Single(await _politica.CalcularDelMesAsync(2026, 7));
+
+        Assert.Equal(1.5m, sueldo.HorasTotales);
+        Assert.Equal(12_000m, sueldo.Monto);      // 8.000 × 1,5
+        var linea = Assert.Single(sueldo.Detalle);
+        Assert.Null(linea.HorarioId);             // no cuelga de ninguna plantilla
+        Assert.Equal("Clases sueltas", linea.Titulo);
+        Assert.Equal(string.Empty, linea.Dia);    // cada una cae en su fecha: no hay día fijo
+    }
+
+    [Fact]
+    public async Task ClaseSuelta_SinProfe_NoLeCuentaANadie()
+    {
+        var profe = Guid.NewGuid();
+        Empleado(profe, valorHora: 8_000m);
+        TurnoSuelto(profe: null);
+
+        var sueldo = Assert.Single(await _politica.CalcularDelMesAsync(2026, 7));
+
+        Assert.Equal(0m, sueldo.Monto);
+        Assert.Empty(sueldo.Detalle);
+    }
+
+    [Fact]
+    public async Task ClaseSuelta_SeSumaAparteDeSusClasesFijas()
+    {
+        // Las sueltas van todas juntas en una línea, separadas de cada horario: si se
+        // mezclaran, el detalle mostraría horas que no corresponden a esa clase.
+        var profe = Guid.NewGuid();
+        Empleado(profe, valorHora: 10_000m);
+        Turno(HorarioDe(profe, dur: 60));
+        TurnoSuelto(profe, dur: 60);
+
+        var sueldo = Assert.Single(await _politica.CalcularDelMesAsync(2026, 7));
+
+        Assert.Equal(2, sueldo.Detalle.Count);
+        Assert.Equal(20_000m, sueldo.Monto);      // 10.000 × 2 horas
+        Assert.Contains(sueldo.Detalle, d => d.HorarioId is null && d.Titulo == "Clases sueltas");
+        Assert.Contains(sueldo.Detalle, d => d.HorarioId is not null);
     }
 }
