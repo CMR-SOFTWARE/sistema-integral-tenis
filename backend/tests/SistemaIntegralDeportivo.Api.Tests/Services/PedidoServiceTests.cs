@@ -18,6 +18,7 @@ public class PedidoServiceTests
     private readonly Mock<IPedidoRepository> _pedidos;
     private readonly Mock<IServicioRepository> _servicios;
     private readonly Mock<ICargoRepository> _cargos;
+    private readonly Mock<IAlumnoRepository> _alumnos;
     private readonly PedidoService _service;
     private readonly List<Cargo> _cargosCreados = [];
     private Pedido? _pedidoCreado;
@@ -27,7 +28,9 @@ public class PedidoServiceTests
         _pedidos = new Mock<IPedidoRepository>();
         _servicios = new Mock<IServicioRepository>();
         _cargos = new Mock<ICargoRepository>();
-        _service = new PedidoService(_pedidos.Object, _servicios.Object, _cargos.Object);
+        _alumnos = new Mock<IAlumnoRepository>();
+        _service = new PedidoService(
+            _pedidos.Object, _servicios.Object, _cargos.Object, _alumnos.Object);
 
         _pedidos.Setup(p => p.AgregarAsync(It.IsAny<Pedido>(), It.IsAny<CancellationToken>()))
                 .Callback((Pedido p, CancellationToken _) => _pedidoCreado = p)
@@ -35,6 +38,10 @@ public class PedidoServiceTests
         _cargos.Setup(c => c.AgregarAsync(It.IsAny<Cargo>(), It.IsAny<CancellationToken>()))
                .Callback((Cargo c, CancellationToken _) => _cargosCreados.Add(c))
                .Returns(Task.CompletedTask);
+        // El repositorio está scopeado por tenant: que devuelva la ficha significa
+        // "es de mi academia". Los alumnos ajenos simplemente no aparecen (null).
+        _alumnos.Setup(a => a.ObtenerAsync(AlumnoId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new Alumno { Id = AlumnoId, Nombre = "Mariana", Apellido = "Castro", Telefono = "336474" });
     }
 
     private Servicio ServicioEnCatalogo(string nombre = "Encordado", bool activo = true, decimal precio = 12_000m)
@@ -166,6 +173,80 @@ public class PedidoServiceTests
     public async Task Aceptar_PedidoInexistente_Lanza()
     {
         await Assert.ThrowsAsync<ReglaDeNegocioException>(() => _service.AceptarAsync(Guid.NewGuid()));
+    }
+
+    // ── Cargar (profe): se lo carga él, sin pasar por la bandeja ──
+
+    [Fact]
+    public async Task Cargar_NaceAceptadoYConSuCargo()
+    {
+        // El caso real: el alumno le pidió el encordado por WhatsApp y el profe se lo
+        // carga. Dejarlo Pendiente lo obligaría a aceptar su propio pedido.
+        var encordado = ServicioEnCatalogo("Encordado", precio: 12_000m);
+        var tubo = ServicioEnCatalogo("Tubo de pelotas", precio: 8_000m);
+
+        var dto = await _service.CargarAlAlumnoAsync(AlumnoId, [(encordado.Id, 1, null), (tubo.Id, 2, null)]);
+
+        Assert.Equal("Aceptado", dto.Estado);
+        Assert.Equal(EstadoPedido.Aceptado, _pedidoCreado!.Estado);
+        Assert.NotNull(_pedidoCreado.ResueltoEl);
+
+        var cargo = Assert.Single(_cargosCreados);
+        Assert.Equal(TipoCargo.Producto, cargo.Tipo);
+        Assert.Equal(28_000m, cargo.Monto); // 12.000 + 8.000×2
+        Assert.Equal(AlumnoId, cargo.AlumnoId);
+        Assert.Equal(cargo.Id, _pedidoCreado.CargoId);
+    }
+
+    [Fact]
+    public async Task Cargar_GuardaElSnapshotDelPrecio()
+    {
+        // Mismo contrato que el pedido del alumno: cambiar el precio después no toca
+        // lo ya cargado.
+        var encordado = ServicioEnCatalogo("Encordado", precio: 12_000m);
+
+        await _service.CargarAlAlumnoAsync(AlumnoId, [(encordado.Id, 1, "Luxilon ALU 1.25")]);
+
+        var linea = Assert.Single(_pedidoCreado!.Lineas);
+        Assert.Equal("Encordado", linea.NombreServicio);
+        Assert.Equal(12_000m, linea.PrecioUnitario);
+        Assert.Equal("Luxilon ALU 1.25", linea.Nota);
+    }
+
+    [Fact]
+    public async Task Cargar_AlumnoDeOtroTenant_LanzaYNoCreaNada()
+    {
+        // El alumnoId lo manda el cliente: sin este chequeo, el profe podría cargarle
+        // un producto a la ficha de OTRA academia. El repo scopeado devuelve null.
+        var encordado = ServicioEnCatalogo();
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.CargarAlAlumnoAsync(Guid.NewGuid(), [(encordado.Id, 1, null)]));
+
+        _pedidos.Verify(p => p.AgregarAsync(It.IsAny<Pedido>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Empty(_cargosCreados);
+    }
+
+    [Fact]
+    public async Task Cargar_ServicioInactivo_LanzaYNoCreaNada()
+    {
+        var encordado = ServicioEnCatalogo("Encordado");
+        var tubo = ServicioEnCatalogo("Tubo de pelotas", activo: false);
+
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.CargarAlAlumnoAsync(AlumnoId, [(encordado.Id, 1, null), (tubo.Id, 1, null)]));
+
+        _pedidos.Verify(p => p.AgregarAsync(It.IsAny<Pedido>(), It.IsAny<CancellationToken>()), Times.Never);
+        Assert.Empty(_cargosCreados);
+    }
+
+    [Fact]
+    public async Task Cargar_CarritoVacio_Lanza()
+    {
+        await Assert.ThrowsAsync<ReglaDeNegocioException>(
+            () => _service.CargarAlAlumnoAsync(AlumnoId, []));
+
+        _pedidos.Verify(p => p.AgregarAsync(It.IsAny<Pedido>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     // ── Rechazar (profe): sin deuda ──

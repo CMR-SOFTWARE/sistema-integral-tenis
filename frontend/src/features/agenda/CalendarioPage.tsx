@@ -136,6 +136,17 @@ export default function CalendarioPage({ sede, profe }: Props) {
     setParams(next, { replace: true });
   }, [params, setParams, esOwner, esStaff, sinCanchas, sedesCargando]);
 
+  // Deep-link desde el inicio: /agenda?tab=calendario&suelta=1 abre "Nueva clase
+  // suelta". Solo el DUEÑO: el endpoint de clase suelta es Owner (ver el botón de
+  // abajo), así que al empleado no le serviría de nada abrirle el modal.
+  useEffect(() => {
+    if (params.get('suelta') !== '1' || sedesCargando) return;
+    if (esOwner && !sinCanchas) setModalClaseSuelta(true);
+    const next = new URLSearchParams(params);
+    next.delete('suelta');
+    setParams(next, { replace: true });
+  }, [params, setParams, esOwner, sinCanchas, sedesCargando]);
+
   // Deep-link desde el inicio (tarjeta "Próximas clases de hoy"):
   // /agenda?tab=calendario&turno=<id> abre el detalle de ESE turno puntual.
   useEffect(() => {

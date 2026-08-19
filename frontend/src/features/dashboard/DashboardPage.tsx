@@ -13,7 +13,9 @@ import s from './DashboardPage.module.css';
 /** Accesos directos del dueño: llevan a la acción con un toque (algunos abren el modal). */
 const ACCESOS: Acceso[] = [
   { to: '/agenda?tab=calendario&nuevo=1', label: 'Nuevo horario', color: '#178a4c', icon: 'M12 5v14M5 12h14' },
+  { to: '/agenda?tab=calendario&suelta=1', label: 'Clase suelta', color: '#0891b2', icon: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4M12 13v5M9.5 15.5h5' },
   { to: '/finanzas?tab=cuotas', label: 'Cobrar cuotas', color: '#7c3aed', icon: 'M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' },
+  { to: '/mi-academia?tab=pedidos', label: 'Pedidos del Shop', color: '#b7791f', icon: 'M6 2l-3 6v12a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8l-3-6zM3 8h18M16 12a4 4 0 0 1-8 0' },
   { to: '/agenda?tab=calendario', label: 'Ver agenda', color: '#2563eb', icon: 'M3 5h18v16H3zM3 9h18M8 3v4M16 3v4' },
   { to: '/alumnos', label: 'Ver alumnos', color: '#0e6b3c', icon: 'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75' },
 ];

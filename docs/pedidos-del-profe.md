@@ -5,7 +5,7 @@
 > que falta. Lo último es lo que más duele perder: sin eso se vuelve a discutir algo que
 > ya está acordado, o se decide distinto y hay que rehacerlo.
 >
-> Última actualización: 16/08/2026.
+> Última actualización: 17/08/2026.
 
 El cliente es el **profesor** que usa la app todos los días (y que además la revende a
 otros profes). En agosto de 2026 mandó una lista de 13 pedidos. Esta es esa lista, con lo
@@ -185,6 +185,39 @@ foto rota en la pantalla sí.
 
 ---
 
+### Atajos, permisos y cargarle productos a un alumno (17/08/2026)
+
+Cinco ajustes chicos del uso diario, todos salidos de que el profe usa la app todos los días.
+
+- **Dos accesos directos nuevos** en el Inicio: *Clase suelta* y *Pedidos del Shop*. La
+  clase suelta reusa el deep-link que ya existía para "Nuevo horario"
+  (`/agenda?tab=calendario&suelta=1`) y es **solo del dueño**, porque el endpoint también.
+  Los accesos pasaron de cuatro a seis y la grilla de tres columnas.
+- **Se puede editar la ficha de alguien de la lista de espera.** No era una regla, era un
+  descuido: `SolicitudesPage` montaba la ficha sin pasarle `onEditar`, y el botón "Editar
+  datos" solo se dibuja si esa prop llega. Estar sin horario asignado nunca fue motivo para
+  no poder corregirle el teléfono.
+- **Atajo de la ficha a Finanzas** (`Ver su cuota →`). La cuota mensual ya se editaba en
+  "Editar datos"; lo que faltaba era saltar al **mes** para tocar el monto de ese cargo, que
+  es otra cosa.
+- **El profe le carga productos a un alumno** eligiendo del catálogo, desde el botón
+  **"Agregar cargo" que ya existía en Cuotas**. Nace **Aceptado y con su cargo**: el profe es
+  el que resuelve la bandeja, hacerle aceptar su propio pedido sería un paso al pedo. Valida
+  que el alumno sea **de su tenant** — el id viene del cliente, a diferencia del portal donde
+  sale de la sesión.
+  - **Se probó primero como un botón aparte en la ficha del alumno y se dio marcha atrás**:
+    eran dos puertas para lo mismo. Ahora "Agregar cargo" pregunta de dónde sale lo que se
+    suma —del catálogo, un concepto a mano, o un ajuste— y el catálogo es la opción por
+    defecto, que es la que deja el cargo **con su desglose** en vez de un renglón de texto.
+
+**Lo que se reusó en vez de duplicar:** la edición de la ficha salió a un hook propio
+(`useEditarAlumno`) que usan las dos pantallas — montar `useAlumnos` entero en la espera
+habría traído un listado que esa pantalla no usa. Y en el backend se extrajeron dos privados
+de `PedidoService` (armar el pedido, hacer nacer el cargo) que ahora comparten el pedido del
+alumno y el que carga el profe.
+
+---
+
 ## Lo que falta
 
 ### Bloque 6 — Plataforma, roles y permisos (pedidos 2, 10, 11 y 12)
@@ -253,6 +286,40 @@ Es el bloque más grande y el único que toca auth. **Merece su propio plan.**
   como pide el texto literal)?
 - Pedido 10: dar de alta una academia desde Plataforma, ¿**salta** el checkout de Mercado
   Pago (nace ya `Activa`) o sigue el mismo camino pago que el registro público?
+
+---
+
+### El módulo de clubes (pedido del 17/08/2026)
+
+> *"En mis clubes le debería aparecer los clubes asignados a cada usuario. (…) Automóvil
+> Club San Nicolás es un club deportivo con socios y los socios pueden sacar turno en las
+> canchas. Además dentro de ese club existe la academia del profesor de tenis, que es una
+> entidad aparte, en la cual sus alumnos toman clase EN el club pero en su academia, o sea
+> que le rinden cuentas al director de la academia y no al club. (…) También existen los
+> clubes que son estrictamente de tenis."*
+
+**No es un pedido nuevo: es un módulo que ya está diseñado y todavía no se construyó.** Casi
+todo lo que describe el profe está en [`modelo-identidad-roles.md`](modelo-identidad-roles.md):
+
+| Lo que pide | Dónde ya está decidido |
+|---|---|
+| El club es una entidad aparte de la academia | §1 y §2 — **`TipoTenant.Club` ya existe en el enum** |
+| Los socios pertenecen a uno o varios clubes | §1 y §5 — una membresía por club; tabla `Socio` (Fase 2) |
+| Los socios sacan turno en las canchas del club | §3, "El socio que solo juega turnos en su club" |
+| Los alumnos toman clase EN el club pero rinden a la academia | §5 — *"la clase ocurre EN un club, pero el alumno ES del tenant del profe"* (relación `ProfesorEnClub`) |
+
+Lo único genuinamente nuevo es el matiz de que hay **clubes multideporte** (donde el tenis es
+una actividad más) y **clubes solo de tenis**: se manejan parecido pero no igual.
+
+**DECISIÓN PENDIENTE, y hay que tomarla antes de diseñar nada:** ya existe **Turnos Club**
+(`CMR/Reservas_Canchas/Turnos-Club`), una app aparte —Node + Express, multi-club con routing
+por slug— que **ya hace reservas de canchas, panel de admin del club y superadmin**. La
+pregunta no es cómo modelar el club: es si ese producto se **absorbe** dentro de S.I.D.,
+**convive** con él, o se **reescribe**. Contestar eso primero evita construir dos veces lo
+mismo. El módulo se planifica aparte, en su propio plan mode.
+
+Hoy "Mis clubes" es un ítem del menú del portal (`nav.ts`, va a `/portal/club`) y el guard de
+un solo club por persona sigue en `SolicitudService.CrearAsync`.
 
 ---
 

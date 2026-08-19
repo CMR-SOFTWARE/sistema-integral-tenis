@@ -6,7 +6,10 @@ import { haceCuanto } from '../alumnos/types';
 import FiltrosAlumnos from '../alumnos/FiltrosAlumnos';
 import TablaAlumnos from '../alumnos/TablaAlumnos';
 import DetalleAlumnoModal from '../alumnos/DetalleAlumnoModal';
+import EditarAlumnoModal from '../alumnos/EditarAlumnoModal';
 import { useFiltrosAlumnos } from '../alumnos/useFiltrosAlumnos';
+import { useEditarAlumno } from '../alumnos/useAlumnos';
+import { obtenerSesion } from '../auth/sesion';
 import type { SolicitudPendiente } from './types';
 import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import s from './SolicitudesPage.module.css';
@@ -28,9 +31,15 @@ export default function SolicitudesPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [procesando, setProcesando] = useState<string | null>(null); // id en curso
   const [detalle, setDetalle] = useState<SolicitudPendiente | null>(null);
+  const [editando, setEditando] = useState<SolicitudPendiente | null>(null);
   const confirmar = useConfirmar();
   const qc = useQueryClient();
   const filtros = useFiltrosAlumnos();
+  // La ficha se edita desde acá igual que desde Alumnos: estar sin horario asignado
+  // no es motivo para no poder corregirle el teléfono ni cargarle la cuota. Es del
+  // dueño, como en el listado; el empleado ve la ficha pero no la toca.
+  const esOwner = obtenerSesion()?.rol === 'owner';
+  const editarAlumno = useEditarAlumno();
 
   const query = useQuery({
     queryKey: ['solicitudes'],
@@ -192,6 +201,18 @@ export default function SolicitudesPage() {
           alumno={detalle}
           hermanos={espera.filter((o) => o.familiaId && o.familiaId === detalle.familiaId && o.id !== detalle.id)}
           onClose={() => setDetalle(null)}
+          onEditar={esOwner ? (a) => { setDetalle(null); setEditando(a as SolicitudPendiente); } : undefined}
+        />
+      )}
+
+      {editando && (
+        <EditarAlumnoModal
+          alumno={editando}
+          onClose={() => setEditando(null)}
+          onEditar={async (id, dto) => {
+            await editarAlumno(id, dto);
+            avisar(`${dto.nombre} ${dto.apellido} actualizado`);
+          }}
         />
       )}
 

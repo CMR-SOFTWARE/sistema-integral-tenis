@@ -63,6 +63,19 @@ public class CrearPedidoDto
     public List<LineaCarritoDto> Lineas { get; set; } = [];
 }
 
+/// <summary>
+/// El profe le carga productos a un alumno. Igual que el carrito del alumno pero
+/// diciendo a quién: acá el destinatario no sale de la sesión.
+/// </summary>
+public class CargarPedidoDto
+{
+    [Required]
+    public Guid AlumnoId { get; set; }
+
+    [Required, MinLength(1)]
+    public List<LineaCarritoDto> Lineas { get; set; } = [];
+}
+
 /// <summary>Una línea de un pedido, con el snapshot ya resuelto.</summary>
 public class PedidoLineaDto
 {
