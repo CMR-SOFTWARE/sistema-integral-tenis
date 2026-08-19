@@ -1,6 +1,9 @@
+/* Tres columnas y no cuatro: con seis accesos quedan dos filas parejas (con cuatro
+   quedaba una fila llena y otra con dos sueltos). `minmax(0, …)` porque `1fr` es
+   `minmax(auto, 1fr)` y una etiqueta larga estiraría la columna fuera de la pantalla. */
 .grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 16px;
 }
@@ -34,10 +37,10 @@
   flex-shrink: 0;
 }
 
-.label { font-weight: 700; font-size: 14px; flex: 1; }
+.label { font-weight: 700; font-size: 14px; flex: 1; min-width: 0; }
 .chev { color: var(--color-text-faint); font-weight: 700; }
 
 @media (max-width: 760px) {
-  .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
   .chev { display: none; }
 }

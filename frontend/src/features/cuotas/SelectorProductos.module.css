@@ -1,0 +1,127 @@
+/* Elegir del catálogo dentro de "Agregar cargo". Mobile first: el profe lo carga con
+   el celular, muchas veces con el alumno enfrente. */
+
+.lista {
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  border-bottom: 1px solid var(--color-border-subtle);
+  padding: 10px 0;
+}
+
+.item:last-child {
+  border-bottom: none;
+}
+
+.fila {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+}
+
+.thumb {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  object-fit: cover;
+  border-radius: 9px;
+  background: var(--color-surface-subtle);
+}
+
+/* min-width 0 para que un nombre largo no estire la fila y con ella el modal. */
+.nombre {
+  flex: 1;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.precio {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.stepper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.stepperBtn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-primary-dark);
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stepperBtn:hover:not(:disabled) {
+  border-color: var(--color-primary);
+}
+
+.stepperBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.stepperCantidad {
+  min-width: 16px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.nota {
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--color-text);
+}
+
+.resumen {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border-subtle);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.total {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17px;
+}
+
+.vacio {
+  padding: 14px 4px;
+  color: var(--color-text-faint);
+  font-size: 13.5px;
+  line-height: 1.55;
+}
+
+.error {
+  background: var(--color-danger-soft);
+  border: 1px solid var(--color-danger-border);
+  color: var(--color-danger);
+  border-radius: var(--radius-md);
+  padding: 10px 13px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}

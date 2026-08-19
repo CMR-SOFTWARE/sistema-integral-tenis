@@ -48,6 +48,20 @@ export function useCuotas(anio: number, mes: number) {
     await invalidar();
   };
 
+  /**
+   * El profe le carga productos del catálogo. Nace un pedido ya ACEPTADO con su cargo:
+   * él mismo es el que resuelve la bandeja, así que no tiene a quién esperar. A
+   * diferencia de un cargo a mano, este queda con su desglose y el alumno lo ve en
+   * sus pedidos.
+   */
+  const cargarProductos = async (
+    alumnoId: string,
+    lineas: { servicioId: string; cantidad: number; nota?: string }[],
+  ) => {
+    await api.post('/pedidos', { alumnoId, lineas });
+    await invalidar();
+  };
+
   /** Ajusta el monto de un cargo impago (ej. cambiar la cuota del mes al cobrar). */
   const editarMonto = async (cargoId: string, monto: number) => {
     await api.put(`/cuotas/cargos/${cargoId}/monto`, { monto });
@@ -59,7 +73,7 @@ export function useCuotas(anio: number, mes: number) {
     cargando: query.isLoading,
     error: query.error ? (query.error.message || 'Error cargando el mes') : null,
     reporte: reporte.data ?? [],
-    pagarMes, pagarCargo, rechazarMes, agregarCargo, editarMonto,
+    pagarMes, pagarCargo, rechazarMes, agregarCargo, cargarProductos, editarMonto,
     recargar: () => qc.invalidateQueries({ queryKey: ['cuotas', anio, mes] }),
   };
 }

@@ -29,6 +29,24 @@ public class PedidosController : ControllerBase
     public async Task<ActionResult<int>> ContarPendientes(CancellationToken ct) =>
         Ok(await _service.ContarPendientesAsync(ct));
 
+    /// <summary>
+    /// POST api/pedidos — el profe le carga productos a un alumno. Nace aceptado y con
+    /// su cargo: es él mismo el que resuelve la bandeja, no tiene a quién esperar.
+    /// </summary>
+    [HttpPost]
+    public async Task<ActionResult<PedidoDto>> Cargar(CargarPedidoDto dto, CancellationToken ct)
+    {
+        try
+        {
+            var lineas = dto.Lineas.Select(l => (l.ServicioId, l.Cantidad, l.Nota)).ToList();
+            return Ok(await _service.CargarAlAlumnoAsync(dto.AlumnoId, lineas, ct));
+        }
+        catch (ReglaDeNegocioException ex)
+        {
+            return Problem(detail: ex.Message, statusCode: StatusCodes.Status400BadRequest);
+        }
+    }
+
     /// <summary>POST api/pedidos/{id}/aceptar — lo hago: nace el cargo en la cuenta del alumno.</summary>
     [HttpPost("{id:guid}/aceptar")]
     public async Task<IActionResult> Aceptar(Guid id, CancellationToken ct)

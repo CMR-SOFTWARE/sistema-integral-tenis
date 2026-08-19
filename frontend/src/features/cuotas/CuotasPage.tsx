@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useConfirmar } from '../../components/confirmar/ConfirmarProvider';
 import { useCuotas } from './useCuotas';
 import MedioModal from './MedioModal';
@@ -16,7 +17,7 @@ export default function CuotasPage() {
   const hoy = new Date();
   const [anio, setAnio] = useState(hoy.getFullYear());
   const [mes, setMes] = useState(hoy.getMonth() + 1);
-  const { datos, cargando, error, reporte, pagarMes, pagarCargo, rechazarMes, agregarCargo, editarMonto, recargar } = useCuotas(anio, mes);
+  const { datos, cargando, error, reporte, pagarMes, pagarCargo, rechazarMes, agregarCargo, cargarProductos, editarMonto, recargar } = useCuotas(anio, mes);
 
   const [filtro, setFiltro] = useState<'todas' | EstadoLiquidacion>('todas');
   const [abiertos, setAbiertos] = useState<Set<string>>(new Set());
@@ -25,6 +26,19 @@ export default function CuotasPage() {
   const [editandoCargo, setEditandoCargo] = useState<{ id: string; concepto: string; monto: number } | null>(null);
   const [cargoPara, setCargoPara] = useState<Liquidacion | null>(null);
   const confirmar = useConfirmar();
+
+  // Deep-link desde la ficha del alumno: /finanzas?tab=cuotas&alumno=<id> abre SU
+  // detalle. Si ese alumno no tiene movimientos este mes no hay nada que abrir, y
+  // está bien: la pantalla queda como está y el profe navega los meses.
+  const [params, setParams] = useSearchParams();
+  useEffect(() => {
+    const alumnoId = params.get('alumno');
+    if (!alumnoId) return;
+    setAbiertos((prev) => new Set(prev).add(alumnoId));
+    const next = new URLSearchParams(params);
+    next.delete('alumno');
+    setParams(next, { replace: true });
+  }, [params, setParams]);
 
   const mesAnterior = () => {
     if (mes === 1) { setMes(12); setAnio(anio - 1); } else setMes(mes - 1);
@@ -288,6 +302,7 @@ export default function CuotasPage() {
           alumno={cargoPara}
           onClose={() => setCargoPara(null)}
           onCrear={agregarCargo}
+          onCargarProductos={cargarProductos}
         />
       )}
     </div>

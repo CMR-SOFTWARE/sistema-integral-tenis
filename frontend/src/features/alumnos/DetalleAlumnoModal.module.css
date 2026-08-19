@@ -69,6 +69,23 @@
   border-bottom: 1px solid var(--color-surface-hover);
 }
 
+/* Atajo a Finanzas desde la cuenta corriente. Va inline dentro del título de la
+   sección (y no flotado) para que en el celular envuelva como cualquier texto. */
+.linkCuota {
+  margin-left: 10px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+.linkCuota:hover {
+  text-decoration: underline;
+}
+
 .filaK {
   color: var(--color-text-faint);
 }

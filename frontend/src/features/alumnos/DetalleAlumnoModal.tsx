@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import Modal from '../../components/Modal';
 import Avatar from '../../components/Avatar';
@@ -236,6 +237,12 @@ export default function DetalleAlumnoModal({
                 debe {formatoPlata(cuenta.data.totalAdeudado)}
               </span>
             )}
+            {/* La ficha MUESTRA los movimientos; para tocar el monto de un mes hay que
+                ir a Finanzas. Sin este atajo el profe tiene que salir, entrar a Cuotas
+                y buscarlo a mano en la lista. */}
+            <Link to={`/finanzas?tab=cuotas&alumno=${alumno.id}`} className={s.linkCuota} onClick={onClose}>
+              Ver su cuota →
+            </Link>
           </div>
           {cuenta.isLoading ? (
             <div className={s.placeholder}>Cargando…</div>
@@ -315,6 +322,7 @@ export default function DetalleAlumnoModal({
           }}
         />
       )}
+
     </Modal>
   );
 }

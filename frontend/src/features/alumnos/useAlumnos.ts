@@ -1,8 +1,37 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import type { QueryClient } from '@tanstack/react-query';
 import { api } from '../../lib/api';
 import type {
   AccesoCreado, Alumno, AlumnoCreado, Categoria, CreateAlumno, Estado, Lista, UpdateAlumno,
 } from './types';
+
+/**
+ * Lo que se mueve cuando cambia una ficha: el listado, las cuotas (ahí se ve su
+ * arancel) y la espera con su badge (alta sin clase entra; pausa y baja salen).
+ */
+function invalidarAlumnos(qc: QueryClient) {
+  return Promise.all([
+    qc.invalidateQueries({ queryKey: ['alumnos'] }),
+    qc.invalidateQueries({ queryKey: ['cuotas'] }),
+    qc.invalidateQueries({ queryKey: ['solicitudes'] }),
+    qc.invalidateQueries({ queryKey: ['solicitudes-conteo'] }),
+  ]);
+}
+
+/**
+ * Solo la edición de la ficha, sin traer el listado. La ficha se abre desde DOS
+ * pantallas (Alumnos y Lista de espera) y las dos tienen que guardar igual; montar
+ * `useAlumnos` entero en la espera traería un listado que esa pantalla no usa, y
+ * cada consulta cuesta ~115 ms.
+ */
+export function useEditarAlumno() {
+  const qc = useQueryClient();
+  return async (id: string, dto: UpdateAlumno) => {
+    const actualizado = await api.put<Alumno>(`/alumnos/${id}`, dto);
+    await invalidarAlumnos(qc);
+    return actualizado;
+  };
+}
 
 /**
  * Estado y operaciones de la pantalla Alumnos contra la API .NET.
@@ -30,14 +59,7 @@ export function useAlumnos(
     },
   });
 
-  // El cambio de un alumno (ej. su cuota mensual / arancel) también repercute en Cuotas.
-  // Y en la espera: alta sin clase entra, pausa y baja salen (solo espera el ACTIVO).
-  const invalidar = () => Promise.all([
-    qc.invalidateQueries({ queryKey: ['alumnos'] }),
-    qc.invalidateQueries({ queryKey: ['cuotas'] }),
-    qc.invalidateQueries({ queryKey: ['solicitudes'] }),
-    qc.invalidateQueries({ queryKey: ['solicitudes-conteo'] }),
-  ]);
+  const invalidar = () => invalidarAlumnos(qc);
 
   /**
    * Anota (o desanota) a mano en la lista de espera: el alumno que ya viene y te pide
