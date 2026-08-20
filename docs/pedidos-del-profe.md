@@ -5,7 +5,7 @@
 > que falta. Lo último es lo que más duele perder: sin eso se vuelve a discutir algo que
 > ya está acordado, o se decide distinto y hay que rehacerlo.
 >
-> Última actualización: 17/08/2026.
+> Última actualización: 20/08/2026.
 
 El cliente es el **profesor** que usa la app todos los días (y que además la revende a
 otros profes). En agosto de 2026 mandó una lista de 13 pedidos. Esta es esa lista, con lo
@@ -26,14 +26,17 @@ que fuimos resolviendo.
 | 12 (parte) | Que el director no se mezcle en las listas | ✅ Bloque 1 |
 | 7 | El que está en espera ve el portal común | ✅ Bloque 2 — 13/08/2026 |
 | 13 | Noticias con importancia, editables | ✅ Bloque 2 |
-| 9 | "Mis torneos" y "Ranking" (próximamente) | ✅ Bloque 2 |
+| 9 | "Mis torneos" y "Ranking" (próximamente) | ✅ Bloque 2 — el ranking real existe, apagado |
 | 1 | Clase suelta que asigna el profe + clase de prueba | ✅ Bloque 3 — 13/08/2026 |
 | 3 | "Próximas clases" con más info y clickeable | ✅ Bloque 4 — 14/08/2026 |
 | 8 | Shop con carrito | ✅ Bloque 5 — 14/08/2026 |
-| **2** | **El director habilita al empleado a cobrar** | ⬜ **Bloque 6 — lo próximo** |
-| **10** | **Roles y alta de academias desde Plataforma** | ⬜ Bloque 6 |
-| **11** | **Usuarios en Plataforma; Alumnos y Espera en Mi academia** | ⬜ Bloque 6 |
-| **12** | **El director como usuario común; alumno → profesor** | ⬜ Bloque 6 |
+| 2 | El director habilita al empleado a cobrar | ✅ Bloque 6 — 15/08/2026 |
+| 10 | Roles y alta de academias desde Plataforma | ✅ Bloque 6 |
+| 11 | Usuarios en Plataforma; Alumnos y Espera en Mi academia | ✅ Bloque 6 — la 2ª mitad se descartó |
+| 12 | El director como usuario común; alumno → profesor | ✅ Bloque 6 |
+
+**Los 13 pedidos de la lista de agosto están en producción.** Lo que sigue abierto no
+sale de esa lista: está en [Lo que falta](#lo-que-falta).
 
 **Un bloque por PR.** Cada uno arranca planificando (ver `CLAUDE.md` §2).
 
@@ -136,6 +139,111 @@ Pendiente.
 
 ---
 
+### Bloque 6 — Plataforma, roles y permisos (15/08/2026)
+
+Los cuatro pedidos que tocaban auth (2, 10, 11 y 12), en el PR #98.
+
+**Pedido 2 — el director habilita al empleado a cobrar.** `MembresiaTenant.PuedeCobrar`
+(migración `AgregarPuedeCobrarAMembresiaTenant`), un checkbox en `EditarEmpleadoModal.tsx`.
+
+- Es **un solo permiso**, no dos: habilita clases **y** cuotas juntas. El texto del profe
+  decía "una clase o una cuota", pero Finanzas es una pantalla sola y partir el permiso
+  obligaba a partirla también.
+- Gatea **Finanzas entero**: policy `PuedeCobrar` sobre el `CuotasController` completo
+  (`Program.cs`) y `soloConCobro` en la entrada del menú (`nav.ts`). Sin el permiso, el
+  empleado no entra a Finanzas en absoluto — no hay entrada parcial.
+- **El dueño siempre puede cobrar y no se le puede sacar**: la policy lo deja pasar por
+  `rol=owner`, sin mirar membresía (el dueño no tiene una). En `StaffService` su
+  `PuedeCobrar` nace en `true`.
+
+> ⚠️ **El permiso viaja en el JWT y el token dura 7 días, sin refresh token.** Dárselo o
+> sacárselo a un empleado **no tiene efecto hasta que vuelve a loguearse**. Si el profe
+> reporta que "le saqué el permiso y sigue entrando", eso es: que cierre sesión. Vale para
+> cualquier permiso que se agregue después — mientras siga siendo un claim, se hereda el
+> mismo retardo.
+
+**Pedido 10 — alta de academias desde Plataforma.** `POST /api/admin/clubes`
+(`AdminService.CrearClubAsync`): crea el club y la cuenta del director, y lo **salta
+directo a Activa, sin pasar por el checkout de Mercado Pago** — reusa
+`ActivarTenantAsync`, la misma costura que el webhook real de MP. Devuelve la contraseña
+temporal para pasársela al director. Si el celular ya tiene cuenta, corta con un mensaje
+propio (el genérico habla de mandar una solicitud desde el portal, que acá no aplica).
+
+**Pedido 11 — el padrón de personas.** `GET /api/admin/personas` +
+`features/admin/PersonasPage.tsx`: una proyección de `AspNetUsers` con sus roles por club
+(chips Dueño / Staff / Alumno), buscable por nombre, teléfono o mail. La segunda mitad del
+pedido ("Alumnos y Espera en Mi academia") **no se hizo a propósito**: ya estaba decidido
+que no se reordena el menú del profe.
+
+> **La distinción que hay que sostener** (es la trampa que ya nos mordió una vez): la
+> pestaña **"Usuarios"** del profe lista la tabla `Alumnos`, o sea un padrón de **FICHAS**.
+> **"Personas"** en Plataforma es el padrón de **PERSONAS** (`AspNetUsers`). No son lo
+> mismo y no hay que fusionarlos: el director y los profes no tienen ficha salvo que
+> alguien los haya cargado como alumnos, y quien tiene fichas en varios clubes aparece
+> varias veces en Alumnos y una sola vez en Personas. Mezclar personas sin ficha en la
+> tabla de Alumnos da filas donde la mitad de las acciones no aplican (no hay a quién
+> pausar, dar de baja ni cobrarle cuota). Por eso el profe lo pidió en Plataforma. Ver
+> `docs/modelo-identidad-roles.md`.
+
+**Pedido 12 — el director como usuario común.** Ya funcionaba con lo que había (probado en
+el navegador el 14/08); no hizo falta código nuevo. Lo que sí se sumó, en el PR #99, es que
+**el profe entra a su portal tenga ficha o no**: es una persona más y desde ahí se asocia a
+un club.
+
+---
+
+### Ranking R.U.T.A. — EN PRODUCCIÓN PERO APAGADO (15/08/2026)
+
+**No sale de la lista de 13.** Es la Fase 3 de `plan-de-accion-v2.md`, que entró junto con
+el Bloque 6 en el mismo PR #98 — módulo completo, 6 controllers, 5 migraciones, ~20
+pantallas de front.
+
+**Está desplegado y ningún usuario lo ve.** Entró sin haberse probado, así que el mismo día
+se puso en pausa: los seis controllers pasaron a policy `Admin`, la entrada del menú lleva
+`soloAdmin` y la ruta del portal redirige al Inicio. **Es el pendiente más concreto que
+tiene el proyecto: código escrito, desplegado y sin rendir nada.**
+
+**Qué hay construido:**
+
+- **Ranking cross-tenant, a nivel plataforma** (como manda ADR-0007): `JugadorRanking` es
+  1:1 con el Usuario global, no con la ficha. Se crea on-demand al inscribirse, con datos
+  de perfil opcionales (ciudad, provincia, mano, revés, bio).
+- **Singles y dobles**, cada uno con su tabla y su flujo paralelo.
+- **Desafíos**: proponer → aceptar/rechazar → cargar quién ganó. Sin resultado en texto
+  (no "6-4 6-4"), solo el ganador. Un partido activo por jugador a la vez, y un par de
+  jugadores se enfrenta **una sola vez** (índice único sobre el par normalizado).
+  Rechazar o cancelar mientras sigue Propuesto **no deja historia**; finalizado, nunca se
+  borra.
+- **Puntos**: `IPoliticaDePuntosRanking`, pieza intercambiable como `IPoliticaDeCuota`. La
+  única implementación (`cf_consolacion_v1`) está marcada **provisoria**: ambos suman, el
+  perdedor nunca saca 0.
+- **Cierre oficial** los días 1 y 16: congela un snapshot Global + uno por ciudad,
+  provincia y país, sobre singles y dobles. Una vez creado es historia, no se edita.
+  El desempate es **quién se inscribió antes**, nunca alfabético ni random.
+- **Revisiones**: el jugador pide revisar un partido finalizado y le llega a los admins.
+  Es un **ticket, no una corrección** — resolverlo solo guarda la respuesta, nunca toca los
+  puntos ni el ganador (el service ni siquiera puede escribir esos repos).
+- **Notificaciones** (`features/notificaciones`), hoy con el ranking como única fuente —
+  por eso la campana también quedó para el admin.
+
+> ⚠️ **El job de cierre oficial SÍ corre en producción.** `RankingCierreOficialJob` es un
+> `BackgroundService` con `PeriodicTimer`, y la pausa se aplicó a los controllers, no a él:
+> los días 1 y 16 se ejecuta igual. Hoy es inofensivo porque no hay jugadores inscriptos
+> (nadie puede inscribirse), así que congela un snapshot vacío. Tenerlo presente al
+> habilitar el módulo: el primer cierre real llega solo, sin que nadie lo dispare.
+
+**Cómo se enciende** (está anotado en el propio `RankingController`): sacarle el
+`soloAdmin` a la entrada de `nav.ts`, devolver los seis controllers a `[Authorize]` a secas
+—ranking, ranking de dobles, desafíos, desafíos de dobles, revisiones y notificaciones— y
+abrir la ruta del portal. Ojo con `PortalLayout`, que **no filtraba el nav** (a diferencia
+de `AppLayout`): el filtro se le agregó ahí para que el `soloAdmin` hiciera algo.
+
+Hay tests de la lógica (`DesafioServiceTests`, `DesafioDoblesServiceTests`,
+`JuegoRevisionServiceTests`, `RankingCierreOficialServiceTests`), pero **nadie lo usó
+todavía con datos reales** — que es exactamente lo que falta y el motivo de la pausa.
+
+---
+
 ### El Shop de verdad, y corregir un encordado (16/08/2026)
 
 No salió de la lista de 13: son tres cosas que trajo Lucas de **usar** la app.
@@ -183,6 +291,21 @@ inverso —falla el borrado del archivo— **sí** está resuelto: se loguea y n
 operación (`ServicioService.BorrarArchivoAsync`), porque un huérfano no lo ve nadie y una
 foto rota en la pantalla sí.
 
+**Lo demás que salió en esos dos PRs y no estaba anotado acá:**
+
+- **Cada línea del carrito acepta una aclaración propia** (marca de cuerda, tensión). Va
+  por **línea y no por pedido**: mezcladas, el profe tiene que adivinar cuál corresponde a
+  qué. La nota **no entra en el concepto del cargo**, que es lo que el alumno ve en su
+  cuenta corriente.
+- **La publicidad pasó del Inicio al layout del portal**, así se ve en todas las secciones.
+  No cuesta consultas de más: la query ya estaba cacheada.
+- **El profe entra a su portal tenga ficha o no** (pedido 12: el director es una persona
+  más, y desde ahí se asocia a un club). Y el que todavía no está en ningún club **dejó de
+  ver una pantalla que tapaba todo**: ahora es una banda arriba del portal completo, igual
+  que la del que está en lista de espera.
+- **La raqueta acepta un nombre opcional** ("Raqueta 1") para el que tiene dos iguales. Sin
+  nombre se sigue mostrando por marca y modelo.
+
 ---
 
 ### Atajos, permisos y cargarle productos a un alumno (17/08/2026)
@@ -220,72 +343,28 @@ alumno y el que carga el profe.
 
 ## Lo que falta
 
-### Bloque 6 — Plataforma, roles y permisos (pedidos 2, 10, 11 y 12)
+**Los 13 pedidos de la lista de agosto están cerrados.** Lo que queda abierto es esto, en
+orden de lo que más rinde por lo que cuesta:
 
-> *"El director tiene que tener una opción de modificar si el profe empleado puede cobrar
-> una clase o una cuota."*
->
-> *"El cliente quiere tener acceso desde mi plataforma a poder setear a cada usuario de la
-> app que rol cumple en el sistema. Ejemplo: si una academia se registra a la plataforma
-> que él le pueda dar de alta, que tenga acceso a toda la data que se registra a la
-> plataforma como clubes, academias, usuarios, etc."*
->
-> *"Usuarios deberían aparecer en plataforma, luego la sección alumnos y lista de espera
-> debería estar en mi academia y él gestiona todo desde ahí."*
->
-> *"El director también tiene que poder ser un usuario común y corriente como los demás,
-> como los profesores, el tema es que no se mezclen en la lista de alumnos ni de espera si
-> no toman clases en esa academia. (…) Habría que pensar cómo hacer que un usuario que es
-> alumno y luego se convierte en profesor, cómo hacer para que la academia le dé de alta
-> sin tener que crear otra cuenta."*
+### 1. Encender el ranking
 
-Es el bloque más grande y el único que toca auth. **Merece su propio plan.**
+Está **construido, desplegado y apagado** desde el 15/08 (ver la sección de arriba). No
+hace falta código nuevo para empezar: hace falta **usarlo con datos reales** con la cuenta
+de admin —que es justo lo que el `soloAdmin` permite hacer sin que ningún alumno lo vea—
+y recién ahí abrirlo. Es el único pendiente que ya está pago.
 
-**Qué hay hoy** (releído y verificado contra el código el 14/08/2026, no solo contra este doc):
+Ojo con dos cosas al encenderlo: el **job de cierre oficial corre igual** los días 1 y 16
+(no está pausado), y la **campana de notificaciones** solo tiene sentido cuando el ranking
+esté abierto, porque hoy es su única fuente.
 
-- El modelo de roles es **binario**: dueño (`Tenant.OwnerUserId`) y staff
-  (`MembresiaTenant` con `RolTenant.Staff`). `MembresiaTenant` **no tiene ningún campo de
-  permisos** (solo `Rol`, `SedeId`, `ValorHora`, `Activo`), y todo lo de plata es policy
-  `Owner` sobre el `CuotasController` **entero** — la política corta antes de llegar al
-  código, no hay forma de entrar parcialmente.
-- El panel `Plataforma` (`AdminController`, policy `Admin`) tiene métricas globales, el
-  listado de clubes y activar/suspender. Es el único controller cross-tenant. No da de alta
-  academias (eso hoy solo nace por el registro público + checkout de Mercado Pago) ni
-  lista usuarios.
-- **Identidad ya tiene el concepto correcto, solo falta exponerlo** (`docs/modelo-identidad-roles.md`,
-  ADR-0007): `AspNetUsers` es la persona global; `Alumno`/`MembresiaTenant` son sus
-  membresías POR tenant, unidas por `UserId`. El "padrón de personas" que pide el profe
-  para Plataforma **no necesita una tabla nueva** — es una proyección de `AspNetUsers` con
-  sus membresías, mostrada ahí en vez de mezclada en Alumnos.
-- **El pedido 12 sobre "director → alumno sin duplicar cuenta" YA FUNCIONA — probado en
-  el navegador el 14/08/2026, no solo leído en el código.** `StaffService.AgregarAsync`
-  reusa el login si el celular ya es de una cuenta existente (alumno → profesor);
-  `AlumnoService.BuscarTitularPorTelefonoAsync` hace lo mismo en la otra dirección. Se
-  probó: se cargó una ficha de alumno con el celular del director (`Profe Demo`,
-  `1122334455`) → la respuesta trae `sumadoAFamilia: true` y `familiaTitular: "Profe Demo"`
-  (se linkeó a su cuenta, **sin credenciales nuevas**), y esa ficha aparece con
-  `enEspera: false` — el filtro del Bloque 1 la excluye de la lista de espera igual que a
-  cualquier profe, aunque no tenga clase. Las dos mitades del pedido 12 (las listas y el
-  alta sin duplicar) están resueltas con lo que ya existe; no hace falta código nuevo para
-  esta parte del Bloque 6.
+### 2. El módulo de clubes
 
-**DECISIONES TOMADAS:**
+Bloqueado por una decisión de producto, no por trabajo. Ver la sección de abajo.
 
-- **"Usuarios deberían aparecer en Plataforma" = el panel admin cross-tenant**, no
-  reordenar el menú del profe.
-- **La trampa que ya nos mordió una vez:** la pestaña "Usuarios" de hoy lista la tabla
-  `Alumnos`, o sea un padrón de **FICHAS**, no de personas. El director y los profes no
-  tienen ficha salvo que alguien los haya cargado como alumnos. Mezclar personas sin ficha
-  en esa tabla da filas donde la mitad de las acciones no aplican (no hay a quién pausar,
-  dar de baja ni cobrarle cuota). El padrón de PERSONAS es un concepto distinto y por eso
-  el profe lo pidió en Plataforma. Ver `docs/modelo-identidad-roles.md`.
+### 3. Performance
 
-**DECISIONES QUE FALTAN (consultar antes de planificar en serio):**
-
-- Pedido 2: ¿"puede cobrar" es **un** permiso o **dos** (clases y cuotas por separado,
-  como pide el texto literal)?
-- Pedido 10: dar de alta una academia desde Plataforma, ¿**salta** el checkout de Mercado
-  Pago (nace ya `Activa`) o sigue el mismo camino pago que el registro público?
+Los dos pendientes anotados al final de este doc (las fotos de alumno en base64 y los
+96 KB de la vista Mes). El segundo es una decisión de producto, no una optimización.
 
 ---
 
